@@ -1,0 +1,15 @@
+import { type ShapeStyle } from './shapeStyle';
+export type ContainerBackgroundPlacement = 'widget' | 'navigation' | 'navigationSplitView';
+/**
+ * Sets the container background of the enclosing container.
+ *
+ * > **Note:** `navigation` and `navigationSplitView` require iOS 18. The `widget` placement works
+ * > only in `expo-widgets` widgets, where the other placements fall back to it on iOS 17.
+ *
+ * @param style - Any [`ShapeStyle`](#shapestyle): a color, a hierarchical style, a material, or a gradient.
+ * @param container - The type of container to apply the background to.
+ * @platform ios 17.0+
+ * @see Official [SwiftUI documentation](https://developer.apple.com/documentation/swiftui/view/containerbackground(_:for:)).
+ */
+export declare const containerBackground: (style: ShapeStyle, container: ContainerBackgroundPlacement) => import("./createModifier").ModifierConfig;
+//# sourceMappingURL=containerBackground.d.ts.map
