@@ -1,4 +1,0 @@
-framework module SDWebImageSVGCoder {
-umbrella "Headers"
-export *
-}
