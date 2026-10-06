@@ -30,30 +30,7 @@ backend/prisma/*.db-journal
 # ==============================================================================
 # FRONTEND (React Native / Expo / TypeScript)
 # ==============================================================================
-frontend/node_modules/
-frontend/.expo/
-frontend/.expo-shared/
-frontend/web-build/
-frontend/dist/
-frontend/npm-debug.log*
-frontend/yarn-error.log*
 
-# Compilaciones nativas (iOS y Android)
-frontend/ios/Pods/
-frontend/ios/build/
-frontend/ios/Index/
-frontend/android/.gradle/
-frontend/android/app/build/
-frontend/android/.idea/
-frontend/android/local.properties
-
-# Certificados y Keystores (CRÍTICO: No subir nunca)
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-*.keystore
 
 # ==============================================================================
 # CONFIGURACIONES DE IDEs (VSCode, IntelliJ, etc.)
