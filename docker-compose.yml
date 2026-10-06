@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # -----------------------------------------------------------
+  # 1. Base de Datos (PostgreSQL)
+  # -----------------------------------------------------------
+  database:
+    image: postgres:16-alpine
+    container_name: urbanpulse_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-urbanpulse_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-urbanpulse_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - urbanpulse_net
+
+  # -----------------------------------------------------------
+  # 2. Backend / API (NestJS)
+  # -----------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: urbanpulse_backend
+    restart: unless-stopped
+    environment:
+      PORT: 4000
+      # Cadena de conexión estándar requerida por TypeORM, Prisma, etc. en NestJS
+      DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@database:5432/${DB_NAME:-urbanpulse_db}
+    ports:
+      - "4000:4000"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - urbanpulse_net
+
+# -------------------------------------------------------------
+# Volúmenes y Redes
+# -------------------------------------------------------------
+volumes:
+  pgdata:
+
+networks:
+  urbanpulse_net:
+    driver: bridge

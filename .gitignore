@@ -1,0 +1,67 @@
+# ==============================================================================
+# ARCHIVOS GLOBALES Y VARIABLES DE ENTORNO
+# ==============================================================================
+.env
+.env.*.local
+*.env
+.DS_Store
+Thumbs.db
+logs/
+*.log
+
+# ==============================================================================
+# BACKEND (NestJS / TypeScript)
+# ==============================================================================
+backend/node_modules/
+backend/dist/
+backend/.nest/
+backend/npm-debug.log*
+backend/yarn-error.log*
+backend/pnpm-debug.log*
+
+# Cobertura y Tests
+backend/coverage/
+backend/.nyc_output/
+
+# Bases de datos locales de SQLite (si usas Prisma/TypeORM para testing)
+backend/prisma/*.db
+backend/prisma/*.db-journal
+
+# ==============================================================================
+# FRONTEND (React Native / Expo / TypeScript)
+# ==============================================================================
+frontend/node_modules/
+frontend/.expo/
+frontend/.expo-shared/
+frontend/web-build/
+frontend/dist/
+frontend/npm-debug.log*
+frontend/yarn-error.log*
+
+# Compilaciones nativas (iOS y Android)
+frontend/ios/Pods/
+frontend/ios/build/
+frontend/ios/Index/
+frontend/android/.gradle/
+frontend/android/app/build/
+frontend/android/.idea/
+frontend/android/local.properties
+
+# Certificados y Keystores (CRÍTICO: No subir nunca)
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.keystore
+
+# ==============================================================================
+# CONFIGURACIONES DE IDEs (VSCode, IntelliJ, etc.)
+# ==============================================================================
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+.idea/
+*.sublime-project
+*.sublime-workspace
