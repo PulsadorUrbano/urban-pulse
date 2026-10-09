@@ -1,0 +1,216 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+// Enums
+enum incident_priority {
+  low
+  medium
+  high
+}
+
+enum incident_status {
+  reported
+  rejected
+  validated
+  assigned
+  in_progress
+  resolved
+  reopened
+  closed
+}
+
+enum address_district {
+  centro
+  este
+  ciudad_jardin
+  bailen_miraflores
+  palma_palmilla
+  cruz_del_humilladero
+  carretera_de_cadiz
+  churriana
+  campanillas
+  puerto_de_la_torre
+  teatinos_universidad
+}
+
+enum profile_role {
+  administrative     
+  department
+  team
+  technician
+  civic
+  admin
+  analyst            
+}
+
+// Relacionados con los usuarios --------------------------------------
+Table users {
+  id uuid 
+  username varchar [unique]
+  email varchar 
+  password varchar
+  created_at timestamp [default: 'now()']
+  role profile_role
+
+  indexes {
+    id [pk]
+    email [unique]
+  }
+}
+
+Table civics {
+  user_id uuid [pk, ref: - users.id]
+  phone varchar 
+} 
+
+Table department_members {
+  user_id uuid [pk, ref: - users.id]
+  department_id uuid [ref: > departments.id, not null]
+}
+
+// Puede haber un técnico o un miembro de equipo
+Table team_members {
+  user_id uuid [pk, ref: - users.id]
+  team_id uuid [ref: > teams.id, not null]
+  is_technician boolean [default: false, not null]
+}
+
+// Relacionados con el reporte de incidencias --------------------
+
+
+Table incidents {
+  id uuid
+  title varchar [not null]
+  description varchar
+  priority incident_priority [not null, default: `low`]
+  status incident_status [not null, default: `reported`]
+  created_at timestamp [default: `now()`]
+  civic_id uuid [ref: > civics.user_id, not null]
+  location_id uuid [ref: > locations.id, not null]
+  urban_asset_id uuid [ref: >? urban_assets.id]
+  category_id uuid [ref: > categories.id, not null]
+
+  // una asociación
+  department_id uuid [ref: >? departments.id]
+  team_id uuid [ref: >? teams.id]
+  technician_id uuid [ref: >? team_members.user_id]
+
+  indexes {
+    id [pk]
+  }
+
+  checks {
+    `length(title) >= 4 AND length(title) <= 25` [name: 'title_length']
+    `description IS NULL OR length(description) >= 10` [name: 'description_reqs']
+  }
+}
+
+Table status_changes {
+  id uuid [pk]
+  incident_id uuid [ref: > incidents.id, not null]
+  user_id uuid [ref: > users.id, not null]
+  new_status incident_status [not null]
+  cause varchar // o reason / comment
+  created_at timestamp [default: `now()`]
+
+  indexes {
+    incident_id
+    created_at
+  }
+}
+
+Table urban_assets {
+  id uuid 
+  name varchar [unique]
+
+  indexes {
+    id [pk]
+  }
+}
+
+Table incident_images {
+  cloudinary_id varchar 
+  incident_id uuid [ref: > incidents.id , not null]
+
+  indexes {
+    cloudinary_id [pk]
+  }
+}
+
+Table categories {
+  id uuid
+  name varchar [unique, not null]
+
+  indexes {
+    id [pk]
+  }
+}
+
+Table priority_changes {
+  id uuid
+  is_manual boolean [not null, default: `true`]
+  new_priority incident_priority [not null]
+  cause varchar 
+  created_at timestamp [default: `now()`]
+  incident_id uuid [ref: > incidents.id, not null]
+  user_id uuid [ref: > users.id, not null]
+}
+
+// Relacionados con la localización ------------------------------
+Table urban_contexts {
+  id uuid
+  weather varchar
+  traffic varchar
+  mobility varchar
+  environment varchar
+  demography int 
+  location_id uuid [ref: - locations.id, not null, unique]
+
+  indexes {
+    id [pk]
+  }
+}
+
+Table locations {
+  id uuid
+  position geography [not null]
+  address_id uuid [ref: >? addresses.id] 
+
+  indexes {
+    id [pk]
+    position [unique]
+  }
+}
+
+Table addresses {
+  id uuid 
+  street varchar [not null]
+  zip_code int [not null]
+  disctrict address_district [not null]
+
+  indexes {
+    id [pk]
+  }
+}
+
+// Asocian una incidencia a un equipo
+Table departments {
+  id uuid
+  name varchar [not null, unique]
+
+  indexes {
+    id [pk]
+  }
+}
+
+// Asocian una incidencia a un técnico
+Table teams {
+  id uuid 
+  name varchar [not null]
+  department_id uuid [ref: > departments.id, not null]
+
+  indexes {
+    id [pk]
+  }
+}
+

@@ -2,23 +2,23 @@ version: '3.8'
 
 services:
   # -----------------------------------------------------------
-  # 1. Base de Datos (PostgreSQL)
+  # 1. Base de Datos (PostgreSQL + PostGIS)
   # -----------------------------------------------------------
   database:
-    image: postgres:16-alpine
+    image: postgis/postgis:16-3.5-alpine
     container_name: urbanpulse_db
-    restart: unless-stopped
+    restart: always # 'always' es más robusto en producción que 'unless-stopped'
+    # Forzamos que las variables vengan del sistema o de un archivo .env, sin valores por defecto inseguros
     environment:
-      POSTGRES_DB: ${DB_NAME:-urbanpulse_db}
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${DB_NAME:?Falta la variable DB_NAME}
+      POSTGRES_USER: ${DB_USER:?Falta la variable DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Falta la variable DB_PASSWORD}
+    # ELIMINADO: ports: - "5432:5432" -> Ahora solo el backend puede ver la base de datos
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./db:/docker-entrypoint-initdb.d:ro
+      # ELIMINADO: - ./db:/docker-entrypoint-initdb.d:ro -> Delegamos las tablas al sistema de migraciones del backend
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-urbanpulse_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -33,13 +33,14 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: urbanpulse_backend
-    restart: unless-stopped
+    restart: always
+    env_file:
+      - .env # Centralizamos las variables en un archivo
     environment:
       PORT: 4000
-      # Cadena de conexión estándar requerida por TypeORM, Prisma, etc. en NestJS
-      DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@database:5432/${DB_NAME:-urbanpulse_db}
+      DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@database:5432/${DB_NAME}
     ports:
-      - "4000:4000"
+      - "4000:4000" # Este sí se expone para que el frontend o los usuarios accedan a la API
     depends_on:
       database:
         condition: service_healthy
