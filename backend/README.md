@@ -21,7 +21,7 @@ The API listens on `http://localhost:3000` by default. Set `PORT` in `.env` to u
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/` | Starter response |
+| `GET` | `/` | Swagger API auto-generated docs |
 | `GET` | `/health` | Liveness check returning `{ "status": "ok" }` |
 
 ## Configuration
