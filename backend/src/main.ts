@@ -11,7 +11,6 @@ async function bootstrap() {
     .setTitle('Urban Pulse Backend API')
     .setDescription('The urban pulse API auto-generated documentation')
     .setVersion('development')
-    .addTag('urban-pulse')
     .build();
 
     const documentFactory = () => SwaggerModule.createDocument(app, config);
