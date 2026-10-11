@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useIncidentValidation } from '../hooks/useIncidentValidation';
-import { MapPin, Maximize2, X, Moon, Sun, CheckCircle2, XCircle, Info } from 'lucide-react';
+import { MapPin, Maximize2, X, Moon, Sun, CheckCircle2, XCircle, Info, LogOut, ChevronDown, ShieldCheck, AlertTriangle } from 'lucide-react';
 
-export const IncidentValidationView = ({ incidentId = 'INC-2026-8942' }) => {
+export const IncidentValidationView = ({ incidentId = 'INC-2026-8942', onNavigateToLogin }) => {
   const {
     incident,
     loading,
@@ -28,6 +28,10 @@ export const IncidentValidationView = ({ incidentId = 'INC-2026-8942' }) => {
   // Estado del tema oscuro. Por defecto false (Modo Claro)
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
+
+  // Estados para el flujo de Cierre de Sesión (Mockup)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // EFECTO CRÍTICO: Añade o quita la clase 'dark' a la etiqueta <html> global
   // Esto garantiza que Tailwind detecte el modo oscuro correctamente en cualquier navegador.
@@ -88,11 +92,60 @@ export const IncidentValidationView = ({ incidentId = 'INC-2026-8942' }) => {
             {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
           
-          <div className="flex items-center gap-3 pl-6 border-l border-zinc-200 dark:border-zinc-800">
-            <div className="text-right">
-              <div className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Alejandro</div>
-              <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Gestión de Infraestructuras</div>
-            </div>
+          {/* PERFIL DE USUARIO CON MENÚ DESPLEGABLE INSTITUCIONAL */}
+          <div className="relative pl-6 border-l border-zinc-200 dark:border-zinc-800">
+            <button
+              type="button"
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className="flex items-center gap-3 p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left"
+              title="Menú de perfil institucional"
+            >
+              <div className="w-8 h-8 rounded-lg bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 flex items-center justify-center font-bold text-xs shadow-xs">
+                AS
+              </div>
+              <div className="text-right hidden sm:block">
+                <div className="text-sm font-bold text-zinc-900 dark:text-zinc-100 leading-tight">Alejandro Sánchez</div>
+                <div className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Gestión de Infraestructuras</div>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* MENÚ DESPLEGABLE INSTITUCIONAL */}
+            {isUserMenuOpen && (
+              <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl py-2 z-50 animate-in fade-in duration-150">
+                <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800/80">
+                  <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">Alejandro Sánchez</p>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">alejandro.sanchez@malaga.es</p>
+                  <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">
+                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                    <span>Cookie HttpOnly Activa</span>
+                  </div>
+                </div>
+
+                <div className="py-1">
+                  <div className="px-4 py-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+                    Rol: <span className="font-semibold text-zinc-800 dark:text-zinc-200">administrative</span>
+                  </div>
+                  <div className="px-4 py-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+                    Plataforma: <span className="font-semibold text-zinc-800 dark:text-zinc-200">Urban Pulse Web</span>
+                  </div>
+                </div>
+
+                <div className="pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      setShowLogoutModal(true);
+                    }}
+                    className="w-full px-4 py-2 text-left text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2 transition-colors"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Cerrar sesión municipal</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -337,6 +390,51 @@ export const IncidentValidationView = ({ incidentId = 'INC-2026-8942' }) => {
                alt="Evidencia Ampliada" 
                className="w-full h-full object-contain drop-shadow-2xl"
              />
+          </div>
+        </div>
+      )}
+
+      {/* MODAL INSTITUCIONAL DE CONFIRMACIÓN DE CIERRE DE SESIÓN */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900/50 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  ¿Cerrar sesión en Pulsador Urbano?
+                </h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+                  Se revocará el token JWT activo y se ordenará la expiración inmediata de la cookie de sesión (<code className="font-mono text-[11px] bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded">access_token</code>, <code className="font-mono text-[11px] bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded">Max-Age=0</code>).
+                </p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                  Cualquier validación no guardada en el expediente actual se cancelará.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+              <button
+                type="button"
+                onClick={() => setShowLogoutModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              >
+                Permanecer en la sesión
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLogoutModal(false);
+                  if (onNavigateToLogin) onNavigateToLogin();
+                }}
+                className="px-4 py-2 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-xs transition-colors flex items-center gap-1.5"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Confirmar y cerrar sesión</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
