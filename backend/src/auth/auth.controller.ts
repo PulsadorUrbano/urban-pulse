@@ -9,6 +9,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service.js';
 import { CurrentUser } from './current-user.decorator.js';
+import { CreateTokenDto } from './dto/create-token.dto.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
 import type { TokenPayload } from './token-payload.js';
 
@@ -35,7 +36,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
   async createToken(
-    @Body('userId') userId: string,
+    @Body() { userId }: CreateTokenDto,
   ): Promise<{ accessToken: string }> {
     return {
       accessToken: await this.auth.createToken(userId),
