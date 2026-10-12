@@ -89,7 +89,7 @@ npm run mock
 ## Project Structure
 
 - `assets/` — Static assets including images, fonts, icons, and splash screens.
-- `src/app/` — Expo Router file-based navigation only; contains screen files and `_layout.tsx` navigators.
+- `src/app/` — Expo Router file-based navigation only; contains screen files and `_layout.tsx` navigators. La raíz es un `Stack` y las pestañas viven agrupadas en `src/app/(tabs)/` (ver *Navigation & Routing*).
 - `src/components/` — Reusable and modular UI components decoupled from navigation logic.
 - `src/hooks/` — Custom React hooks encapsulating stateful logic and device capabilities.
 - `src/services/` — HTTP client functions and communication layer with the NestJS backend.
@@ -191,3 +191,26 @@ Docs: https://docs.expo.dev/eas/index.md
 - Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.
 - Import `Link`, `router`, and `useLocalSearchParams` from `expo-router`.
 - Docs: https://docs.expo.dev/router/introduction.md
+
+### Stack raíz + grupo `(tabs)` (estructura obligatoria)
+
+Las pestañas nativas (`expo-router/unstable-native-tabs`) **no pueden empujar pantallas** — no tienen stack ni cabecera propia. Por eso la raíz **debe** ser un `Stack` y las pestañas deben vivir dentro de un grupo de rutas `(tabs)`:
+
+```text
+src/app/
+  _layout.tsx          → <Stack>            (raíz: empuja pantallas sobre las tabs)
+  (tabs)/
+    _layout.tsx        → <AppTabs />        (NativeTabs: secciones fijas)
+    index.tsx           (tab Home)
+    explore.tsx         (tab Explore)
+  incidents/
+    new.tsx            → ruta /incidents/new (se empuja desde las tabs)
+```
+
+Reglas:
+
+- **Secciones de primer nivel** (siempre accesibles) van como tabs en `(tabs)/_layout.tsx` mediante `NativeTabs.Trigger`.
+- **Pantallas de detalle, formularios y flujos** van fuera de `(tabs)/` como carpetas/rutas propias (p. ej. `incidents/new.tsx`) y se abren con `router.push('/incidents/new')` o `<Link href="/incidents/new">`. Se apilan encima de la tab bar con botón de atrás.
+- Registra las pantallas empujadas en el `Stack` raíz con `Stack.Screen name="..."` cuando necesites opciones (título, `presentation: 'modal'`, etc.).
+- El grupo `(tabs)` no aparece en la URL; sí aparece el nombre de la carpeta de la ruta empujada (`/incidents/new`).
+- No anides otro navegador de tabs dentro de las pestañas nativas.
