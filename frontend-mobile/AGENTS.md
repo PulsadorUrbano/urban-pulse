@@ -36,11 +36,16 @@ This is an Expo/React Native mobile application. Prioritize mobile-first pattern
 
 ## Expo has changed — do not trust your training data
 
+Expo and mobile libraries change frequently between versions. **Do not rely on training memory for Expo or React Native APIs.**
+
 Expo ships breaking changes every SDK release. APIs you remember are likely renamed, moved, or removed. Before writing any code that touches an Expo, EAS, or React Native API:
 
 1. Read the major version of the `expo` package in `package.json`.
 2. Fetch the matching versioned docs: `https://docs.expo.dev/versions/v<major>.0.0/`
 3. For anything else, fetch https://docs.expo.dev/llms.txt — an index of all Expo docs with corrections to common LLM misconceptions. Follow its links to the specific page you need; never answer from memory.
+
+- **Use Context7 first:** Before writing code for unfamiliar modules or Expo APIs (`expo-image-picker`, `expo-location`, `expo-router`), query Context7 to inspect official and version-accurate docs.
+- **Official reference:** For general architecture decisions, check `https://docs.expo.dev/llms.txt`.
 
 ---
 
@@ -92,6 +97,7 @@ npm run mock
 - `src/constants/` — Global configuration, design tokens, and theme palettes.
 - `src/utils/` — Pure helper functions, date parsers, and input validators.
 - `db.json` — Local database fixture file for `json-server` mock endpoints.
+- `docs/` - Session notes, task checklists (with subtasks)
 
 ---
 
@@ -110,6 +116,12 @@ npm run mock
 - **Intuitive & Self-Descriptive Naming:** Use clear, intention-revealing names that make intent obvious without requiring comments. Avoid generic or cryptic abbreviations (e.g., use `incidentList` instead of `data`/`arr`, `isSubmittingReport` instead of `flag`, `fetchIncidentsByStatus` instead of `getData`).
 - **Expo Go only includes its bundled native modules**. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
 - **Prefer recommended Expo modules over third-party libraries**, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+- **Autonomous Error Research:** When encountering unfamiliar build, Metro, or native runtime errors during task execution, query Fetcher (or Context7) for exact error logs and recent GitHub issues before guessing or attempting blind fixes.
+- **Session Documentation & Task Tracking (`docs/`):** 
+  - Keep track of session progress inside the `docs/` directory.
+  - Document session notes and maintain a structured task checklist detailing all completed tasks and their corresponding subtasks (e.g., using checkboxes `- [x]` / `- [ ]`).
+  - Update this log upon completing each task so ongoing and past work remains transparent and traceable across sessions.
+- **Naming & Comments Language:** All identifiers (variables, functions, types, and component names) must be written in English. However, all in-code comments explaining logic and implementation details must be written in Spanish.
 
 ---
 
@@ -126,6 +138,21 @@ npm run mock
 - **No live backend inspection:** Do not analyze or query backend endpoints until explicitly requested; assume and build against local mocked REST data via `json-server`.
 
 ---
+
+## Subagent Orchestration Workflow
+
+The primary/parent agent acts as the supreme orchestrator and ensures all child subagents strictly adhere to all guidelines, constraints, and conventions in this `AGENTS.md`.
+
+### Execution Cycle:
+1. **Planner (`planner`):** Reads the current roadmap/plan, documents the session in `docs/`, and commands the `developer` with the single next task/subtask to accomplish.
+2. **Developer (`developer`):** Implements the code change strictly within `frontend-mobile/src/` (or `db.json`). Once done, notifies `compiler-checker`.
+3. **Compiler Checker (`compiler-checker`):** Executes `npx expo lint` and `npx tsc --noEmit`.
+   - *Failure:* Returns the specific error log to `developer` for immediate fixing.
+   - *Success:* Hands off to `tester`.
+4. **Tester (`tester`):** Creates or updates colocated tests (`*.test.tsx`) and runs them.
+   - *Failure:* Details the broken test assertions and hands back to `developer`.
+   - *Success:* Notifies `planner`.
+5. **Cycle Repeat:** `planner` marks the subtask as completed `[x]` in `docs/` and triggers the next item until the entire feature is completed.
 
 ## Workflow
 
@@ -144,6 +171,14 @@ npm run mock
   - **Captured/Selected photoes**: Use the temporary local URI `(file://...)` returned directly by `expo-image-picker` or camera modules. Store this local URI directluy in `photoURL` when persisting to `db.json`. 
   - **Seed Mock Data**: Use placeholder image URLs (e.g., `https://picsum.photos/...`) for initial fixtures in `db.json`
   - **Storage service encapsulation**: Isolate image handling inside `src/services/storage.service.ts` with simulated network delay (`setTimeout`) to test UI loading/error states without touching external services
+- **Roadmap Sync & Spec Lifecycle (`spec/`):**
+  - **Feature Scaffolding:** Whenever a new feature is requested, the `planner` must automatically initialize its dedicated directory under `spec/features/NNN-<feature-name>/` (e.g., `001-registro-incidencia/`).
+  - **Template Adherence:** Inside the feature folder, the `planner` must create `spec.md`, `plan.md`, and `tasks.md`, strictly following the blueprints defined in `spec/templates/` before any implementation begins.
+  - **Live Roadmap Overwrite:** The `planner` must actively maintain and overwrite `spec/constitution/roadmap.md` to reflect real project progress:
+    - Shift the active feature into `## Siguiente 🔜` when work starts.
+    - Shift the feature into `## Hecho ✅` once all quality checks, tests, and tasks pass.
+    - Keep future features listed under `## Backlog / ideas 💡`.
+
 ---
 
 ## Native & Build Constraints
