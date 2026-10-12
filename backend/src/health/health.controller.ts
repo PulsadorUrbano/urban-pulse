@@ -6,12 +6,12 @@ export class HealthController {
 
   @Get('health')
   @ApiOperation({ 
-    summary: 'Endpoint to check the health of the service', 
-    description: 'This endpoint returns a simple status indicating that the service is running and healthy.', 
+    summary: 'Comprobación del estado del servicio', 
+    description: 'Este endpoint devuelve un estado simple que indica que el servicio está en ejecución y funciona correctamente.', 
   })
   @ApiResponse({
     status: 200,
-    description: 'Health check endpoint',
+    description: 'Comprobación de salud del servicio',
     schema: {
       type: 'object',
       properties: {

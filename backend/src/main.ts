@@ -9,7 +9,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Urban Pulse Backend API')
-    .setDescription('The urban pulse API auto-generated documentation')
+    .setDescription('Documentación autogenerada de la API de Urban Pulse')
     .setVersion('development')
     .build();
 
