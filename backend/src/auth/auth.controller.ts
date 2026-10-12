@@ -3,8 +3,11 @@ import {
   Controller,
   Get,
   HttpCode,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
   Post,
-  UseGuards,
+  UseGuards
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service.js';
@@ -15,6 +18,8 @@ import type { TokenPayload } from './token-payload.js';
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(private readonly auth: AuthService) {}
 
   @Post('token')
@@ -38,9 +43,17 @@ export class AuthController {
   async createToken(
     @Body() { userId }: CreateTokenDto,
   ): Promise<{ accessToken: string }> {
-    return {
-      accessToken: await this.auth.createToken(userId),
-    };
+    try {
+      return {
+        accessToken: await this.auth.createToken(userId),
+      };
+    } catch (error) {
+      if (error instanceof Error && (error.name === 'NotFoundError' || error.name === 'PrismaClientKnownRequestError'))
+        throw new NotFoundException(`Usuario con id '${userId}' no encontrado`);
+
+      this.logger.error(`Error interno al crear token para usuario ${userId}: ${error}`);
+      throw new InternalServerErrorException();
+    }
   }
 
   @Get('me')
