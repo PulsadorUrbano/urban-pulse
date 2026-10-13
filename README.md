@@ -46,9 +46,9 @@ Para asegurar la calidad del código, el equipo sigue una estrategia inspirada e
 - **`dev`:**  Rama principal de integración y desarrollo activo.
 - **Ramas de Funcionalidad (`feature/nombre-issue`):** Rama integradora creada a partir de `dev` para coordinar una funcionalidad completa.
 - **Ramas de Sub-equipo:** A partir de la rama de la funcionalidad, cada equipo creará su propia sub-rama:
-  - `feature/nombre-issue/backend`
-  - `feature/nombre-issue/frontend-web`
-  - `feature/nombre-issue/frontend-mobile`
+  - `feature/nombre-issue-backend`
+  - `feature/nombre-issue-frontend-web`
+  - `feature/nombre-issue-frontend-mobile`
 - **Ramas de Trabajo:** Para cada nueva funcionalidad o corrección, crea una rama a partir de dev usando el prefijo adecuado:
 ```bash
 - git switch -c feature/nombre-funcionalidad
@@ -66,7 +66,7 @@ Para asegurar la calidad del código, el equipo sigue una estrategia inspirada e
 ### 2. Flujo de Trabajo y Pull Requests (PRs)
 El ciclo de vida de una nueva funcionalidad sigue estos pasos estrictos:
 
-1. **Desarrollo:** Los desarrolladores trabajan en sus sub-ramas específicas (`.../backend`, `.../frontend-web`, etc.).
+1. **Desarrollo:** Los desarrolladores trabajan en sus sub-ramas específicas (`...-backend`, `...-frontend-web`, etc.).
 2. **Unificación local:** Cuando las partes están terminadas, las ramas de sub-equipo se fusionan ("merge") dentro de la rama padre de la funcionalidad (`feat/nombre-issue`).
 3. **Pull Request a Dev:** Una vez que la rama `feat/nombre-issue` está completa y estable, se abre un Pull Request hacia la rama `dev`.
 4. **Revisión y Aprobación:** El *Reviewer* asignado revisará el código de la PR y, si es correcto, la aprobará.
