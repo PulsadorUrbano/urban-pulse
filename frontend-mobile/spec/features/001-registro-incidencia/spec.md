@@ -32,18 +32,23 @@ dispositivo está apagado o la captura falla, el reporte se envía igualmente si
 (vacía o demasiado corta) y de ubicación desactivada.
 
 Además, el formulario incorpora una **sección de foto** situada **debajo del campo Descripción**
-y **encima del botón Enviar**, encabezada por el título **"Imágenes subidas (n):"** con un
-**contador dinámico** de fotos adjuntas. **Sin fotos**, la sección muestra un botón a lo ancho
-**"Subir imágenes"** (mismo color que el botón Enviar) y, debajo, en letra pequeña, el texto
-**"Son totalmente opcionales, pero muy recomendables."**; en este estado **no** se muestra el
-recuadro discontinuo. **Con una o más fotos**, la sección muestra una **fila horizontal de
-cuadrados** (~120 dp, token `PHOTO_TILE_SIZE`) con una **miniatura** por foto (vía `expo-image`),
-un botón **"×"** para quitarla y un **overlay de carga** mientras se procesa, y la fila termina
-en un **recuadro cuadrado** con **borde discontinuo** para añadir más: en el centro, un **icono
-compuesto** (Material `image` + insignia pequeña `arrow-upward`) sobre el texto **"Añadir
-imagen"** y, debajo, en letra pequeña, **"Recomendado"**. Tanto el botón **"Subir imágenes"**
-como el recuadro discontinuo abren una **hoja inferior** (bottom sheet con `Modal` nativo, mismo
-patrón visual que `CategoryPicker`) con dos opciones: **"Cámara"** y **"Galería"**. Al elegir una
+y **encima del botón Enviar**. **Sin fotos (0 imágenes)**, la sección **no muestra cabecera ni
+botón a lo ancho**: muestra un **"+" grande centrado** (`MaterialIcons add`, tamaño 48) con, debajo,
+el texto **"¿Desea añadir imágenes?"**, todo dentro de un único `Pressable` que abre la **hoja
+inferior** Cámara/Galería (también al pulsar cerca del "+"), y un `ActivityIndicator` mientras
+procesa; el título **"Imágenes subidas (n):"** —un **contador dinámico** de fotos adjuntas— **solo
+se muestra con `n ≥ 1`**. **Con una o más fotos**, la sección muestra la cabecera con el título
+**"Imágenes subidas (n):"** y una **fila horizontal de cuadrados** (~120 dp, token
+`PHOTO_TILE_SIZE`) con una **miniatura** por foto (vía `expo-image`), un botón **"×"** para
+quitarla y un **overlay de carga** mientras se procesa, y la fila termina en un **tile de añadir**
+que es un único **"+"** (Material `add`, color secundario) **sin borde, sin fondo y sin textos**,
+con `accessibilityLabel="Añadir imagen"` y un `ActivityIndicator` mientras procesa. El número de
+adjuntos está limitado por **`MAX_SELECTED_PHOTOS = 8`** (exportado en el hook de adjuntos, con un
+**guard** que ignora nuevos adjuntos al llegar a 8): **con 8 fotos**, el **tile "+" desaparece** y,
+debajo de los previews, se muestra **en rojo** el mensaje **"El número máximo de imágenes son 8"**;
+al quitar una foto, **vuelve el "+"** y desaparece el mensaje. Tanto el **"+"** del estado vacío
+como el tile de añadir abren una **hoja inferior** (bottom sheet con `Modal` nativo, mismo patrón
+visual que `CategoryPicker`) con dos opciones: **"Cámara"** y **"Galería"**. Al elegir una
 fuente, `expo-image-picker` devuelve la **URI local temporal** (`file://...`) de la foto, que se
 adjunta de inmediato al formulario; **cancelar** el selector no produce ningún error ni adjunta
 nada. Al enviar, primero se registra la incidencia (igual que
@@ -134,21 +139,28 @@ almacenamiento en la nube.
       `description-empty`, `description-too-short` y `location-disabled`, y se muestra **un único
       `Alert`** que combina todos los avisos presentes (con opción de cancelar o enviar igualmente).
 - [x] El formulario muestra, **debajo del campo Descripción** y **encima del botón Enviar**, la
-      sección de fotos con el título **"Imágenes subidas (n):"**, donde `n` es un **contador
-      dinámico** de las fotos adjuntas (empieza en 0 y se actualiza al adjuntar o quitar).
-- [x] **Sin fotos**, la sección muestra un botón a lo ancho **"Subir imágenes"** (mismo color que
-      el botón Enviar) y, debajo, el texto pequeño **"Son totalmente opcionales, pero muy
-      recomendables."**; el **recuadro discontinuo no se muestra** en vacío.
-- [x] **Con una o más fotos**, la fila de miniaturas termina en un **recuadro cuadrado** (~120 dp)
-      con **borde discontinuo**, icono compuesto (`image` + insignia `arrow-upward`) y los textos
-      **"Añadir imagen"** y **"Recomendado"**.
-- [x] Al pulsar **"Subir imágenes"** (estado vacío) o el **recuadro discontinuo** (con fotos) se
-      abre una **hoja inferior** con las opciones **"Cámara"** y **"Galería"** (mismo patrón
-      visual que `CategoryPicker`).
+      sección de fotos. El título **"Imágenes subidas (n):"** —donde `n` es el **contador
+      dinámico** de fotos adjuntas— se muestra **solo cuando `n ≥ 1`**; con 0 imágenes **no hay
+      cabecera**.
+- [x] **Sin fotos (0 imágenes)**, la sección **no muestra cabecera ni botón a lo ancho**: muestra
+      un **"+" grande centrado** (`MaterialIcons add`, tamaño 48) con el texto **"¿Desea añadir
+      imágenes?"** debajo, todo dentro de un `Pressable` que abre la hoja Cámara/Galería (también
+      al pulsar cerca), y un `ActivityIndicator` mientras procesa.
+- [x] **Con una o más fotos**, la fila de miniaturas termina en un **tile de añadir** que es un
+      único **"+"** (Material `add`, color secundario) **sin borde, sin fondo y sin textos**, con
+      `accessibilityLabel="Añadir imagen"` y `ActivityIndicator` mientras procesa.
+- [x] Al pulsar el **"+"** del estado vacío o el **tile "+"** (con fotos) se abre una **hoja
+      inferior** con las opciones **"Cámara"** y **"Galería"** (mismo patrón visual que
+      `CategoryPicker`).
 - [x] Elegir "Cámara" o "Galería" adjunta la foto al formulario; **cancelar** el selector no
       produce ningún error ni adjunta nada.
 - [x] Cada foto adjunta aparece como un **cuadrado con miniatura** (`expo-image`) y un botón
       **"×"**; al pulsar "×" la foto se elimina de la selección.
+- [x] El número de adjuntos está limitado por **`MAX_SELECTED_PHOTOS = 8`** (exportado por
+      `use-photo-attachment.ts`): al llegar a 8, el hook **ignora** nuevos adjuntos (guard).
+- [x] **Con 8 fotos**, el **tile "+" desaparece** y, debajo de los previews, se muestra **en rojo**
+      el mensaje **"El número máximo de imágenes son 8"**; al quitar una foto, **vuelve el "+"** y
+      desaparece el mensaje.
 - [x] El botón **Enviar** y el **toggle de ubicación** permanecen **fijos y visibles por encima
       del contenido** al hacer scroll (footer fijo + FAB en capa superior, safe-area aware).
 - [x] Al enviar con fotos, se crea la incidencia y **una `IncidentImage` por cada foto** con

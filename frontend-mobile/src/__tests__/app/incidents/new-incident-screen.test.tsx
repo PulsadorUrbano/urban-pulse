@@ -170,9 +170,9 @@ async function fillValidIncidentForm(user: ReturnType<typeof userEvent.setup>) {
 // Abre la hoja del PhotoPicker, elige "Galería" y espera a que la foto
 // aparezca como miniatura adjunta (el tile "Foto adjunta").
 async function attachPhotoFromLibrary(user: ReturnType<typeof userEvent.setup>) {
-  // Sin fotos adjuntas ya no existe el recuadro "Añadir imagen": la hoja se
-  // abre desde el botón a lo ancho "Subir imágenes" del estado vacío.
-  await user.press(screen.getByRole('button', { name: 'Subir imágenes' }));
+  // Sin fotos adjuntas no hay cabecera ni tile de añadir: la hoja se abre
+  // desde el recuadro pulsable del estado vacío "Añadir imágenes".
+  await user.press(screen.getByLabelText('Añadir imágenes'));
   await user.press(screen.getByRole('button', { name: 'Galería' }));
 
   // La hoja difiere el lanzamiento del picker nativo `SHEET_DISMISS_DELAY_MS`
@@ -227,14 +227,13 @@ describe('NewIncidentScreen', () => {
   it('renderiza la sección de fotos y los controles fijos de envío y ubicación', async () => {
     await renderScreen();
 
-    // Estado vacío de fotos: encabezado con contador a cero, botón a lo ancho
-    // "Subir imágenes" y el texto secundario opcional. El recuadro discontinuo
-    // ("Añadir imagen" / "Recomendado") solo aparece con ≥1 foto.
-    expect(screen.getByText('Imágenes subidas (0):')).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Subir imágenes' })).toBeOnTheScreen();
-    expect(
-      screen.getByText('Son totalmente opcionales, pero muy recomendables.'),
-    ).toBeOnTheScreen();
+    // Estado vacío de fotos: sin cabecera de contador (solo aparece con ≥1
+    // foto) y con el recuadro pulsable "Añadir imágenes" y su texto de
+    // invitación. El tile de añadir "+" ("Añadir imagen") solo aparece con
+    // ≥1 foto (aquí aún no hay ninguna).
+    expect(screen.queryByText('Imágenes subidas (0):')).not.toBeOnTheScreen();
+    expect(screen.getByText('¿Desea añadir imágenes?')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Añadir imágenes')).toBeOnTheScreen();
     expect(screen.queryByText('Recomendado')).not.toBeOnTheScreen();
 
     // Footer fijo en fila: Enviar (flex-1) y el toggle de ubicación a su
@@ -251,11 +250,12 @@ describe('NewIncidentScreen', () => {
     await attachPhotoFromLibrary(user);
 
     // La URI elegida aparece como miniatura antes de enviar y el display
-    // cambia al de fotos: encabezado con contador actualizado y el recuadro
-    // de añadir con su etiqueta "Recomendado".
+    // cambia al de fotos: encabezado con contador actualizado y el tile "+"
+    // de añadir (ya sin el texto "Recomendado").
     expect(screen.getByLabelText('Foto adjunta')).toBeOnTheScreen();
     expect(screen.getByText('Imágenes subidas (1):')).toBeOnTheScreen();
-    expect(screen.getByText('Recomendado')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Añadir imagen')).toBeOnTheScreen();
+    expect(screen.queryByText('Recomendado')).not.toBeOnTheScreen();
 
     await user.press(screen.getByLabelText('Enviar incidencia'));
 

@@ -1,11 +1,12 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, Pressable, Text } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { MAX_SELECTED_PHOTOS } from '@/hooks/use-photo-attachment';
 import { useTheme } from '@/hooks/use-theme';
 
 export interface PhotoPickerProps {
@@ -142,34 +143,32 @@ export function PhotoPicker({
     </ThemedView>
   );
 
-  // Estado vacío (sin fotos adjuntas): botón a lo ancho con el mismo aspecto
-  // que el botón Enviar de la pantalla, más un texto secundario centrado.
+  // Estado vacío (sin fotos adjuntas): un único recuadro pulsable centrado con
+  // un "+" grande y un texto de invitación a añadir imágenes.
   const renderEmptyState = () => (
-    <>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Subir imágenes"
-        accessibilityState={{ disabled: isAddTileDisabled }}
-        disabled={isAddTileDisabled}
-        onPress={openSheet}
-        className={`rounded-3xl active:opacity-70${isAddTileDisabled ? ' opacity-70' : ''}`}>
-        <ThemedView
-          type="backgroundElement"
-          className="items-center justify-center rounded-3xl px-4 py-3">
-          {isProcessingPhoto ? (
-            <ActivityIndicator />
-          ) : (
-            <ThemedText type="smallBold">Subir imágenes</ThemedText>
-          )}
-        </ThemedView>
-      </Pressable>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Añadir imágenes"
+      accessibilityState={{ disabled: isAddTileDisabled }}
+      disabled={isAddTileDisabled}
+      onPress={openSheet}
+      className={`items-center justify-center gap-2 active:opacity-70${
+        isAddTileDisabled ? ' opacity-70' : ''
+      }`}>
+      {isProcessingPhoto ? (
+        <ActivityIndicator />
+      ) : (
+        <MaterialIcons name="add" size={48} color={theme.textSecondary} />
+      )}
       <ThemedText type="small" themeColor="textSecondary" className="text-center">
-        Son totalmente opcionales, pero muy recomendables.
+        ¿Desea añadir imágenes?
       </ThemedText>
-    </>
+    </Pressable>
   );
 
-  // Recuadro de añadir: abre la hoja inferior de origen de la foto.
+  // Recuadro de añadir: un único "+" centrado que abre la hoja inferior de
+  // origen de la foto. Sin borde ni fondo para alinearse visualmente con las
+  // miniaturas; mientras se procesa una foto muestra el indicador de carga.
   const renderAddTile = () => (
     <Pressable
       accessibilityRole="button"
@@ -177,30 +176,15 @@ export function PhotoPicker({
       accessibilityState={{ disabled: isAddTileDisabled }}
       disabled={isAddTileDisabled}
       onPress={openSheet}
-      className={`overflow-hidden rounded-2xl border border-dashed active:opacity-70${
+      className={`items-center justify-center active:opacity-70${
         isAddTileDisabled ? ' opacity-70' : ''
       }`}
-      style={[{ width: PHOTO_TILE_SIZE, height: PHOTO_TILE_SIZE }, { borderColor: theme.textSecondary }]}>
-      <ThemedView type="backgroundElement" className="flex-1 items-center justify-center gap-1 px-2">
-        {/* Icono compuesto: imagen grande con insignia "subir" superpuesta.
-            La caja mide 41px: icono de 30px más la mitad de la insignia (22px). */}
-        <View pointerEvents="none" className="mb-1 h-[41px] w-[41px] items-center justify-center">
-          <MaterialIcons name="image" size={30} color={theme.textSecondary} />
-          <View className="absolute bottom-0 right-0 h-[22px] w-[22px] items-center justify-center rounded-full bg-white">
-            <MaterialIcons name="arrow-upward" size={14} color="#1F2937" />
-          </View>
-        </View>
-        <ThemedText type="small" numberOfLines={1}>
-          Añadir imagen
-        </ThemedText>
-        {isProcessingPhoto ? (
-          <View
-            pointerEvents="none"
-            className="absolute inset-0 items-center justify-center rounded-2xl bg-black/15">
-            <ActivityIndicator />
-          </View>
-        ) : null}
-      </ThemedView>
+      style={{ width: PHOTO_TILE_SIZE, height: PHOTO_TILE_SIZE }}>
+      {isProcessingPhoto ? (
+        <ActivityIndicator />
+      ) : (
+        <MaterialIcons name="add" size={30} color={theme.textSecondary} />
+      )}
     </Pressable>
   );
 
@@ -209,15 +193,27 @@ export function PhotoPicker({
       {selectedPhotoUris.length === 0 ? (
         renderEmptyState()
       ) : (
-        <FlatList
-          horizontal
-          data={selectedPhotoUris}
-          keyExtractor={(uri) => uri}
-          renderItem={({ item }) => renderPhotoTile(item)}
-          ListFooterComponent={renderAddTile}
-          showsHorizontalScrollIndicator={false}
-          contentContainerClassName="gap-2"
-        />
+        <>
+          <FlatList
+            horizontal
+            data={selectedPhotoUris}
+            keyExtractor={(uri) => uri}
+            renderItem={({ item }) => renderPhotoTile(item)}
+            ListFooterComponent={
+              selectedPhotoUris.length < MAX_SELECTED_PHOTOS ? renderAddTile : null
+            }
+            showsHorizontalScrollIndicator={false}
+            contentContainerClassName="gap-2"
+          />
+          {selectedPhotoUris.length >= MAX_SELECTED_PHOTOS ? (
+            // El color semántico de `ThemedText` se aplica vía `style` inline,
+            // por lo que `className="text-[#d92d20]"` quedaría pisado; el rojo
+            // de error se fuerza con `style` para garantizarlo.
+            <ThemedText type="small" style={{ color: '#d92d20' }}>
+              El número máximo de imágenes son 8
+            </ThemedText>
+          ) : null}
+        </>
       )}
 
       {errorMessage ? (

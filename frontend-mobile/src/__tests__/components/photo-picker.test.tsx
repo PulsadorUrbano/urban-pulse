@@ -7,6 +7,7 @@ import {
   SHEET_DISMISS_DELAY_MS,
   type PhotoPickerProps,
 } from '@/components/photo-picker';
+import { MAX_SELECTED_PHOTOS } from '@/hooks/use-photo-attachment';
 
 // El tema importa `global.css` (Tailwind) que Jest no puede transformar;
 // se sustituye por un módulo vacío solo en el entorno de test.
@@ -18,6 +19,12 @@ jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');
 
 const cameraPhotoUri = 'file:///photos/incident-1.jpg';
 const libraryPhotoUri = 'file:///photos/library-2.jpg';
+
+// Ocho URIs únicas para cubrir el límite máximo de fotos adjuntas.
+const eightPhotoUris = Array.from(
+  { length: MAX_SELECTED_PHOTOS },
+  (_, index) => `file:///photos/full-${index}.jpg`,
+);
 
 // Construye las props por defecto del componente y permite sobreescribirlas.
 async function renderPhotoPicker(overrides: Partial<PhotoPickerProps> = {}) {
@@ -46,27 +53,28 @@ describe('PhotoPicker', () => {
     jest.useRealTimers();
   });
 
-  it('en estado vacío muestra el botón "Subir imágenes" y el texto opcional, sin recuadro de añadir', async () => {
+  it('en estado vacío muestra el Pressable "Añadir imágenes" y el texto de invitación, sin los textos antiguos ni recuadro de añadir', async () => {
     await renderPhotoPicker();
 
-    // Sin fotos el recuadro discontinuo ya no existe: hay un botón a lo ancho
-    // y un texto secundario que aclara que las fotos son opcionales.
-    expect(screen.getByRole('button', { name: 'Subir imágenes' })).toBeOnTheScreen();
-    expect(
-      screen.getByText('Son totalmente opcionales, pero muy recomendables.'),
-    ).toBeOnTheScreen();
+    // Sin fotos solo hay un Pressable a lo ancho con "+" grande y un texto de
+    // invitación; ya no existen el botón "Subir imágenes" ni la aclaración
+    // "Son totalmente opcionales…".
+    expect(screen.getByLabelText('Añadir imágenes')).toBeOnTheScreen();
+    expect(screen.getByText('¿Desea añadir imágenes?')).toBeOnTheScreen();
+    expect(screen.queryByText('Subir imágenes')).not.toBeOnTheScreen();
+    expect(screen.queryByText('Son totalmente opcionales, pero muy recomendables.')).not.toBeOnTheScreen();
 
     // El recuadro de añadir solo se renderiza con ≥1 foto.
-    expect(screen.queryByText('Añadir imagen')).not.toBeOnTheScreen();
+    expect(screen.queryByLabelText('Añadir imagen')).not.toBeOnTheScreen();
     expect(screen.queryByText('Recomendado')).not.toBeOnTheScreen();
     expect(screen.queryAllByLabelText('Foto adjunta')).toHaveLength(0);
   });
 
-  it('al pulsar "Subir imágenes" abre la hoja con las opciones "Cámara" y "Galería"', async () => {
+  it('al pulsar "Añadir imágenes" abre la hoja con las opciones "Cámara" y "Galería"', async () => {
     const user = userEvent.setup();
     await renderPhotoPicker();
 
-    await user.press(screen.getByRole('button', { name: 'Subir imágenes' }));
+    await user.press(screen.getByLabelText('Añadir imágenes'));
 
     expect(screen.getByText('Elige la fuente')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Cámara' })).toBeOnTheScreen();
@@ -77,7 +85,7 @@ describe('PhotoPicker', () => {
     const user = userEvent.setup();
     const { props } = await renderPhotoPicker();
 
-    await user.press(screen.getByRole('button', { name: 'Subir imágenes' }));
+    await user.press(screen.getByLabelText('Añadir imágenes'));
     await user.press(screen.getByRole('button', { name: 'Cámara' }));
 
     // La hoja se cierra de inmediato, pero el picker nativo se lanza diferido
@@ -101,7 +109,7 @@ describe('PhotoPicker', () => {
     const user = userEvent.setup();
     const { props } = await renderPhotoPicker();
 
-    await user.press(screen.getByRole('button', { name: 'Subir imágenes' }));
+    await user.press(screen.getByLabelText('Añadir imágenes'));
     await user.press(screen.getByRole('button', { name: 'Galería' }));
 
     expect(screen.queryByText('Elige la fuente')).not.toBeOnTheScreen();
@@ -120,7 +128,7 @@ describe('PhotoPicker', () => {
     const user = userEvent.setup();
     const { props } = await renderPhotoPicker();
 
-    await user.press(screen.getByRole('button', { name: 'Subir imágenes' }));
+    await user.press(screen.getByLabelText('Añadir imágenes'));
     await user.press(screen.getByRole('button', { name: 'Galería' }));
 
     // Un instante antes del retardo el callback aún no debe haberse lanzado.
@@ -142,7 +150,7 @@ describe('PhotoPicker', () => {
     const user = userEvent.setup();
     const { props } = await renderPhotoPicker();
 
-    await user.press(screen.getByRole('button', { name: 'Subir imágenes' }));
+    await user.press(screen.getByLabelText('Añadir imágenes'));
     await user.press(screen.getByLabelText('Cerrar selector de fotos'));
 
     expect(screen.queryByText('Elige la fuente')).not.toBeOnTheScreen();
@@ -155,7 +163,7 @@ describe('PhotoPicker', () => {
     const user = userEvent.setup();
     const { props } = await renderPhotoPicker();
 
-    await user.press(screen.getByRole('button', { name: 'Subir imágenes' }));
+    await user.press(screen.getByLabelText('Añadir imágenes'));
     await user.press(screen.getByLabelText('Cerrar selector de fotos'));
 
     // Se avanza más allá del retardo de cierre: como no se eligió ningún
@@ -169,7 +177,7 @@ describe('PhotoPicker', () => {
     expect(props.onRemovePhoto).not.toHaveBeenCalled();
   });
 
-  it('con URIs renderiza una miniatura por foto, el recuadro de 120dp con "Recomendado" y "×" quita la foto correcta', async () => {
+  it('con URIs renderiza una miniatura por foto, el tile "+" de 120dp y "×" quita la foto correcta', async () => {
     const user = userEvent.setup();
     const { props } = await renderPhotoPicker({
       selectedPhotoUris: [cameraPhotoUri, libraryPhotoUri],
@@ -177,16 +185,17 @@ describe('PhotoPicker', () => {
 
     expect(screen.getAllByLabelText('Foto adjunta')).toHaveLength(2);
 
-    // El recuadro de añadir sigue disponible al final de la fila y conserva
-    // su tamaño cuadrado de 120dp (fuente única en PHOTO_TILE_SIZE).
+    // El tile de añadir sigue disponible al final de la fila y conserva su
+    // tamaño cuadrado de 120dp (fuente única en PHOTO_TILE_SIZE). Ahora es un
+    // único "+" sin los textos "Añadir imagen" / "Recomendado".
     const addTile = screen.getByLabelText('Añadir imagen');
     expect(addTile).toBeOnTheScreen();
     expect(addTile).toHaveStyle({ width: PHOTO_TILE_SIZE, height: PHOTO_TILE_SIZE });
-    expect(screen.getByText('Añadir imagen')).toBeOnTheScreen();
-    expect(screen.getByText('Recomendado')).toBeOnTheScreen();
+    expect(screen.queryByText('Añadir imagen')).not.toBeOnTheScreen();
+    expect(screen.queryByText('Recomendado')).not.toBeOnTheScreen();
 
-    // Con fotos adjuntas el estado vacío (botón a lo ancho) desaparece.
-    expect(screen.queryByRole('button', { name: 'Subir imágenes' })).not.toBeOnTheScreen();
+    // Con fotos adjuntas el estado vacío (Pressable "Añadir imágenes") desaparece.
+    expect(screen.queryByLabelText('Añadir imágenes')).not.toBeOnTheScreen();
 
     // El orden de los botones "×" sigue el de la lista: el segundo corresponde
     // a la foto de la galería.
@@ -199,7 +208,35 @@ describe('PhotoPicker', () => {
     expect(props.onRemovePhoto).toHaveBeenCalledWith(libraryPhotoUri);
   });
 
-  it('mientras procesa muestra el ActivityIndicator y deshabilita el botón "Subir imágenes"', async () => {
+  it('con fotos y isProcessingPhoto el tile "+" muestra el ActivityIndicator y queda deshabilitado', async () => {
+    const user = userEvent.setup();
+    await renderPhotoPicker({
+      selectedPhotoUris: [cameraPhotoUri],
+      isProcessingPhoto: true,
+    });
+
+    // El tile de añadir queda deshabilitado mientras se procesa: no debe abrir
+    // la hoja de selección de origen.
+    const addTile = screen.getByLabelText('Añadir imagen');
+    expect(addTile.props.accessibilityState.disabled).toBe(true);
+    expect(addTile).toBeDisabled();
+
+    // En el tile se muestra el ActivityIndicator en lugar del icono "+".
+    // RNTL v14 eliminó UNSAFE_getByType; se recorre el árbol raíz buscando el
+    // host nativo del ActivityIndicator (RCTActivityIndicatorView en iOS).
+    const root = screen.root;
+    expect(root).not.toBeNull();
+    const indicatorNodes = (root ?? screen.container).queryAll((instance) =>
+      instance.type.includes('ActivityIndicator'),
+    );
+    expect(indicatorNodes).toHaveLength(1);
+
+    await user.press(addTile);
+
+    expect(screen.queryByText('Elige la fuente')).not.toBeOnTheScreen();
+  });
+
+  it('mientras procesa en estado vacío muestra el ActivityIndicator y deshabilita el Pressable "Añadir imágenes"', async () => {
     const user = userEvent.setup();
     await renderPhotoPicker({ isProcessingPhoto: true });
 
@@ -212,15 +249,27 @@ describe('PhotoPicker', () => {
     );
     expect(indicatorNodes).toHaveLength(1);
 
-    // En estado vacío el spinner sustituye al texto del botón, que queda
+    // En estado vacío el spinner sustituye al "+", el Pressable queda
     // deshabilitado y no abre la hoja.
-    const uploadButton = screen.getByRole('button', { name: 'Subir imágenes' });
-    expect(uploadButton.props.accessibilityState.disabled).toBe(true);
-    expect(uploadButton).toBeDisabled();
+    const emptyStateButton = screen.getByLabelText('Añadir imágenes');
+    expect(emptyStateButton.props.accessibilityState.disabled).toBe(true);
+    expect(emptyStateButton).toBeDisabled();
 
-    await user.press(uploadButton);
+    await user.press(emptyStateButton);
 
     expect(screen.queryByText('Elige la fuente')).not.toBeOnTheScreen();
+  });
+
+  it('con 8 URIs muestra el mensaje de máximo y oculta el tile "+"', async () => {
+    await renderPhotoPicker({ selectedPhotoUris: eightPhotoUris });
+
+    // Al alcanzar el límite se informa en rojo y desaparece el recuadro de
+    // añadir de la fila.
+    expect(screen.getByText('El número máximo de imágenes son 8')).toBeOnTheScreen();
+    expect(screen.queryByLabelText('Añadir imagen')).not.toBeOnTheScreen();
+
+    // Las ocho miniaturas siguen presentes.
+    expect(screen.getAllByLabelText('Foto adjunta')).toHaveLength(MAX_SELECTED_PHOTOS);
   });
 
   it('muestra el mensaje de error bajo la fila de fotos', async () => {
@@ -234,11 +283,11 @@ describe('PhotoPicker', () => {
     const user = userEvent.setup();
     await renderPhotoPicker({ disabled: true });
 
-    const uploadButton = screen.getByRole('button', { name: 'Subir imágenes' });
-    expect(uploadButton.props.accessibilityState.disabled).toBe(true);
-    expect(uploadButton).toBeDisabled();
+    const emptyStateButton = screen.getByLabelText('Añadir imágenes');
+    expect(emptyStateButton.props.accessibilityState.disabled).toBe(true);
+    expect(emptyStateButton).toBeDisabled();
 
-    await user.press(uploadButton);
+    await user.press(emptyStateButton);
 
     expect(screen.queryByText('Elige la fuente')).not.toBeOnTheScreen();
   });

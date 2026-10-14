@@ -378,7 +378,11 @@ export default function NewIncidentScreen() {
 
           {/* Sección de fotos: adjuntos opcionales para la incidencia. */}
           <ThemedView className="gap-2">
-            <ThemedText type="smallBold">Imágenes subidas ({selectedPhotoUris.length}):</ThemedText>
+            {selectedPhotoUris.length > 0 ? (
+              <ThemedText type="smallBold">
+                Imágenes subidas ({selectedPhotoUris.length}):
+              </ThemedText>
+            ) : null}
             <PhotoPicker
               selectedPhotoUris={selectedPhotoUris}
               isProcessingPhoto={isProcessingPhoto}

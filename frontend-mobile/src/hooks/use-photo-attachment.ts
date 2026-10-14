@@ -3,6 +3,9 @@ import { useCallback, useRef, useState } from 'react';
 import { pickPhotoFromCamera, pickPhotoFromLibrary } from '@/services/photo-picker';
 import { storePhoto } from '@/services/storage.service';
 
+// Límite máximo de imágenes adjuntables por incidencia.
+export const MAX_SELECTED_PHOTOS = 8;
+
 export interface UsePhotoAttachmentResult {
   // URIs locales (`file://...`) de las fotos ya adjuntadas a la incidencia.
   selectedPhotoUris: string[];
@@ -29,11 +32,19 @@ export function usePhotoAttachment(): UsePhotoAttachmentResult {
   // así adjuntos simultáneos desde cámara y galería.
   const isProcessingPhotoRef = useRef(false);
 
+  // Ref espejo de la lista de URIs seleccionadas: permite leer su longitud más
+  // reciente dentro de `attachPhoto` sin quedar ligado a una clausura vieja,
+  // aplicando así el tope máximo tanto desde cámara como desde galería.
+  const selectedPhotoUrisRef = useRef<string[]>([]);
+
   // Punto común para cámara y galería: recibe el lanzador concreto del servicio
   // y orquesta el mismo flujo de carga, cancelación y error para ambos orígenes.
   const attachPhoto = useCallback(async (launchPhotoPicker: () => Promise<string | null>) => {
     // Si ya hay una foto en proceso, se ignora la nueva solicitud.
     if (isProcessingPhotoRef.current) return;
+
+    // Se ignora la solicitud si ya se alcanzó el tope máximo de imágenes.
+    if (selectedPhotoUrisRef.current.length >= MAX_SELECTED_PHOTOS) return;
 
     isProcessingPhotoRef.current = true;
     setIsProcessingPhoto(true);
@@ -47,6 +58,7 @@ export function usePhotoAttachment(): UsePhotoAttachmentResult {
 
       // Simula el guardado externo (con retardo) y añade la URI al final.
       await storePhoto(pickedPhotoUri);
+      selectedPhotoUrisRef.current = [...selectedPhotoUrisRef.current, pickedPhotoUri];
       setSelectedPhotoUris((currentUris) => [...currentUris, pickedPhotoUri]);
     } catch (error) {
       // Los servicios ya lanzan errores con mensaje amigable en español;
@@ -76,6 +88,9 @@ export function usePhotoAttachment(): UsePhotoAttachmentResult {
 
   // Elimina de la lista la foto cuya URI coincida con la indicada.
   const removePhoto = useCallback((uri: string) => {
+    selectedPhotoUrisRef.current = selectedPhotoUrisRef.current.filter(
+      (photoUri) => photoUri !== uri,
+    );
     setSelectedPhotoUris((currentUris) =>
       currentUris.filter((photoUri) => photoUri !== uri),
     );

@@ -1,7 +1,11 @@
 /// <reference types="jest" />
 import { act, renderHook } from '@testing-library/react-native';
 
-import { usePhotoAttachment } from '@/hooks/use-photo-attachment';
+import {
+  MAX_SELECTED_PHOTOS,
+  usePhotoAttachment,
+  UsePhotoAttachmentResult,
+} from '@/hooks/use-photo-attachment';
 import { pickPhotoFromCamera, pickPhotoFromLibrary } from '@/services/photo-picker';
 import { storePhoto } from '@/services/storage.service';
 
@@ -40,6 +44,10 @@ const storePhotoWithDelay = (uri: string): Promise<string> =>
 const cameraPhotoUri = 'file:///photos/incident-1.jpg';
 const libraryPhotoUri = 'file:///photos/library-2.jpg';
 
+// Genera `count` URIs de galería distintas para simular adjuntos repetidos.
+const buildLibraryPhotoUris = (count: number): string[] =>
+  Array.from({ length: count }, (_, index) => `file:///photos/limit-${index + 1}.jpg`);
+
 describe('usePhotoAttachment', () => {
   beforeEach(() => {
     mockedPickPhotoFromCamera.mockReset();
@@ -52,6 +60,27 @@ describe('usePhotoAttachment', () => {
     // Devuelve los timers reales por si algún test los había congelado.
     jest.useRealTimers();
   });
+
+  // Rellena la lista hasta `MAX_SELECTED_PHOTOS` adjuntando fotos desde la
+  // galería de forma secuencial y devuelve las URIs usadas para las aserciones.
+  const fillToCapacity = async (
+    result: { current: UsePhotoAttachmentResult },
+  ): Promise<string[]> => {
+    const photoUris = buildLibraryPhotoUris(MAX_SELECTED_PHOTOS);
+    let pickIndex = 0;
+    mockedPickPhotoFromLibrary.mockImplementation(async () => photoUris[pickIndex++]);
+
+    await act(async () => {
+      for (let index = 0; index < MAX_SELECTED_PHOTOS; index += 1) {
+        const attachPromise = result.current.attachPhotoFromLibrary();
+        await Promise.resolve();
+        await jest.advanceTimersByTimeAsync(SIMULATED_STORAGE_DELAY_MS);
+        await attachPromise;
+      }
+    });
+
+    return photoUris;
+  };
 
   it('estado inicial: sin fotos, sin procesamiento y sin errores', async () => {
     const { result } = await renderHook(() => usePhotoAttachment());
@@ -228,6 +257,81 @@ describe('usePhotoAttachment', () => {
     expect(mockedPickPhotoFromCamera).toHaveBeenCalledTimes(1);
     expect(mockedStorePhoto).toHaveBeenCalledTimes(1);
     expect(result.current.selectedPhotoUris).toEqual([cameraPhotoUri]);
+    expect(result.current.isProcessingPhoto).toBe(false);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Casos del tope máximo de fotos adjuntables (MAX_SELECTED_PHOTOS).
+  // ---------------------------------------------------------------------------
+
+  it('adjunta hasta MAX_SELECTED_PHOTOS fotos sin superar el tope', async () => {
+    const { result } = await renderHook(() => usePhotoAttachment());
+
+    jest.useFakeTimers();
+
+    const photoUris = await fillToCapacity(result);
+
+    expect(result.current.selectedPhotoUris).toHaveLength(MAX_SELECTED_PHOTOS);
+    expect(result.current.selectedPhotoUris).toEqual(photoUris);
+    expect(mockedPickPhotoFromLibrary).toHaveBeenCalledTimes(MAX_SELECTED_PHOTOS);
+    expect(mockedStorePhoto).toHaveBeenCalledTimes(MAX_SELECTED_PHOTOS);
+    expect(result.current.isProcessingPhoto).toBe(false);
+  });
+
+  it('ignora un adjunto extra cuando ya se alcanzó MAX_SELECTED_PHOTOS', async () => {
+    const { result } = await renderHook(() => usePhotoAttachment());
+
+    jest.useFakeTimers();
+
+    await fillToCapacity(result);
+
+    const pickerCallsAtCapacity = mockedPickPhotoFromLibrary.mock.calls.length;
+    const storageCallsAtCapacity = mockedStorePhoto.mock.calls.length;
+
+    // Intento posterior al tope: debe descartarse antes de abrir el picker.
+    await act(async () => {
+      await result.current.attachPhotoFromLibrary();
+    });
+
+    expect(result.current.selectedPhotoUris).toHaveLength(MAX_SELECTED_PHOTOS);
+    expect(mockedPickPhotoFromLibrary).toHaveBeenCalledTimes(pickerCallsAtCapacity);
+    expect(mockedStorePhoto).toHaveBeenCalledTimes(storageCallsAtCapacity);
+    expect(result.current.isProcessingPhoto).toBe(false);
+  });
+
+  it('removePhoto libera un hueco y permite volver a adjuntar hasta el tope', async () => {
+    const { result } = await renderHook(() => usePhotoAttachment());
+
+    jest.useFakeTimers();
+
+    const photoUris = await fillToCapacity(result);
+
+    jest.useRealTimers();
+
+    // Elimina una foto: la cuenta baja por debajo del tope.
+    await act(async () => {
+      result.current.removePhoto(photoUris[0]);
+    });
+
+    expect(result.current.selectedPhotoUris).toHaveLength(MAX_SELECTED_PHOTOS - 1);
+    expect(result.current.selectedPhotoUris).not.toContain(photoUris[0]);
+
+    // Adjunta una foto nueva: el hueco liberado permite volver al tope.
+    const replacementUri = 'file:///photos/replacement-9.jpg';
+    mockedPickPhotoFromLibrary.mockResolvedValueOnce(replacementUri);
+
+    jest.useFakeTimers();
+
+    await act(async () => {
+      const attachPromise = result.current.attachPhotoFromLibrary();
+      await Promise.resolve();
+      await jest.advanceTimersByTimeAsync(SIMULATED_STORAGE_DELAY_MS);
+      await attachPromise;
+    });
+
+    expect(result.current.selectedPhotoUris).toHaveLength(MAX_SELECTED_PHOTOS);
+    expect(result.current.selectedPhotoUris).toContain(replacementUri);
+    expect(result.current.selectedPhotoUris).not.toContain(photoUris[0]);
     expect(result.current.isProcessingPhoto).toBe(false);
   });
 });

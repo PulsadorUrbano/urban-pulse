@@ -154,6 +154,17 @@ The primary/parent agent acts as the supreme orchestrator and ensures all child 
    - *Success:* Notifies `planner`.
 5. **Cycle Repeat:** `planner` marks the subtask as completed `[x]` in `docs/` and triggers the next item until the entire feature is completed.
 
+### Parallel execution (independent subtasks):
+
+To keep momentum, the orchestrator may run independent subtasks in parallel instead of strictly sequential:
+
+- **Split the feature into small subtasks**, each one touching **disjoint files** (e.g. one for the hook, one for the component, one for the screen, one per test file).
+- While `compiler-checker` verifies a finished subtask (or `tester` authors its test), the `developer` may **implement another subtask in parallel**, as long as it does not read/write the files still being verified/tested.
+- `compiler-checker` and `tester` may likewise advance other subtasks in parallel with the `developer`.
+- **Hard rule:** never let two agents edit the same file concurrently. Parallel subtasks must have disjoint file sets.
+- During parallel authoring, each verifier may run **scoped** checks (e.g. `npx jest <file> --ci`, or `npx tsc --noEmit` after its own files) to avoid failing on the not-yet-finished subtasks.
+- **Always finish** with a full run of `npx expo lint`, `npx tsc --noEmit` and `npx jest --ci` over the whole project before declaring the feature done.
+
 ## Workflow
 
 - **Plan before non-trivial tasks:** Propose a step-by-step plan and wait for my explicit approval before making changes.
