@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import { LOCATIONS_ENDPOINT, createLocation } from './location.service';
+import { LOCATIONS_ENDPOINT, createLocation } from '@/services/location.service';
 import type { Location, LocationCoordinates } from '@/types/location';
 
 const coordinates: LocationCoordinates = {

@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 import { act, renderHook } from '@testing-library/react-native';
 
-import { useCreateIncident } from './use-create-incident';
+import { useCreateIncident } from '@/hooks/use-create-incident';
 import { createIncident } from '@/services/incident.service';
 import type { CreateIncidentInput, Incident } from '@/types/incident';
 

@@ -6,7 +6,7 @@ import {
   getIncidentWarnings,
   hasValidationErrors,
   validateIncidentInput,
-} from './incident-validator';
+} from '@/utils/incident-validator';
 import type { CreateIncidentInput } from '@/types/incident';
 
 // Construye un input válido base para reutilizarlo en cada caso.

@@ -1,0 +1,355 @@
+/// <reference types="jest" />
+import { act, render, screen, userEvent } from '@testing-library/react-native';
+import { router } from 'expo-router';
+
+import NewIncidentScreen from '@/app/incidents/new';
+import { SHEET_DISMISS_DELAY_MS } from '@/components/photo-picker';
+import { fetchCategories } from '@/services/category.service';
+import {
+  areLocationServicesEnabled,
+  getCurrentCoordinates,
+  requestLocationPermission,
+} from '@/services/device-location';
+import { createImage } from '@/services/image.service';
+import { createIncident } from '@/services/incident.service';
+import { createLocation } from '@/services/location.service';
+import { pickPhotoFromCamera, pickPhotoFromLibrary } from '@/services/photo-picker';
+import { storePhoto } from '@/services/storage.service';
+import type { Incident } from '@/types/incident';
+import type { IncidentImage } from '@/types/incident-image';
+import type { Location, LocationCoordinates } from '@/types/location';
+
+// ---------------------------------------------------------------------------
+// Test de INTEGRACIÓN de la pantalla de nueva incidencia: se monta el
+// componente real y solo se sustituyen los límites externos (servicios de
+// red, del dispositivo y navegación). Los hooks, la validación y el flujo de
+// envío corren con su implementación real.
+// ---------------------------------------------------------------------------
+
+// El tema importa `global.css` (Tailwind) que Jest no puede transformar;
+// se sustituye por un módulo vacío solo en el entorno de test.
+jest.mock('@/global.css', () => ({}));
+
+// Evita cargar la fuente del icono en el entorno de test (mismo patrón
+// que `photo-picker.test.tsx` y `location-toggle.test.tsx`).
+jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');
+
+// La pantalla solo usa `router.back()` desde la confirmación.
+jest.mock('expo-router', () => ({
+  router: {
+    back: jest.fn(),
+    push: jest.fn(),
+    replace: jest.fn(),
+  },
+}));
+
+// Insets del área segura a cero; el resto del módulo (SafeAreaView nativo)
+// se conserva real vía `requireActual`, igual que hace el mock oficial.
+jest.mock('react-native-safe-area-context', () => {
+  const safeAreaContext = jest.requireActual(
+    'react-native-safe-area-context',
+  ) as Record<string, unknown>;
+
+  return {
+    ...safeAreaContext,
+    useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+    useSafeAreaFrame: () => ({ x: 0, y: 0, width: 320, height: 640 }),
+  };
+});
+
+jest.mock('@/services/incident.service', () => ({
+  createIncident: jest.fn(),
+}));
+
+jest.mock('@/services/image.service', () => ({
+  createImage: jest.fn(),
+}));
+
+jest.mock('@/services/location.service', () => ({
+  createLocation: jest.fn(),
+}));
+
+// Ubicación del dispositivo: en los defaults felices los servicios están
+// activos, el permiso está concedido y las coordenadas son fijas.
+jest.mock('@/services/device-location', () => ({
+  areLocationServicesEnabled: jest.fn(),
+  requestLocationPermission: jest.fn(),
+  getCurrentCoordinates: jest.fn(),
+}));
+
+jest.mock('@/services/photo-picker', () => ({
+  pickPhotoFromCamera: jest.fn(),
+  pickPhotoFromLibrary: jest.fn(),
+}));
+
+// Almacenamiento simulado: resuelve de inmediato, sin el retardo real.
+jest.mock('@/services/storage.service', () => ({
+  storePhoto: jest.fn(),
+}));
+
+// Catálogo de categorías: vacío para que el test sea hermético (sin red).
+jest.mock('@/services/category.service', () => ({
+  fetchCategories: jest.fn(),
+}));
+
+// Versiones tipadas de los mocks para configurar respuestas y verificar llamadas.
+const mockedCreateIncident = createIncident as jest.MockedFunction<typeof createIncident>;
+const mockedCreateImage = createImage as jest.MockedFunction<typeof createImage>;
+const mockedCreateLocation = createLocation as jest.MockedFunction<typeof createLocation>;
+const mockedFetchCategories = fetchCategories as jest.MockedFunction<typeof fetchCategories>;
+const mockedAreLocationServicesEnabled = areLocationServicesEnabled as jest.MockedFunction<
+  typeof areLocationServicesEnabled
+>;
+const mockedRequestLocationPermission = requestLocationPermission as jest.MockedFunction<
+  typeof requestLocationPermission
+>;
+const mockedGetCurrentCoordinates = getCurrentCoordinates as jest.MockedFunction<
+  typeof getCurrentCoordinates
+>;
+const mockedPickPhotoFromCamera = pickPhotoFromCamera as jest.MockedFunction<
+  typeof pickPhotoFromCamera
+>;
+const mockedPickPhotoFromLibrary = pickPhotoFromLibrary as jest.MockedFunction<
+  typeof pickPhotoFromLibrary
+>;
+const mockedStorePhoto = storePhoto as jest.MockedFunction<typeof storePhoto>;
+
+// URI local fija que devuelve el picker de Galería en el test.
+const libraryPhotoUri = 'file:///photos/library-2.jpg';
+
+// Coordenadas fijas resueltas por el dispositivo en el entorno de test.
+const deviceCoordinates: LocationCoordinates = {
+  latitude: 40.4168,
+  longitude: -3.7038,
+  accuracy: 10,
+};
+
+const createdLocation: Location = {
+  ...deviceCoordinates,
+  id: 'loc-1',
+  createdAt: '2026-10-13T10:00:00.000Z',
+};
+
+const createdIncident: Incident = {
+  id: '42',
+  title: 'Bache en la avenida principal',
+  description: 'Hay un bache profundo que pone en riesgo a los vehículos.',
+  status: 'reported',
+  priority: null,
+  createdAt: '2026-10-13T10:05:00.000Z',
+  civicId: null,
+  locationId: createdLocation.id,
+  urbanAssetId: null,
+  categoryId: null,
+  category: null,
+  departmentId: null,
+  teamId: null,
+  technicianId: null,
+};
+
+const createdIncidentImage: IncidentImage = {
+  id: 'img-1',
+  url: libraryPhotoUri,
+  incidentId: createdIncident.id,
+};
+
+// Monta la pantalla real con los límites externos ya simulados.
+async function renderScreen() {
+  return render(<NewIncidentScreen />);
+}
+
+// Rellena título y descripción válidos, evitando así los avisos de envío.
+async function fillValidIncidentForm(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(screen.getByLabelText('Título de la incidencia'), createdIncident.title);
+  await user.type(
+    screen.getByLabelText('Descripción de la incidencia'),
+    createdIncident.description,
+  );
+}
+
+// Abre la hoja del PhotoPicker, elige "Galería" y espera a que la foto
+// aparezca como miniatura adjunta (el tile "Foto adjunta").
+async function attachPhotoFromLibrary(user: ReturnType<typeof userEvent.setup>) {
+  // Sin fotos adjuntas ya no existe el recuadro "Añadir imagen": la hoja se
+  // abre desde el botón a lo ancho "Subir imágenes" del estado vacío.
+  await user.press(screen.getByRole('button', { name: 'Subir imágenes' }));
+  await user.press(screen.getByRole('button', { name: 'Galería' }));
+
+  // La hoja difiere el lanzamiento del picker nativo `SHEET_DISMISS_DELAY_MS`
+  // ms para no chocar con la animación de cierre del Modal (expo/expo#8213).
+  // Se avanza ese retardo dentro de `act` porque el lanzamiento arranca de
+  // forma síncrona el flujo de adjunto (estado de procesamiento del hook).
+  // RNTL v14 envuelve el callback de `act` en una función async: hay que
+  // AWAIT el act para cerrar su scope (si no, React advierte de act sin await
+  // y las actualizaciones de estado siguientes se pierden).
+  await act(async () => {
+    jest.advanceTimersByTime(SHEET_DISMISS_DELAY_MS);
+  });
+
+  await screen.findByLabelText('Foto adjunta');
+}
+
+describe('NewIncidentScreen', () => {
+  beforeEach(() => {
+    // userEvent.press simula una pulsación con duración; los fake timers la aceleran.
+    jest.useFakeTimers();
+
+    mockedCreateIncident.mockReset();
+    mockedCreateImage.mockReset();
+    mockedCreateLocation.mockReset();
+    mockedFetchCategories.mockReset();
+    mockedAreLocationServicesEnabled.mockReset();
+    mockedRequestLocationPermission.mockReset();
+    mockedGetCurrentCoordinates.mockReset();
+    mockedPickPhotoFromCamera.mockReset();
+    mockedPickPhotoFromLibrary.mockReset();
+    mockedStorePhoto.mockReset();
+
+    // Defaults felices de todos los límites externos: catálogo vacío,
+    // ubicación resuelta y envío correcto.
+    mockedFetchCategories.mockResolvedValue([]);
+    mockedCreateIncident.mockResolvedValue(createdIncident);
+    mockedCreateImage.mockResolvedValue(createdIncidentImage);
+    mockedCreateLocation.mockResolvedValue(createdLocation);
+    mockedAreLocationServicesEnabled.mockResolvedValue(true);
+    mockedRequestLocationPermission.mockResolvedValue(true);
+    mockedGetCurrentCoordinates.mockResolvedValue(deviceCoordinates);
+    mockedPickPhotoFromCamera.mockResolvedValue(libraryPhotoUri);
+    mockedPickPhotoFromLibrary.mockResolvedValue(libraryPhotoUri);
+    // Sin retardo real: el "guardado" de la foto se resuelve de inmediato.
+    mockedStorePhoto.mockResolvedValue(libraryPhotoUri);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('renderiza la sección de fotos y los controles fijos de envío y ubicación', async () => {
+    await renderScreen();
+
+    // Estado vacío de fotos: encabezado con contador a cero, botón a lo ancho
+    // "Subir imágenes" y el texto secundario opcional. El recuadro discontinuo
+    // ("Añadir imagen" / "Recomendado") solo aparece con ≥1 foto.
+    expect(screen.getByText('Imágenes subidas (0):')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Subir imágenes' })).toBeOnTheScreen();
+    expect(
+      screen.getByText('Son totalmente opcionales, pero muy recomendables.'),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText('Recomendado')).not.toBeOnTheScreen();
+
+    // Footer fijo en fila: Enviar (flex-1) y el toggle de ubicación a su
+    // derecha (activado por defecto), ya sin FAB absoluto.
+    expect(screen.getByLabelText('Enviar incidencia')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Desactivar ubicación')).toBeOnTheScreen();
+  });
+
+  it('al adjuntar una foto y enviar, crea la incidencia y guarda la imagen vinculada sin aviso de fotos', async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+    await attachPhotoFromLibrary(user);
+
+    // La URI elegida aparece como miniatura antes de enviar y el display
+    // cambia al de fotos: encabezado con contador actualizado y el recuadro
+    // de añadir con su etiqueta "Recomendado".
+    expect(screen.getByLabelText('Foto adjunta')).toBeOnTheScreen();
+    expect(screen.getByText('Imágenes subidas (1):')).toBeOnTheScreen();
+    expect(screen.getByText('Recomendado')).toBeOnTheScreen();
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    // Pantalla de confirmación tras el registro correcto.
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+
+    // La incidencia se crea con la ubicación resuelta por el mock del dispositivo.
+    expect(mockedCreateIncident).toHaveBeenCalledTimes(1);
+    expect(mockedCreateIncident).toHaveBeenCalledWith({
+      title: createdIncident.title,
+      description: createdIncident.description,
+      categoryId: null,
+      category: null,
+      locationId: createdLocation.id,
+    });
+
+    // Cada URI adjunta se persiste vinculada a la incidencia recién creada.
+    expect(mockedCreateImage).toHaveBeenCalledTimes(1);
+    expect(mockedCreateImage).toHaveBeenCalledWith({
+      url: libraryPhotoUri,
+      incidentId: createdIncident.id,
+    });
+
+    // Sin fallos de imágenes no aparece ningún aviso de fotos.
+    expect(screen.queryByText(/no pudo guardarse/)).not.toBeOnTheScreen();
+    expect(screen.queryByText(/no pudieron guardarse/)).not.toBeOnTheScreen();
+  });
+
+  it('si falla el guardado de la imagen, la confirmación muestra el aviso en español', async () => {
+    mockedCreateImage.mockRejectedValue(new Error('No se pudo guardar la imagen.'));
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+    await attachPhotoFromLibrary(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+
+    // La incidencia sí se creó; solo la imagen falló, con aviso no bloqueante.
+    expect(mockedCreateIncident).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByText('La incidencia se registró, pero 1 foto no pudo guardarse.'),
+    ).toBeOnTheScreen();
+  });
+
+  it('al enviar sin fotos no guarda ninguna imagen ni muestra aviso de fotos', async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+
+    expect(mockedCreateIncident).toHaveBeenCalledTimes(1);
+    expect(mockedCreateImage).not.toHaveBeenCalled();
+    expect(screen.queryByText(/no pudo guardarse/)).not.toBeOnTheScreen();
+    expect(screen.queryByText(/no pudieron guardarse/)).not.toBeOnTheScreen();
+  });
+
+  it('si falla la creación de la incidencia muestra el banner de error y no llega a la confirmación', async () => {
+    mockedCreateIncident.mockRejectedValue(
+      new Error('No se pudo registrar la incidencia. Inténtalo de nuevo más tarde.'),
+    );
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(
+      await screen.findByText('No se pudo registrar la incidencia. Inténtalo de nuevo más tarde.'),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText('Incidencia registrada')).not.toBeOnTheScreen();
+    expect(mockedCreateImage).not.toHaveBeenCalled();
+  });
+
+  it('"Volver" en la confirmación navega hacia atrás', async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+    await screen.findByText('Incidencia registrada');
+
+    await user.press(screen.getByLabelText('Volver al inicio'));
+
+    expect(router.back).toHaveBeenCalledTimes(1);
+  });
+});

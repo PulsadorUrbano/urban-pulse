@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import { CATEGORIES_ENDPOINT, fetchCategories } from './category.service';
+import { CATEGORIES_ENDPOINT, fetchCategories } from '@/services/category.service';
 import type { Category } from '@/types/category';
 
 const categoriesFixture: Category[] = [

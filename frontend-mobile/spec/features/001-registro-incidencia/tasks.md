@@ -77,12 +77,31 @@ _Checklist accionable derivada del `plan.md`. Tareas pequeñas y concretas; marc
 - [x] Validar contra los nuevos criterios de aceptación de `spec.md`.
 - [x] Anotar la ampliación en `../../constitution/roadmap.md` (dentro de 001).
 
+## Fotos (ampliación)
+
+- [x] **T1 · Contrato y mock** — Crear `src/types/incident-image.ts` con `IncidentImage { id: string; url: string; incidentId: string }` (más `CreateIncidentImageInput { url: string; incidentId: string }`, patrón de `Location`) y añadir la colección `images: []` **vacía** en `db.json` (**sin seeds** sobre incidencias existentes). `Incident` y `CreateIncidentInput` **no cambian**. Hecha y verificada con `npx tsc --noEmit` + `npx expo lint`.
+- [x] **T2 · Dependencia y configuración** — Instalar `expo-image-picker@~57.0.20` con `npx expo install` (SDK 57; **docs versionadas consultadas antes de codificar**) y declarar su plugin en `app.json` con `photosPermission` y `cameraPermission`. Realizada y verificada: `npx expo lint` + `npx tsc --noEmit` + `npx expo-doctor` OK, sin desajustes nuevos.
+- [x] **T3 · Servicios** — `src/services/image.service.ts` con `createImage()` (`POST /images`, reutilizando `fetchWithTimeout()`) y `src/services/storage.service.ts` con `storePhoto(uri)` (retardo simulado con `setTimeout` para probar estados de carga/error sin red). Hecha y verificada: `npx expo lint` + `npx tsc --noEmit` OK; tests colocados `image.service.test.ts` y `storage.service.test.ts` (por `tester`); suite completa 11 suites / 77 tests en verde.
+- [x] **T4 · Capa de dispositivo** — `src/services/photo-picker.ts`: permisos de cámara + `launchCameraAsync`/`launchImageLibraryAsync`; **cancelar → `null` sin error**; **permiso denegado → error amigable**. Implementada y verificada: `npx expo lint` + `npx tsc --noEmit` OK; tests colocados `photo-picker.test.ts` (8 tests con mock de `expo-image-picker`); suite completa 12 suites / 85 tests en verde.
+- [x] **T5 · Hook de adjuntos** — `src/hooks/use-photo-attachment.ts`: `photoUris`, `isProcessing`, `errorMessage`, `attachFromCamera()`, `attachFromLibrary()`, `removeImage(uri)`. Implementado; lint+tsc OK; tests colocados `use-photo-attachment.test.tsx` (8 tests); suite completa 13 suites / 93 tests en verde.
+- [x] **T6 · Componente de fotos** — `src/components/photo-picker.tsx`: `FlatList` horizontal de tiles cuadrados (`PHOTO_TILE_SIZE` en `src/constants/theme.ts`), miniatura con `expo-image` + botón "×" + overlay de carga; **recuadro discontinuo** al final (icono compuesto Material `image` + insignia `arrow-upward`, textos "Añadir imagen"/"Recomendado") y hoja inferior Cámara/Galería con `Modal` nativo (patrón `CategoryPicker`). Implementado `src/components/photo-picker.tsx`; lint+tsc OK; tests colocados `photo-picker.test.tsx` (9 tests); suite completa 14 suites / 102 tests en verde.
+- [x] **T7 · Integración en el formulario** — `src/app/incidents/new.tsx`: sección de foto bajo Descripción y sobre el botón Enviar; **footer fijo** (safe-area aware) con el botón Enviar y **FAB de ubicación fijo** en capa superior (`zIndex`/`elevation`); padding inferior reservado en el `ScrollView`; envío `createIncident()` → por cada URI, `storePhoto(uri)` + `createImage({ url, incidentId })`; fallo de imagen → incidencia registrada + aviso no bloqueante en la pantalla de confirmación. Hecha y verificada: integrada en `src/app/incidents/new.tsx` (sección de fotos, footer/FAB fijos, envío con `createImage` por URI y aviso degradado); lint+tsc OK; test de integración `new-incident-screen.test.tsx` (6 tests); suite completa 15 suites / 108 tests en verde.
+- [x] Escribir tests en `src/__tests__/` por `tester`: `src/__tests__/services/image.service.test.ts`, `src/__tests__/services/storage.service.test.ts` (fake timers), `src/__tests__/services/photo-picker.test.ts` (mock de `expo-image-picker`), `src/__tests__/hooks/use-photo-attachment.test.tsx`, `src/__tests__/components/photo-picker.test.tsx` y el test de la pantalla `src/__tests__/app/incidents/new-incident-screen.test.tsx` (integración del flujo de envío con fotos; fuera de `src/app/` para no entrar en el bundle de Expo Router).
+- [x] Ejecutar y pasar `npx expo lint` + `npx tsc --noEmit` + tests (`npx jest --ci`): 15 suites / 108 tests en verde.
+- [x] Validar contra los nuevos criterios de aceptación de `spec.md`.
+- [x] Anotar la ampliación en `../../constitution/roadmap.md` (dentro de 001).
+- [x] **Ajuste de vista (2026-10-14)** — Estados de la sección de fotos: **sin imágenes**, botón a lo ancho **"Subir imágenes"** (mismo color que Enviar, abre la hoja Cámara/Galería) + texto secundario **"Son totalmente opcionales, pero muy recomendables."** y **sin recuadro discontinuo**; **con ≥1 imagen**, se mantiene la fila de miniaturas con el recuadro discontinuo "Añadir imagen"/"Recomendado" al final; título de sección **"Imágenes subidas (n):"** con contador dinámico. La lógica (hoja inferior, `SHEET_DISMISS_DELAY_MS`, envío) no cambió. Verificado: `npx expo lint` + `npx tsc --noEmit` OK y `npx jest --ci` con 15 suites / 110 tests en verde.
+
+> Ampliación de fotos **completada**: T1–T7 y las pruebas/cierre están marcadas y verificadas
+> (developer → compiler-checker → tester).
+
 ## Pendientes conocidos (detalles menores de UI)
 
 - [ ] En el control de categoría con selección (`nombre ×`), separar un poco más el nombre y el símbolo "×".
 - [ ] Igualar el padding horizontal del control de categoría: el lado derecho (junto a la "×") tiene menos padding que el izquierdo.
 - [ ] Mejorar visualmente el botón de ubicación. Que se vea un círculo debajo del logo de la ubicación un poco grisáceo como los botones. 
 - [ ] Barra diagonal al desactivar ubicación que se vea un poco más fina
+- [ ] Si es una categoría personalizada, no puede superar los 15 caracteres
 
 ## Mantenimiento (checklist recurrente)
 
@@ -90,13 +109,18 @@ _Checklist accionable derivada del `plan.md`. Tareas pequeñas y concretas; marc
 - [ ] Mantener sincronizados los criterios de `spec.md` con los cambios de comportamiento del formulario.
 - [ ] Al cambiar el contrato `Location`, actualizar `src/types/location.ts`, la colección `locations` de `db.json` y los tests colocados.
 - [ ] Mantener `getIncidentWarnings` como única fuente de avisos previos al envío (descripción + ubicación).
+- [ ] Al cambiar el contrato `IncidentImage`, actualizar `src/types/incident-image.ts`, la colección `images` de `db.json` y los tests colocados.
+- [ ] Si cambia la API de `expo-image-picker` usada en `photo-picker.ts`, revisar los tests que la mockean (`jest.mock('expo-image-picker')`).
 
 ## Nota
 
 > La feature **001** está implementada y verificada de extremo a extremo: registro base +
 > **categoría opcional** + **rediseño UI** (control en Descripción) + **ajustes de UI (categoría)** +
-> **ubicación (ampliación)**.
-> `npx tsc --noEmit`, `npx expo lint` y los tests (`jest`, 9 suites / 69 tests) pasan en verde.
+> **ubicación (ampliación)** + **fotos (ampliación)**.
+> `npx tsc --noEmit`, `npx expo lint` y los tests (`jest`, 15 suites / 108 tests) pasan en verde.
 >
 > La sección **"Ubicación (ampliación)"** está **implementada y verificada**
 > (developer → compiler-checker → tester).
+>
+> La sección **"Fotos (ampliación)"** está **completada y verificada**: T1–T7 y las
+> pruebas/cierre están terminadas (developer → compiler-checker → tester).

@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 import { renderHook, waitFor } from '@testing-library/react-native';
 
-import { useCategories } from './use-categories';
+import { useCategories } from '@/hooks/use-categories';
 import { fetchCategories } from '@/services/category.service';
 import type { Category } from '@/types/category';
 

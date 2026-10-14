@@ -5,7 +5,7 @@ import {
   areLocationServicesEnabled,
   getCurrentCoordinates,
   requestLocationPermission,
-} from './device-location';
+} from '@/services/device-location';
 
 // Mockea el módulo nativo de ubicación para controlar permisos, servicios y posiciones.
 jest.mock('expo-location', () => ({

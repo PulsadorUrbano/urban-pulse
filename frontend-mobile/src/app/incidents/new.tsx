@@ -6,7 +6,7 @@ import {
   Linking,
   Pressable,
   ScrollView,
-  StyleSheet,
+  Text,
   TextInput,
   View,
 } from 'react-native';
@@ -14,18 +14,21 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { CategoryPicker } from '@/components/category-picker';
 import { LOCATION_TOGGLE_SIZE, LocationToggle } from '@/components/location-toggle';
+import { PhotoPicker } from '@/components/photo-picker';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useCategories } from '@/hooks/use-categories';
 import { useCreateIncident } from '@/hooks/use-create-incident';
 import { useLocationPreference } from '@/hooks/use-location-preference';
+import { usePhotoAttachment } from '@/hooks/use-photo-attachment';
 import { useTheme } from '@/hooks/use-theme';
 import {
   areLocationServicesEnabled,
   getCurrentCoordinates,
   requestLocationPermission,
 } from '@/services/device-location';
+import { createImage } from '@/services/image.service';
 import { createLocation } from '@/services/location.service';
 import type { CreateIncidentInput, Incident } from '@/types/incident';
 import {
@@ -43,6 +46,14 @@ export default function NewIncidentScreen() {
   const { isSubmitting, errorMessage, submitIncident } = useCreateIncident();
   const { isLocationEnabled, toggleLocation } = useLocationPreference();
   const {
+    selectedPhotoUris,
+    isProcessingPhoto,
+    errorMessage: photoErrorMessage,
+    attachPhotoFromCamera,
+    attachPhotoFromLibrary,
+    removePhoto,
+  } = usePhotoAttachment();
+  const {
     categories,
     isLoading: isCategoriesLoading,
     errorMessage: categoriesErrorMessage,
@@ -56,9 +67,12 @@ export default function NewIncidentScreen() {
   const [validationErrors, setValidationErrors] = useState<IncidentValidationErrors>({});
   const [createdIncident, setCreatedIncident] = useState<Incident | null>(null);
   const [locationNotice, setLocationNotice] = useState<string | null>(null);
+  const [photoNotice, setPhotoNotice] = useState<string | null>(null);
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
 
-  const isSubmitDisabled = isSubmitting || isResolvingLocation;
+  // No se permite enviar mientras se resuelve la ubicación, se persiste la
+  // incidencia o se está guardando una foto adjunta.
+  const isSubmitDisabled = isSubmitting || isResolvingLocation || isProcessingPhoto;
 
   // Construye el payload de categoría según la selección activa: una categoría
   // del catálogo, una categoría personalizada ("Otros") o ninguna.
@@ -89,8 +103,8 @@ export default function NewIncidentScreen() {
     setCustomCategory('');
   };
 
-  // Envía la incidencia con la ubicación indicada y conserva el aviso asociado
-  // para mostrarlo en la pantalla de confirmación.
+  // Envía la incidencia con la ubicación indicada y conserva los avisos
+  // asociados (ubicación y fotos) para mostrarlos en la pantalla de confirmación.
   const submitWithLocation = async (locationId: string | null, notice: string | null = null) => {
     const incident = await submitIncident({
       title,
@@ -99,10 +113,34 @@ export default function NewIncidentScreen() {
       locationId,
     });
 
-    if (incident) {
-      setLocationNotice(notice);
-      setCreatedIncident(incident);
+    if (!incident) {
+      return;
     }
+
+    setLocationNotice(notice);
+
+    // Persiste cada foto adjunta vinculada a la incidencia recién creada. Las
+    // imágenes son independientes entre sí: se intentan guardar todas y solo se
+    // prepara un aviso no bloqueante si alguna (o todas) falla.
+    if (selectedPhotoUris.length > 0) {
+      const imageResults = await Promise.allSettled(
+        selectedPhotoUris.map((uri) => createImage({ url: uri, incidentId: incident.id })),
+      );
+
+      const rejectedImageCount = imageResults.filter(
+        (result) => result.status === 'rejected',
+      ).length;
+
+      if (rejectedImageCount > 0) {
+        const rejectedPhotoText =
+          rejectedImageCount === 1
+            ? '1 foto no pudo guardarse.'
+            : `${rejectedImageCount} fotos no pudieron guardarse.`;
+        setPhotoNotice(`La incidencia se registró, pero ${rejectedPhotoText}`);
+      }
+    }
+
+    setCreatedIncident(incident);
   };
 
   // Resuelve la ubicación según la preferencia, los servicios del dispositivo y
@@ -218,20 +256,26 @@ export default function NewIncidentScreen() {
   // Estado de confirmación: se muestra tras un registro correcto.
   if (createdIncident) {
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
-          <ThemedView style={styles.successContainer}>
-            <ThemedText type="subtitle" style={styles.successTitle}>
+      <ThemedView className="flex-1 flex-row justify-center">
+        <SafeAreaView className="flex-1 w-full" edges={['bottom', 'left', 'right']}>
+          <ThemedView className="flex-1 items-center justify-center gap-4 px-6">
+            <ThemedText type="subtitle" className="text-center">
               Incidencia registrada
             </ThemedText>
-            <ThemedText style={styles.centerText} themeColor="textSecondary">
+            <ThemedText className="text-center" themeColor="textSecondary">
               Tu incidencia se registró correctamente con estado{' '}
               <ThemedText type="smallBold">{createdIncident.status}</ThemedText>.
             </ThemedText>
 
             {locationNotice ? (
-              <ThemedText type="small" themeColor="textSecondary" style={styles.centerText}>
+              <ThemedText type="small" themeColor="textSecondary" className="text-center">
                 {locationNotice}
+              </ThemedText>
+            ) : null}
+
+            {photoNotice ? (
+              <ThemedText type="small" themeColor="textSecondary" className="text-center">
+                {photoNotice}
               </ThemedText>
             ) : null}
 
@@ -239,8 +283,10 @@ export default function NewIncidentScreen() {
               accessibilityRole="button"
               accessibilityLabel="Volver al inicio"
               onPress={() => router.back()}
-              style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
-              <ThemedView type="backgroundElement" style={styles.buttonInner}>
+              className="active:opacity-70 rounded-3xl">
+              <ThemedView
+                type="backgroundElement"
+                className="items-center justify-center rounded-3xl px-6 py-4">
                 <ThemedText type="smallBold">Volver</ThemedText>
               </ThemedView>
             </Pressable>
@@ -251,15 +297,24 @@ export default function NewIncidentScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ThemedView className="flex-1 flex-row justify-center">
+      <SafeAreaView className="flex-1 w-full" edges={['bottom', 'left', 'right']}>
+        <ScrollView
+          contentContainerClassName="gap-6 px-6 pt-6"
+          contentContainerStyle={{
+            // Reserva la altura del footer fijo para que no tape el contenido al
+            // final del scroll: paddings verticales del footer más la altura de
+            // su fila (el toggle de ubicación, LOCATION_TOGGLE_SIZE, es el
+            // elemento más alto).
+            paddingBottom: insets.bottom + Spacing.three + Spacing.two + LOCATION_TOGGLE_SIZE,
+          }}
+          keyboardShouldPersistTaps="handled">
           <ThemedText type="small" themeColor="textSecondary">
             Describe la incidencia urbana. El título es obligatorio y la descripción es opcional,
             aunque recomendable.
           </ThemedText>
 
-          <ThemedView style={styles.field}>
+          <ThemedView className="gap-2">
             <ThemedText type="smallBold">Título</ThemedText>
             <TextInput
               accessibilityLabel="Título de la incidencia"
@@ -268,19 +323,19 @@ export default function NewIncidentScreen() {
               placeholder="Ej. Bache en la calle principal"
               placeholderTextColor={theme.textSecondary}
               maxLength={INCIDENT_TITLE_MAX_LENGTH}
-              style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+              className="rounded-2xl border px-4 py-2 text-[16px]"
+              style={{ color: theme.text, borderColor: theme.backgroundSelected }}
             />
             {validationErrors.title ? (
-              <ThemedText type="small" style={styles.errorText}>
-                {validationErrors.title}
-              </ThemedText>
+              <Text className="text-sm font-medium text-[#d92d20]">{validationErrors.title}</Text>
             ) : null}
           </ThemedView>
 
-          <ThemedView style={styles.field}>
-            <ThemedText type="smallBold">Descripción (opcional)</ThemedText>
+          <ThemedView className="gap-2">
+            <ThemedText type="smallBold">Descripción</ThemedText>
             <ThemedView
-              style={[styles.descriptionContainer, { borderColor: theme.backgroundSelected }]}>
+              className="overflow-hidden rounded-2xl border"
+              style={{ borderColor: theme.backgroundSelected }}>
               <TextInput
                 accessibilityLabel="Descripción de la incidencia"
                 value={description}
@@ -290,10 +345,17 @@ export default function NewIncidentScreen() {
                 multiline
                 numberOfLines={6}
                 maxLength={INCIDENT_DESCRIPTION_MAX_LENGTH}
-                style={[styles.inputBorderless, styles.multilineInput, { color: theme.text }]}
+                className="min-h-[120px] px-4 py-2 text-[16px]"
+                style={[
+                  { color: theme.text },
+                  // `textAlignVertical` no tiene utility equivalente en
+                  // Tailwind/NativeWind (alinea el texto arriba en Android);
+                  // se mantiene como estilo inline.
+                  { textAlignVertical: 'top' },
+                ]}
               />
               {/* La categoría vive en la esquina inferior del campo de descripción. */}
-              <View style={styles.descriptionPickerRow}>
+              <View className="flex-row justify-end px-2 pb-2">
                 <CategoryPicker
                   categories={categories}
                   selectedCategoryId={selectedCategoryId}
@@ -308,30 +370,54 @@ export default function NewIncidentScreen() {
             </ThemedView>
 
             {validationErrors.category ? (
-              <ThemedText type="small" style={styles.errorText}>
+              <Text className="text-sm font-medium text-[#d92d20]">
                 {validationErrors.category}
-              </ThemedText>
+              </Text>
             ) : null}
           </ThemedView>
 
+          {/* Sección de fotos: adjuntos opcionales para la incidencia. */}
+          <ThemedView className="gap-2">
+            <ThemedText type="smallBold">Imágenes subidas ({selectedPhotoUris.length}):</ThemedText>
+            <PhotoPicker
+              selectedPhotoUris={selectedPhotoUris}
+              isProcessingPhoto={isProcessingPhoto}
+              errorMessage={photoErrorMessage}
+              onAttachFromCamera={attachPhotoFromCamera}
+              onAttachFromLibrary={attachPhotoFromLibrary}
+              onRemovePhoto={removePhoto}
+              disabled={isSubmitting || isResolvingLocation}
+            />
+          </ThemedView>
+
           {errorMessage ? (
-            <ThemedView type="backgroundElement" style={styles.errorBanner}>
-              <ThemedText type="small" style={styles.errorText}>
-                {errorMessage}
-              </ThemedText>
+            <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
+              <Text className="text-sm font-medium text-[#d92d20]">{errorMessage}</Text>
             </ThemedView>
           ) : null}
+        </ScrollView>
 
+        {/* Footer fijo en fila: botón Enviar a la izquierda (flex-1, nunca
+            solapa al toggle) y el toggle de ubicación a su derecha, ambos
+            centrados verticalmente y separados por gap-2. */}
+        <View
+          className="z-10 flex-row items-center gap-2 px-6 pt-2"
+          style={[
+            { paddingBottom: insets.bottom + Spacing.three },
+            // Tailwind/NativeWind no dispone de utility para `elevation`
+            // (sombra en Android); se mantiene inline junto al `z-10` del
+            // className para que el footer siga en la capa superior.
+            { elevation: 10 },
+          ]}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Enviar incidencia"
             disabled={isSubmitDisabled}
             onPress={handleSubmit}
-            style={({ pressed }) => [
-              styles.button,
-              (pressed || isSubmitDisabled) && styles.pressed,
-            ]}>
-            <ThemedView type="backgroundElement" style={styles.buttonInner}>
+            className={`flex-1 rounded-3xl active:opacity-70${isSubmitDisabled ? ' opacity-70' : ''}`}>
+            <ThemedView
+              type="backgroundElement"
+              className="items-center justify-center rounded-3xl px-6 py-4">
               {isSubmitting || isResolvingLocation ? (
                 <ActivityIndicator />
               ) : (
@@ -339,104 +425,16 @@ export default function NewIncidentScreen() {
               )}
             </ThemedView>
           </Pressable>
-        </ScrollView>
-      </SafeAreaView>
 
-      {/* FAB de ubicación: alterna si la incidencia se registra con posición. */}
-      <View style={[styles.locationToggleWrapper, { bottom: insets.bottom + Spacing.four }]}>
-        <LocationToggle
-          isLocationEnabled={isLocationEnabled}
-          onToggle={toggleLocation}
-          disabled={isSubmitDisabled}
-        />
-      </View>
+          {/* Toggle de ubicación dentro del footer (componente normal, sin
+              posicionamiento absoluto). */}
+          <LocationToggle
+            isLocationEnabled={isLocationEnabled}
+            onToggle={toggleLocation}
+            disabled={isSubmitDisabled}
+          />
+        </View>
+      </SafeAreaView>
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    width: '100%',
-  },
-  content: {
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
-    // Espacio extra para que el FAB de ubicación no tape el botón Enviar.
-    paddingBottom: LOCATION_TOGGLE_SIZE + Spacing.four + Spacing.four,
-    gap: Spacing.four,
-  },
-  field: {
-    gap: Spacing.two,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    fontSize: 16,
-  },
-  inputBorderless: {
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    fontSize: 16,
-  },
-  multilineInput: {
-    minHeight: 120,
-    textAlignVertical: 'top',
-  },
-  descriptionContainer: {
-    borderWidth: 1,
-    borderRadius: Spacing.three,
-    overflow: 'hidden',
-  },
-  descriptionPickerRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: Spacing.two,
-    paddingBottom: Spacing.two,
-  },
-  errorText: {
-    color: '#d92d20',
-  },
-  errorBanner: {
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.three,
-  },
-  button: {
-    borderRadius: Spacing.four,
-  },
-  buttonInner: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.four,
-    borderRadius: Spacing.four,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  locationToggleWrapper: {
-    position: 'absolute',
-    right: Spacing.four,
-  },
-  successContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.three,
-  },
-  successTitle: {
-    textAlign: 'center',
-  },
-  centerText: {
-    textAlign: 'center',
-  },
-});

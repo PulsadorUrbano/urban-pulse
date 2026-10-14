@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 import { render, screen, userEvent } from '@testing-library/react-native';
 
-import { CategoryPicker, type CategoryPickerProps } from './category-picker';
+import { CategoryPicker, type CategoryPickerProps } from '@/components/category-picker';
 import type { Category } from '@/types/category';
 
 // El tema importa `global.css` (Tailwind) que Jest no puede transformar;

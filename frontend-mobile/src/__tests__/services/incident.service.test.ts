@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import { INCIDENTS_ENDPOINT, createIncident } from './incident.service';
+import { INCIDENTS_ENDPOINT, createIncident } from '@/services/incident.service';
 import type { CreateIncidentInput, Incident } from '@/types/incident';
 
 // Payload de entrada con espacios extra a propósito para verificar el trim().

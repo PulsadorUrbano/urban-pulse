@@ -39,6 +39,14 @@
         {
           "locationWhenInUsePermission": "UrbanPulse necesita tu ubicación para registrar dónde ocurre la incidencia."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "UrbanPulse necesita acceder a tus fotos para adjuntar evidencia a la incidencia.",
+          "cameraPermission": "UrbanPulse necesita acceder a tu cámara para capturar la foto de la incidencia.",
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {

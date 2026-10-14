@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 import { render, screen, userEvent } from '@testing-library/react-native';
 
-import { LocationToggle } from './location-toggle';
+import { LocationToggle } from '@/components/location-toggle';
 
 // Evita cargar la fuente del icono en el entorno de test.
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');

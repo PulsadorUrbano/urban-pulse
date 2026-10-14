@@ -110,7 +110,7 @@ npm run mock
   - PascalCase for React components (`Button.tsx`)
   - camelCase for hooks (`useLocation.ts`), functions, and variables. 
   - Routes inside `src/app/` follow kebab-case or Expo Router file conventions (`[id].tsx`, `_layout.tsx`)
-- **Test Placement:** Colocate tests side-by-side with source files using `.test.ts` / `.test.tsx` (e.g., `Button.tsx` + `Button.test.tsx`, `useAuth.ts` + `useAuth.test.ts`).
+- **Test Placement:** All tests live in **`src/__tests__/`** mirroring the source tree (`src/__tests__/components/Button.test.tsx`, `src/__tests__/hooks/useAuth.test.ts`), using descriptive `<module>.test.ts(x)` names. NEVER place tests inside `src/app/` — Expo Router bundles every file in the app directory.
 - **Error Handling:** Route-level crashes handled via Expo Router `+error.tsx` boundaries. API errors caught and transformed at `src/services/`, exposing user-friendly feedback through UI state or toast notifications.
 - **Patterns & Best Practices:** Validate form inputs and payload shapes (e.g., Zod) before API dispatch; enforce typed props with TypeScript; show explicit loading states during async actions to prevent double submissions.
 - **Intuitive & Self-Descriptive Naming:** Use clear, intention-revealing names that make intent obvious without requiring comments. Avoid generic or cryptic abbreviations (e.g., use `incidentList` instead of `data`/`arr`, `isSubmittingReport` instead of `flag`, `fetchIncidentsByStatus` instead of `getData`).
@@ -149,7 +149,7 @@ The primary/parent agent acts as the supreme orchestrator and ensures all child 
 3. **Compiler Checker (`compiler-checker`):** Executes `npx expo lint` and `npx tsc --noEmit`.
    - *Failure:* Returns the specific error log to `developer` for immediate fixing.
    - *Success:* Hands off to `tester`.
-4. **Tester (`tester`):** Creates or updates colocated tests (`*.test.tsx`) and runs them.
+4. **Tester (`tester`):** Creates or updates tests in `src/__tests__/` (`*.test.ts(x)`) and runs them.
    - *Failure:* Details the broken test assertions and hands back to `developer`.
    - *Success:* Notifies `planner`.
 5. **Cycle Repeat:** `planner` marks the subtask as completed `[x]` in `docs/` and triggers the next item until the entire feature is completed.
