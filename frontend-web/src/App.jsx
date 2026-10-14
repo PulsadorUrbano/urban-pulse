@@ -1,7 +1,7 @@
-import DepartmentAssignmentView from './components/DepartmentAssignmentView.jsx'
+import IncidentAssignmentView from './components/IncidentAssignmentView.jsx'
 import './App.css'
 
-// Muestra el módulo de asignación como pantalla inicial de esta rama.
+// Departamento y equipo se gestionan juntos dentro de cada incidencia.
 export default function App() {
-  return <DepartmentAssignmentView />
+  return <IncidentAssignmentView />
 }
