@@ -79,3 +79,10 @@ select { width: 100%; background: #fff; border: 1px solid #cfd7de; border-radius
 @media (max-width: 900px) { .assignment-layout { grid-template-columns: 240px minmax(0, 1fr); gap: 16px; } .detail-panel { padding: 24px; } .current-assignment dl { grid-template-columns: 1fr; gap: 12px; } .form-actions { flex-direction: column; align-items: stretch; } }
 @media (max-width: 650px) { .topbar { padding: 15px 20px; gap: 16px; min-height: 66px; } .workspace-label { display: none; } .header-tag { font-size: 10px; padding: 5px 8px; } .main-content { padding: 26px 16px 20px; } .page-heading { align-items: start; gap: 12px; } .task-tag { font-size: 10px; } .page-description { font-size: 13px; } .assignment-layout { grid-template-columns: 1fr; } .incident-list { gap: 6px; } .incident-option { padding: 12px; } .panel-footnote { display: none; } .detail-panel { padding: 22px 18px; } .incident-detail-heading h2 { font-size: 18px; } .current-assignment dl { grid-template-columns: 1fr; } .demo-notice { align-items: start; font-size: 11px; } .demo-dot { margin-top: 5px; } .dialog-actions { flex-wrap: wrap; } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+.assignment-completeness { padding: 10px 13px; border: 1px solid #e7dfc9; border-radius: 7px; color: #765e2d; background: #fbf8ef; font-size: 12px; line-height: 1.6; margin-bottom: 8px; }
+.assignment-completeness.complete { border-color: #cfe5d7; color: #326d49; background: #eff8f1; }
+
+.confirmation-summary { margin: 20px 0; padding: 14px; border: 1px solid #e1e5eb; border-radius: 7px; background: #f8f9fa; }
+.confirmation-summary > div + div { margin-top: 12px; }
+.confirmation-summary dt { color: #6c7985; font-size: 11px; }
+.confirmation-summary dd { margin: 3px 0 0; font-size: 13px; font-weight: 550; }
