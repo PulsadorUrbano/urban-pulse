@@ -419,15 +419,21 @@ export default function NewIncidentScreen() {
             disabled={isSubmitDisabled}
             onPress={handleSubmit}
             className={`flex-1 rounded-3xl active:opacity-70${isSubmitDisabled ? ' opacity-70' : ''}`}>
-            <ThemedView
-              type="backgroundElement"
-              className="items-center justify-center rounded-3xl px-6 py-4">
+            {/* Color final decidido: fondo blanco (#ffffff) y texto negro
+                (#000000), fijo en ambos temas (light/dark). Se usa `View` de RN
+                (no `ThemedView`) para que el fondo no dependa del tema; el
+                `ActivityIndicator` sigue visible sobre el blanco al cargando. */}
+            <View
+              className="items-center justify-center rounded-3xl px-6 py-4"
+              style={{ backgroundColor: '#ffffff' }}>
               {isSubmitting || isResolvingLocation ? (
                 <ActivityIndicator />
               ) : (
-                <ThemedText type="smallBold">Enviar</ThemedText>
+                <ThemedText type="smallBold" style={{ color: '#000000' }}>
+                  Enviar
+                </ThemedText>
               )}
-            </ThemedView>
+            </View>
           </Pressable>
 
           {/* Toggle de ubicación dentro del footer (componente normal, sin

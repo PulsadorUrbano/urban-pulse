@@ -242,6 +242,25 @@ describe('NewIncidentScreen', () => {
     expect(screen.getByLabelText('Desactivar ubicación')).toBeOnTheScreen();
   });
 
+  it('aplica los colores finales: Enviar con fondo blanco y texto negro, y el toggle con fondo negro', async () => {
+    await renderScreen();
+
+    // El Pressable solo gestiona la opacidad activa; el fondo blanco final
+    // (#ffffff) vive en el `View` interior que contiene el texto "Enviar".
+    const submitButton = screen.getByLabelText('Enviar incidencia');
+    expect(submitButton.children[0]).toHaveStyle({ backgroundColor: '#ffffff' });
+
+    // El texto "Enviar" (ThemedText) recibe el color final negro (#000000).
+    expect(screen.getByText('Enviar')).toHaveStyle({ color: '#000000' });
+
+    // DEBUG temporal: inspeccionar props del host del toggle.
+    // El botón de localización (ubicación activada por defecto en los mocks)
+    // usa `bg-black` en className, que debe resolver a #000000 en el estilo.
+    expect(screen.getByLabelText('Desactivar ubicación')).toHaveStyle({
+      backgroundColor: '#000000',
+    });
+  });
+
   it('al adjuntar una foto y enviar, crea la incidencia y guarda la imagen vinculada sin aviso de fotos', async () => {
     const user = userEvent.setup();
     await renderScreen();

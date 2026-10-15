@@ -34,6 +34,7 @@ backend/prisma/*.db-journal
 frontend-mobile/.agents/
 frontend-mobile/opencode.json
 frontend-mobile/agents.md
+.claude/
 
 # ==============================================================================
 # CONFIGURACIONES DE IDEs (VSCode, IntelliJ, etc.)

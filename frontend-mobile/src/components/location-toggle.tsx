@@ -16,11 +16,7 @@ const TOGGLE_ICON_SIZE = 24;
 
 // Botón circular para activar o desactivar el envío de la ubicación. Con la
 // ubicación apagada, una línea diagonal tacha el icono.
-export function LocationToggle({
-  isLocationEnabled,
-  onToggle,
-  disabled = false,
-}: LocationToggleProps) {
+export function LocationToggle({ isLocationEnabled, onToggle, disabled = false }: LocationToggleProps) {
   return (
     <Pressable
       accessibilityRole="switch"
@@ -28,10 +24,13 @@ export function LocationToggle({
       accessibilityState={{ checked: isLocationEnabled, disabled }}
       disabled={disabled}
       onPress={onToggle}
-      className={`items-center justify-center rounded-full bg-gray-500 active:opacity-70${
+      className={`items-center justify-center rounded-full active:opacity-70${
         disabled ? ' opacity-70' : ''
       }`}
-      style={{ width: LOCATION_TOGGLE_SIZE, height: LOCATION_TOGGLE_SIZE }}>
+      // Color final decidido: fondo negro (#000000) con icono blanco (#ffffff),
+      // fijo en ambos temas (light/dark). El fondo va en estilo inline para
+      // poder verificarlo en tests (igual que el botón Enviar).
+      style={[{ width: LOCATION_TOGGLE_SIZE, height: LOCATION_TOGGLE_SIZE, backgroundColor: '#000000' }]}>
       <MaterialIcons name="location-on" size={TOGGLE_ICON_SIZE} color="#ffffff" />
       {isLocationEnabled ? null : (
         <View pointerEvents="none" className="absolute inset-0 items-center justify-center">
