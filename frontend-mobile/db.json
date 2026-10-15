@@ -63,6 +63,22 @@
       "teamId": null,
       "technicianId": null,
       "id": "Mk7Xb3FhJrw"
+    },
+    {
+      "title": "Prueba 1",
+      "description": "Pues todo en general vaya caca",
+      "status": "reported",
+      "priority": null,
+      "createdAt": "2026-10-14T17:41:32.059Z",
+      "civicId": null,
+      "locationId": null,
+      "urbanAssetId": null,
+      "categoryId": "2",
+      "category": null,
+      "departmentId": null,
+      "teamId": null,
+      "technicianId": null,
+      "id": "neAXN4F1bb0"
     }
   ],
   "categories": [
@@ -93,6 +109,18 @@
       "accuracy": 9.495014000000001,
       "createdAt": "2026-10-12T17:32:35.667Z",
       "id": "wH_GFqAF1c0"
+    }
+  ],
+  "images": [
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/FD04230D-DC4F-4D78-BFED-ED8CBFE595B3.heic",
+      "incidentId": "neAXN4F1bb0",
+      "id": "dmB5X1rCUAw"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/7BDEDECE-B749-4377-B7B2-2B900ADB9346.jpg",
+      "incidentId": "neAXN4F1bb0",
+      "id": "2GlcqhxGjbE"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"

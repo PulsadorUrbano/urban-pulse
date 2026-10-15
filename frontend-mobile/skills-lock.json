@@ -1,18 +1,6 @@
 {
   "version": 1,
   "skills": {
-    "react-native-best-practices": {
-      "source": "callstackincubator/agent-skills",
-      "sourceType": "github",
-      "skillPath": "skills/react-native-best-practices/SKILL.md",
-      "computedHash": "4b2b9561ff7b4b9d15ff76d2dd2a6191e3cdc7f36c06d171e377bfefcbcb2bfb"
-    },
-    "react-native-testing": {
-      "source": "callstack/react-native-testing-library",
-      "sourceType": "github",
-      "skillPath": "skills/react-native-testing/SKILL.md",
-      "computedHash": "bb30ad4660a42c71178c91d7a3f2e88556add9dba2213ee26f099dbe352fd649"
-    },
     "vercel-react-native-skills": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",

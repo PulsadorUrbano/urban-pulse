@@ -34,6 +34,23 @@ preferencia y `getIncidentWarnings` unifica en un único `Alert` los motivos de 
 (permiso denegado, GPS apagado, timeout) degrada a envío sin ubicación (`locationId: null`) sin
 bloquear el registro.
 
+La **foto** se modela como una entidad propia `IncidentImage` con relación **1:M** respecto a
+`Incident` (vía `incidentId`), siguiendo el patrón ya usado con `Location` en 001: el contrato de
+`Incident` y de `CreateIncidentInput` **no cambia**. La captura se apoya en `expo-image-picker`
+(SDK 57), aislado tras una capa de dispositivo (`src/services/photo-picker.ts`); la persistencia
+mock queda en `src/services/image.service.ts` (`POST /images`, reutilizando `fetchWithTimeout`)
+y el "almacenamiento" de la foto en `src/services/storage.service.ts`, que simula un retardo de
+red para poder probar estados de carga/error sin backend real ni nube.
+
+En la UI, la selección de fotos se concentra en un hook (`use-photo-attachment`) que gestiona la
+lista de URIs y los estados (`isProcessing`, `errorMessage`), y en un componente presentacional
+`PhotoPicker` (tiles cuadrados + recuadro discontinuo + hoja inferior Cámara/Galería con el
+`Modal` nativo, mismo patrón que `CategoryPicker`). La pantalla orquesta el envío:
+`createIncident()` primero y, por cada URI, `createImage({ url, incidentId })`; un fallo en las
+imágenes degrada a aviso no bloqueante sin deshacer la incidencia. Para que el botón Enviar y el
+FAB de ubicación queden siempre visibles, ambos pasan a una **capa superior** (footer fijo +
+FAB con `zIndex`/`elevation`) y el `ScrollView` reserva el padding inferior.
+
 ## Implementación
 
 1. **Navegación** — `src/app/_layout.tsx` pasa a renderizar un `Stack` raíz; se crea
@@ -108,6 +125,47 @@ bloquear el registro.
     `@expo/vector-icons` instaladas con `npx expo install` para fijar versiones compatibles con el
     SDK.
 25. **Documentación** — `spec/constitution/roadmap.md`, nota de sesión en `docs/` y `AGENTS.md`.
+26. **Tipo de imagen** — `src/types/incident-image.ts`: `IncidentImage { id: string; url: string;
+    incidentId: string }` y `CreateIncidentImageInput { url: string; incidentId: string }` (sin
+    `id`, generado por el mock; patrón de `Location`/`CreateLocationInput`). `url` e `incidentId`
+    **no anulables**. `Incident` y `CreateIncidentInput` **no se tocan**.
+27. **Mock** — `db.json`: nueva colección `images` que arranca **vacía** (`[]`), **sin seeds**
+    sobre las incidencias existentes.
+28. **Dependencia y configuración** — instalar `expo-image-picker` con `npx expo install`
+    (versión compatible con SDK 57; **consultar la documentación versionada antes de codificar**)
+    y declarar su plugin en `app.json` con `photosPermission` y `cameraPermission`. `expo-image`
+    ya está instalado para las miniaturas.
+29. **Servicio de imágenes (mock)** — `src/services/image.service.ts`: `createImage()` hace
+    `POST /images` con `fetchWithTimeout()` y devuelve la `IncidentImage` persistida.
+30. **Almacenamiento simulado** — `src/services/storage.service.ts`: `storePhoto(uri)` devuelve
+    la URI procesada tras un **retardo simulado** (`setTimeout`), encapsulando el futuro reemplazo
+    por almacenamiento real y permitiendo probar overlays de carga y errores sin red.
+31. **Capa de dispositivo** — `src/services/photo-picker.ts`: envuelve `expo-image-picker` y
+    expone `pickPhotoFromCamera()` / `pickPhotoFromLibrary()` con resultados tipados: **cancelar
+    → `null` sin error**; **permiso denegado → error amigable** (traducible a mensaje de UI);
+    devuelve la URI local (`file://...`).
+32. **Hook de adjuntos** — `src/hooks/use-photo-attachment.ts`: `photoUris: string[]`,
+    `isProcessing`, `errorMessage`, `attachFromCamera()`, `attachFromLibrary()`,
+    `removeImage(uri)`.
+33. **Componente de fotos** — `src/components/photo-picker.tsx`: fila horizontal de tiles
+    cuadrados (tamaño `PHOTO_TILE_SIZE` en `src/constants/theme.ts`, ~120 dp) renderizada con
+    `FlatList` **horizontal** (nunca `.map()` dentro de `ScrollView`); cada tile muestra la
+    miniatura con `expo-image`, el botón "×" y un overlay de carga; el **recuadro discontinuo**
+    (borde `dashed`, icono compuesto Material `image` + insignia `arrow-upward`, textos "Añadir
+    imagen"/"Recomendado") permanece **al final**; al pulsarlo abre la hoja inferior
+    (`Modal` nativo) con "Cámara"/"Galería".
+34. **Integración de UI y flujo** — `src/app/incidents/new.tsx`: sección de foto bajo
+    Descripción y sobre el botón Enviar; **footer fijo** (safe-area aware) con el botón Enviar y
+    **FAB de ubicación fijo encima** del footer (`zIndex`/`elevation`); el `ScrollView` reserva
+    padding inferior. En el envío: `createIncident()` → por cada URI, `storePhoto(uri)` +
+    `createImage({ url, incidentId: incident.id })`; si alguna imagen falla, la incidencia queda
+    registrada y la pantalla de confirmación muestra un **aviso no bloqueante** (mismo patrón
+    degradado que la ubicación). Sin fotos, el flujo es idéntico al actual y sin avisos.
+35. **Tests colocados** — `image.service.test.ts`, `storage.service.test.ts` (fake timers),
+    `photo-picker.test.ts` (mock de `expo-image-picker`), `use-photo-attachment.test.ts`,
+    `photo-picker.test.tsx` (componente) y actualización de los tests de `new.tsx`.
+36. **Calidad** — `npx expo lint` + `npx tsc --noEmit` sin errores y `npx jest --ci` en verde.
+37. **Documentación** — `spec/constitution/roadmap.md` y nota de sesión en `docs/`.
 
 ## Decisiones
 
@@ -184,6 +242,45 @@ bloquear el registro.
   hardware/permisos del dispositivo y se puede mockear en tests (`jest.mock('expo-location')`); el
   segundo, con el mock REST de `json-server`, respetando que `src/services/` es la capa de
   comunicación.
+- **`IncidentImage` como entidad separada 1:M** — una incidencia puede tener **varias** fotos;
+  separarla evita tocar `Incident`/`CreateIncidentInput` y sigue el patrón de `Location`.
+  `url` e `incidentId` son **no anulables**: no tiene sentido una imagen sin URI ni sin
+  incidencia. Alternativa descartada: añadir `photoURL` a `Incident` (limita a una foto y rompe
+  el contrato vigente).
+- **Colección `images` vacía y sin seeds** — las incidencias semilla de `db.json` no tienen
+  fotos reales; no se inventan imágenes para no falsear el estado del mock.
+- **URI local temporal (`file://...`) como `url`** — sin nube ni endpoint de subida (fuera de
+  alcance aprobado), la URI que devuelve `expo-image-picker` se persiste directamente; coherente
+  con la estrategia de "medios locales" de `AGENTS.md`.
+- **`storage.service.ts` con retardo simulado** — aísla el manejo de imagen para que el día que
+  exista backend solo cambie esa pieza; el `setTimeout` permite probar estados de carga/error
+  sin tocar servicios externos.
+- **Capa de dispositivo (`photo-picker.ts`) separada del servicio mock (`image.service.ts`)** —
+  mismo criterio que `device-location.ts` vs `location.service.ts`: lo que habla con el
+  hardware/permisos se mockea con `jest.mock('expo-image-picker')`; lo que habla con
+  `json-server` se testea contra `fetch`.
+- **Cancelar devuelve `null` sin error** — cancelar el selector es una acción voluntaria del
+  ciudadano, no un fallo; solo el permiso denegado se traduce en error amigable.
+- **`FlatList` horizontal para las miniaturas** — `AGENTS.md` prohíbe `.map()` en `ScrollView`
+  para colecciones dinámicas; la `FlatList` horizontal además no dispara el aviso de anidamiento
+  de `VirtualizedList` (solo aplica a anidados en la misma orientación).
+- **Hoja inferior con `Modal` nativo** — mismo patrón visual que `CategoryPicker`
+  (`animationType="slide"`, `transparent` con overlay): coherencia visual sin dependencias
+  nuevas (prohibidas sin aprobación).
+- **`PHOTO_TILE_SIZE` como token de tema** — el tamaño ~120 dp se define una sola vez en
+  `src/constants/theme.ts` y lo reutilizan el recuadro de añadir y los tiles de miniatura.
+- **Footer fijo + FAB en capa superior (`zIndex`/`elevation`)** — el `ScrollView` podía tapar o
+  arrastrar el botón Enviar y el toggle de ubicación; fijarlos garantiza que siempre estén
+  accesibles. El contenido reserva padding inferior equivalente al alto del footer + FAB.
+- **Envío: primero la incidencia, luego las imágenes** — `createIncident()` devuelve el `id`
+  necesario como `incidentId`; si una imagen falla, la incidencia **no se deshace**: aviso
+  degradado en la confirmación, igual que con la ubicación. Alternativa descartada: bloquear el
+  envío si una imagen falla (rompe la regla de "los avisos nunca bloquean").
+- **Sin aviso cuando no hay fotos** — adjuntar es opcional y no se presiona al ciudadano; no hay
+  alerta previa al envío por foto ausente (a diferencia de descripción corta o ubicación
+  desactivada).
+- **`expo-image` para miniaturas** — ya está instalado y maneja el cacheado de la URI local;
+  evita añadir una dependencia nueva para pintar la imagen.
 
 ## Riesgos
 
@@ -222,3 +319,25 @@ bloquear el registro.
 - **`Location` huérfana si falla el POST de la incidencia** — si se crea la `Location` y después
   falla `POST /incidents`, queda un registro sin incidencia asociada; aceptable en el mock y
   documentado (se resolverá con transacción/cleanup cuando exista backend real).
+- **API de `expo-image-picker` en SDK 57** — cambia entre versiones; **obligatorio** consultar
+  las docs versionadas (Context7 o docs.expo.dev) antes de codificar (nombres exactos de
+  `launchCameraAsync`/`launchImageLibraryAsync`, opciones de `mediaTypes` y permisos).
+- **`expo-image-picker` en Expo Go** — el módulo está incluido en Expo Go; si algo no funciona,
+  se diagnostica con `npx expo-doctor` antes de asumir un development build.
+- **Permisos de galería** — Android 13+ usa el photo picker del sistema sin permiso; no se pide
+  permiso de galería heredado (fuera de alcance). El permiso de cámara denegado debe producir un
+  error amigable, nunca un crash.
+- **URI local fuera de la sesión** — `file://...` solo es válida en el dispositivo y mientras
+  exista la foto; aceptable en el mock y documentado (se resolverá con almacenamiento real).
+- **`FlatList` dentro de `ScrollView`** — una `FlatList` horizontal dentro del `ScrollView`
+  vertical es segura (la advertencia de `VirtualizedList` solo aplica a anidados en la misma
+  orientación); aun así se fija un alto (`PHOTO_TILE_SIZE`) para evitar mediciones extrañas.
+- **Footer fijo vs teclado** — el comportamiento del teclado puede empujar el footer; se valida
+  en iOS/Android y se mantiene el padding inferior del `ScrollView`.
+- **`zIndex` en Android** — puede requerir `elevation` para quedar por encima; se aplican ambos
+  en footer y FAB.
+- **Creación parcial de imágenes** — si una foto de varias falla, quedan las demás creadas y un
+  aviso; aceptable en el mock (sin transacciones), documentado como el caso de `Location`
+  huérfana de 001.
+- **Tests con `setTimeout` en `storage.service`** — los tests usarán fake timers para no esperar
+  el retardo real.

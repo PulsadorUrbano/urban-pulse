@@ -1,5 +1,5 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 export interface LocationToggleProps {
   isLocationEnabled: boolean;
@@ -7,23 +7,16 @@ export interface LocationToggleProps {
   disabled?: boolean;
 }
 
-// Diámetro del botón; la pantalla lo usa para reservar espacio bajo el FAB.
+// Diámetro del botón; la pantalla lo usa para reservar el espacio del footer.
+// Se aplica vía `style` inline porque es la única fuente de este tamaño
+// (constante exportada); el resto de estilos vive en `className`.
 export const LOCATION_TOGGLE_SIZE = 56;
 
 const TOGGLE_ICON_SIZE = 24;
-// Ancho de la línea diagonal que tacha el icono con la ubicación desactivada.
-const DISABLED_LINE_WIDTH = 48;
-const DISABLED_LINE_HEIGHT = 3;
-const TOGGLE_BACKGROUND_COLOR = '#6B7280';
-const DISABLED_LINE_COLOR = '#1F2937';
 
-// Botón circular flotante para activar o desactivar el envío de la ubicación.
-// Con la ubicación apagada, una línea diagonal tacha el icono.
-export function LocationToggle({
-  isLocationEnabled,
-  onToggle,
-  disabled = false,
-}: LocationToggleProps) {
+// Botón circular para activar o desactivar el envío de la ubicación. Con la
+// ubicación apagada, una línea diagonal tacha el icono.
+export function LocationToggle({ isLocationEnabled, onToggle, disabled = false }: LocationToggleProps) {
   return (
     <Pressable
       accessibilityRole="switch"
@@ -31,39 +24,20 @@ export function LocationToggle({
       accessibilityState={{ checked: isLocationEnabled, disabled }}
       disabled={disabled}
       onPress={onToggle}
-      style={({ pressed }) => [styles.button, (pressed || disabled) && styles.pressed]}>
+      className={`items-center justify-center rounded-full active:opacity-70${
+        disabled ? ' opacity-70' : ''
+      }`}
+      // Color final decidido: fondo negro (#000000) con icono blanco (#ffffff),
+      // fijo en ambos temas (light/dark). El fondo va en estilo inline para
+      // poder verificarlo en tests (igual que el botón Enviar).
+      style={[{ width: LOCATION_TOGGLE_SIZE, height: LOCATION_TOGGLE_SIZE, backgroundColor: '#000000' }]}>
       <MaterialIcons name="location-on" size={TOGGLE_ICON_SIZE} color="#ffffff" />
       {isLocationEnabled ? null : (
-        <View style={styles.disabledLineWrapper} pointerEvents="none">
-          <View style={styles.disabledLine} />
+        <View pointerEvents="none" className="absolute inset-0 items-center justify-center">
+          {/* Línea diagonal (w-12 = 48dp, h-[3px]) que tacha el icono. */}
+          <View className="h-[3px] w-12 -rotate-45 rounded-full bg-gray-800" />
         </View>
       )}
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    width: LOCATION_TOGGLE_SIZE,
-    height: LOCATION_TOGGLE_SIZE,
-    borderRadius: LOCATION_TOGGLE_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: TOGGLE_BACKGROUND_COLOR,
-  },
-  disabledLineWrapper: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  disabledLine: {
-    width: DISABLED_LINE_WIDTH,
-    height: DISABLED_LINE_HEIGHT,
-    borderRadius: DISABLED_LINE_HEIGHT / 2,
-    backgroundColor: DISABLED_LINE_COLOR,
-    transform: [{ rotate: '-45deg' }],
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-});

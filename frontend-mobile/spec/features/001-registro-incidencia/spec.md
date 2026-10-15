@@ -31,6 +31,37 @@ dispositivo está apagado o la captura falla, el reporte se envía igualmente si
 **aviso no bloqueante**. Antes de enviar, un **único `Alert`** agrupa los avisos de descripción
 (vacía o demasiado corta) y de ubicación desactivada.
 
+Además, el formulario incorpora una **sección de foto** situada **debajo del campo Descripción**
+y **encima del botón Enviar**. **Sin fotos (0 imágenes)**, la sección **no muestra cabecera ni
+botón a lo ancho**: muestra un **"+" grande centrado** (`MaterialIcons add`, tamaño 48) con, debajo,
+el texto **"¿Desea añadir imágenes?"**, todo dentro de un único `Pressable` que abre la **hoja
+inferior** Cámara/Galería (también al pulsar cerca del "+"), y un `ActivityIndicator` mientras
+procesa; el título **"Imágenes subidas (n):"** —un **contador dinámico** de fotos adjuntas— **solo
+se muestra con `n ≥ 1`**. **Con una o más fotos**, la sección muestra la cabecera con el título
+**"Imágenes subidas (n):"** y una **fila horizontal de cuadrados** (~120 dp, token
+`PHOTO_TILE_SIZE`) con una **miniatura** por foto (vía `expo-image`), un botón **"×"** para
+quitarla y un **overlay de carga** mientras se procesa, y la fila termina en un **tile de añadir**
+que es un único **"+"** (Material `add`, color secundario) **sin borde, sin fondo y sin textos**,
+con `accessibilityLabel="Añadir imagen"` y un `ActivityIndicator` mientras procesa. El número de
+adjuntos está limitado por **`MAX_SELECTED_PHOTOS = 8`** (exportado en el hook de adjuntos, con un
+**guard** que ignora nuevos adjuntos al llegar a 8): **con 8 fotos**, el **tile "+" desaparece** y,
+debajo de los previews, se muestra **en rojo** el mensaje **"El número máximo de imágenes son 8"**;
+al quitar una foto, **vuelve el "+"** y desaparece el mensaje. Tanto el **"+"** del estado vacío
+como el tile de añadir abren una **hoja inferior** (bottom sheet con `Modal` nativo, mismo patrón
+visual que `CategoryPicker`) con dos opciones: **"Cámara"** y **"Galería"**. Al elegir una
+fuente, `expo-image-picker` devuelve la **URI local temporal** (`file://...`) de la foto, que se
+adjunta de inmediato al formulario; **cancelar** el selector no produce ningún error ni adjunta
+nada. Al enviar, primero se registra la incidencia (igual que
+hasta ahora) y después se persiste **una `IncidentImage` por cada foto adjunta** en la colección
+`images` del mock —`url` e `incidentId` **no anulables**, relación 1:M con la incidencia y
+colección **vacía, sin seeds**—; si alguna imagen no llega a guardarse, la incidencia **queda
+registrada igualmente** y la pantalla de confirmación muestra un **aviso no bloqueante** (mismo
+patrón degradado que la ubicación). Para que el botón Enviar y el toggle de ubicación no queden
+tapados ni se desplacen, ambos pasan a una **capa superior**: el botón **Enviar** vive en un
+**footer fijo** en la parte inferior de la pantalla (safe-area aware) y el **toggle de ubicación**
+flota **fijo encima del footer**; el contenido con scroll reserva padding inferior suficiente
+para no quedar tapado.
+
 ## Por qué
 
 Registrar incidencias es el propósito central de UrbanPulse: es el primer paso de todo el ciclo
@@ -47,6 +78,12 @@ La **ubicación** completa el reporte: saber *qué* ocurre sin saber *dónde* ob
 un ida y vuelta con el ciudadano. Capturarla automáticamente al enviar —con la posibilidad de
 desactivarla y de degradar a `locationId: null` si no hay permiso o GPS— mantiene el registro en
 menos de un minuto sin añadir fricción.
+
+La **foto** completa el reporte con la evidencia más directa de una incidencia urbana: ahorra al
+ayuntamiento una visita de comprobación y mejora la calidad del dato sin alargar el registro,
+porque adjuntar es opcional y se resuelve desde cámara o galería sin fricción. Hacerlo sobre el
+mock (misma estrategia que en 001) mantiene el principio de no depender del backend real ni de
+almacenamiento en la nube.
 
 ## Criterios de aceptación
 
@@ -101,11 +138,49 @@ menos de un minuto sin añadir fricción.
 - [x] Antes de enviar, `getIncidentWarnings({ description, isLocationEnabled })` puede devolver
       `description-empty`, `description-too-short` y `location-disabled`, y se muestra **un único
       `Alert`** que combina todos los avisos presentes (con opción de cancelar o enviar igualmente).
-- [x] `npx tsc --noEmit` y `npx expo lint` pasan sin errores nuevos.
+- [x] El formulario muestra, **debajo del campo Descripción** y **encima del botón Enviar**, la
+      sección de fotos. El título **"Imágenes subidas (n):"** —donde `n` es el **contador
+      dinámico** de fotos adjuntas— se muestra **solo cuando `n ≥ 1`**; con 0 imágenes **no hay
+      cabecera**.
+- [x] **Sin fotos (0 imágenes)**, la sección **no muestra cabecera ni botón a lo ancho**: muestra
+      un **"+" grande centrado** (`MaterialIcons add`, tamaño 48) con el texto **"¿Desea añadir
+      imágenes?"** debajo, todo dentro de un `Pressable` que abre la hoja Cámara/Galería (también
+      al pulsar cerca), y un `ActivityIndicator` mientras procesa.
+- [x] **Con una o más fotos**, la fila de miniaturas termina en un **tile de añadir** que es un
+      único **"+"** (Material `add`, color secundario) **sin borde, sin fondo y sin textos**, con
+      `accessibilityLabel="Añadir imagen"` y `ActivityIndicator` mientras procesa.
+- [x] Al pulsar el **"+"** del estado vacío o el **tile "+"** (con fotos) se abre una **hoja
+      inferior** con las opciones **"Cámara"** y **"Galería"** (mismo patrón visual que
+      `CategoryPicker`).
+- [x] Elegir "Cámara" o "Galería" adjunta la foto al formulario; **cancelar** el selector no
+      produce ningún error ni adjunta nada.
+- [x] Cada foto adjunta aparece como un **cuadrado con miniatura** (`expo-image`) y un botón
+      **"×"**; al pulsar "×" la foto se elimina de la selección.
+- [x] El número de adjuntos está limitado por **`MAX_SELECTED_PHOTOS = 8`** (exportado por
+      `use-photo-attachment.ts`): al llegar a 8, el hook **ignora** nuevos adjuntos (guard).
+- [x] **Con 8 fotos**, el **tile "+" desaparece** y, debajo de los previews, se muestra **en rojo**
+      el mensaje **"El número máximo de imágenes son 8"**; al quitar una foto, **vuelve el "+"** y
+      desaparece el mensaje.
+- [x] El botón **Enviar** y el **toggle de ubicación** permanecen **fijos y visibles por encima
+      del contenido** al hacer scroll (footer fijo + FAB en capa superior, safe-area aware).
+- [x] Al enviar con fotos, se crea la incidencia y **una `IncidentImage` por cada foto** con
+      `url` (URI local, no nula) e `incidentId` (id de la incidencia) **no nulos**, persistida en
+      la colección `images` del mock.
+- [x] Si persiste un error al guardar alguna imagen, la incidencia **se registra igualmente** y
+      se muestra un **aviso no bloqueante** en la pantalla de confirmación.
+- [x] Sin fotos, el envío no muestra avisos adicionales y **no** se crea ninguna imagen.
+- [x] `npx tsc --noEmit`, `npx expo lint` y `npx jest --ci` pasan sin errores nuevos.
 
 ## Fuera de alcance
 
-- Captura de foto (cámara/galería) → feature futura.
+- **Subida real a la nube o al backend** (S3, MinIO, endpoint de upload): la `url` guardada es
+  la **URI local temporal** (`file://...`) que devuelve `expo-image-picker`.
+- **Edición o recorte** de la foto tras seleccionarla.
+- **Vídeo**: solo fotos estáticas.
+- **Permisos de galería heredados** (Android < 13 / iOS): no se solicitan ni se gestionan.
+- **Gestión de imágenes de incidencias ya registradas** (ver, añadir o borrar fotos en reportes
+  pasados) → feature futura (backlog).
+- **Avisos por no adjuntar foto**: la foto es siempre opcional y no se presiona al ciudadano.
 - **Ubicación en segundo plano** — captura con la app cerrada o en background
   (`startLocationUpdatesAsync`, geofencing, `TaskManager`); la ubicación solo se captura en primer
   plano al pulsar Enviar.
