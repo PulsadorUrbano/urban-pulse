@@ -1,0 +1,1 @@
+1. Cuando el teclado está activo y se cambia de introducir usuario a introducir contraseña, o mostrar no mostrar contraseña, hay como una especie de desplazamiento que dura 0.2s aproximadamente hacia arriba involuntario raro. 
