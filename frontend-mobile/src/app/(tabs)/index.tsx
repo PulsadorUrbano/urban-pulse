@@ -1,21 +1,41 @@
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { TypewriterText } from '@/components/typewriter-text';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useSession } from '@/hooks/use-session';
+
+// Genera los saludos posibles para el usuario
+const buildGreetings = (name: string): string[] => [
+  `¡Estás de vuelta, ${name}!`,
+  `¿Alguna incidencia que reportar, ${name}?`,
+  `Hola, ${name}`,
+];
 
 export default function HomeScreen() {
+  const { user } = useSession();
+  // Se elige un saludo al montar para que no cambie en cada render
+  const [greeting] = useState(() => {
+    const greetings = buildGreetings(user?.username ?? '');
+    return greetings[Math.floor(Math.random() * greetings.length)];
+  });
+
+  // Sin sesión en memoria, la app arranca en el login (sesión no persistida).
+  if (!user) {
+    return <Redirect href="/login" />;
+  }
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ThemedView style={styles.hero}>
-          <ThemedText type="title" style={styles.centerText}>
+          <TypewriterText type="serifTitle" text={greeting} style={styles.centerText} />
+          <ThemedText type="default" themeColor="textSecondary" style={styles.centerText}>
             UrbanPulse
-          </ThemedText>
-          <ThemedText style={styles.centerText} themeColor="textSecondary">
-            Reporta incidencias en tu ciudad y colabora en mantenerla en buen estado.
           </ThemedText>
         </ThemedView>
 
