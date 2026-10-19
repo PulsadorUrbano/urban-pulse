@@ -30,7 +30,7 @@ Las entradas aceptan `title`, `description` opcional, `civicId`, `categoryName`,
 | Pruebas e2e de incidencias multipart y Swagger | Correcto: 9 pruebas. |
 | `npm run build` | Correcto. |
 | `npm run lint` | Correcto con 3 avisos existentes sobre el conteo de puntos de código Unicode. |
-| `npm test` | 29 de 30 correctas; persiste el fallo previo conocido de `src/prisma/prisma.service.spec.ts` porque no proporciona `ConfigService`. |
+| `npm test` | Correcto: 30 pruebas. La prueba de `PrismaService` ahora proporciona su `ConfigService` de prueba. |
 | `npm run test:e2e` | Correcto: 10 pruebas. |
 
 La prueba de humo compilada creó una incidencia multipart en el puerto local de prueba, recuperó su imagen con `200 image/png`, reinició el proceso y comprobó que el identificador anterior respondía `404`. Se eliminaron los archivos y registros de esa prueba.
