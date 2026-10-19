@@ -1,12 +1,21 @@
 import {
   Body,
+  BadRequestException,
+  Catch,
   Controller,
+  ExceptionFilter,
+  ArgumentsHost,
   Get,
   Param,
   ParseUUIDPipe,
+  PayloadTooLargeException,
   Post,
   Res,
+  UploadedFiles,
+  UseFilters,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -19,6 +28,7 @@ import type { Response } from 'express';
 import { CreateIncidentPipe } from './create-incident.pipe.js';
 import { CreateIncidentDto } from './create-incident.dto.js';
 import type { Incident } from './incident.js';
+import type { UploadedImageFile } from './incident.js';
 import { IncidentsService } from './incidents.service.js';
 
 const incidentSchema = {
@@ -53,12 +63,39 @@ const incidentSchema = {
   },
 };
 
+@Catch(PayloadTooLargeException)
+class UploadLimitFilter implements ExceptionFilter {
+  catch(exception: PayloadTooLargeException, host: ArgumentsHost): void {
+    host
+      .switchToHttp()
+      .getResponse<Response>()
+      .status(400)
+      .json({ statusCode: 400, message: exception.message, error: 'Bad Request' });
+  }
+}
+
+const acceptedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
 @ApiTags('incidents')
 @Controller('incidents')
 export class IncidentsController {
   constructor(private readonly incidentsService: IncidentsService) {}
 
   @Post()
+  @UseFilters(UploadLimitFilter)
+  @UseInterceptors(
+    FilesInterceptor('images', 5, {
+      limits: { fileSize: 5 * 1024 * 1024, files: 5 },
+      fileFilter: (_request, file, callback) => {
+        callback(
+          acceptedImageTypes.has(file.mimetype)
+            ? null
+            : new BadRequestException('images must be JPEG, PNG, or WebP'),
+          acceptedImageTypes.has(file.mimetype),
+        );
+      },
+    }),
+  )
   @ApiBody({ type: CreateIncidentDto })
   @ApiCreatedResponse({
     description:
@@ -74,9 +111,18 @@ export class IncidentsController {
   @ApiBadRequestResponse({ description: 'The request body is invalid.' })
   create(
     @Body(new CreateIncidentPipe()) input: CreateIncidentDto,
+    @UploadedFiles() files: UploadedImageFile[] = [],
     @Res({ passthrough: true }) response: Response,
-  ): Incident {
-    const incident = this.incidentsService.create(input);
+  ): Promise<Incident> {
+    return this.createAndSetLocation(input, files, response);
+  }
+
+  private async createAndSetLocation(
+    input: CreateIncidentDto,
+    files: UploadedImageFile[],
+    response: Response,
+  ): Promise<Incident> {
+    const incident = await this.incidentsService.create(input, files);
     response.setHeader('Location', `/incidents/${incident.id}`);
     return incident;
   }

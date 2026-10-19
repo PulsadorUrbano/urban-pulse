@@ -1,12 +1,15 @@
 import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 import { CreateIncidentDto } from './create-incident.dto.js';
+import { CreateIncidentInput } from './incident.js';
 
 const allowedKeys = new Set([
   'title',
   'description',
-  'categoryId',
+  'civicId',
+  'categoryName',
   'latitude',
   'longitude',
+  'accuracy',
   'urbanAssetId',
 ]);
 const uuidPattern =
@@ -15,9 +18,9 @@ const uuidPattern =
 @Injectable()
 export class CreateIncidentPipe implements PipeTransform<
   unknown,
-  CreateIncidentDto
+  CreateIncidentInput
 > {
-  transform(value: unknown): CreateIncidentDto {
+  transform(value: unknown): CreateIncidentInput {
     if (!this.isRecord(value)) {
       throw new BadRequestException('The request body must be an object');
     }
@@ -29,20 +32,32 @@ export class CreateIncidentPipe implements PipeTransform<
     }
 
     const title = this.text(value.title, 'title');
-    const description = this.text(value.description, 'description');
+    const description =
+      value.description === undefined
+        ? undefined
+        : this.text(value.description, 'description');
+    const categoryName = this.text(value.categoryName, 'categoryName');
 
     if ([...title].length < 4 || [...title].length > 25) {
       throw new BadRequestException('title must contain 4 to 25 characters');
     }
-    if ([...description].length < 10) {
+    if (description !== undefined && [...description].length < 10) {
       throw new BadRequestException(
         'description must contain at least 10 characters',
       );
     }
 
-    this.uuid(value.categoryId, 'categoryId');
-    this.coordinate(value.latitude, 'latitude', -90, 90);
-    this.coordinate(value.longitude, 'longitude', -180, 180);
+    if (categoryName.length === 0) {
+      throw new BadRequestException('categoryName must not be empty');
+    }
+
+    this.uuid(value.civicId, 'civicId');
+    const latitude = this.number(value.latitude, 'latitude', -90, 90);
+    const longitude = this.number(value.longitude, 'longitude', -180, 180);
+    const accuracy =
+      value.accuracy === undefined
+        ? undefined
+        : this.number(value.accuracy, 'accuracy', 0);
 
     if (value.urbanAssetId !== undefined) {
       this.uuid(value.urbanAssetId, 'urbanAssetId');
@@ -50,10 +65,12 @@ export class CreateIncidentPipe implements PipeTransform<
 
     return {
       title,
-      description,
-      categoryId: value.categoryId,
-      latitude: value.latitude,
-      longitude: value.longitude,
+      ...(description === undefined ? {} : { description }),
+      civicId: value.civicId,
+      categoryName,
+      latitude,
+      longitude,
+      ...(accuracy === undefined ? {} : { accuracy }),
       ...(value.urbanAssetId === undefined
         ? {}
         : { urbanAssetId: value.urbanAssetId }),
@@ -77,21 +94,23 @@ export class CreateIncidentPipe implements PipeTransform<
     }
   }
 
-  private coordinate(
+  private number(
     value: unknown,
     field: string,
     minimum: number,
-    maximum: number,
-  ): asserts value is number {
+    maximum = Number.POSITIVE_INFINITY,
+  ): number {
     if (
-      typeof value !== 'number' ||
-      !Number.isFinite(value) ||
-      value < minimum ||
-      value > maximum
+      typeof value !== 'string' ||
+      value.trim() === '' ||
+      !Number.isFinite(Number(value)) ||
+      Number(value) < minimum ||
+      Number(value) > maximum
     ) {
       throw new BadRequestException(
         `${field} must be a finite number between ${minimum} and ${maximum}`,
       );
     }
+    return Number(value);
   }
 }

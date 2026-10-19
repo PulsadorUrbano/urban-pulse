@@ -1,11 +1,14 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { resolve } from 'node:path';
 import { AppModule, ObserveInstrument } from './app.module.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     instrument: ObserveInstrument,
   });
+  app.useStaticAssets(resolve(process.cwd(), 'uploads'), { prefix: '/uploads/' });
 
   const config = new DocumentBuilder()
     .setTitle('Urban Pulse Backend API')
