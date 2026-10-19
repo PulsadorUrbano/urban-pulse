@@ -162,6 +162,7 @@ Reglas:
 - **Nada de estilos inline sin control:** evita objetos `style={{ ... }}` inline y voluminosos; da estilo a los componentes con clases de utilidad de NativeWind (`className="..."`) o tokens de tema.
 - **No modifiques archivos fuera de frontend-mobile:** todas las ediciones deben confinarse estrictamente a `frontend-mobile/`. Otros directorios (como `backend/` o `database/`) son de solo lectura, para inspeccionar endpoints de la API, contratos DTO o ejecutar comandos docker a nivel raíz.
 - **Nada de inspección del backend en vivo:** no analices ni consultes los endpoints del backend hasta que se pida explícitamente; asume y construye contra datos REST mock locales vía `json-server`.
+- **No verifiques ni depures el backend: NO es tu trabajo.** Cuando se conecte el front con el backend, comprueba ÚNICAMENTE que el **front se conecta y envía correctamente** (petición bien formada, que llega al endpoint y obtiene respuesta). NO gastes tokens en comprobar ni depurar si el backend *funciona como debería* (su lógica interna, sus tests, su almacenamiento): eso es responsabilidad del equipo de backend. Si el backend falla, **repórtalo y continúa**; no intentes arreglarlo salvo que se pida explícitamente.
 
 ---
 
