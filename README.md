@@ -112,20 +112,40 @@ Las funcionalidades disponibles dependen de la rama. El registro de incidencias 
 
 ### Backend — NestJS y TypeScript
 
-Requisitos documentados: Node.js 22 o superior y npm 10 o superior. Configura la conexión a PostgreSQL antes de arrancar el backend.
+Requisitos documentados: Node.js 22 o superior y npm 10 o superior. La fase actual de registro de incidencias arranca sin configurar una base de datos; el código Prisma se conserva, pero `AppModule` no lo activa todavía.
 
-Desde la raíz del repositorio, usando Git Bash:
+Desde la raíz del repositorio:
 
 ```bash
 cd backend
-npm install
-cp .env.example .env
+npm ci
 npm run start:dev
 ```
 
-Completa `DATABASE_URL` y las variables necesarias en el archivo local `.env`.
-La API usa el puerto 3000 por defecto; se puede modificar con `PORT`.
-La documentación Swagger se publica en `/` y `GET /health` devuelve `{ "status": "ok" }`.
+La API usa el puerto 3000 por defecto; se puede modificar con `PORT`. Swagger se publica en `/` y `GET /health` devuelve `{ "status": "ok" }`.
+
+#### Registro temporal de incidencias
+
+| Método y ruta | Resultado |
+| --- | --- |
+| `POST /incidents` | `201 Created`, el recurso y `Location: /incidents/{id}`. |
+| `GET /incidents/:id` | `200 OK`; `404` si el UUID válido no existe. |
+
+Ejemplo de creación:
+
+```json
+{
+  "title": "Farola apagada",
+  "description": "La farola no ilumina la calle.",
+  "categoryId": "00000000-0000-4000-8000-000000000002",
+  "latitude": 36.7213,
+  "longitude": -4.4214
+}
+```
+
+`title` se recorta y debe tener 4–25 puntos de código; `description`, al menos 10. Las coordenadas deben ser números finitos dentro de sus rangos geográficos y los identificadores son UUID. Se rechazan campos desconocidos, incluido `civicId`, además de campos gestionados por el servidor. La categoría y el activo urbano se validan solo por formato: aún no se comprueba que existan.
+
+Los datos viven únicamente en memoria del proceso. No hay autenticación ni identidad ciudadana en esta fase, y todos los registros se pierden al reiniciar el backend.
 
 | Comando | Uso |
 | --- | --- |
