@@ -1,5 +1,28 @@
 {
-  "incidents": [],
+  "incidents": [
+    {
+      "title": "Farola rota Trinidad",
+      "description": "En frente del Mercadona, no sé ve bien la población y se están empezando a chocar las personas",
+      "latitude": 36.722086749842845,
+      "longitude": -4.432827987470363,
+      "accuracy": 5,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "categoryId": "2",
+      "category": null,
+      "id": "RLfTcvEVqlc"
+    },
+    {
+      "title": "Farola Rota Trinidad",
+      "description": "No deja ver a la gente, esto es un caos",
+      "latitude": 36.722086749842845,
+      "longitude": -4.432827987470363,
+      "accuracy": 5,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "categoryId": "2",
+      "category": null,
+      "id": "bALCrQcm_gw"
+    }
+  ],
   "categories": [
     {
       "id": "1",
@@ -15,7 +38,23 @@
     }
   ],
   "locations": [],
-  "images": [],
+  "images": [
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/5CE26BC2-97CB-42E8-A42E-CA617FEE421F.jpg",
+      "incidentId": "RLfTcvEVqlc",
+      "id": "J3YiO1gVQpU"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/F23CDE60-9C75-4860-920F-95958B647E58.jpg",
+      "incidentId": "RLfTcvEVqlc",
+      "id": "YCG7UA8EIdc"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/662B63B0-33D2-4DC5-B614-730C97C88FE4.jpg",
+      "incidentId": "bALCrQcm_gw",
+      "id": "m9x06zMh3r8"
+    }
+  ],
   "users": [
     {
       "username": "sofia13",
@@ -35,11 +74,13 @@
   "civics": [
     {
       "userId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
-      "phone": "600388787"
+      "phone": "600388787",
+      "id": "J3_knLzOgNI"
     },
     {
       "userId": "a62218e7563",
-      "phone": "123456234"
+      "phone": "123456234",
+      "id": "PjXQ-etx_j4"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"
