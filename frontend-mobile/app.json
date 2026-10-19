@@ -20,6 +20,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
+      "bundler": "metro",
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
@@ -32,7 +33,22 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "UrbanPulse necesita tu ubicación para registrar dónde ocurre la incidencia."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "UrbanPulse necesita acceder a tus fotos para adjuntar evidencia a la incidencia.",
+          "cameraPermission": "UrbanPulse necesita acceder a tu cámara para capturar la foto de la incidencia.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
