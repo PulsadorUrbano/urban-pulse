@@ -3,7 +3,7 @@ import { act, renderHook } from '@testing-library/react-native';
 
 import { useCreateIncident } from '@/hooks/use-create-incident';
 import { createIncident } from '@/services/incident.service';
-import type { CreateIncidentInput, Incident } from '@/types/incident';
+import type { CreateIncidentInput, IncidentPayload } from '@/types/incident';
 
 jest.mock('@/services/incident.service', () => ({
   createIncident: jest.fn(),
@@ -14,23 +14,21 @@ const mockedCreateIncident = createIncident as jest.MockedFunction<typeof create
 const validInput: CreateIncidentInput = {
   title: 'Bache en la avenida principal',
   description: 'Hay un bache profundo que pone en riesgo a los vehículos.',
+  latitude: null,
+  longitude: null,
+  accuracy: null,
 };
 
-const createdIncident: Incident = {
+const createdIncident: IncidentPayload & { id: string } = {
   id: '42',
   title: validInput.title,
   description: validInput.description,
-  status: 'reported',
-  priority: null,
-  createdAt: '2026-10-12T14:00:00.000Z',
-  civicId: null,
-  locationId: null,
-  urbanAssetId: null,
-  categoryId: null,
-  category: null,
-  departmentId: null,
-  teamId: null,
-  technicianId: null,
+  latitude: 40.4168,
+  longitude: -3.7038,
+  accuracy: 10,
+  civicId: 'a62718e8563',
+  categoryId: 'infrastructure',
+  category: 'Vía pública',
 };
 
 describe('useCreateIncident', () => {
@@ -42,7 +40,7 @@ describe('useCreateIncident', () => {
     mockedCreateIncident.mockResolvedValueOnce(createdIncident);
     const { result } = await renderHook(() => useCreateIncident());
 
-    let returned: Incident | null = null;
+    let returned: (IncidentPayload & { id: string }) | null = null;
     await act(async () => {
       returned = await result.current.submitIncident(validInput);
     });
@@ -57,7 +55,7 @@ describe('useCreateIncident', () => {
     mockedCreateIncident.mockRejectedValueOnce(new Error('No se pudo registrar la incidencia.'));
     const { result } = await renderHook(() => useCreateIncident());
 
-    let returned: Incident | null = createdIncident;
+    let returned: (IncidentPayload & { id: string }) | null = createdIncident;
     await act(async () => {
       returned = await result.current.submitIncident(validInput);
     });

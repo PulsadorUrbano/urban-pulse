@@ -1,4 +1,5 @@
 /// <reference types="jest" />
+import { Alert, type AlertButton } from 'react-native';
 import { act, render, screen, userEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
@@ -12,12 +13,11 @@ import {
 } from '@/services/device-location';
 import { createImage } from '@/services/image.service';
 import { createIncident } from '@/services/incident.service';
-import { createLocation } from '@/services/location.service';
 import { pickPhotoFromCamera, pickPhotoFromLibrary } from '@/services/photo-picker';
 import { storePhoto } from '@/services/storage.service';
-import type { Incident } from '@/types/incident';
+import type { IncidentPayload } from '@/types/incident';
 import type { IncidentImage } from '@/types/incident-image';
-import type { Location, LocationCoordinates } from '@/types/location';
+import type { LocationCoordinates } from '@/types/location';
 
 // ---------------------------------------------------------------------------
 // Test de INTEGRACIÓN de la pantalla de nueva incidencia: se monta el
@@ -65,10 +65,6 @@ jest.mock('@/services/image.service', () => ({
   createImage: jest.fn(),
 }));
 
-jest.mock('@/services/location.service', () => ({
-  createLocation: jest.fn(),
-}));
-
 // Ubicación del dispositivo: en los defaults felices los servicios están
 // activos, el permiso está concedido y las coordenadas son fijas.
 jest.mock('@/services/device-location', () => ({
@@ -95,7 +91,6 @@ jest.mock('@/services/category.service', () => ({
 // Versiones tipadas de los mocks para configurar respuestas y verificar llamadas.
 const mockedCreateIncident = createIncident as jest.MockedFunction<typeof createIncident>;
 const mockedCreateImage = createImage as jest.MockedFunction<typeof createImage>;
-const mockedCreateLocation = createLocation as jest.MockedFunction<typeof createLocation>;
 const mockedFetchCategories = fetchCategories as jest.MockedFunction<typeof fetchCategories>;
 const mockedAreLocationServicesEnabled = areLocationServicesEnabled as jest.MockedFunction<
   typeof areLocationServicesEnabled
@@ -124,27 +119,17 @@ const deviceCoordinates: LocationCoordinates = {
   accuracy: 10,
 };
 
-const createdLocation: Location = {
-  ...deviceCoordinates,
-  id: 'loc-1',
-  createdAt: '2026-10-13T10:00:00.000Z',
-};
-
-const createdIncident: Incident = {
+// Incidencia devuelta por el servicio tras el POST: el payload del front más el id.
+const createdIncident: IncidentPayload & { id: string } = {
   id: '42',
   title: 'Bache en la avenida principal',
   description: 'Hay un bache profundo que pone en riesgo a los vehículos.',
-  status: 'reported',
-  priority: null,
-  createdAt: '2026-10-13T10:05:00.000Z',
-  civicId: null,
-  locationId: createdLocation.id,
-  urbanAssetId: null,
+  latitude: deviceCoordinates.latitude,
+  longitude: deviceCoordinates.longitude,
+  accuracy: deviceCoordinates.accuracy,
+  civicId: 'a62718e8563',
   categoryId: null,
   category: null,
-  departmentId: null,
-  teamId: null,
-  technicianId: null,
 };
 
 const createdIncidentImage: IncidentImage = {
@@ -189,14 +174,40 @@ async function attachPhotoFromLibrary(user: ReturnType<typeof userEvent.setup>) 
   await screen.findByLabelText('Foto adjunta');
 }
 
+// Pulsa el botón del último `Alert.alert` que coincida con el texto indicado.
+// El diálogo nativo no existe en Jest: se ejecuta directamente su `onPress`.
+async function pressLastAlertButton(
+  alertSpy: jest.SpyInstance,
+  buttonText: string,
+): Promise<void> {
+  const lastAlertCall = alertSpy.mock.calls.at(-1) as Parameters<typeof Alert.alert> | undefined;
+  if (!lastAlertCall) {
+    throw new Error('Alert.alert no fue llamado.');
+  }
+
+  const alertButtons: AlertButton[] = lastAlertCall[2] ?? [];
+  const targetButton = alertButtons.find((button) => button.text === buttonText);
+  if (!targetButton?.onPress) {
+    throw new Error(`No hay un botón de Alert con el texto "${buttonText}".`);
+  }
+
+  await act(async () => {
+    targetButton.onPress?.();
+  });
+}
+
 describe('NewIncidentScreen', () => {
+  // Espía de Alert.alert: evita el diálogo nativo y permite pulsar sus botones.
+  let alertSpy: jest.SpyInstance;
+
   beforeEach(() => {
     // userEvent.press simula una pulsación con duración; los fake timers la aceleran.
     jest.useFakeTimers();
 
+    alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+
     mockedCreateIncident.mockReset();
     mockedCreateImage.mockReset();
-    mockedCreateLocation.mockReset();
     mockedFetchCategories.mockReset();
     mockedAreLocationServicesEnabled.mockReset();
     mockedRequestLocationPermission.mockReset();
@@ -210,7 +221,6 @@ describe('NewIncidentScreen', () => {
     mockedFetchCategories.mockResolvedValue([]);
     mockedCreateIncident.mockResolvedValue(createdIncident);
     mockedCreateImage.mockResolvedValue(createdIncidentImage);
-    mockedCreateLocation.mockResolvedValue(createdLocation);
     mockedAreLocationServicesEnabled.mockResolvedValue(true);
     mockedRequestLocationPermission.mockResolvedValue(true);
     mockedGetCurrentCoordinates.mockResolvedValue(deviceCoordinates);
@@ -221,6 +231,7 @@ describe('NewIncidentScreen', () => {
   });
 
   afterEach(() => {
+    alertSpy.mockRestore();
     jest.useRealTimers();
   });
 
@@ -281,14 +292,16 @@ describe('NewIncidentScreen', () => {
     // Pantalla de confirmación tras el registro correcto.
     expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
 
-    // La incidencia se crea con la ubicación resuelta por el mock del dispositivo.
+    // La incidencia se crea con las coordenadas resueltas por el mock del dispositivo.
     expect(mockedCreateIncident).toHaveBeenCalledTimes(1);
     expect(mockedCreateIncident).toHaveBeenCalledWith({
       title: createdIncident.title,
       description: createdIncident.description,
       categoryId: null,
       category: null,
-      locationId: createdLocation.id,
+      latitude: 40.4168,
+      longitude: -3.7038,
+      accuracy: 10,
     });
 
     // Cada URI adjunta se persiste vinculada a la incidencia recién creada.
@@ -370,5 +383,142 @@ describe('NewIncidentScreen', () => {
     await user.press(screen.getByLabelText('Volver al inicio'));
 
     expect(router.back).toHaveBeenCalledTimes(1);
+  });
+
+  it('con la ubicación activa envía latitude, longitude y accuracy del dispositivo y confirma con estado "reported"', async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+
+    expect(mockedGetCurrentCoordinates).toHaveBeenCalledTimes(1);
+    expect(mockedCreateIncident).toHaveBeenCalledWith({
+      title: createdIncident.title,
+      description: createdIncident.description,
+      categoryId: null,
+      category: null,
+      latitude: deviceCoordinates.latitude,
+      longitude: deviceCoordinates.longitude,
+      accuracy: deviceCoordinates.accuracy,
+    });
+    expect(screen.getByText('reported')).toBeOnTheScreen();
+    expect(alertSpy).not.toHaveBeenCalled();
+  });
+
+  it('con el toggle de ubicación apagado envía latitude, longitude y accuracy null tras confirmar el aviso', async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText('Desactivar ubicación'));
+    await fillValidIncidentForm(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    // Con la ubicación desactivada se pide confirmación antes de enviar.
+    expect(alertSpy).toHaveBeenCalledTimes(1);
+    await pressLastAlertButton(alertSpy, 'Enviar de todas formas');
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+
+    // Con el toggle apagado no se consulta al dispositivo y se envían los tres null.
+    expect(mockedAreLocationServicesEnabled).not.toHaveBeenCalled();
+    expect(mockedGetCurrentCoordinates).not.toHaveBeenCalled();
+    expect(mockedCreateIncident).toHaveBeenCalledWith({
+      title: createdIncident.title,
+      description: createdIncident.description,
+      categoryId: null,
+      category: null,
+      latitude: null,
+      longitude: null,
+      accuracy: null,
+    });
+    expect(screen.getByText('reported')).toBeOnTheScreen();
+  });
+
+  it('si el dispositivo no devuelve coordenadas envía los tres null y avisa en la confirmación', async () => {
+    mockedGetCurrentCoordinates.mockResolvedValue(null);
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+
+    expect(mockedCreateIncident).toHaveBeenCalledWith({
+      title: createdIncident.title,
+      description: createdIncident.description,
+      categoryId: null,
+      category: null,
+      latitude: null,
+      longitude: null,
+      accuracy: null,
+    });
+    expect(
+      screen.getByText('No se pudo obtener la ubicación; la incidencia se registró sin posición.'),
+    ).toBeOnTheScreen();
+  });
+
+  it('si no hay permiso de ubicación y el usuario envía sin ubicación, envía los tres null', async () => {
+    mockedRequestLocationPermission.mockResolvedValue(false);
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(alertSpy).toHaveBeenCalledTimes(1);
+    await pressLastAlertButton(alertSpy, 'Enviar sin ubicación');
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+
+    expect(mockedGetCurrentCoordinates).not.toHaveBeenCalled();
+    expect(mockedCreateIncident).toHaveBeenCalledWith({
+      title: createdIncident.title,
+      description: createdIncident.description,
+      categoryId: null,
+      category: null,
+      latitude: null,
+      longitude: null,
+      accuracy: null,
+    });
+    expect(
+      screen.getByText('La incidencia se registró sin ubicación porque no hay permiso de ubicación.'),
+    ).toBeOnTheScreen();
+  });
+
+  it('si los servicios de ubicación del dispositivo están desactivados y el usuario envía sin ubicación, envía los tres null', async () => {
+    mockedAreLocationServicesEnabled.mockResolvedValue(false);
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(alertSpy).toHaveBeenCalledTimes(1);
+    await pressLastAlertButton(alertSpy, 'Enviar sin ubicación');
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+
+    expect(mockedRequestLocationPermission).not.toHaveBeenCalled();
+    expect(mockedCreateIncident).toHaveBeenCalledWith({
+      title: createdIncident.title,
+      description: createdIncident.description,
+      categoryId: null,
+      category: null,
+      latitude: null,
+      longitude: null,
+      accuracy: null,
+    });
   });
 });

@@ -1,33 +1,30 @@
 import { API_BASE_URL } from '@/constants/config';
-import {
-  DEFAULT_INCIDENT_STATUS,
-  type CreateIncidentInput,
-  type Incident,
-} from '@/types/incident';
+import { type CreateIncidentInput, type IncidentPayload } from '@/types/incident';
 
 import { RequestTimeoutError, fetchWithTimeout } from './http';
 
 export const INCIDENTS_ENDPOINT = `${API_BASE_URL}/incidents`;
 
-// Crea una incidencia rellenando los campos automáticos (estado inicial, fecha
-// de creación y relaciones sin asignar) y la persiste en el servidor mock.
-export async function createIncident(input: CreateIncidentInput): Promise<Incident> {
+// TEMPORAL: id del ciudadano `sofia13` (role civic) tomado del mock de
+// feature/token. Se sustituirá cuando exista una sesión real.
+const TEMPORARY_CIVIC_ID = 'a62718e8563';
+
+// Crea una incidencia con los 8 campos que envía el front y la persiste en el
+// servidor mock.
+export async function createIncident(
+  input: CreateIncidentInput,
+): Promise<IncidentPayload & { id: string }> {
   const trimmedCustomCategory = input.category?.trim();
 
-  const payload: Omit<Incident, 'id'> = {
+  const payload: IncidentPayload = {
     title: input.title.trim(),
     description: input.description.trim(),
-    status: DEFAULT_INCIDENT_STATUS,
-    priority: null,
-    createdAt: new Date().toISOString(),
-    civicId: null,
-    locationId: input.locationId ?? null,
-    urbanAssetId: null,
+    latitude: input.latitude ?? null,
+    longitude: input.longitude ?? null,
+    accuracy: input.accuracy ?? null,
+    civicId: TEMPORARY_CIVIC_ID,
     categoryId: input.categoryId ?? null,
     category: trimmedCustomCategory ? trimmedCustomCategory : null,
-    departmentId: null,
-    teamId: null,
-    technicianId: null,
   };
 
   let response: Response;
@@ -56,6 +53,6 @@ export async function createIncident(input: CreateIncidentInput): Promise<Incide
     throw new Error('No se pudo registrar la incidencia. Inténtalo de nuevo más tarde.');
   }
 
-  const incident = (await response.json()) as Incident;
+  const incident = (await response.json()) as IncidentPayload & { id: string };
   return incident;
 }
