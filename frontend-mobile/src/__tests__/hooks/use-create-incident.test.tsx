@@ -3,7 +3,11 @@ import { act, renderHook } from '@testing-library/react-native';
 
 import { useCreateIncident } from '@/hooks/use-create-incident';
 import { createIncident } from '@/services/incident.service';
-import type { CreateIncidentInput, CreatedIncident } from '@/types/incident';
+import type {
+  CreateIncidentInput,
+  CreateIncidentResult,
+  CreatedIncident,
+} from '@/types/incident';
 
 jest.mock('@/services/incident.service', () => ({
   createIncident: jest.fn(),
@@ -42,6 +46,18 @@ const createdIncident: CreatedIncident = {
   createdAt: '2026-10-19T10:00:00.000Z',
 };
 
+// Resultado del servicio cuando la incidencia se creó en el backend real.
+const backendCreateResult: CreateIncidentResult = {
+  incident: createdIncident,
+  source: 'backend',
+};
+
+// Resultado del servicio cuando el backend no respondió y se usó el mock.
+const mockCreateResult: CreateIncidentResult = {
+  incident: { ...createdIncident, id: '99' },
+  source: 'mock',
+};
+
 // Promesa controlada desde fuera para observar el estado mientras la petición vuela.
 function createDeferred<T>() {
   let resolvePromise!: (value: T) => void;
@@ -58,22 +74,37 @@ describe('useCreateIncident', () => {
     mockedCreateIncident.mockReset();
   });
 
-  it('en éxito devuelve la CreatedIncident y deja isSubmitting en false', async () => {
-    mockedCreateIncident.mockResolvedValueOnce(createdIncident);
+  it('en éxito con origen backend devuelve { incident, source: "backend" } y deja isSubmitting en false', async () => {
+    mockedCreateIncident.mockResolvedValueOnce(backendCreateResult);
     const { result } = await renderHook(() => useCreateIncident());
 
-    let returned: CreatedIncident | null = null;
+    let returned: CreateIncidentResult | null = null;
     await act(async () => {
       returned = await result.current.submitIncident(validInput, selectedImageUris);
     });
 
-    expect(returned).toEqual(createdIncident);
+    expect(returned).toEqual(backendCreateResult);
+    expect(result.current.isSubmitting).toBe(false);
+    expect(result.current.errorMessage).toBeNull();
+  });
+
+  it('en éxito con origen mock devuelve { incident, source: "mock" } sin tratarlo como error', async () => {
+    mockedCreateIncident.mockResolvedValueOnce(mockCreateResult);
+    const { result } = await renderHook(() => useCreateIncident());
+
+    let returned: CreateIncidentResult | null = null;
+    await act(async () => {
+      returned = await result.current.submitIncident(validInput, selectedImageUris);
+    });
+
+    expect(returned).toEqual(mockCreateResult);
+    expect(returned).toMatchObject({ source: 'mock' });
     expect(result.current.isSubmitting).toBe(false);
     expect(result.current.errorMessage).toBeNull();
   });
 
   it('reenvía input e imageUris a createIncident como argumentos separados', async () => {
-    mockedCreateIncident.mockResolvedValueOnce(createdIncident);
+    mockedCreateIncident.mockResolvedValueOnce(backendCreateResult);
     const { result } = await renderHook(() => useCreateIncident());
 
     await act(async () => {
@@ -85,7 +116,7 @@ describe('useCreateIncident', () => {
   });
 
   it('reenvía un array vacío de imageUris sin transformarlo', async () => {
-    mockedCreateIncident.mockResolvedValueOnce(createdIncident);
+    mockedCreateIncident.mockResolvedValueOnce(backendCreateResult);
     const { result } = await renderHook(() => useCreateIncident());
 
     await act(async () => {
@@ -96,7 +127,7 @@ describe('useCreateIncident', () => {
   });
 
   it('si no se pasan imageUris reenvía undefined como segundo argumento', async () => {
-    mockedCreateIncident.mockResolvedValueOnce(createdIncident);
+    mockedCreateIncident.mockResolvedValueOnce(backendCreateResult);
     const { result } = await renderHook(() => useCreateIncident());
 
     await act(async () => {
@@ -114,7 +145,7 @@ describe('useCreateIncident', () => {
     );
     const { result } = await renderHook(() => useCreateIncident());
 
-    let returned: CreatedIncident | null = createdIncident;
+    let returned: CreateIncidentResult | null = backendCreateResult;
     await act(async () => {
       returned = await result.current.submitIncident(validInput, selectedImageUris);
     });
@@ -130,7 +161,7 @@ describe('useCreateIncident', () => {
     mockedCreateIncident.mockRejectedValueOnce('boom');
     const { result } = await renderHook(() => useCreateIncident());
 
-    let returned: CreatedIncident | null = createdIncident;
+    let returned: CreateIncidentResult | null = backendCreateResult;
     await act(async () => {
       returned = await result.current.submitIncident(validInput, selectedImageUris);
     });
@@ -142,11 +173,11 @@ describe('useCreateIncident', () => {
   });
 
   it('mientras la petición está en curso isSubmitting es true y se libera al resolver', async () => {
-    const pendingRequest = createDeferred<CreatedIncident>();
+    const pendingRequest = createDeferred<CreateIncidentResult>();
     mockedCreateIncident.mockReturnValueOnce(pendingRequest.promise);
     const { result } = await renderHook(() => useCreateIncident());
 
-    let submission: Promise<CreatedIncident | null> | undefined;
+    let submission: Promise<CreateIncidentResult | null> | undefined;
     await act(async () => {
       submission = result.current.submitIncident(validInput, selectedImageUris);
     });
@@ -154,7 +185,7 @@ describe('useCreateIncident', () => {
     expect(result.current.isSubmitting).toBe(true);
 
     await act(async () => {
-      pendingRequest.resolve(createdIncident);
+      pendingRequest.resolve(mockCreateResult);
       await submission;
     });
 
@@ -163,11 +194,11 @@ describe('useCreateIncident', () => {
   });
 
   it('libera isSubmitting tras un fallo aunque la petición esté en curso', async () => {
-    const pendingRequest = createDeferred<CreatedIncident>();
+    const pendingRequest = createDeferred<CreateIncidentResult>();
     mockedCreateIncident.mockReturnValueOnce(pendingRequest.promise);
     const { result } = await renderHook(() => useCreateIncident());
 
-    let submission: Promise<CreatedIncident | null> | undefined;
+    let submission: Promise<CreateIncidentResult | null> | undefined;
     await act(async () => {
       submission = result.current.submitIncident(validInput, selectedImageUris);
     });
@@ -184,7 +215,7 @@ describe('useCreateIncident', () => {
 
   it('un nuevo envío limpia el errorMessage anterior', async () => {
     mockedCreateIncident.mockRejectedValueOnce(new Error('Fallo previo.'));
-    mockedCreateIncident.mockResolvedValueOnce(createdIncident);
+    mockedCreateIncident.mockResolvedValueOnce(backendCreateResult);
     const { result } = await renderHook(() => useCreateIncident());
 
     await act(async () => {

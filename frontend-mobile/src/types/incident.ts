@@ -79,3 +79,11 @@ export interface CreatedIncident {
   priority: 'low';
   createdAt: string;
 }
+
+// Origen de la incidencia creada: backend real o simulación en el mock
+export type IncidentSource = 'backend' | 'mock';
+
+export interface CreateIncidentResult {
+  incident: CreatedIncident;
+  source: IncidentSource;
+}

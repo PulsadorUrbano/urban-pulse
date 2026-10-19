@@ -14,7 +14,11 @@ import {
 import { createIncident } from '@/services/incident.service';
 import { pickPhotoFromCamera, pickPhotoFromLibrary } from '@/services/photo-picker';
 import { storePhoto } from '@/services/storage.service';
-import type { CreateIncidentInput, CreatedIncident } from '@/types/incident';
+import type {
+  CreateIncidentInput,
+  CreateIncidentResult,
+  CreatedIncident,
+} from '@/types/incident';
 import type { LocationCoordinates } from '@/types/location';
 
 // ---------------------------------------------------------------------------
@@ -142,6 +146,21 @@ const createdIncident: CreatedIncident = {
   createdAt: '2026-10-19T10:00:00.000Z',
 };
 
+// Resultado de `createIncident` cuando la incidencia la registra el backend real.
+const backendCreateResult: CreateIncidentResult = {
+  incident: createdIncident,
+  source: 'backend',
+};
+
+// Resultado de `createIncident` cuando el backend no respondió y se simuló en el mock.
+const mockCreateResult: CreateIncidentResult = {
+  incident: createdIncident,
+  source: 'mock',
+};
+
+// Aviso que muestra la confirmación cuando la incidencia se guardó en el mock.
+const MOCK_FALLBACK_NOTICE = 'No se ha podido conectar al backend, realizando en el mock';
+
 // Input esperado en `createIncident` con los datos del formulario relleno por
 // `fillValidIncidentForm`, sin categoría y con la ubicación del dispositivo.
 const expectedDeviceSubmission: CreateIncidentInput = {
@@ -258,7 +277,7 @@ describe('NewIncidentScreen', () => {
     // Defaults felices de todos los límites externos: catálogo vacío,
     // ubicación resuelta y envío correcto.
     mockedFetchCategories.mockResolvedValue([]);
-    mockedCreateIncident.mockResolvedValue(createdIncident);
+    mockedCreateIncident.mockResolvedValue(backendCreateResult);
     mockedAreLocationServicesEnabled.mockResolvedValue(true);
     mockedRequestLocationPermission.mockResolvedValue(true);
     mockedGetCurrentCoordinates.mockResolvedValue(deviceCoordinates);
@@ -507,5 +526,63 @@ describe('NewIncidentScreen', () => {
 
     expect(mockedRequestLocationPermission).not.toHaveBeenCalled();
     expect(mockedCreateIncident).toHaveBeenCalledWith(expectedNoLocationSubmission, []);
+  });
+
+  it('con source "mock" muestra el aviso de fallback al backend en la confirmación', async () => {
+    mockedCreateIncident.mockResolvedValue(mockCreateResult);
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+    expect(screen.getByText(MOCK_FALLBACK_NOTICE)).toBeOnTheScreen();
+  });
+
+  it('con source "backend" NO muestra el aviso de fallback al backend', async () => {
+    mockedCreateIncident.mockResolvedValue(backendCreateResult);
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+    expect(screen.queryByText(MOCK_FALLBACK_NOTICE)).not.toBeOnTheScreen();
+    expect(screen.queryByText(/realizando en el mock/)).not.toBeOnTheScreen();
+  });
+
+  it('con source "mock" mantiene el estado "reported", el envío con fotos y el resto de la confirmación', async () => {
+    mockedCreateIncident.mockResolvedValue(mockCreateResult);
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+    await attachPhotoFromLibrary(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+    expect(screen.getByText('reported')).toBeOnTheScreen();
+    expect(screen.getByText(MOCK_FALLBACK_NOTICE)).toBeOnTheScreen();
+    expect(mockedCreateIncident).toHaveBeenCalledTimes(1);
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedDeviceSubmission, [libraryPhotoUri]);
+  });
+
+  it('el aviso de fallback no aparece en el formulario antes de enviar', async () => {
+    mockedCreateIncident.mockResolvedValue(mockCreateResult);
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    expect(screen.queryByText(MOCK_FALLBACK_NOTICE)).not.toBeOnTheScreen();
   });
 });

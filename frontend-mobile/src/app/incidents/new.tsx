@@ -70,6 +70,7 @@ export default function NewIncidentScreen() {
   const [validationErrors, setValidationErrors] = useState<IncidentValidationErrors>({});
   const [createdIncident, setCreatedIncident] = useState<CreatedIncident | null>(null);
   const [locationNotice, setLocationNotice] = useState<string | null>(null);
+  const [backendFallbackNotice, setBackendFallbackNotice] = useState<string | null>(null);
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
 
   // No se permite enviar mientras se resuelve la ubicación, se persiste la
@@ -111,7 +112,7 @@ export default function NewIncidentScreen() {
     coordinates: LocationCoordinates | null,
     notice: string | null = null,
   ) => {
-    const incident = await submitIncident(
+    const result = await submitIncident(
       {
         title,
         description,
@@ -123,13 +124,18 @@ export default function NewIncidentScreen() {
       selectedPhotoUris,
     );
 
-    if (!incident) {
+    if (!result) {
       return;
     }
 
     setLocationNotice(notice);
+    setBackendFallbackNotice(
+      result.source === 'mock'
+        ? 'No se ha podido conectar al backend, realizando en el mock'
+        : null,
+    );
 
-    setCreatedIncident(incident);
+    setCreatedIncident(result.incident);
   };
 
   // Resuelve la ubicación según la preferencia, los servicios del dispositivo y
@@ -252,6 +258,14 @@ export default function NewIncidentScreen() {
               <ThemedText type="small" themeColor="textSecondary" className="text-center">
                 {locationNotice}
               </ThemedText>
+            ) : null}
+
+            {backendFallbackNotice ? (
+              <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
+                <Text className="text-center text-sm font-medium text-[#d92d20]">
+                  {backendFallbackNotice}
+                </Text>
+              </ThemedView>
             ) : null}
 
             <Pressable
