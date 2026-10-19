@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateIncidentDto {
-  @ApiProperty({ minLength: 4, maxLength: 25, example: 'Farola apagada' })
+  @ApiProperty({ minLength: 4, maxLength: 50, example: 'Farola apagada' })
   title!: string;
 
   @ApiPropertyOptional({

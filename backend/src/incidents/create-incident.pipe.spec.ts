@@ -26,6 +26,14 @@ describe('CreateIncidentPipe', () => {
     });
   });
 
+  it.each(['a'.repeat(4), 'a'.repeat(26), 'a'.repeat(50), '😀'.repeat(50)])(
+    'accepts trimmed titles up to 50 code points: %s',
+    (title) => {
+      expect(pipe.transform({ ...input(), title: `  ${title}  ` }).title).toBe(
+        title,
+      );
+    },
+  );
   it('accepts code-point title boundaries and coordinate extremes', () => {
     const value = input();
     value.title = '😀😀😀😀';
@@ -40,7 +48,11 @@ describe('CreateIncidentPipe', () => {
   });
 
   it('accepts an omitted description and accuracy', () => {
-    const { description: _description, accuracy: _accuracy, ...value } = input();
+    const {
+      description: _description,
+      accuracy: _accuracy,
+      ...value
+    } = input();
 
     const result = pipe.transform(value);
     expect(result.title).toBe('Farola apagada');
@@ -53,7 +65,7 @@ describe('CreateIncidentPipe', () => {
     [],
     'incident',
     { ...input(), title: 'abc' },
-    { ...input(), title: 'a'.repeat(26) },
+    { ...input(), title: 'a'.repeat(51) },
     { ...input(), description: 'short' },
     { ...input(), civicId: 'not-a-uuid' },
     { ...input(), categoryName: '   ' },

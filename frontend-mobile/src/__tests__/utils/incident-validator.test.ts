@@ -19,6 +19,21 @@ function buildValidInput(overrides: Partial<CreateIncidentInput> = {}): CreateIn
 }
 
 describe('validateIncidentInput', () => {
+  it.each(['abc', '  abc  ', 'a'.repeat(51)])('rechaza títulos fuera de 4–50 caracteres: %s', (title) => {
+    expect(validateIncidentInput(buildValidInput({ title })).title).toBeDefined();
+  });
+
+  it.each(['a'.repeat(4), 'a'.repeat(26), 'a'.repeat(50), '  Farola  '])(
+    'acepta títulos de 4–50 caracteres tras trim: %s',
+    (title) => {
+      expect(validateIncidentInput(buildValidInput({ title })).title).toBeUndefined();
+    },
+  );
+
+  it('mantiene el máximo del formulario en 50 caracteres', () => {
+    expect(INCIDENT_TITLE_MAX_LENGTH).toBe(50);
+  });
+
   it('marca error en title cuando el título está vacío', () => {
     const errors = validateIncidentInput(buildValidInput({ title: '' }));
 

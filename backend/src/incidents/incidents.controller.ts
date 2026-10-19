@@ -129,7 +129,7 @@ export class IncidentsController {
       type: 'object',
       required: ['title', 'civicId', 'categoryName', 'latitude', 'longitude'],
       properties: {
-        title: { type: 'string', minLength: 4, maxLength: 25 },
+        title: { type: 'string', minLength: 4, maxLength: 50 },
         description: { type: 'string', minLength: 10 },
         civicId: { type: 'string', format: 'uuid' },
         categoryName: { type: 'string' },

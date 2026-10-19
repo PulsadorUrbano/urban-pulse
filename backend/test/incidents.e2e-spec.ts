@@ -102,6 +102,7 @@ describe('Incidents (e2e)', () => {
               'longitude',
             ]),
             properties: {
+              title: { type: 'string', minLength: 4, maxLength: 50 },
               civicId: { format: 'uuid' },
               categoryName: { type: 'string' },
               latitude: { type: 'number' },

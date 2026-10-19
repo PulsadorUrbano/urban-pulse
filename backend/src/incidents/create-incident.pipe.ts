@@ -37,8 +37,8 @@ export class CreateIncidentPipe implements PipeTransform<
         : this.text(value.description, 'description');
     const categoryName = this.text(value.categoryName, 'categoryName');
 
-    if ([...title].length < 4 || [...title].length > 25) {
-      throw new BadRequestException('title must contain 4 to 25 characters');
+    if ([...title].length < 4 || [...title].length > 50) {
+      throw new BadRequestException('title must contain 4 to 50 characters');
     }
     if (description !== undefined && [...description].length < 10) {
       throw new BadRequestException(

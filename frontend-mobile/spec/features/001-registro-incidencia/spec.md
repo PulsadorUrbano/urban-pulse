@@ -5,7 +5,7 @@
 ## Qué hace
 
 Permite al ciudadano, desde la pantalla de inicio de la app, abrir un formulario y registrar
-una incidencia urbana indicando un **título** obligatorio, una **descripción** opcional y una
+una incidencia urbana indicando un **título** obligatorio de **4 a 50 caracteres** tras eliminar espacios exteriores, una **descripción** opcional y una
 **categoría** opcional. La categoría no es un campo independiente: es un control situado en la
 **esquina inferior del campo Descripción** que, cuando no hay selección, muestra
 **"Añadir categoría +"**. Al pulsarlo se despliega una **hoja inferior** (bottom sheet) con las
