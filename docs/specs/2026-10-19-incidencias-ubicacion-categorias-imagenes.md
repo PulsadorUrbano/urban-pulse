@@ -25,7 +25,7 @@ Content type: `multipart/form-data`.
 
 | Campo | Regla |
 | --- | --- |
-| `title` | Obligatorio; trim; entre 4 y 50 puntos de código Unicode. |
+| `title` | Obligatorio; trim; entre 4 y 25 puntos de código Unicode. |
 | `description` | Opcional; si se proporciona, trim y mínimo 10 puntos de código Unicode. |
 | `civicId` | Obligatorio; UUID con validación de formato solamente. |
 | `categoryName` | Obligatorio; texto no vacío tras trim. |

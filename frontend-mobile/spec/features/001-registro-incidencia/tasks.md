@@ -126,3 +126,17 @@ _Checklist accionable derivada del `plan.md`. Tareas pequeñas y concretas; marc
 >
 > La sección **"Fotos (ampliación)"** está **completada y verificada**: T1–T7 y las
 > pruebas/cierre están terminadas (developer → compiler-checker → tester).
+
+## Ampliación: conexión al backend
+
+- [x] Alinear el contrato front↔backend (`title` 4–25, `description` opcional, `civicId` UUID, `categoryId`?/`category`?, coordenadas nullable).
+- [x] Tipos `CreatedIncident`, `CreateIncidentResult` e `IncidentSource` en `src/types/incident.ts`.
+- [x] `createIncident()` real-first: `POST /incidents` multipart con imágenes en el mismo POST (`src/services/incident.service.ts`).
+- [x] Fallback al mock (`json-server`) sin conexión.
+- [x] Hook `src/hooks/use-create-incident.ts` expone el origen del registro.
+- [x] Aviso en `src/app/incidents/new.tsx`: "No se ha podido conectar al backend, realizando en el mock".
+- [x] Notas de refactor en `spec/refactor/001-registro-incidencia/`.
+- [ ] (Diferido) Unificar el límite de imágenes front/backend (issue #91; hoy el móvil recorta a 5).
+- [ ] (Diferido) `civicId` desde auth/token de ciudadanía (issue #61; hoy UUID temporal).
+- [ ] (Diferido) Revisar transporte multipart vs JSON si cambia el contrato del backend.
+- [ ] (Backend, fuera del front) Persistencia duradera del backend; solo reportar.

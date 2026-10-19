@@ -341,3 +341,27 @@ FAB con `zIndex`/`elevation`) y el `ScrollView` reserva el padding inferior.
   huérfana de 001.
 - **Tests con `setTimeout` en `storage.service`** — los tests usarán fake timers para no esperar
   el retardo real.
+
+## Ampliación: conexión al backend
+
+**Enfoque:** real-first con fallback al mock (convención "Backend real + simulación mock" de `CLAUDE.md`).
+`createIncident()` intenta primero `POST /incidents` (multipart/form-data: campos de texto + imágenes
+como partes de archivo en el mismo request); ante fallo de red/conexión cae a `json-server` y devuelve
+`source: 'mock'` para que la UI avise. Un error de validación o respuesta del backend no se enmascara.
+
+**Ficheros clave:**
+
+- `src/services/incident.service.ts` — flujo real-first, construcción del `FormData`, fallback al mock.
+- `src/types/incident.ts` — `CreatedIncident`, `CreateIncidentResult`, `IncidentSource`.
+- `src/hooks/use-create-incident.ts` — expone el resultado/origen y el aviso de fallback.
+- `src/app/incidents/new.tsx` — muestra "No se ha podido conectar al backend, realizando en el mock".
+
+**Decisiones / diferido:**
+
+- Contrato alineado (`title` 4–25, `civicId` UUID temporal, `categoryId`?/`category`?, coordenadas nullable).
+  Ver [alineación](../../refactor/001-registro-incidencia/alineacion-contrato-incidencia.md).
+- Transporte multipart en lugar de JSON + subida aparte; ver [conexión multipart](../../refactor/001-registro-incidencia/conexion-incidencia-backend-multipart.md)
+  y [payload inline](../../refactor/001-registro-incidencia/payload-incidencia-inline.md). Pendiente revisar multipart vs JSON si el backend cambia.
+- Límite de imágenes: backend 5, móvil recorta a 5 (issue #91 pendiente de unificar con el límite de 8 de UI).
+- `civicId` temporal hasta tener token de ciudadanía (issue #61).
+- El backend aún no persiste de forma duradera; no es responsabilidad del front (se reporta y se continúa).

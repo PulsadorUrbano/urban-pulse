@@ -28,9 +28,12 @@ import {
   getCurrentCoordinates,
   requestLocationPermission,
 } from '@/services/device-location';
-import { createImage } from '@/services/image.service';
-import { createLocation } from '@/services/location.service';
-import type { CreateIncidentInput, Incident } from '@/types/incident';
+import {
+  DEFAULT_INCIDENT_STATUS,
+  type CreateIncidentInput,
+  type CreatedIncident,
+} from '@/types/incident';
+import type { LocationCoordinates } from '@/types/location';
 import {
   INCIDENT_DESCRIPTION_MAX_LENGTH,
   INCIDENT_TITLE_MAX_LENGTH,
@@ -65,9 +68,9 @@ export default function NewIncidentScreen() {
   const [isOtherSelected, setIsOtherSelected] = useState(false);
   const [customCategory, setCustomCategory] = useState('');
   const [validationErrors, setValidationErrors] = useState<IncidentValidationErrors>({});
-  const [createdIncident, setCreatedIncident] = useState<Incident | null>(null);
+  const [createdIncident, setCreatedIncident] = useState<CreatedIncident | null>(null);
   const [locationNotice, setLocationNotice] = useState<string | null>(null);
-  const [photoNotice, setPhotoNotice] = useState<string | null>(null);
+  const [backendFallbackNotice, setBackendFallbackNotice] = useState<string | null>(null);
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
 
   // No se permite enviar mientras se resuelve la ubicación, se persiste la
@@ -103,51 +106,43 @@ export default function NewIncidentScreen() {
     setCustomCategory('');
   };
 
-  // Envía la incidencia con la ubicación indicada y conserva los avisos
-  // asociados (ubicación y fotos) para mostrarlos en la pantalla de confirmación.
-  const submitWithLocation = async (locationId: string | null, notice: string | null = null) => {
-    const incident = await submitIncident({
-      title,
-      description,
-      ...buildCategoryInput(),
-      locationId,
-    });
+  // Envía la incidencia con las coordenadas indicadas (o sin ellas) y conserva los
+  // avisos asociados (ubicación) para mostrarlos en la pantalla de confirmación.
+  const submitWithCoordinates = async (
+    coordinates: LocationCoordinates | null,
+    notice: string | null = null,
+  ) => {
+    const result = await submitIncident(
+      {
+        title,
+        description,
+        ...buildCategoryInput(),
+        latitude: coordinates?.latitude ?? null,
+        longitude: coordinates?.longitude ?? null,
+        accuracy: coordinates?.accuracy ?? null,
+      },
+      selectedPhotoUris,
+    );
 
-    if (!incident) {
+    if (!result) {
       return;
     }
 
     setLocationNotice(notice);
+    setBackendFallbackNotice(
+      result.source === 'mock'
+        ? 'No se ha podido conectar al backend, realizando en el mock'
+        : null,
+    );
 
-    // Persiste cada foto adjunta vinculada a la incidencia recién creada. Las
-    // imágenes son independientes entre sí: se intentan guardar todas y solo se
-    // prepara un aviso no bloqueante si alguna (o todas) falla.
-    if (selectedPhotoUris.length > 0) {
-      const imageResults = await Promise.allSettled(
-        selectedPhotoUris.map((uri) => createImage({ url: uri, incidentId: incident.id })),
-      );
-
-      const rejectedImageCount = imageResults.filter(
-        (result) => result.status === 'rejected',
-      ).length;
-
-      if (rejectedImageCount > 0) {
-        const rejectedPhotoText =
-          rejectedImageCount === 1
-            ? '1 foto no pudo guardarse.'
-            : `${rejectedImageCount} fotos no pudieron guardarse.`;
-        setPhotoNotice(`La incidencia se registró, pero ${rejectedPhotoText}`);
-      }
-    }
-
-    setCreatedIncident(incident);
+    setCreatedIncident(result.incident);
   };
 
   // Resuelve la ubicación según la preferencia, los servicios del dispositivo y
   // los permisos, degradando a un registro sin posición cuando algo falla.
   const resolveLocationAndSubmit = async () => {
     if (!isLocationEnabled) {
-      await submitWithLocation(null);
+      await submitWithCoordinates(null);
       return;
     }
 
@@ -161,7 +156,7 @@ export default function NewIncidentScreen() {
           {
             text: 'Enviar sin ubicación',
             onPress: () =>
-              void submitWithLocation(
+              void submitWithCoordinates(
                 null,
                 'La incidencia se registró sin ubicación porque la ubicación del dispositivo está desactivada.',
               ),
@@ -182,7 +177,7 @@ export default function NewIncidentScreen() {
           {
             text: 'Enviar sin ubicación',
             onPress: () =>
-              void submitWithLocation(
+              void submitWithCoordinates(
                 null,
                 'La incidencia se registró sin ubicación porque no hay permiso de ubicación.',
               ),
@@ -194,22 +189,14 @@ export default function NewIncidentScreen() {
 
     const coordinates = await getCurrentCoordinates();
     if (!coordinates) {
-      await submitWithLocation(
+      await submitWithCoordinates(
         null,
         'No se pudo obtener la ubicación; la incidencia se registró sin posición.',
       );
       return;
     }
 
-    try {
-      const location = await createLocation(coordinates);
-      await submitWithLocation(location.id);
-    } catch {
-      await submitWithLocation(
-        null,
-        'No se pudo guardar la ubicación; la incidencia se registró sin posición.',
-      );
-    }
+    await submitWithCoordinates(coordinates);
   };
 
   // Punto de entrada del envío: resuelve la ubicación antes de registrar la
@@ -264,7 +251,7 @@ export default function NewIncidentScreen() {
             </ThemedText>
             <ThemedText className="text-center" themeColor="textSecondary">
               Tu incidencia se registró correctamente con estado{' '}
-              <ThemedText type="smallBold">{createdIncident.status}</ThemedText>.
+              <ThemedText type="smallBold">{DEFAULT_INCIDENT_STATUS}</ThemedText>.
             </ThemedText>
 
             {locationNotice ? (
@@ -273,10 +260,12 @@ export default function NewIncidentScreen() {
               </ThemedText>
             ) : null}
 
-            {photoNotice ? (
-              <ThemedText type="small" themeColor="textSecondary" className="text-center">
-                {photoNotice}
-              </ThemedText>
+            {backendFallbackNotice ? (
+              <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
+                <Text className="text-center text-sm font-medium text-[#d92d20]">
+                  {backendFallbackNotice}
+                </Text>
+              </ThemedView>
             ) : null}
 
             <Pressable

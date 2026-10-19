@@ -144,7 +144,7 @@ curl -X POST http://localhost:3000/incidents \
   -F "images=@farola.png;type=image/png"
 ```
 
-`title` se recorta y debe tener 4–50 puntos de código. `description` es opcional y, cuando se aporta, tiene al menos 10. `civicId` es UUID obligatorio y solo se valida por formato. `categoryName` es obligatorio: el catálogo temporal reutiliza `Iluminación`, `Limpieza`, `Vía pública`, `Movilidad` y `Zonas verdes` sin distinguir mayúsculas/minúsculas ni espacios; un nombre nuevo crea una categoría temporal. `latitude` y `longitude` son obligatorias; `accuracy` es opcional y no negativa. La ubicación resultante incluye su fecha de creación del servidor.
+`title` se recorta y debe tener 4–25 puntos de código. `description` es opcional y, cuando se aporta, tiene al menos 10. `civicId` es UUID obligatorio y solo se valida por formato. `categoryName` es obligatorio: el catálogo temporal reutiliza `Iluminación`, `Limpieza`, `Vía pública`, `Movilidad` y `Zonas verdes` sin distinguir mayúsculas/minúsculas ni espacios; un nombre nuevo crea una categoría temporal. `latitude` y `longitude` son obligatorias; `accuracy` es opcional y no negativa. La ubicación resultante incluye su fecha de creación del servidor.
 
 Se aceptan de cero a cinco imágenes JPEG, PNG o WebP de hasta 5 MB por archivo en el campo repetible `images`. Se guardan temporalmente en `backend/uploads/incidents/<id>/` y la respuesta devuelve sus URL relativas bajo `/uploads/`. Los campos desconocidos y los gestionados por el servidor se rechazan con `400`.
 

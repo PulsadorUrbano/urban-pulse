@@ -10,7 +10,7 @@ podía tapar el botón.
 Aprovechando el cambio se **arranca la migración a NativeWind**: los 3 archivos tocados pasan
 de `StyleSheet.create` a `className`, siguiendo la convención de `AGENTS.md`. La migración de
 los componentes restantes queda documentada en
-`spec/refactor/nativewind-migracion-pendiente.md`.
+`spec/refactor/infra/nativewind-migracion-pendiente.md`.
 
 ## Cambios
 
@@ -32,7 +32,7 @@ los componentes restantes queda documentada en
 ## Pendiente
 
 - Resto de la migración a NativeWind → checklist en
-  `spec/refactor/nativewind-migracion-pendiente.md` (archivos que aún usan `StyleSheet`:
+  `spec/refactor/infra/nativewind-migracion-pendiente.md` (archivos que aún usan `StyleSheet`:
   `themed-text.tsx`, `category-picker.tsx`, `app-tabs.web.tsx` y `(tabs)/index.tsx`).
 
 ## Verificación (COMPLETADA ✅)

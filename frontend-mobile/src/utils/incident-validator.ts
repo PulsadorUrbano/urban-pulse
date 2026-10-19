@@ -1,7 +1,7 @@
 import type { CreateIncidentInput } from '@/types/incident';
 
 export const INCIDENT_TITLE_MIN_LENGTH = 4;
-export const INCIDENT_TITLE_MAX_LENGTH = 50;
+export const INCIDENT_TITLE_MAX_LENGTH = 25;
 export const INCIDENT_DESCRIPTION_MIN_LENGTH = 10;
 export const INCIDENT_DESCRIPTION_MAX_LENGTH = 1000;
 

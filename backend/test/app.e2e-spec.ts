@@ -30,7 +30,8 @@ describe('AppController (e2e)', () => {
       title: 'Farola apagada',
       description: 'La farola no ilumina la calle.',
       civicId: randomUUID(),
-      categoryName: 'Iluminación',
+      categoryId: randomUUID(),
+      category: 'Iluminación',
       latitude: '36.7213',
       longitude: '-4.4214',
     };

@@ -1,5 +1,3 @@
-import type { Category } from './category.js';
-
 export interface UploadedImageFile {
   buffer: Buffer;
   mimetype: 'image/jpeg' | 'image/png' | 'image/webp';
@@ -16,9 +14,10 @@ export interface CreateIncidentInput {
   title: string;
   description?: string;
   civicId: string;
-  categoryName: string;
-  latitude: number;
-  longitude: number;
+  categoryId?: string;
+  category?: string;
+  latitude?: number;
+  longitude?: number;
   accuracy?: number;
   urbanAssetId?: string;
 }
@@ -28,11 +27,12 @@ export interface Incident {
   title: string;
   description: string | null;
   civicId: string;
-  category: Category;
+  categoryId: string | null;
+  category: string | null;
   urbanAssetId: string | null;
   location: {
-    latitude: number;
-    longitude: number;
+    latitude: number | null;
+    longitude: number | null;
     accuracy: number | null;
     createdAt: string;
   };

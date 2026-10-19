@@ -16,7 +16,8 @@ describe('Incidents (e2e)', () => {
     title: 'Farola apagada',
     description: 'La farola no ilumina la calle.',
     civicId: randomUUID(),
-    categoryName: 'Iluminación',
+    categoryId: randomUUID(),
+    category: 'Iluminación',
     latitude: '36.7213',
     longitude: '-4.4214',
     accuracy: '8.5',
@@ -55,7 +56,8 @@ describe('Incidents (e2e)', () => {
       urbanAssetId: null,
       description: input().description,
       civicId: expect.any(String),
-      category: { name: 'Iluminación' },
+      categoryId: expect.any(String),
+      category: 'Iluminación',
       location: {
         latitude: 36.7213,
         longitude: -4.4214,
@@ -94,17 +96,11 @@ describe('Incidents (e2e)', () => {
       content: {
         'multipart/form-data': {
           schema: {
-            required: expect.arrayContaining([
-              'title',
-              'civicId',
-              'categoryName',
-              'latitude',
-              'longitude',
-            ]),
+            required: expect.arrayContaining(['title', 'civicId']),
             properties: {
-              title: { type: 'string', minLength: 4, maxLength: 50 },
               civicId: { format: 'uuid' },
-              categoryName: { type: 'string' },
+              categoryId: { type: 'string', format: 'uuid' },
+              category: { type: 'string' },
               latitude: { type: 'number' },
               longitude: { type: 'number' },
               accuracy: { type: 'number' },
@@ -122,7 +118,8 @@ describe('Incidents (e2e)', () => {
         'application/json': {
           schema: {
             properties: {
-              category: { type: 'object' },
+              categoryId: { type: 'string' },
+              category: { type: 'string' },
               location: { type: 'object' },
               images: { type: 'array' },
             },
@@ -143,19 +140,37 @@ describe('Incidents (e2e)', () => {
       .expect(404);
   });
 
-  it('creates an incident with no description or images and reuses a category', async () => {
-    const { description: _description, ...withoutDescription } = input();
-    const first = await request(app.getHttpServer())
+  it('creates an incident with no description, images, or coordinates', async () => {
+    const {
+      description: _description,
+      latitude: _latitude,
+      longitude: _longitude,
+      ...withoutOptionalFields
+    } = input();
+    const created = await request(app.getHttpServer())
       .post('/incidents')
-      .field(withoutDescription)
-      .expect(201);
-    const second = await request(app.getHttpServer())
-      .post('/incidents')
-      .field({ ...withoutDescription, categoryName: ' iluminación ' })
+      .field(withoutOptionalFields)
       .expect(201);
 
-    expect(first.body).toMatchObject({ description: null, images: [] });
-    expect(second.body.category).toEqual(first.body.category);
+    expect(created.body).toMatchObject({
+      description: null,
+      images: [],
+      category: 'Iluminación',
+      location: { latitude: null, longitude: null },
+    });
+  });
+
+  it('echoes a free-text category without a categoryId', async () => {
+    const { categoryId: _categoryId, ...withoutCategoryId } = input();
+    const created = await request(app.getHttpServer())
+      .post('/incidents')
+      .field({ ...withoutCategoryId, category: ' Limpieza ' })
+      .expect(201);
+
+    expect(created.body).toMatchObject({
+      categoryId: null,
+      category: 'Limpieza',
+    });
   });
 
   it.each([

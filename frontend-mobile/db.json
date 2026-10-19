@@ -1,84 +1,26 @@
 {
   "incidents": [
     {
-      "id": "1",
-      "title": "Bache frente a la plaza central",
-      "description": "Hay un bache profundo en la calle principal junto a la plaza central. Representa un riesgo para vehículos y peatones.",
-      "status": "reported",
-      "priority": null,
-      "createdAt": "2026-10-12T14:00:00.000Z",
-      "civicId": null,
-      "locationId": null,
-      "urbanAssetId": null,
-      "categoryId": null,
-      "category": null,
-      "departmentId": null,
-      "teamId": null,
-      "technicianId": null
-    },
-    {
-      "title": "Prueba de que todo va bien",
-      "description": "Hola esto es una prueba",
-      "status": "reported",
-      "priority": null,
-      "createdAt": "2026-10-12T16:17:14.041Z",
-      "civicId": null,
-      "locationId": null,
-      "urbanAssetId": null,
-      "categoryId": null,
-      "category": null,
-      "departmentId": null,
-      "teamId": null,
-      "technicianId": null,
-      "id": "_a6qpb9ByR0"
-    },
-    {
-      "title": "Baldosa Rota",
-      "description": "Se encuentra en la calle Larios Centro y la gente puede tropezarse",
-      "status": "reported",
-      "priority": null,
-      "createdAt": "2026-10-12T17:31:17.183Z",
-      "civicId": null,
-      "locationId": "WOQ8UKH_5cw",
-      "urbanAssetId": null,
-      "categoryId": "3",
-      "category": null,
-      "departmentId": null,
-      "teamId": null,
-      "technicianId": null,
-      "id": "gILTuMOcg4E"
-    },
-    {
-      "title": "Carretera rota en el Perchel",
-      "description": "Los coches no pueden pasar correctamente y se está obstaculizando el tráfico",
-      "status": "reported",
-      "priority": null,
-      "createdAt": "2026-10-12T17:32:35.700Z",
-      "civicId": null,
-      "locationId": "wH_GFqAF1c0",
-      "urbanAssetId": null,
-      "categoryId": "1",
-      "category": null,
-      "departmentId": null,
-      "teamId": null,
-      "technicianId": null,
-      "id": "Mk7Xb3FhJrw"
-    },
-    {
-      "title": "Prueba 1",
-      "description": "Pues todo en general vaya caca",
-      "status": "reported",
-      "priority": null,
-      "createdAt": "2026-10-14T17:41:32.059Z",
-      "civicId": null,
-      "locationId": null,
-      "urbanAssetId": null,
+      "title": "Farola rota Trinidad",
+      "description": "En frente del Mercadona, no sé ve bien la población y se están empezando a chocar las personas",
+      "latitude": 36.722086749842845,
+      "longitude": -4.432827987470363,
+      "accuracy": 5,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
       "categoryId": "2",
       "category": null,
-      "departmentId": null,
-      "teamId": null,
-      "technicianId": null,
-      "id": "neAXN4F1bb0"
+      "id": "RLfTcvEVqlc"
+    },
+    {
+      "title": "Farola Rota Trinidad",
+      "description": "No deja ver a la gente, esto es un caos",
+      "latitude": 36.722086749842845,
+      "longitude": -4.432827987470363,
+      "accuracy": 5,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "categoryId": "2",
+      "category": null,
+      "id": "bALCrQcm_gw"
     }
   ],
   "categories": [
@@ -95,32 +37,50 @@
       "name": "Objetos urbanos"
     }
   ],
-  "locations": [
-    {
-      "latitude": 36.748182961910736,
-      "longitude": -3.5158156971361882,
-      "accuracy": 5.6161969603503366,
-      "createdAt": "2026-10-12T17:31:17.151Z",
-      "id": "WOQ8UKH_5cw"
-    },
-    {
-      "latitude": 36.74818755274996,
-      "longitude": -3.5158728934954673,
-      "accuracy": 9.495014000000001,
-      "createdAt": "2026-10-12T17:32:35.667Z",
-      "id": "wH_GFqAF1c0"
-    }
-  ],
+  "locations": [],
   "images": [
     {
-      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/FD04230D-DC4F-4D78-BFED-ED8CBFE595B3.heic",
-      "incidentId": "neAXN4F1bb0",
-      "id": "dmB5X1rCUAw"
+      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/5CE26BC2-97CB-42E8-A42E-CA617FEE421F.jpg",
+      "incidentId": "RLfTcvEVqlc",
+      "id": "J3YiO1gVQpU"
     },
     {
-      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/7BDEDECE-B749-4377-B7B2-2B900ADB9346.jpg",
-      "incidentId": "neAXN4F1bb0",
-      "id": "2GlcqhxGjbE"
+      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/F23CDE60-9C75-4860-920F-95958B647E58.jpg",
+      "incidentId": "RLfTcvEVqlc",
+      "id": "YCG7UA8EIdc"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/662B63B0-33D2-4DC5-B614-730C97C88FE4.jpg",
+      "incidentId": "bALCrQcm_gw",
+      "id": "m9x06zMh3r8"
+    }
+  ],
+  "users": [
+    {
+      "username": "sofia13",
+      "email": "sofia@email.com",
+      "password": "sofia13",
+      "role": "civic",
+      "id": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5"
+    },
+    {
+      "username": "mayte",
+      "email": "mayte@email.com",
+      "password": "mayte",
+      "role": "civic",
+      "id": "a62218e7563"
+    }
+  ],
+  "civics": [
+    {
+      "userId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "phone": "600388787",
+      "id": "J3_knLzOgNI"
+    },
+    {
+      "userId": "a62218e7563",
+      "phone": "123456234",
+      "id": "PjXQ-etx_j4"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"

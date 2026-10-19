@@ -5,7 +5,8 @@ const allowedKeys = new Set([
   'title',
   'description',
   'civicId',
-  'categoryName',
+  'categoryId',
+  'category',
   'latitude',
   'longitude',
   'accuracy',
@@ -35,24 +36,30 @@ export class CreateIncidentPipe implements PipeTransform<
       value.description === undefined
         ? undefined
         : this.text(value.description, 'description');
-    const categoryName = this.text(value.categoryName, 'categoryName');
+    const category =
+      value.category === undefined
+        ? undefined
+        : this.text(value.category, 'category');
 
-    if ([...title].length < 4 || [...title].length > 50) {
-      throw new BadRequestException('title must contain 4 to 50 characters');
-    }
-    if (description !== undefined && [...description].length < 10) {
-      throw new BadRequestException(
-        'description must contain at least 10 characters',
-      );
-    }
-
-    if (categoryName.length === 0) {
-      throw new BadRequestException('categoryName must not be empty');
+    if ([...title].length < 4 || [...title].length > 25) {
+      throw new BadRequestException('title must contain 4 to 25 characters');
     }
 
     this.uuid(value.civicId, 'civicId');
-    const latitude = this.number(value.latitude, 'latitude', -90, 90);
-    const longitude = this.number(value.longitude, 'longitude', -180, 180);
+
+    if (value.categoryId !== undefined) {
+      this.uuid(value.categoryId, 'categoryId');
+    }
+
+    // latitud y longitud ahora son opcionales; solo se validan si llegan
+    const latitude =
+      value.latitude === undefined
+        ? undefined
+        : this.number(value.latitude, 'latitude', -90, 90);
+    const longitude =
+      value.longitude === undefined
+        ? undefined
+        : this.number(value.longitude, 'longitude', -180, 180);
     const accuracy =
       value.accuracy === undefined
         ? undefined
@@ -66,9 +73,12 @@ export class CreateIncidentPipe implements PipeTransform<
       title,
       ...(description === undefined ? {} : { description }),
       civicId: value.civicId,
-      categoryName,
-      latitude,
-      longitude,
+      ...(value.categoryId === undefined
+        ? {}
+        : { categoryId: value.categoryId }),
+      ...(category === undefined ? {} : { category }),
+      ...(latitude === undefined ? {} : { latitude }),
+      ...(longitude === undefined ? {} : { longitude }),
       ...(accuracy === undefined ? {} : { accuracy }),
       ...(value.urbanAssetId === undefined
         ? {}
