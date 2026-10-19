@@ -29,8 +29,12 @@ import {
   requestLocationPermission,
 } from '@/services/device-location';
 import { createImage } from '@/services/image.service';
-import { createLocation } from '@/services/location.service';
-import type { CreateIncidentInput, Incident } from '@/types/incident';
+import {
+  DEFAULT_INCIDENT_STATUS,
+  type CreateIncidentInput,
+  type IncidentPayload,
+} from '@/types/incident';
+import type { LocationCoordinates } from '@/types/location';
 import {
   INCIDENT_DESCRIPTION_MAX_LENGTH,
   INCIDENT_TITLE_MAX_LENGTH,
@@ -65,7 +69,7 @@ export default function NewIncidentScreen() {
   const [isOtherSelected, setIsOtherSelected] = useState(false);
   const [customCategory, setCustomCategory] = useState('');
   const [validationErrors, setValidationErrors] = useState<IncidentValidationErrors>({});
-  const [createdIncident, setCreatedIncident] = useState<Incident | null>(null);
+  const [createdIncident, setCreatedIncident] = useState<(IncidentPayload & { id: string }) | null>(null);
   const [locationNotice, setLocationNotice] = useState<string | null>(null);
   const [photoNotice, setPhotoNotice] = useState<string | null>(null);
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
@@ -103,14 +107,19 @@ export default function NewIncidentScreen() {
     setCustomCategory('');
   };
 
-  // Envía la incidencia con la ubicación indicada y conserva los avisos
-  // asociados (ubicación y fotos) para mostrarlos en la pantalla de confirmación.
-  const submitWithLocation = async (locationId: string | null, notice: string | null = null) => {
+  // Envía la incidencia con las coordenadas indicadas (o sin ellas) y conserva los
+  // avisos asociados (ubicación y fotos) para mostrarlos en la pantalla de confirmación.
+  const submitWithCoordinates = async (
+    coordinates: LocationCoordinates | null,
+    notice: string | null = null,
+  ) => {
     const incident = await submitIncident({
       title,
       description,
       ...buildCategoryInput(),
-      locationId,
+      latitude: coordinates?.latitude ?? null,
+      longitude: coordinates?.longitude ?? null,
+      accuracy: coordinates?.accuracy ?? null,
     });
 
     if (!incident) {
@@ -147,7 +156,7 @@ export default function NewIncidentScreen() {
   // los permisos, degradando a un registro sin posición cuando algo falla.
   const resolveLocationAndSubmit = async () => {
     if (!isLocationEnabled) {
-      await submitWithLocation(null);
+      await submitWithCoordinates(null);
       return;
     }
 
@@ -161,7 +170,7 @@ export default function NewIncidentScreen() {
           {
             text: 'Enviar sin ubicación',
             onPress: () =>
-              void submitWithLocation(
+              void submitWithCoordinates(
                 null,
                 'La incidencia se registró sin ubicación porque la ubicación del dispositivo está desactivada.',
               ),
@@ -182,7 +191,7 @@ export default function NewIncidentScreen() {
           {
             text: 'Enviar sin ubicación',
             onPress: () =>
-              void submitWithLocation(
+              void submitWithCoordinates(
                 null,
                 'La incidencia se registró sin ubicación porque no hay permiso de ubicación.',
               ),
@@ -194,22 +203,14 @@ export default function NewIncidentScreen() {
 
     const coordinates = await getCurrentCoordinates();
     if (!coordinates) {
-      await submitWithLocation(
+      await submitWithCoordinates(
         null,
         'No se pudo obtener la ubicación; la incidencia se registró sin posición.',
       );
       return;
     }
 
-    try {
-      const location = await createLocation(coordinates);
-      await submitWithLocation(location.id);
-    } catch {
-      await submitWithLocation(
-        null,
-        'No se pudo guardar la ubicación; la incidencia se registró sin posición.',
-      );
-    }
+    await submitWithCoordinates(coordinates);
   };
 
   // Punto de entrada del envío: resuelve la ubicación antes de registrar la
@@ -264,7 +265,7 @@ export default function NewIncidentScreen() {
             </ThemedText>
             <ThemedText className="text-center" themeColor="textSecondary">
               Tu incidencia se registró correctamente con estado{' '}
-              <ThemedText type="smallBold">{createdIncident.status}</ThemedText>.
+              <ThemedText type="smallBold">{DEFAULT_INCIDENT_STATUS}</ThemedText>.
             </ThemedText>
 
             {locationNotice ? (
