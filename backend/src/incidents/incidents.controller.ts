@@ -19,6 +19,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
   ApiBody,
+  ApiConsumes,
   ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -37,9 +38,11 @@ const incidentSchema = {
     'id',
     'title',
     'description',
-    'categoryId',
+    'civicId',
+    'category',
     'urbanAssetId',
     'location',
+    'images',
     'status',
     'priority',
     'createdAt',
@@ -47,14 +50,38 @@ const incidentSchema = {
   properties: {
     id: { type: 'string', format: 'uuid' },
     title: { type: 'string' },
-    description: { type: 'string' },
-    categoryId: { type: 'string', format: 'uuid' },
+    description: { type: 'string', nullable: true },
+    civicId: { type: 'string', format: 'uuid' },
+    category: {
+      type: 'object',
+      required: ['id', 'name', 'createdAt'],
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        name: { type: 'string' },
+        createdAt: { type: 'string', format: 'date-time' },
+      },
+    },
     urbanAssetId: { type: 'string', format: 'uuid', nullable: true },
     location: {
       type: 'object',
       properties: {
         latitude: { type: 'number' },
         longitude: { type: 'number' },
+        accuracy: { type: 'number', nullable: true },
+        createdAt: { type: 'string', format: 'date-time' },
+      },
+    },
+    images: {
+      type: 'array',
+      items: {
+        type: 'object',
+        required: ['id', 'url', 'mimeType', 'createdAt'],
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          url: { type: 'string' },
+          mimeType: { type: 'string', enum: ['image/jpeg', 'image/png', 'image/webp'] },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
       },
     },
     status: { type: 'string', enum: ['reported'] },
@@ -96,7 +123,28 @@ export class IncidentsController {
       },
     }),
   )
-  @ApiBody({ type: CreateIncidentDto })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['title', 'civicId', 'categoryName', 'latitude', 'longitude'],
+      properties: {
+        title: { type: 'string', minLength: 4, maxLength: 25 },
+        description: { type: 'string', minLength: 10 },
+        civicId: { type: 'string', format: 'uuid' },
+        categoryName: { type: 'string' },
+        latitude: { type: 'number', minimum: -90, maximum: 90 },
+        longitude: { type: 'number', minimum: -180, maximum: 180 },
+        accuracy: { type: 'number', minimum: 0 },
+        urbanAssetId: { type: 'string', format: 'uuid' },
+        images: {
+          type: 'array',
+          maxItems: 5,
+          items: { type: 'string', format: 'binary' },
+        },
+      },
+    },
+  })
   @ApiCreatedResponse({
     description:
       'Temporary in-memory incident; referenced UUIDs are format-checked only.',

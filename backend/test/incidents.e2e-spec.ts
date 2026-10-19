@@ -1,4 +1,3 @@
-import { INestApplication } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Test } from '@nestjs/testing';
@@ -87,6 +86,45 @@ describe('Incidents (e2e)', () => {
     );
     expect(document.paths).toHaveProperty('/incidents');
     expect(document.paths).toHaveProperty('/incidents/{id}');
+    expect(document.paths['/incidents']?.post?.requestBody).toMatchObject({
+      content: {
+        'multipart/form-data': {
+          schema: {
+            required: expect.arrayContaining([
+              'title',
+              'civicId',
+              'categoryName',
+              'latitude',
+              'longitude',
+            ]),
+            properties: {
+              civicId: { format: 'uuid' },
+              categoryName: { type: 'string' },
+              latitude: { type: 'number' },
+              longitude: { type: 'number' },
+              accuracy: { type: 'number' },
+              images: {
+                type: 'array',
+                items: { format: 'binary' },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(document.paths['/incidents']?.post?.responses?.['201']).toMatchObject({
+      content: {
+        'application/json': {
+          schema: {
+            properties: {
+              category: { type: 'object' },
+              location: { type: 'object' },
+              images: { type: 'array' },
+            },
+          },
+        },
+      },
+    });
   });
 
   it('rejects forged fields and distinguishes invalid from absent ids', async () => {

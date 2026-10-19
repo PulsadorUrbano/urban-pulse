@@ -131,21 +131,24 @@ La API usa el puerto 3000 por defecto; se puede modificar con `PORT`. Swagger se
 | `POST /incidents` | `201 Created`, el recurso y `Location: /incidents/{id}`. |
 | `GET /incidents/:id` | `200 OK`; `404` si el UUID válido no existe. |
 
-Ejemplo de creación:
+La creación usa `multipart/form-data`. Ejemplo sin imágenes:
 
-```json
-{
-  "title": "Farola apagada",
-  "description": "La farola no ilumina la calle.",
-  "categoryId": "00000000-0000-4000-8000-000000000002",
-  "latitude": 36.7213,
-  "longitude": -4.4214
-}
+```bash
+curl -X POST http://localhost:3000/incidents \
+  -F "title=Farola apagada" \
+  -F "civicId=00000000-0000-4000-8000-000000000002" \
+  -F "categoryName=Iluminación" \
+  -F "latitude=36.7213" \
+  -F "longitude=-4.4214" \
+  -F "accuracy=8.5" \
+  -F "images=@farola.png;type=image/png"
 ```
 
-`title` se recorta y debe tener 4–25 puntos de código; `description`, al menos 10. Las coordenadas deben ser números finitos dentro de sus rangos geográficos y los identificadores son UUID. Se rechazan campos desconocidos, incluido `civicId`, además de campos gestionados por el servidor. La categoría y el activo urbano se validan solo por formato: aún no se comprueba que existan.
+`title` se recorta y debe tener 4–25 puntos de código. `description` es opcional y, cuando se aporta, tiene al menos 10. `civicId` es UUID obligatorio y solo se valida por formato. `categoryName` es obligatorio: el catálogo temporal reutiliza `Iluminación`, `Limpieza`, `Vía pública`, `Movilidad` y `Zonas verdes` sin distinguir mayúsculas/minúsculas ni espacios; un nombre nuevo crea una categoría temporal. `latitude` y `longitude` son obligatorias; `accuracy` es opcional y no negativa. La ubicación resultante incluye su fecha de creación del servidor.
 
-Los datos viven únicamente en memoria del proceso. No hay autenticación ni identidad ciudadana en esta fase, y todos los registros se pierden al reiniciar el backend.
+Se aceptan de cero a cinco imágenes JPEG, PNG o WebP de hasta 5 MB por archivo en el campo repetible `images`. Se guardan temporalmente en `backend/uploads/incidents/<id>/` y la respuesta devuelve sus URL relativas bajo `/uploads/`. Los campos desconocidos y los gestionados por el servidor se rechazan con `400`.
+
+Los metadatos viven únicamente en memoria y los archivos son locales y temporales: ambos se pierden al reiniciar el backend. No hay autenticación, autorización ni consulta de identidad ciudadana; tampoco se comprueba la existencia de `civicId` ni `urbanAssetId`.
 
 | Comando | Uso |
 | --- | --- |

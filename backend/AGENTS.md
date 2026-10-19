@@ -6,7 +6,7 @@ Applies to `backend/`. Run commands below from this directory unless stated othe
 
 - `src/main.ts`: HTTP bootstrap, Observe instrumentation, and `PORT` (default `3000`).
 - `src/app.module.ts`: root module, global `ConfigModule`, Observe setup, health and incidents. Prisma is intentionally not imported during the temporary in-memory incident phase.
-- `src/incidents/`: standalone incident module. `POST /incidents` and `GET /incidents/:id` use strict request validation and process-local memory only.
+- `src/incidents/`: standalone incident module. `POST /incidents` accepts strict multipart fields plus temporary local images; `GET /incidents/:id` returns process-local data; `/uploads/` exposes the temporary image files.
 - `src/app.controller.ts` / `src/app.service.ts`: `GET /` returns `Hello World!`; `GET /health` returns `{ "status": "ok" }`.
 - `src/**/*.spec.ts`: unit tests; `test/**/*.e2e-spec.ts`: HTTP integration tests.
 - `../frontend-web/` and `../frontend-mobile/`: separate consumers of this API, currently starter applications.
@@ -14,7 +14,7 @@ Applies to `backend/`. Run commands below from this directory unless stated othe
 - `../docker-compose.yml`: PostgreSQL 16/PostGIS 3.5 and the backend. Compose publishes the API on port `4000` and keeps PostgreSQL internal.
 - `../docs/adr/`: decision placeholders; the files are currently empty and establish no implemented architecture.
 
-The backend has a temporary unauthenticated incident API, but no active persistence, migration runner, authorization, upload integration, or identity model. Prisma source remains in the repository for a future database phase and must not be presented as active in root startup.
+The backend has a temporary unauthenticated incident API with local temporary uploads, but no active persistence, migration runner, authorization, or identity model. Prisma source remains in the repository for a future database phase and must not be presented as active in root startup.
 
 ## Toolchain and commands
 
@@ -65,7 +65,7 @@ npm run test:cov
 - Treat the DBML as a starting point. Confirm role permissions, incident transitions, assignment rules, identifiers, and nullability before encoding them; enum order is not a transition policy.
 - No persistence library has been selected in code. Introduce database dependencies and migrations only for a task that needs them, documenting the choice and keeping the DBML consistent with executable schema changes.
 - Validate request data at the HTTP boundary. TypeScript types alone do not validate JSON. Add server-side authentication and authorization before exposing protected user or incident operations; never trust client-supplied identity or role fields.
-- The current incident endpoints reject unknown fields and validate category/asset UUID format only. They use an in-memory `Map`, so data is lost at restart; do not add persistence or identity work without a separate approved scope.
+- The current incident endpoint requires UUID-format `civicId`, a category name, latitude/longitude, and optional non-negative accuracy. It resolves or creates temporary categories and accepts up to five JPEG/PNG/WebP files of 5 MB each under `/uploads/`. It uses an in-memory `Map` plus local files, so data is lost at restart; do not add persistence or identity work without a separate approved scope.
 - When adding password handling, store password hashes and exclude them from responses and logs.
 - When implementing incident status or priority changes with audit history, commit the state update and history entry atomically and test rejection paths.
 - Treat API changes as shared contracts for web and mobile. Document request/response shapes, status codes, and compatibility implications in the backend README.

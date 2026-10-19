@@ -29,9 +29,10 @@ describe('AppController (e2e)', () => {
     const input = {
       title: 'Farola apagada',
       description: 'La farola no ilumina la calle.',
-      categoryId: randomUUID(),
-      latitude: 36.7213,
-      longitude: -4.4214,
+      civicId: randomUUID(),
+      categoryName: 'Iluminación',
+      latitude: '36.7213',
+      longitude: '-4.4214',
     };
 
     await request(app!.getHttpServer())
@@ -41,7 +42,7 @@ describe('AppController (e2e)', () => {
 
     const created = await request(app!.getHttpServer())
       .post('/incidents')
-      .send(input)
+      .field(input)
       .expect(201);
     await request(app!.getHttpServer())
       .get(`/incidents/${created.body.id}`)

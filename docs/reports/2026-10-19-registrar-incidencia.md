@@ -2,14 +2,14 @@
 
 ## Alcance entregado
 
-Se implementó un módulo NestJS independiente para crear y consultar incidencias sin base de datos, identidad ciudadana ni autenticación. El módulo valida el cuerpo HTTP, genera identificador y fecha en el servidor y guarda los datos en memoria del proceso.
+Se amplió el módulo NestJS temporal para crear y consultar incidencias sin base de datos, autenticación ni consulta de identidad ciudadana. Acepta formularios multipart con `civicId`, categoría por nombre, ubicación, precisión e imágenes; los metadatos viven en memoria y las imágenes se guardan temporalmente en disco local.
 
 ## API
 
 - `POST /incidents`: crea una incidencia, responde `201 Created` y añade `Location: /incidents/{id}`.
 - `GET /incidents/:id`: devuelve `200` para una incidencia existente, `400` para un UUID de ruta inválido y `404` para un UUID válido inexistente.
 
-Las entradas aceptan `title`, `description`, `categoryId`, `latitude`, `longitude` y opcionalmente `urbanAssetId`. Se rechazan campos desconocidos, incluidos `civicId`, `id`, `createdAt`, `status` y `priority`. Categoría y activo urbano se comprueban solo como UUID; no existe todavía comprobación de referencias.
+Las entradas aceptan `title`, `description` opcional, `civicId`, `categoryName`, `latitude`, `longitude`, `accuracy` opcional, `urbanAssetId` opcional y hasta cinco imágenes JPEG/PNG/WebP de 5 MB. `civicId` y el activo urbano se comprueban solo como UUID. La categoría se resuelve por nombre normalizado contra cinco categorías simuladas o se crea temporalmente. Se rechazan campos desconocidos y los controlados por el servidor. La respuesta incluye `description: null` cuando falta, categoría, ubicación con `createdAt` y URL locales bajo `/uploads/`.
 
 ## Archivos principales
 
@@ -25,13 +25,16 @@ Las entradas aceptan `title`, `description`, `categoryId`, `latitude`, `longitud
 | --- | --- |
 | `npm run build` | Correcto. |
 | `npm run lint` | Correcto con 3 avisos de Oxlint sobre el conteo de puntos de código Unicode. |
-| `npm test -- src/incidents/incidents.service.spec.ts` | Correcto: 3 pruebas. |
-| `npm test -- src/incidents/create-incident.pipe.spec.ts` | Correcto: 18 pruebas. |
-| `npm run test:e2e` | Correcto: 3 pruebas. |
-| `npm test` | Un fallo previo: `src/prisma/prisma.service.spec.ts` no proporciona `ConfigService`. |
+| Pruebas focalizadas de categorías y servicio | Correcto: 7 pruebas. |
+| Pruebas focalizadas de pipe y servicio | Correcto: 26 pruebas. |
+| Pruebas e2e de incidencias multipart y Swagger | Correcto: 9 pruebas. |
+| `npm run build` | Correcto. |
+| `npm run lint` | Correcto con 3 avisos existentes sobre el conteo de puntos de código Unicode. |
+| `npm test` | 28 de 29 correctas; persiste el fallo previo de `src/prisma/prisma.service.spec.ts` porque no proporciona `ConfigService`. |
+| `npm run test:e2e` | Correcto: 10 pruebas. |
 
-También se ejecutó `node dist/main` sin `DATABASE_URL`: `POST /incidents` y `GET /health` respondieron correctamente. Tras detener realmente el proceso y arrancarlo de nuevo, el identificador creado respondió `404`.
+La prueba de humo compilada creó una incidencia multipart en el puerto local de prueba, recuperó su imagen con `200 image/png`, reinició el proceso y comprobó que el identificador anterior respondía `404`. Se eliminaron los archivos y registros de esa prueba.
 
 ## Limitaciones y trabajo aplazado
 
-El almacenamiento es un `Map` local al proceso: los datos se pierden al reiniciar y no se comparten entre instancias. Se aplazan base de datos, migraciones, comprobación de referencias, identidad ciudadana, autenticación, autorización, edición, borrado, listado, asignación e historial.
+El almacenamiento es un `Map` local y las imágenes residen en disco local temporal: ambos se pierden al reiniciar y no se comparten entre instancias. Se aplazan base de datos, migraciones, almacenamiento cloud, análisis antivirus, comprobación de referencias, identidad ciudadana, autenticación, autorización, edición, borrado, listado, asignación e historial.

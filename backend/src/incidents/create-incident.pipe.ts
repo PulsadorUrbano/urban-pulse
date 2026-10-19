@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
-import { CreateIncidentDto } from './create-incident.dto.js';
 import { CreateIncidentInput } from './incident.js';
 
 const allowedKeys = new Set([
