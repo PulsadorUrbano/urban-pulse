@@ -39,6 +39,7 @@ const incidentSchema = {
     'title',
     'description',
     'civicId',
+    'categoryId',
     'category',
     'urbanAssetId',
     'location',
@@ -52,21 +53,14 @@ const incidentSchema = {
     title: { type: 'string' },
     description: { type: 'string', nullable: true },
     civicId: { type: 'string', format: 'uuid' },
-    category: {
-      type: 'object',
-      required: ['id', 'name', 'createdAt'],
-      properties: {
-        id: { type: 'string', format: 'uuid' },
-        name: { type: 'string' },
-        createdAt: { type: 'string', format: 'date-time' },
-      },
-    },
+    categoryId: { type: 'string', format: 'uuid', nullable: true },
+    category: { type: 'string', nullable: true },
     urbanAssetId: { type: 'string', format: 'uuid', nullable: true },
     location: {
       type: 'object',
       properties: {
-        latitude: { type: 'number' },
-        longitude: { type: 'number' },
+        latitude: { type: 'number', nullable: true },
+        longitude: { type: 'number', nullable: true },
         accuracy: { type: 'number', nullable: true },
         createdAt: { type: 'string', format: 'date-time' },
       },
@@ -127,12 +121,13 @@ export class IncidentsController {
   @ApiBody({
     schema: {
       type: 'object',
-      required: ['title', 'civicId', 'categoryName', 'latitude', 'longitude'],
+      required: ['title', 'civicId'],
       properties: {
         title: { type: 'string', minLength: 4, maxLength: 25 },
-        description: { type: 'string', minLength: 10 },
+        description: { type: 'string' },
         civicId: { type: 'string', format: 'uuid' },
-        categoryName: { type: 'string' },
+        categoryId: { type: 'string', format: 'uuid' },
+        category: { type: 'string' },
         latitude: { type: 'number', minimum: -90, maximum: 90 },
         longitude: { type: 'number', minimum: -180, maximum: 180 },
         accuracy: { type: 'number', minimum: 0 },

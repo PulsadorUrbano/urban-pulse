@@ -5,7 +5,6 @@ export class CreateIncidentDto {
   title!: string;
 
   @ApiPropertyOptional({
-    minLength: 10,
     example: 'La farola no ilumina la calle.',
   })
   description?: string;
@@ -13,14 +12,17 @@ export class CreateIncidentDto {
   @ApiProperty({ format: 'uuid' })
   civicId!: string;
 
-  @ApiProperty({ example: 'Iluminación' })
-  categoryName!: string;
+  @ApiPropertyOptional({ format: 'uuid' })
+  categoryId?: string;
 
-  @ApiProperty({ minimum: -90, maximum: 90, example: 36.7213 })
-  latitude!: number;
+  @ApiPropertyOptional({ example: 'Iluminación' })
+  category?: string;
 
-  @ApiProperty({ minimum: -180, maximum: 180, example: -4.4214 })
-  longitude!: number;
+  @ApiPropertyOptional({ minimum: -90, maximum: 90, example: 36.7213 })
+  latitude?: number;
+
+  @ApiPropertyOptional({ minimum: -180, maximum: 180, example: -4.4214 })
+  longitude?: number;
 
   @ApiPropertyOptional({ minimum: 0, example: 8.5 })
   accuracy?: number;

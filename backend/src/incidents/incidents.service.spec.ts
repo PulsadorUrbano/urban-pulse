@@ -1,7 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { randomUUID } from 'node:crypto';
-import { CategoriesService } from './categories.service.js';
 import { IncidentsService } from './incidents.service.js';
 import { UploadStorageService } from './upload-storage.service.js';
 
@@ -10,7 +9,8 @@ describe('IncidentsService', () => {
     title: 'Farola apagada',
     description: 'La farola no ilumina la calle.',
     civicId: randomUUID(),
-    categoryName: 'Iluminación',
+    categoryId: randomUUID(),
+    category: 'Iluminación',
     latitude: 36.7213,
     longitude: -4.4214,
     accuracy: 8.5,
@@ -20,7 +20,7 @@ describe('IncidentsService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [IncidentsService, CategoriesService, UploadStorageService],
+      providers: [IncidentsService, UploadStorageService],
     }).compile();
 
     service = module.get(IncidentsService);
@@ -33,7 +33,8 @@ describe('IncidentsService', () => {
       title: input.title,
       description: input.description,
       civicId: input.civicId,
-      category: { name: input.categoryName },
+      categoryId: input.categoryId,
+      category: input.category,
       urbanAssetId: null,
       location: {
         latitude: input.latitude,
@@ -75,7 +76,7 @@ describe('IncidentsService', () => {
 
   it('starts each service instance empty and rejects missing incidents', async () => {
     const freshModule = await Test.createTestingModule({
-      providers: [IncidentsService, CategoriesService, UploadStorageService],
+      providers: [IncidentsService, UploadStorageService],
     }).compile();
     const freshService = freshModule.get(IncidentsService);
 
@@ -88,7 +89,6 @@ describe('IncidentsService', () => {
     const module = await Test.createTestingModule({
       providers: [
         IncidentsService,
-        CategoriesService,
         { provide: UploadStorageService, useValue: { save, remove } },
       ],
     }).compile();

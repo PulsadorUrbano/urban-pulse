@@ -4,11 +4,13 @@ import { CreateIncidentPipe } from './create-incident.pipe.js';
 
 describe('CreateIncidentPipe', () => {
   const pipe = new CreateIncidentPipe();
+  const categoryId = randomUUID();
   const input = () => ({
     title: '  Farola apagada  ',
     description: '  La farola no ilumina la calle.  ',
     civicId: randomUUID(),
-    categoryName: '  Iluminación  ',
+    categoryId,
+    category: '  Iluminación  ',
     latitude: '0',
     longitude: '-180',
     accuracy: '8.5',
@@ -19,7 +21,8 @@ describe('CreateIncidentPipe', () => {
       title: 'Farola apagada',
       description: 'La farola no ilumina la calle.',
       civicId: expect.any(String),
-      categoryName: 'Iluminación',
+      categoryId,
+      category: 'Iluminación',
       latitude: 0,
       longitude: -180,
       accuracy: 8.5,
@@ -48,15 +51,32 @@ describe('CreateIncidentPipe', () => {
     expect(result).not.toHaveProperty('accuracy');
   });
 
+  it('accepts omitted latitude and longitude', () => {
+    const { latitude: _latitude, longitude: _longitude, ...value } = input();
+
+    const result = pipe.transform(value);
+    expect(result.title).toBe('Farola apagada');
+    expect(result).not.toHaveProperty('latitude');
+    expect(result).not.toHaveProperty('longitude');
+  });
+
+  it('accepts an omitted categoryId and category', () => {
+    const { categoryId: _categoryId, category: _category, ...value } = input();
+
+    const result = pipe.transform(value);
+    expect(result.title).toBe('Farola apagada');
+    expect(result).not.toHaveProperty('categoryId');
+    expect(result).not.toHaveProperty('category');
+  });
+
   it.each([
     null,
     [],
     'incident',
     { ...input(), title: 'abc' },
     { ...input(), title: 'a'.repeat(26) },
-    { ...input(), description: 'short' },
     { ...input(), civicId: 'not-a-uuid' },
-    { ...input(), categoryName: '   ' },
+    { ...input(), categoryId: 'not-a-uuid' },
     { ...input(), urbanAssetId: null },
     { ...input(), urbanAssetId: 'not-a-uuid' },
     { ...input(), latitude: 'NaN' },
