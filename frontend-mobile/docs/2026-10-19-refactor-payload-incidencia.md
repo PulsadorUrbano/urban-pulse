@@ -48,9 +48,9 @@ cambios en el roadmap).
 
 ## Verificación
 
-- `npx tsc --noEmit` ✅ 0 errores
-- `npx expo lint` ✅ limpio
-- `npm test` ✅ 124/124 tests, 14 suites, sin regresiones
+- `npx tsc --noEmit`  0 errores
+- `npx expo lint`  limpio
+- `npm test`  124/124 tests, 14 suites, sin regresiones
 - 0 referencias huérfanas a `location.service`, `createLocation` o `Location`.
 
 ## Pendiente / diferido

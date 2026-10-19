@@ -1,16 +1,16 @@
-# 🏙️ Urban Pulse
+#  Urban Pulse
 
 Plataforma cloud para la gestión inteligente de incidencias urbanas en la ciudad de Málaga. 
 Este repositorio contiene el código fuente, la documentación técnica y la configuración para el despliegue del sistema.
 
-## 📖 Visión del Producto
+##  Visión del Producto
 La idea es que UrbanPulse transforme un reporte aislado en una unidad de trabajo enriquecida con datos contextuales, trazable y susceptible de análisis. La plataforma apoya al ciudadano, al operador municipal y al responsable de planificación sin sustituir la decisión humana en actuaciones sensibles. 
 
 - **Ciudadanía:** Permitirá comunicar una incidencia, aportar localización y evidencias y seguir su evolución. 
 - **Personal municipal:** Ofrecerá validación, asignación, priorización y contexto. 
 - **Responsables y analistas:** Aportará indicadores, modelos predictivos y consultas basadas en datos y en documentos.
 
-## 🧠 Conceptos Core del Dominio
+##  Conceptos Core del Dominio
 - **Incident:** Reporte central con descripción, categoría, localización, prioridad, estado y marcas temporales.
 - **User:** Ciudadano o profesional que crea, consulta o modifica según sus permisos.
 - **UrbanAsset:** Elemento físico identificable como semáforo, contenedor, fuente, parada, aparcamiento o zona verde.
@@ -18,7 +18,7 @@ La idea es que UrbanPulse transforme un reporte aislado en una unidad de trabajo
 
 ---
 
-## 💻 Stack Tecnológico
+##  Stack Tecnológico
 El sistema está construido utilizando las siguientes tecnologías:
 - **Base de Datos:** PostgreSQL
 - **Backend:** NestJS con TypeScript
@@ -27,7 +27,7 @@ El sistema está construido utilizando las siguientes tecnologías:
 
 ---
 
-## 🚀 Instalación y Ejecución
+##  Instalación y Ejecución
 
 **1. Clonar el repositorio y acceder a la carpeta:**
 ```bash
@@ -144,7 +144,7 @@ curl -X POST http://localhost:3000/incidents \
   -F "images=@farola.png;type=image/png"
 ```
 
-`title` se recorta y debe tener 4–25 puntos de código. `description` es opcional y, cuando se aporta, tiene al menos 10. `civicId` es UUID obligatorio y solo se valida por formato. `categoryName` es obligatorio: el catálogo temporal reutiliza `Iluminación`, `Limpieza`, `Vía pública`, `Movilidad` y `Zonas verdes` sin distinguir mayúsculas/minúsculas ni espacios; un nombre nuevo crea una categoría temporal. `latitude` y `longitude` son obligatorias; `accuracy` es opcional y no negativa. La ubicación resultante incluye su fecha de creación del servidor.
+`title` se recorta y debe tener 4–35 puntos de código. `description` es opcional y, cuando se aporta, tiene al menos 10. `civicId` es UUID obligatorio y solo se valida por formato. `categoryName` es obligatorio: el catálogo temporal reutiliza `Iluminación`, `Limpieza`, `Vía pública`, `Movilidad` y `Zonas verdes` sin distinguir mayúsculas/minúsculas ni espacios; un nombre nuevo crea una categoría temporal. `latitude` y `longitude` son obligatorias; `accuracy` es opcional y no negativa. La ubicación resultante incluye su fecha de creación del servidor.
 
 Se aceptan de cero a cinco imágenes JPEG, PNG o WebP de hasta 5 MB por archivo en el campo repetible `images`. Se guardan temporalmente en `backend/uploads/incidents/<id>/` y la respuesta devuelve sus URL relativas bajo `/uploads/`. Los campos desconocidos y los gestionados por el servidor se rechazan con `400`.
 
@@ -181,7 +181,7 @@ fuera de Docker necesita una conexión accesible configurada para ese entorno. E
 
 ---
 
-## 👥 Guía de Contribución y Flujo de Trabajo
+##  Guía de Contribución y Flujo de Trabajo
 Para asegurar la calidad del código, el equipo sigue una estrategia inspirada en GitHub Flow con un entorno de integración.
 
 ### 1. Gestión de Ramas
@@ -238,5 +238,5 @@ git commit -m "feat: añadir endpoint de registro"
 
 ---
 
-## 📚 Documentación Adicional
+##  Documentación Adicional
 - **ADRs (Architecture Decision Records):** Las decisiones importantes sobre el diseño del sistema se documentan en la carpeta `/docs/adr/`.

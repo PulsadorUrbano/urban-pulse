@@ -189,9 +189,9 @@ Reglas:
   - **Andamiaje de features:** siempre que se solicite una feature nueva, el `planner` debe inicializar automáticamente su directorio dedicado en `spec/features/NNN-<feature-name>/` (p. ej. `001-registro-incidencia/`).
   - **Adherencia a las plantillas:** dentro de la carpeta de la feature, el `planner` debe crear `spec.md`, `plan.md` y `tasks.md`, siguiendo estrictamente los blueprints definidos en `spec/templates/` antes de empezar cualquier implementación.
   - **Sobrescritura del roadmap en vivo:** el `planner` debe mantener y sobrescribir activamente `spec/constitution/roadmap.md` para reflejar el progreso real del proyecto:
-    - Mueve la feature activa a `## Siguiente 🔜` cuando empiece el trabajo.
-    - Mueve la feature a `## Hecho ✅` una vez que pasen todas las comprobaciones de calidad, tests y tareas.
-    - Mantén las features futuras listadas bajo `## Backlog / ideas 💡`.
+    - Mueve la feature activa a `## Siguiente ` cuando empiece el trabajo.
+    - Mueve la feature a `## Hecho ` una vez que pasen todas las comprobaciones de calidad, tests y tareas.
+    - Mantén las features futuras listadas bajo `## Backlog / ideas `.
 - **Documentación de sesión y seguimiento de tareas (`docs/`):**
   - Mantén el progreso de la sesión dentro del directorio `docs/`.
   - Documenta notas de sesión y mantén una lista de tareas estructurada que detalle todas las tareas completadas y sus subtareas (p. ej. usando checkboxes `- [x]` / `- [ ]`).

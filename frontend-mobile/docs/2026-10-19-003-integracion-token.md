@@ -2,7 +2,7 @@
 
 ## Contexto
 
-La feature 002 (login) está en "Hecho ✅". El backend (rama `feature/token`) ya emite JWT con `POST /auth/token`,
+La feature 002 (login) está en "Hecho ". El backend (rama `feature/token`) ya emite JWT con `POST /auth/token`,
 así que la app se prepara para consumirlo. Se adopta la convención **"Backend real + simulación mock"**: si la
 funcionalidad existe en el backend se consume de él y el mock mantiene una simulación equivalente. Rama de trabajo:
 `feature/token-frontend-mobile`.
@@ -60,7 +60,7 @@ funcionalidad existe en el backend se consume de él y el mock mantiene una simu
 
 - [x] `spec/features/003-integracion-token/spec.md` — estado "implementado", criterios `[x]` y uno DIFERIDO.
 - [x] `spec/features/003-integracion-token/tasks.md` — todas las tareas `[x]`.
-- [x] `spec/constitution/roadmap.md` — 003 en "Hecho ✅"; "Siguiente" vacío.
+- [x] `spec/constitution/roadmap.md` — 003 en "Hecho "; "Siguiente" vacío.
 
 ## Estado / Verificación
 

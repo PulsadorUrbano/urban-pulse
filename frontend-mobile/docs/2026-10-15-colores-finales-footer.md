@@ -37,5 +37,5 @@ Verificación de la purga: `grep -rn "TEMPORAL" src/` y
 
 ## Verificación
 
-- `npx expo lint` ✅ · `npx tsc --noEmit` ✅
-- `npx jest --ci` ✅ — 15 suites / 116 tests en verde.
+- `npx expo lint`  · `npx tsc --noEmit`
+- `npx jest --ci`  — 15 suites / 116 tests en verde.

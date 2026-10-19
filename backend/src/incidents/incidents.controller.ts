@@ -123,7 +123,7 @@ export class IncidentsController {
       type: 'object',
       required: ['title', 'civicId'],
       properties: {
-        title: { type: 'string', minLength: 4, maxLength: 25 },
+        title: { type: 'string', minLength: 4, maxLength: 35 },
         description: { type: 'string' },
         civicId: { type: 'string', format: 'uuid' },
         categoryId: { type: 'string', format: 'uuid' },

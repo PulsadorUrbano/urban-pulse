@@ -98,6 +98,7 @@ describe('Incidents (e2e)', () => {
           schema: {
             required: expect.arrayContaining(['title', 'civicId']),
             properties: {
+              title: { type: 'string', minLength: 4, maxLength: 35 },
               civicId: { format: 'uuid' },
               categoryId: { type: 'string', format: 'uuid' },
               category: { type: 'string' },

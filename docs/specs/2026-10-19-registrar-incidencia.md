@@ -36,7 +36,7 @@ Esta revisión sustituye la propuesta inicial de Prisma/PostGIS, transacciones, 
 
 | Campo          | Validación                                                                               |
 | -------------- | ---------------------------------------------------------------------------------------- |
-| `title`        | Texto obligatorio, trim, entre 4 y 25 caracteres.                                        |
+| `title`        | Texto obligatorio, trim, entre 4 y 35 caracteres.                                        |
 | `description`  | Texto obligatorio, trim, mínimo 10 caracteres.                                           |
 | `categoryId`   | UUID obligatorio; solo se valida el formato.                                             |
 | `latitude`     | Número finito obligatorio entre -90 y 90, incluidos los extremos.                        |

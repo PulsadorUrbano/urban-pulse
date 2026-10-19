@@ -41,8 +41,8 @@ export class CreateIncidentPipe implements PipeTransform<
         ? undefined
         : this.text(value.category, 'category');
 
-    if ([...title].length < 4 || [...title].length > 25) {
-      throw new BadRequestException('title must contain 4 to 25 characters');
+    if ([...title].length < 4 || [...title].length > 35) {
+      throw new BadRequestException('title must contain 4 to 35 characters');
     }
 
     this.uuid(value.civicId, 'civicId');

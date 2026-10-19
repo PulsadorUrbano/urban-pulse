@@ -248,10 +248,10 @@ describe('requestToken', () => {
     it('codifica correctamente userId con caracteres no ASCII (UTF-8)', async () => {
       fetchWithTimeoutMock.mockRejectedValueOnce(new TypeError('Network request failed'));
 
-      const issuedToken = await requestTokenAndFlushSimulation('josé-ñandú-😀');
+      const issuedToken = await requestTokenAndFlushSimulation('josé-ñandú-\u{10400}');
       const encodedPayload = issuedToken?.accessToken.split('.')[1] ?? '';
 
-      expect(decodeMockPayload(encodedPayload)).toMatchObject({ userId: 'josé-ñandú-😀' });
+      expect(decodeMockPayload(encodedPayload)).toMatchObject({ userId: 'josé-ñandú-\u{10400}' });
     });
   });
 

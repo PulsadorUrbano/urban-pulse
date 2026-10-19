@@ -29,21 +29,36 @@ describe('CreateIncidentPipe', () => {
     });
   });
 
+  it.each([
+    'a'.repeat(4),
+    'a'.repeat(26),
+    'a'.repeat(35),
+    '\u{10400}'.repeat(35),
+  ])('accepts trimmed titles between 4 and 35 code points: %s', (title) => {
+    expect(pipe.transform({ ...input(), title: `  ${title}  ` }).title).toBe(
+      title,
+    );
+  });
+
   it('accepts code-point title boundaries and coordinate extremes', () => {
     const value = input();
-    value.title = '😀😀😀😀';
+    value.title = '\u{10400}\u{10400}\u{10400}\u{10400}';
     value.latitude = '-90';
     value.longitude = '180';
 
     expect(pipe.transform(value)).toMatchObject({
-      title: '😀😀😀😀',
+      title: '\u{10400}\u{10400}\u{10400}\u{10400}',
       latitude: -90,
       longitude: 180,
     });
   });
 
   it('accepts an omitted description and accuracy', () => {
-    const { description: _description, accuracy: _accuracy, ...value } = input();
+    const {
+      description: _description,
+      accuracy: _accuracy,
+      ...value
+    } = input();
 
     const result = pipe.transform(value);
     expect(result.title).toBe('Farola apagada');
@@ -74,7 +89,7 @@ describe('CreateIncidentPipe', () => {
     [],
     'incident',
     { ...input(), title: 'abc' },
-    { ...input(), title: 'a'.repeat(26) },
+    { ...input(), title: 'a'.repeat(36) },
     { ...input(), civicId: 'not-a-uuid' },
     { ...input(), categoryId: 'not-a-uuid' },
     { ...input(), urbanAssetId: null },

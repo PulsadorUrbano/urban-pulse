@@ -35,7 +35,7 @@ los componentes restantes queda documentada en
   `spec/refactor/infra/nativewind-migracion-pendiente.md` (archivos que aún usan `StyleSheet`:
   `themed-text.tsx`, `category-picker.tsx`, `app-tabs.web.tsx` y `(tabs)/index.tsx`).
 
-## Verificación (COMPLETADA ✅)
+## Verificación (COMPLETADA )
 
 Ciclo de orquestación cerrado (developer → compiler-checker → tester) con estos resultados
 reales:

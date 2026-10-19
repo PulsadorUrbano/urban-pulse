@@ -1,6 +1,6 @@
 # NNN · <Nombre de la feature>
 
-**Estado:** <propuesta | en curso | implementado ✅>
+**Estado:** <propuesta | en curso | implementado >
 
 ## Qué hace
 

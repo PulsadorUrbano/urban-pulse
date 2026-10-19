@@ -2,7 +2,7 @@
 
 ## Contexto
 
-La feature 001 (registro de incidencia) ya estaba en "Hecho ✅" con título obligatorio y
+La feature 001 (registro de incidencia) ya estaba en "Hecho " con título obligatorio y
 descripción opcional. En esta sesión se **planifica** una ampliación de esa misma feature para
 capturar una **categoría opcional** al registrar una incidencia. Aquí solo se actualiza la
 documentación de `spec/`; **no** se toca `src/` ni `db.json` y no se crea una feature nueva.
@@ -29,7 +29,7 @@ documentación de `spec/`; **no** se toca `src/` ni `db.json` y no se crea una f
 - [x] `spec/features/001-registro-incidencia/spec.md` — descripción, criterios de aceptación y "Fuera de alcance".
 - [x] `spec/features/001-registro-incidencia/plan.md` — pasos técnicos, decisiones y riesgos.
 - [x] `spec/features/001-registro-incidencia/tasks.md` — checklist granular (base en `[x]`, ampliación en `[ ]`).
-- [x] `spec/constitution/roadmap.md` — 001 sigue en "Hecho ✅" con nota de categoría opcional.
+- [x] `spec/constitution/roadmap.md` — 001 sigue en "Hecho " con nota de categoría opcional.
 
 ## Pendiente (siguiente ciclo)
 

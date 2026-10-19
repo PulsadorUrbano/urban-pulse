@@ -1,6 +1,6 @@
 # 002 · Gestión de sesión (login)
 
-**Estado:** implementado ✅
+**Estado:** implementado
 
 ## Qué hace
 
