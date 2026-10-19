@@ -8,6 +8,8 @@ services:
     image: postgis/postgis:16-3.5-alpine
     container_name: urbanpulse_db
     restart: always # 'always' es más robusto en producción que 'unless-stopped'
+    ports:
+      - "5432:5432" # Solo para desarrollo local; en producción no se expone
     # Forzamos que las variables vengan del sistema o de un archivo .env, sin valores por defecto inseguros
     environment:
       POSTGRES_DB: ${DB_NAME:?Falta la variable DB_NAME}

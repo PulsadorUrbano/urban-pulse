@@ -9,12 +9,12 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Urban Pulse Backend API')
-    .setDescription('The urban pulse API auto-generated documentation')
+    .setDescription('Documentación autogenerada de la API de Urban Pulse')
     .setVersion('development')
     .build();
 
-    const documentFactory = () => SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('', app, documentFactory);
+  const documentFactory = () => SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('', app, documentFactory);
 
   await app.listen(process.env.PORT ?? 3000);
 }
