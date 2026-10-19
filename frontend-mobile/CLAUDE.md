@@ -163,6 +163,7 @@ Reglas:
 - **No modifiques archivos fuera de frontend-mobile:** todas las ediciones deben confinarse estrictamente a `frontend-mobile/`. Otros directorios (como `backend/` o `database/`) son de solo lectura, para inspeccionar endpoints de la API, contratos DTO o ejecutar comandos docker a nivel raíz.
 - **Nada de inspección del backend en vivo:** no analices ni consultes los endpoints del backend hasta que se pida explícitamente; asume y construye contra datos REST mock locales vía `json-server`.
 - **No verifiques ni depures el backend: NO es tu trabajo.** Cuando se conecte el front con el backend, comprueba ÚNICAMENTE que el **front se conecta y envía correctamente** (petición bien formada, que llega al endpoint y obtiene respuesta). NO gastes tokens en comprobar ni depurar si el backend *funciona como debería* (su lógica interna, sus tests, su almacenamiento): eso es responsabilidad del equipo de backend. Si el backend falla, **repórtalo y continúa**; no intentes arreglarlo salvo que se pida explícitamente.
+- **NUNCA borres del front lógica o simulación que el backend aún no cubra de forma estable.** Si una feature todavía no está en el backend —o no está completa, estable o verificada— **no elimines** su implementación ni su simulación mock del front. Al conectar con el backend, **AÑADE** el camino real pero **CONSERVA** el del mock (ver *Backend real + simulación mock*): el front nunca debe quedar dependiendo solo del backend para algo que antes funcionaba contra el mock. Regla dura: **si dudas, no borras — se conserva el mock.**
 
 ---
 
@@ -174,7 +175,7 @@ Reglas:
 - **Cambios mínimos y específicos:** toca solo el código estrictamente relacionado con la tarea actual. No reformatees ni refactorices archivos no relacionados.
 - **Verificación de calidad obligatoria:** ejecuta siempre `npx expo lint` y `npx tsc --noEmit` para asegurar que no hay errores de lint ni de tipos antes de dar por terminada cualquier tarea.
 - **Nada de commits de git autónomos:** no crees commits ni hagas push a ramas remotas salvo que se pida explícitamente.
-- **Backend real + simulación mock:** si una feature ya está implementada en el backend, el móvil la consume del backend real; además, el mock (`json-server` / capa de servicio) mantiene una simulación equivalente de esa feature para conservar trazabilidad y permitir desarrollo y pruebas sin backend levantado.
+- **Backend real + simulación mock:** si una feature ya está implementada en el backend, el móvil la consume del backend real; además, el mock (`json-server` / capa de servicio) mantiene una simulación equivalente de esa feature para conservar trazabilidad y permitir desarrollo y pruebas sin backend levantado. Impleméntalo como **real-first con fallback al mock**: intenta el backend y, si **no hay conexión**, cae al mock mostrando un **aviso claro en pantalla** (p. ej. "No se ha podido conectar al backend, realizando en el mock"). **Nunca elimines el camino del mock** al añadir el del backend (ver la regla dura en *Qué NO hacer*).
 - **Flujo de datos mock y esquema:** al trabajar con `db.json`:
   1. Verifica si la entidad o los datos mock requeridos ya existen.
   2. Si faltan, define primero el contrato/interfaz en `src/types/`.

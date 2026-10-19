@@ -206,3 +206,28 @@ feature y quedan documentados para corregirlos más adelante:
   un poco más.
 - El **padding horizontal está desequilibrado**: el lado derecho (junto a la "×") tiene **menos**
   padding que el izquierdo; hay que igualarlo.
+
+## Ampliación: conexión al backend
+
+El registro de incidencia deja de ser solo mock y **se conecta al backend real**.
+
+- `POST /incidents` en **multipart/form-data**, con **imágenes dentro del mismo POST**.
+- Estrategia **real-first + fallback al mock**: si no hay conexión con el backend, se registra en
+  `json-server` y la pantalla muestra "No se ha podido conectar al backend, realizando en el mock".
+- **Contrato alineado front↔backend:** `title` 4–25 caracteres; `description` opcional;
+  `civicId` = UUID (temporal `20ac442e-0f00-4fe4-bad3-61c8e8e0bff5`, ciudadano sofia13, issue #61);
+  `categoryId`? + `category`? (texto libre); `latitude`/`longitude`/`accuracy` opcionales/nullable;
+  imágenes máx. 5 en backend (el móvil recorta a 5, ver issue #91).
+
+Criterios de aceptación:
+
+- [x] Con backend disponible, la incidencia se envía por `POST /incidents` multipart y se informa el origen (`IncidentSource`).
+- [x] Sin conexión, se registra en el mock y se muestra el aviso de fallback.
+- [x] El título se valida entre 4 y 25 caracteres; descripción, categoría y ubicación son opcionales.
+- [ ] Límite de imágenes unificado front/backend (issue #91; hoy el móvil recorta a 5).
+- [ ] `civicId` real desde la sesión/token de ciudadanía (issue #61; hoy UUID temporal).
+
+Refactors relacionados (`spec/refactor/001-registro-incidencia/`):
+[`payload-incidencia-inline`](../../refactor/001-registro-incidencia/payload-incidencia-inline.md),
+[`alineacion-contrato-incidencia`](../../refactor/001-registro-incidencia/alineacion-contrato-incidencia.md),
+[`conexion-incidencia-backend-multipart`](../../refactor/001-registro-incidencia/conexion-incidencia-backend-multipart.md).

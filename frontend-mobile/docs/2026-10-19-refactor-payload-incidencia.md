@@ -6,7 +6,7 @@ El móvil hacía **dos POST** al mock: creaba una `Location` (`createLocation`) 
 `locationId` y luego enviaba una incidencia de 13 campos (`status`, `priority`, `createdAt`,
 `locationId`, `urbanAssetId`, `departmentId`, `teamId`, `technicianId`...). Se simplifica a un único
 POST con **8 campos** y coordenadas inline, alineado con la forma del backend.
-Nota de especificación: `spec/refactor/payload-incidencia-inline.md` (refactor, sin feature ni
+Nota de especificación: `spec/refactor/001-registro-incidencia/payload-incidencia-inline.md` (refactor, sin feature ni
 cambios en el roadmap).
 
 ## Decisiones
