@@ -15,7 +15,7 @@ RUN npm run build
 # -------------------------------------------------------------
 # Etapa 2: Producción
 # -------------------------------------------------------------
-FROM node:20-alpine
+FROM node:22-alpine
 WORKDIR /app
 
 # Instalar solo dependencias de producción para reducir el tamaño de la imagen
