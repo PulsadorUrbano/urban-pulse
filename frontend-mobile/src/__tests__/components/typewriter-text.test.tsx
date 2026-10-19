@@ -73,10 +73,10 @@ describe('TypewriterText', () => {
     expect(countActiveIntervals()).toBe(0);
   });
 
-  it('usa 45 ms por defecto cuando no se pasa speedMs', async () => {
+  it('usa 35 ms por defecto cuando no se pasa speedMs', async () => {
     await render(<TypewriterText testID={TEST_ID} text="Hola" />);
 
-    await advanceTimersBy(44);
+    await advanceTimersBy(34);
     expect(readVisibleText()).toBe('');
 
     await advanceTimersBy(1);
