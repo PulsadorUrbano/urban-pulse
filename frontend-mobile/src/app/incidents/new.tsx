@@ -28,11 +28,10 @@ import {
   getCurrentCoordinates,
   requestLocationPermission,
 } from '@/services/device-location';
-import { createImage } from '@/services/image.service';
 import {
   DEFAULT_INCIDENT_STATUS,
   type CreateIncidentInput,
-  type IncidentPayload,
+  type CreatedIncident,
 } from '@/types/incident';
 import type { LocationCoordinates } from '@/types/location';
 import {
@@ -69,9 +68,8 @@ export default function NewIncidentScreen() {
   const [isOtherSelected, setIsOtherSelected] = useState(false);
   const [customCategory, setCustomCategory] = useState('');
   const [validationErrors, setValidationErrors] = useState<IncidentValidationErrors>({});
-  const [createdIncident, setCreatedIncident] = useState<(IncidentPayload & { id: string }) | null>(null);
+  const [createdIncident, setCreatedIncident] = useState<CreatedIncident | null>(null);
   const [locationNotice, setLocationNotice] = useState<string | null>(null);
-  const [photoNotice, setPhotoNotice] = useState<string | null>(null);
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
 
   // No se permite enviar mientras se resuelve la ubicación, se persiste la
@@ -108,46 +106,28 @@ export default function NewIncidentScreen() {
   };
 
   // Envía la incidencia con las coordenadas indicadas (o sin ellas) y conserva los
-  // avisos asociados (ubicación y fotos) para mostrarlos en la pantalla de confirmación.
+  // avisos asociados (ubicación) para mostrarlos en la pantalla de confirmación.
   const submitWithCoordinates = async (
     coordinates: LocationCoordinates | null,
     notice: string | null = null,
   ) => {
-    const incident = await submitIncident({
-      title,
-      description,
-      ...buildCategoryInput(),
-      latitude: coordinates?.latitude ?? null,
-      longitude: coordinates?.longitude ?? null,
-      accuracy: coordinates?.accuracy ?? null,
-    });
+    const incident = await submitIncident(
+      {
+        title,
+        description,
+        ...buildCategoryInput(),
+        latitude: coordinates?.latitude ?? null,
+        longitude: coordinates?.longitude ?? null,
+        accuracy: coordinates?.accuracy ?? null,
+      },
+      selectedPhotoUris,
+    );
 
     if (!incident) {
       return;
     }
 
     setLocationNotice(notice);
-
-    // Persiste cada foto adjunta vinculada a la incidencia recién creada. Las
-    // imágenes son independientes entre sí: se intentan guardar todas y solo se
-    // prepara un aviso no bloqueante si alguna (o todas) falla.
-    if (selectedPhotoUris.length > 0) {
-      const imageResults = await Promise.allSettled(
-        selectedPhotoUris.map((uri) => createImage({ url: uri, incidentId: incident.id })),
-      );
-
-      const rejectedImageCount = imageResults.filter(
-        (result) => result.status === 'rejected',
-      ).length;
-
-      if (rejectedImageCount > 0) {
-        const rejectedPhotoText =
-          rejectedImageCount === 1
-            ? '1 foto no pudo guardarse.'
-            : `${rejectedImageCount} fotos no pudieron guardarse.`;
-        setPhotoNotice(`La incidencia se registró, pero ${rejectedPhotoText}`);
-      }
-    }
 
     setCreatedIncident(incident);
   };
@@ -271,12 +251,6 @@ export default function NewIncidentScreen() {
             {locationNotice ? (
               <ThemedText type="small" themeColor="textSecondary" className="text-center">
                 {locationNotice}
-              </ThemedText>
-            ) : null}
-
-            {photoNotice ? (
-              <ThemedText type="small" themeColor="textSecondary" className="text-center">
-                {photoNotice}
               </ThemedText>
             ) : null}
 

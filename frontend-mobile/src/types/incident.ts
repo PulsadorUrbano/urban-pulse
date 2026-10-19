@@ -50,3 +50,32 @@ export interface IncidentPayload {
   categoryId: string | null;
   category: string | null;
 }
+
+// Imagen asociada a una incidencia tal como la devuelve el backend
+export interface CreatedIncidentImage {
+  id: string;
+  url: string;
+  mimeType: string;
+  createdAt: string;
+}
+
+// Respuesta del backend real al crear una incidencia (POST /incidents)
+export interface CreatedIncident {
+  id: string;
+  title: string;
+  description: string | null;
+  civicId: string;
+  categoryId: string | null;
+  category: string | null;
+  urbanAssetId: string | null;
+  location: {
+    latitude: number | null;
+    longitude: number | null;
+    accuracy: number | null;
+    createdAt: string;
+  };
+  images: CreatedIncidentImage[];
+  status: 'reported';
+  priority: 'low';
+  createdAt: string;
+}
