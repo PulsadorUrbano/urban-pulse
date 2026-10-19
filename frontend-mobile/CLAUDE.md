@@ -173,6 +173,7 @@ Reglas:
 - **Cambios mínimos y específicos:** toca solo el código estrictamente relacionado con la tarea actual. No reformatees ni refactorices archivos no relacionados.
 - **Verificación de calidad obligatoria:** ejecuta siempre `npx expo lint` y `npx tsc --noEmit` para asegurar que no hay errores de lint ni de tipos antes de dar por terminada cualquier tarea.
 - **Nada de commits de git autónomos:** no crees commits ni hagas push a ramas remotas salvo que se pida explícitamente.
+- **Backend real + simulación mock:** si una feature ya está implementada en el backend, el móvil la consume del backend real; además, el mock (`json-server` / capa de servicio) mantiene una simulación equivalente de esa feature para conservar trazabilidad y permitir desarrollo y pruebas sin backend levantado.
 - **Flujo de datos mock y esquema:** al trabajar con `db.json`:
   1. Verifica si la entidad o los datos mock requeridos ya existen.
   2. Si faltan, define primero el contrato/interfaz en `src/types/`.

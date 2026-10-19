@@ -45,9 +45,9 @@ export default function LoginScreen() {
       username_email: usernameOrEmail.trim(),
       password,
     };
-    const user = await submitLogin(input);
-    if (user) {
-      signIn(user);
+    const loginResult = await submitLogin(input);
+    if (loginResult) {
+      await signIn(loginResult.user, loginResult.token);
       router.replace('/');
     }
   };

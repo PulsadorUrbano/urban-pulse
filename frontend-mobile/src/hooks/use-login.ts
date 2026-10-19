@@ -10,8 +10,15 @@ import {
   resetLockout,
   saveLockoutState,
 } from '@/services/lockout.service';
+import { requestToken } from '@/services/token.service';
 import { EMPTY_LOCKOUT_STATE, type LockoutState } from '@/types/auth';
+import type { AuthToken } from '@/types/token';
 import type { LoginUserInput, User } from '@/types/user';
+
+export interface LoginSuccess {
+  user: User;
+  token: AuthToken | null;
+}
 
 export interface UseLoginResult {
   isSubmitting: boolean;
@@ -19,7 +26,7 @@ export interface UseLoginResult {
   isLocked: boolean;
   lockMessage: string;
   remainingMs: number;
-  submitLogin: (input: LoginUserInput) => Promise<User | null>;
+  submitLogin: (input: LoginUserInput) => Promise<LoginSuccess | null>;
 }
 
 // Intervalo con el que se refresca el "now" mientras dure el bloqueo.
@@ -86,7 +93,7 @@ export function useLogin(): UseLoginResult {
   const lockMessage = isLocked ? lockMessageFor(lockoutState.level) : '';
 
   const submitLogin = useCallback(
-    async (input: LoginUserInput): Promise<User | null> => {
+    async (input: LoginUserInput): Promise<LoginSuccess | null> => {
       if (isSubmittingRef.current || isLockoutActive(lockoutStateRef.current, Date.now())) {
         return null;
       }
@@ -95,8 +102,10 @@ export function useLogin(): UseLoginResult {
       setErrorMessage(null);
       setIsSubmitting(true);
 
+      let user: User;
+
       try {
-        const user = await login(input);
+        user = await login(input);
 
         // Éxito: limpia el bloqueo persistido, tolerando fallos de SecureStore.
         try {
@@ -105,8 +114,6 @@ export function useLogin(): UseLoginResult {
           // Un fallo al limpiar el almacenamiento no debe romper el login.
         }
         applyLockoutState({ ...EMPTY_LOCKOUT_STATE, recentFailures: [] });
-
-        return user;
       } catch (error) {
         if (error instanceof InvalidCredentialsError) {
           const failureTime = Date.now();
@@ -130,7 +137,15 @@ export function useLogin(): UseLoginResult {
             error instanceof Error ? error.message : 'Ocurrió un error inesperado al iniciar sesión.',
           );
         }
+        isSubmittingRef.current = false;
+        setIsSubmitting(false);
         return null;
+      }
+
+      // Fuera del try/catch de credenciales: un fallo de token nunca cuenta como intento fallido.
+      try {
+        const token = await requestToken(user.id);
+        return { user, token };
       } finally {
         isSubmittingRef.current = false;
         setIsSubmitting(false);
