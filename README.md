@@ -131,7 +131,7 @@ La API usa el puerto 3000 por defecto; se puede modificar con `PORT`. Swagger se
 | `POST /incidents` | `201 Created`, el recurso y `Location: /incidents/{id}`. |
 | `GET /incidents/:id` | `200 OK`; `404` si el UUID válido no existe. |
 
-La creación usa `multipart/form-data`. Ejemplo sin imágenes:
+La creación usa `multipart/form-data`. Ejemplo con una imagen:
 
 ```bash
 curl -X POST http://localhost:3000/incidents \
@@ -148,7 +148,7 @@ curl -X POST http://localhost:3000/incidents \
 
 Se aceptan de cero a cinco imágenes JPEG, PNG o WebP de hasta 5 MB por archivo en el campo repetible `images`. Se guardan temporalmente en `backend/uploads/incidents/<id>/` y la respuesta devuelve sus URL relativas bajo `/uploads/`. Los campos desconocidos y los gestionados por el servidor se rechazan con `400`.
 
-Los metadatos viven únicamente en memoria y los archivos son locales y temporales: ambos se pierden al reiniciar el backend. No hay autenticación, autorización ni consulta de identidad ciudadana; tampoco se comprueba la existencia de `civicId` ni `urbanAssetId`.
+Los metadatos viven únicamente en memoria y se pierden al reiniciar el backend. Las imágenes son archivos locales temporales sin limpieza programada, por lo que pueden seguir accesibles aunque el registro en memoria ya no exista. No hay autenticación, autorización ni consulta de identidad ciudadana; tampoco se comprueba la existencia de `civicId` ni `urbanAssetId`.
 
 | Comando | Uso |
 | --- | --- |

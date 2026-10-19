@@ -25,16 +25,16 @@ Las entradas aceptan `title`, `description` opcional, `civicId`, `categoryName`,
 | --- | --- |
 | `npm run build` | Correcto. |
 | `npm run lint` | Correcto con 3 avisos de Oxlint sobre el conteo de puntos de código Unicode. |
-| Pruebas focalizadas de categorías y servicio | Correcto: 7 pruebas. |
+| Pruebas focalizadas de categorías, servicio y almacenamiento | Correcto: 8 pruebas. |
 | Pruebas focalizadas de pipe y servicio | Correcto: 26 pruebas. |
 | Pruebas e2e de incidencias multipart y Swagger | Correcto: 9 pruebas. |
 | `npm run build` | Correcto. |
 | `npm run lint` | Correcto con 3 avisos existentes sobre el conteo de puntos de código Unicode. |
-| `npm test` | 28 de 29 correctas; persiste el fallo previo de `src/prisma/prisma.service.spec.ts` porque no proporciona `ConfigService`. |
+| `npm test` | 29 de 30 correctas; persiste el fallo previo conocido de `src/prisma/prisma.service.spec.ts` porque no proporciona `ConfigService`. |
 | `npm run test:e2e` | Correcto: 10 pruebas. |
 
 La prueba de humo compilada creó una incidencia multipart en el puerto local de prueba, recuperó su imagen con `200 image/png`, reinició el proceso y comprobó que el identificador anterior respondía `404`. Se eliminaron los archivos y registros de esa prueba.
 
 ## Limitaciones y trabajo aplazado
 
-El almacenamiento es un `Map` local y las imágenes residen en disco local temporal: ambos se pierden al reiniciar y no se comparten entre instancias. Se aplazan base de datos, migraciones, almacenamiento cloud, análisis antivirus, comprobación de referencias, identidad ciudadana, autenticación, autorización, edición, borrado, listado, asignación e historial.
+El almacenamiento es un `Map` local y se pierde al reiniciar. Las imágenes residen en disco local temporal, no se comparten entre instancias y no tienen limpieza programada, por lo que pueden persistir más allá del registro en memoria. Se aplazan base de datos, migraciones, almacenamiento cloud, análisis antivirus, comprobación de referencias, identidad ciudadana, autenticación, autorización, edición, borrado, listado, asignación e historial.

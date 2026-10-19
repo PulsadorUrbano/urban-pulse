@@ -10,6 +10,10 @@ const extensions = {
   'image/webp': 'webp',
 } as const;
 
+export function uploadsRoot(): string {
+  return resolve(process.env.UPLOADS_DIRECTORY ?? join(process.cwd(), 'uploads'));
+}
+
 @Injectable()
 export class UploadStorageService {
   async save(
@@ -23,20 +27,19 @@ export class UploadStorageService {
     const directory = this.directory(incidentId);
     try {
       await mkdir(directory, { recursive: true });
-      const images = await Promise.all(
-        files.map(async (file) => {
-          const id = randomUUID();
-          const extension = extensions[file.mimetype as keyof typeof extensions];
-          const filename = `${id}.${extension}`;
-          await writeFile(join(directory, filename), file.buffer);
-          return {
-            id,
-            url: `/uploads/incidents/${incidentId}/${filename}`,
-            mimeType: file.mimetype,
-            createdAt: new Date().toISOString(),
-          };
-        }),
-      );
+      const images: IncidentImage[] = [];
+      for (const file of files) {
+        const id = randomUUID();
+        const extension = extensions[file.mimetype as keyof typeof extensions];
+        const filename = `${id}.${extension}`;
+        await writeFile(join(directory, filename), file.buffer);
+        images.push({
+          id,
+          url: `/uploads/incidents/${incidentId}/${filename}`,
+          mimeType: file.mimetype,
+          createdAt: new Date().toISOString(),
+        });
+      }
       return images;
     } catch (error) {
       await this.remove(incidentId);
@@ -49,6 +52,6 @@ export class UploadStorageService {
   }
 
   private directory(incidentId: string): string {
-    return resolve(process.cwd(), 'uploads', 'incidents', incidentId);
+    return join(uploadsRoot(), 'incidents', incidentId);
   }
 }

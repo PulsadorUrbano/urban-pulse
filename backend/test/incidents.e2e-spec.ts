@@ -10,6 +10,7 @@ import { IncidentsModule } from './../src/incidents/incidents.module.js';
 
 describe('Incidents (e2e)', () => {
   let app: NestExpressApplication<App>;
+  const uploadRoot = resolve(process.cwd(), '.test-uploads-incidents');
 
   const input = () => ({
     title: 'Farola apagada',
@@ -22,18 +23,21 @@ describe('Incidents (e2e)', () => {
   });
 
   beforeEach(async () => {
+    process.env.UPLOADS_DIRECTORY = uploadRoot;
+    await rm(uploadRoot, { recursive: true, force: true });
     const module = await Test.createTestingModule({
       imports: [IncidentsModule],
     }).compile();
 
     app = module.createNestApplication<NestExpressApplication<App>>();
-    app.useStaticAssets(resolve(process.cwd(), 'uploads'), { prefix: '/uploads/' });
+    app.useStaticAssets(uploadRoot, { prefix: '/uploads/' });
     await app.init();
   });
 
   afterEach(async () => {
     await app.close();
-    await rm(resolve(process.cwd(), 'uploads'), { recursive: true, force: true });
+    await rm(uploadRoot, { recursive: true, force: true });
+    delete process.env.UPLOADS_DIRECTORY;
   });
 
   it('creates, locates, and serves a multipart incident image', async () => {
