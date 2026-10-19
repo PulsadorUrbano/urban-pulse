@@ -1,8 +1,9 @@
 # Refactor · Alineación del contrato de incidencia (front ↔ backend)
 
-> Estado: **en curso** (2026-10-19). Unifica el contrato de "registrar incidencia" entre el móvil
+> Estado: **completado** (2026-10-19). Unifica el contrato de "registrar incidencia" entre el móvil
 > y el backend, decidiendo por campo qué lado manda. El backend **no se conecta todavía** (seguimos
 > contra el mock `json-server`); esto es solo alineación de contrato.
+> Verificado: front `tsc`/`lint`/`jest` 233/233; backend `build` + unit 31/31 + e2e 11/11 + `oxlint` OK.
 
 ## Contrato final acordado
 
