@@ -27,8 +27,6 @@ Faltaba que el móvil **apuntara al backend real** en lugar del mock para el reg
   (imagen subida en `/uploads/incidents/.../.jpg`).
 
 ## Pendiente / fuera de alcance
-- **Límite de imágenes:** el móvil permite 8 y el backend 5; hoy el servicio recorta a 5 **en silencio**.
-  Ajustar el máximo (o avisar al usuario) queda **OUT OF SCOPE por ahora** (decisión del usuario, 2026-10-19).
 - Transporte de otros endpoints (sin equivalente real en el backend) y el desajuste general multipart/JSON
   en el resto del sistema.
 - `civicId` sigue temporal (UUID hardcodeado, issue #61).
