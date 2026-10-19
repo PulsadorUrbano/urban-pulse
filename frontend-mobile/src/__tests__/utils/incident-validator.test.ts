@@ -2,6 +2,7 @@
 import {
   INCIDENT_DESCRIPTION_MIN_LENGTH,
   INCIDENT_TITLE_MAX_LENGTH,
+  INCIDENT_TITLE_MIN_LENGTH,
   getDescriptionQuality,
   getIncidentWarnings,
   hasValidationErrors,
@@ -12,7 +13,7 @@ import type { CreateIncidentInput } from '@/types/incident';
 // Construye un input válido base para reutilizarlo en cada caso.
 function buildValidInput(overrides: Partial<CreateIncidentInput> = {}): CreateIncidentInput {
   return {
-    title: 'Bache en la avenida principal',
+    title: 'Bache en la avenida',
     description: 'Hay un bache profundo que pone en riesgo a los vehículos.',
     ...overrides,
   };
@@ -36,6 +37,13 @@ describe('validateIncidentInput', () => {
     const errors = validateIncidentInput(buildValidInput({ title: tooLong }));
 
     expect(errors.title).toContain(String(INCIDENT_TITLE_MAX_LENGTH));
+  });
+
+  it('marca error en title cuando es más corto que el mínimo', () => {
+    const tooShort = 'a'.repeat(INCIDENT_TITLE_MIN_LENGTH - 1);
+    const errors = validateIncidentInput(buildValidInput({ title: tooShort }));
+
+    expect(errors.title).toContain(String(INCIDENT_TITLE_MIN_LENGTH));
   });
 
   it('no marca error cuando la descripción está vacía (es opcional)', () => {

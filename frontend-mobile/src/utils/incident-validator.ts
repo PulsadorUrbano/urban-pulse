@@ -1,6 +1,7 @@
 import type { CreateIncidentInput } from '@/types/incident';
 
-export const INCIDENT_TITLE_MAX_LENGTH = 100;
+export const INCIDENT_TITLE_MIN_LENGTH = 4;
+export const INCIDENT_TITLE_MAX_LENGTH = 25;
 export const INCIDENT_DESCRIPTION_MIN_LENGTH = 10;
 export const INCIDENT_DESCRIPTION_MAX_LENGTH = 1000;
 
@@ -33,6 +34,8 @@ export function validateIncidentInput(input: CreateIncidentInput): IncidentValid
 
   if (title.length === 0) {
     errors.title = 'El título es obligatorio.';
+  } else if (title.length < INCIDENT_TITLE_MIN_LENGTH) {
+    errors.title = `El título debe tener al menos ${INCIDENT_TITLE_MIN_LENGTH} caracteres.`;
   } else if (title.length > INCIDENT_TITLE_MAX_LENGTH) {
     errors.title = `El título no puede superar los ${INCIDENT_TITLE_MAX_LENGTH} caracteres.`;
   }

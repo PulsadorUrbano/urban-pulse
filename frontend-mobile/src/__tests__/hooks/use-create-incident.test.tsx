@@ -26,7 +26,7 @@ const createdIncident: IncidentPayload & { id: string } = {
   latitude: 40.4168,
   longitude: -3.7038,
   accuracy: 10,
-  civicId: 'a62718e8563',
+  civicId: '20ac442e-0f00-4fe4-bad3-61c8e8e0bff5',
   categoryId: 'infrastructure',
   category: 'Vía pública',
 };

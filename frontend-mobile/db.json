@@ -22,7 +22,7 @@
       "email": "sofia@email.com",
       "password": "sofia13",
       "role": "civic",
-      "id": "a62718e8563"
+      "id": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5"
     },
     {
       "username": "mayte",
@@ -34,35 +34,9 @@
   ],
   "civics": [
     {
-      "userId": "a62718e8563",
+      "userId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
       "phone": "600388787"
     },
-    {
-      "userId": "a62218e7563",
-      "phone": "123456234"
-    }
-  ],
-  "users": [
-    {
-      "username": "sofia13",
-      "email": "sofia@email.com",
-      "password": "sofia13",
-      "role": "civic",
-      "id": "a62718e8563"
-    },
-    {
-      "username": "mayte",
-      "email": "mayte@email.com",
-      "password": "mayte",
-      "role": "civic",
-      "id": "a62218e7563"
-    }
-  ],
-  "civics": [
-    {
-      "userId": "a62718e8563",
-      "phone": "600388787"
-    },    
     {
       "userId": "a62218e7563",
       "phone": "123456234"

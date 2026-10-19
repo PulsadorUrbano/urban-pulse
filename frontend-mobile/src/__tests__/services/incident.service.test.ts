@@ -3,7 +3,7 @@ import { INCIDENTS_ENDPOINT, createIncident } from '@/services/incident.service'
 import type { CreateIncidentInput, IncidentPayload } from '@/types/incident';
 
 // Identificador temporal del ciudadano que el servicio envía en todos los casos.
-const TEMPORARY_CIVIC_ID = 'a62718e8563';
+const TEMPORARY_CIVIC_ID = '20ac442e-0f00-4fe4-bad3-61c8e8e0bff5';
 
 // Claves exactas que el front envía al mock; cualquier otra es un fallo de contrato.
 const EXPECTED_PAYLOAD_KEYS = [

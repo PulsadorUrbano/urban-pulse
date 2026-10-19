@@ -122,12 +122,12 @@ const deviceCoordinates: LocationCoordinates = {
 // Incidencia devuelta por el servicio tras el POST: el payload del front más el id.
 const createdIncident: IncidentPayload & { id: string } = {
   id: '42',
-  title: 'Bache en la avenida principal',
+  title: 'Bache en la avenida',
   description: 'Hay un bache profundo que pone en riesgo a los vehículos.',
   latitude: deviceCoordinates.latitude,
   longitude: deviceCoordinates.longitude,
   accuracy: deviceCoordinates.accuracy,
-  civicId: 'a62718e8563',
+  civicId: '20ac442e-0f00-4fe4-bad3-61c8e8e0bff5',
   categoryId: null,
   category: null,
 };

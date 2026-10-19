@@ -7,7 +7,7 @@ export const INCIDENTS_ENDPOINT = `${API_BASE_URL}/incidents`;
 
 // TEMPORAL: id del ciudadano `sofia13` (role civic) tomado del mock de
 // feature/token. Se sustituirá cuando exista una sesión real.
-const TEMPORARY_CIVIC_ID = 'a62718e8563';
+const TEMPORARY_CIVIC_ID = '20ac442e-0f00-4fe4-bad3-61c8e8e0bff5';
 
 // Crea una incidencia con los 8 campos que envía el front y la persiste en el
 // servidor mock.
