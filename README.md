@@ -168,7 +168,7 @@ Las variables `OBSERVE_APP_KEY` y `OBSERVE_APP_SECRET` se reservan para Nest Obs
 
 ### Base de datos — PostgreSQL y PostGIS
 
-El modelo de referencia está en `database/diagram.dbml`; su representación SQL está en `docs/urbanPulse_diagram.sql`. El modelo documentado y el esquema
+El modelo de referencia está en `database/diagram.dbml`; su representación SQL está en `backend/docs/migrations/001_base_diagram.sql`. El modelo documentado y el esquema
 implementado deben contrastarse con la rama de backend correspondiente.
 
 El servicio `database` de `docker-compose.yml` utiliza PostgreSQL con PostGIS.
@@ -243,4 +243,4 @@ git commit -m "feat: añadir endpoint de registro"
 ---
 
 ##  Documentación Adicional
-- **ADRs (Architecture Decision Records):** Las decisiones importantes sobre el diseño del sistema se documentan en la carpeta `/docs/adr/`.
+- **ADRs (Architecture Decision Records):** Las decisiones importantes sobre el diseño del sistema se documentan en `backend/docs/adr/`.

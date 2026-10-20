@@ -3,6 +3,7 @@
 - Rama objetivo: `feature/registro-incidencia-backend`.
 - Estado: implementado y verificado; pendiente de revisión independiente de la rama.
 - Fecha: 2026-10-19.
+- Plan: [Plan de implementación](../plans/2026-10-19-incidencias-ubicacion-categorias-imagenes-plan.md).
 
 ## Objetivo
 

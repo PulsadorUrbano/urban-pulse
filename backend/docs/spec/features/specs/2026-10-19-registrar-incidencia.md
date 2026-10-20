@@ -4,7 +4,7 @@
 - Checkout: `C:\Users\joseg\Documents\urban_pulse\urban-pulse`.
 - Última actualización: 2026-10-19.
 - Estado: implementación completada en memoria; verificación registrada el 2026-10-19.
-- Plan: [Plan de implementación](2026-10-19-registrar-incidencia-plan.md).
+- Plan: [Plan de implementación](../plans/2026-10-19-registrar-incidencia-plan.md).
 
 ## Objetivo y decisiones vigentes
 
@@ -18,7 +18,7 @@ Esta revisión sustituye la propuesta inicial de Prisma/PostGIS, transacciones, 
 
 ## Contexto verificado
 
-- Referencias del dominio: `docs/migrations/001_base_diagram.sql` y `database/diagram.dbml`.
+- Referencias del dominio: `backend/docs/migrations/001_base_diagram.sql` y `database/diagram.dbml`.
 - El SQL define título, descripción, categoría, ubicación, prioridad y estado.
 - Existen `PrismaModule` y `PrismaService`. Actualmente la raíz importa Prisma y exige `DATABASE_URL`, intentando conectar durante la inicialización.
 - Para ejecutar esta fase sin base de datos, `AppModule` dejará de importar `PrismaModule`. Los archivos y dependencias Prisma se conservan para la futura integración.
@@ -101,8 +101,8 @@ Configuración DB, modelos/generación Prisma, cambios SQL, migraciones, claves 
 - Código y pruebas: implementados en `backend/src/incidents/`, con pruebas unitarias de servicio y pipe, y pruebas e2e de módulo y raíz.
 - Verificación: `npm run build` correcto; `npm run lint` correcto con tres avisos de Oxlint por el conteo explícito de puntos de código; `npm run test:e2e` correcto (3 pruebas); `npm test` mantiene un fallo previo en `src/prisma/prisma.service.spec.ts` porque no proporciona `ConfigService`.
 - Smoke test de producción: `POST /incidents` y `GET /health` correctos sin `DATABASE_URL`; tras reiniciar el proceso, el identificador anterior devolvió `404`.
-- Informe final: `docs/reports/2026-10-19-registrar-incidencia.md`, en español.
+- Informe final: `backend/docs/reports/2026-10-19-registrar-incidencia.md`, en español.
 - Mantener esta especificación actualizada durante la ejecución y conservar su nombre.
-- 2026-10-19: diseño inicial y convención de especificaciones bajo `docs/specs/`.
+- 2026-10-19: diseño inicial y convención de especificaciones bajo `backend/docs/features/specs/`.
 - 2026-10-19: adopción del checkout del IDE indicado por el usuario.
 - 2026-10-19: el usuario solicita el plan, limita el alcance al módulo backend, aplaza DB y pide ignorar `civicId`. Se actualiza el alcance y se prepara el plan enlazado.
