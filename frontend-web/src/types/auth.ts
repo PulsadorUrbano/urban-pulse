@@ -1,10 +1,10 @@
 /**
- * Definiciones de tipos para autenticación en Urban Pulse.
- * Mapean directamente con la base de datos PostgreSQL (urbanPulse_diagram.sql)
- * y los DTOs de NestJS.
+ * Authentication type definitions for Urban Pulse.
+ * Directly maps to PostgreSQL database schema (urbanPulse_diagram.sql)
+ * and NestJS DTOs.
  */
 
-// Roles de usuario según el ENUM profile_role de PostgreSQL
+// User roles according to PostgreSQL profile_role ENUM
 export type ProfileRole = 
   | 'administrative'
   | 'department'
@@ -43,7 +43,7 @@ export interface JwtPayload {
 export type TokenSource = 'backend' | 'mock';
 
 export interface AuthTokens {
-  accessToken: string; // Token JWT único firmado
+  accessToken: string; // Signed single JWT access token
   source: TokenSource;
 }
 
@@ -56,7 +56,7 @@ export interface CookieMetadata {
   path: string;
   maxAgeSeconds: number;
   expiresAt: string;
-  isOpen: boolean; // Estado de la cookie (abierta / cerrada)
+  isOpen: boolean; // Cookie state (open / active vs closed / revoked)
 }
 
 export interface LoginCredentials {
