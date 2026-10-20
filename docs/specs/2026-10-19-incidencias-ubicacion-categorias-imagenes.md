@@ -33,7 +33,7 @@ Content type: `multipart/form-data`.
 | `longitude` | Obligatorio; número finito entre -180 y 180. |
 | `accuracy` | Opcional; número finito mayor o igual que cero. |
 | `urbanAssetId` | Opcional; UUID con validación de formato solamente. |
-| `images` | Opcional; campo repetible, de 0 a 5 ficheros JPEG, PNG o WebP, máximo 5 MB por fichero. |
+| `images` | Opcional; campo repetible, de 0 a 8 ficheros JPEG, PNG o WebP, máximo 5 MB por fichero. |
 
 Los valores de texto del formulario se convierten de forma controlada en los campos numéricos antes de validar; no se aceptan valores no finitos. Se rechazan los campos no reconocidos y los campos que solo controla el servidor (`id`, estado, prioridad y marcas temporales) con `400 Bad Request`.
 
@@ -97,7 +97,7 @@ Persistencia, migraciones, almacenamiento cloud, análisis antivirus, transforma
 2. `civicId` es obligatorio y se devuelve sin exponer identidad adicional.
 3. La descripción puede omitirse; si existe, conserva las reglas de longitud tras trim.
 4. La respuesta incluye ubicación con latitud, longitud, precisión y fecha creadas por el servidor.
-5. Se aceptan hasta cinco imágenes JPEG, PNG o WebP de hasta 5 MB y se devuelven URLs accesibles localmente.
+5. Se aceptan hasta ocho imágenes JPEG, PNG o WebP de hasta 5 MB y se devuelven URLs accesibles localmente.
 6. Ficheros inválidos o un fallo de escritura no crean registros parciales.
 7. El contrato queda documentado en Swagger, README y pruebas unitarias/e2e.
 

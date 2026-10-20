@@ -107,6 +107,7 @@ describe('Incidents (e2e)', () => {
               accuracy: { type: 'number' },
               images: {
                 type: 'array',
+                maxItems: 8,
                 items: { format: 'binary' },
               },
             },
@@ -128,6 +129,21 @@ describe('Incidents (e2e)', () => {
         },
       },
     });
+  });
+
+  it('accepts eight images and keeps them on the incident resource', async () => {
+    let upload = request(app.getHttpServer()).post('/incidents').field(input());
+    for (let index = 0; index < 8; index += 1) {
+      upload = upload.attach('images', Buffer.from('image data'), {
+        filename: `image-${index}.png`,
+        contentType: 'image/png',
+      });
+    }
+    const created = await upload.expect(201);
+    expect(created.body.images).toHaveLength(8);
+    await request(app.getHttpServer())
+      .get(created.headers.location)
+      .expect(200, created.body);
   });
 
   it('rejects forged fields and distinguishes invalid from absent ids', async () => {
@@ -175,13 +191,13 @@ describe('Incidents (e2e)', () => {
   });
 
   it.each([
-    ['a sixth image', (requestBuilder: request.Test) => requestBuilder.attach('images', Buffer.from('x'), { filename: '6.png', contentType: 'image/png' })],
+    ['a ninth image', (requestBuilder: request.Test) => requestBuilder.attach('images', Buffer.from('x'), { filename: '9.png', contentType: 'image/png' })],
     ['an oversized image', (requestBuilder: request.Test) => requestBuilder.attach('images', Buffer.alloc(5 * 1024 * 1024 + 1), { filename: 'large.png', contentType: 'image/png' })],
     ['an unsupported image type', (requestBuilder: request.Test) => requestBuilder.attach('images', Buffer.from('x'), { filename: 'file.gif', contentType: 'image/gif' })],
   ])('rejects %s without creating an incident', async (_label, addInvalidFile) => {
     let upload = request(app.getHttpServer()).post('/incidents').field(input());
-    if (_label === 'a sixth image') {
-      for (let index = 0; index < 5; index += 1) {
+    if (_label === 'a ninth image') {
+      for (let index = 0; index < 8; index += 1) {
         upload = upload.attach('images', Buffer.from('x'), { filename: `${index}.png`, contentType: 'image/png' });
       }
     }

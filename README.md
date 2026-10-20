@@ -150,7 +150,7 @@ curl -X POST http://localhost:3000/incidents \
 
 `title` se recorta y debe tener 4–35 puntos de código. `description` es opcional y, cuando se aporta, tiene al menos 10. `civicId` es UUID obligatorio y solo se valida por formato. `categoryName` es obligatorio: el catálogo temporal reutiliza `Iluminación`, `Limpieza`, `Vía pública`, `Movilidad` y `Zonas verdes` sin distinguir mayúsculas/minúsculas ni espacios; un nombre nuevo crea una categoría temporal. `latitude` y `longitude` son obligatorias; `accuracy` es opcional y no negativa. La ubicación resultante incluye su fecha de creación del servidor.
 
-Se aceptan de cero a cinco imágenes JPEG, PNG o WebP de hasta 5 MB por archivo en el campo repetible `images`. Se guardan temporalmente en `backend/uploads/incidents/<id>/` y la respuesta devuelve sus URL relativas bajo `/uploads/`. Los campos desconocidos y los gestionados por el servidor se rechazan con `400`.
+Se aceptan de cero a ocho imágenes JPEG, PNG o WebP de hasta 5 MB por archivo en el campo repetible `images`. Se guardan temporalmente en `backend/uploads/incidents/<id>/` y la respuesta devuelve sus URL relativas bajo `/uploads/`. Los campos desconocidos y los gestionados por el servidor se rechazan con `400`.
 
 Los metadatos viven únicamente en memoria y se pierden al reiniciar el backend. Las imágenes son archivos locales temporales sin limpieza programada, por lo que pueden seguir accesibles aunque el registro en memoria ya no exista. No hay autenticación, autorización ni consulta de identidad ciudadana; tampoco se comprueba la existencia de `civicId` ni `urbanAssetId`.
 

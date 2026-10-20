@@ -105,8 +105,8 @@ export class IncidentsController {
   @Post()
   @UseFilters(UploadLimitFilter)
   @UseInterceptors(
-    FilesInterceptor('images', 5, {
-      limits: { fileSize: 5 * 1024 * 1024, files: 5 },
+    FilesInterceptor('images', 8, {
+      limits: { fileSize: 5 * 1024 * 1024, files: 8 },
       fileFilter: (_request, file, callback) => {
         callback(
           acceptedImageTypes.has(file.mimetype)
@@ -134,7 +134,7 @@ export class IncidentsController {
         urbanAssetId: { type: 'string', format: 'uuid' },
         images: {
           type: 'array',
-          maxItems: 5,
+          maxItems: 8,
           items: { type: 'string', format: 'binary' },
         },
       },
