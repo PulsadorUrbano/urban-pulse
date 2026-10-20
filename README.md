@@ -124,6 +124,10 @@ npm run start:dev
 
 La API usa el puerto 3000 por defecto; se puede modificar con `PORT`. Swagger se publica en `/` y `GET /health` devuelve `{ "status": "ok" }`.
 
+#### Catalogo temporal de categorias
+
+`GET /categories` devuelve `200 OK` y un array de objetos `{ id, name, createdAt }`, sin envoltorio. Reutiliza las cinco categorias iniciales del servicio y cualquier categoria creada posteriormente por el propio servicio. Los UUID y fechas permanecen estables durante la vida del proceso; el catalogo es temporal y se reinicia con la aplicacion. Swagger documenta la respuesta en `/`.
+
 #### Registro temporal de incidencias
 
 | Método y ruta | Resultado |

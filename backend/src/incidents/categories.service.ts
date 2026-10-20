@@ -20,6 +20,12 @@ export class CategoriesService {
     }
   }
 
+  findAll(): Category[] {
+    return Array.from(this.categories.values(), (category) =>
+      this.copy(category),
+    );
+  }
+
   resolve(name: string): Category {
     const normalizedName = normalizeCategoryName(name);
     const category = this.categories.get(normalizedName);

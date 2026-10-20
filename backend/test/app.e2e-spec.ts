@@ -1,3 +1,4 @@
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -23,6 +24,55 @@ describe('AppController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
+  });
+
+  it('serves the category catalog with stable ids and Swagger documentation', async () => {
+    const response = await request(app!.getHttpServer())
+      .get('/categories')
+      .expect(200);
+    expect(
+      response.body.map((category: { name: string }) => category.name),
+    ).toEqual([
+      'Iluminación',
+      'Limpieza',
+      'Vía pública',
+      'Movilidad',
+      'Zonas verdes',
+    ]);
+    for (const category of response.body) {
+      expect(category.id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+      );
+      expect(new Date(category.createdAt).toISOString()).toBe(
+        category.createdAt,
+      );
+    }
+    await request(app!.getHttpServer())
+      .get('/categories')
+      .expect(200, response.body);
+    const document = SwaggerModule.createDocument(
+      app!,
+      new DocumentBuilder().setTitle('test').build(),
+    );
+    expect(
+      document.paths['/categories']?.get?.responses?.['200'],
+    ).toMatchObject({
+      content: {
+        'application/json': {
+          schema: {
+            type: 'array',
+            items: {
+              required: ['id', 'name', 'createdAt'],
+              properties: {
+                id: { type: 'string', format: 'uuid' },
+                name: { type: 'string' },
+                createdAt: { type: 'string', format: 'date-time' },
+              },
+            },
+          },
+        },
+      },
+    });
   });
 
   it('starts without DATABASE_URL, serves health, and registers incidents', async () => {

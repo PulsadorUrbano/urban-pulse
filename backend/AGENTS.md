@@ -8,6 +8,7 @@ Applies to `backend/`. Run commands below from this directory unless stated othe
 - `src/app.module.ts`: root module, global `ConfigModule`, Observe setup, health and incidents. Prisma is intentionally not imported during the temporary in-memory incident phase.
 - `src/incidents/`: standalone incident module. `POST /incidents` accepts strict multipart fields plus temporary local images; `GET /incidents/:id` returns process-local data; `/uploads/` exposes the temporary image files.
 - `src/app.controller.ts` / `src/app.service.ts`: `GET /` returns `Hello World!`; `GET /health` returns `{ "status": "ok" }`.
+- `GET /categories`: returns the existing in-memory category catalog as an array of `{ id, name, createdAt }`, documented in Swagger.
 - `src/**/*.spec.ts`: unit tests; `test/**/*.e2e-spec.ts`: HTTP integration tests.
 - `../frontend-web/` and `../frontend-mobile/`: separate consumers of this API, currently starter applications.
 - `../database/diagram.dbml`: proposed incident-reporting domain, including users, roles, incidents, assignments, location, and change history. It is a design reference, not an executable migration.
