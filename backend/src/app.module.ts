@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { createObserveModule } from '@nestjs/observe';
+import { AuthModule } from './auth/auth.module.js';
+import { DevSeedService } from './dev-seed/dev-seed.service.js';
 import { HealthModule } from './health/health.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 
@@ -18,8 +20,11 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       appSecret: process.env.OBSERVE_APP_SECRET ?? '',
       serviceId: 'urban-pulse',
     }),
+    AuthModule,
     HealthModule,
-    PrismaModule
+    PrismaModule,
   ],
+  // Seed de desarrollo: solo se ejecuta con NODE_ENV=development (por defecto es producción).
+  providers: [DevSeedService],
 })
 export class AppModule {}

@@ -31,6 +31,10 @@ backend/prisma/*.db-journal
 # FRONTEND (React Native / Expo / TypeScript)
 # ==============================================================================
 
+frontend-mobile/.agents/
+frontend-mobile/opencode.json
+frontend-mobile/agents.md
+.claude/
 
 # ==============================================================================
 # CONFIGURACIONES DE IDEs (VSCode, IntelliJ, etc.)
