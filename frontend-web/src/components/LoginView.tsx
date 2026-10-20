@@ -55,20 +55,20 @@ export const LoginView: React.FC<LoginViewProps> = ({
     demoUsers
   } = useAuth();
 
-  // Estados del formulario institucional
+  // Institutional form state
   const [usernameOrEmail, setUsernameOrEmail] = useState('admin');
   const [password, setPassword] = useState('admin');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
-  // Tema claro/oscuro
+  // Light/dark theme state
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Modal de inspección técnica para demostración interna
+  // Technical inspection modal state for architecture demonstration
   const [showTechModal, setShowTechModal] = useState(false);
   const [techTab, setTechTab] = useState<'jwt' | 'cookie' | 'nest'>('jwt');
 
-  // Selector desplegable discreto de cuentas demo
+  // Dropdown selector for institutional demo accounts
   const [showDemoAccounts, setShowDemoAccounts] = useState(false);
 
   useEffect(() => {
@@ -107,7 +107,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
   return (
     <div className="min-h-screen w-screen flex flex-col justify-between bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 font-sans">
       
-      {/* 1. CABECERA INSTITUCIONAL */}
+      {/* 1. INSTITUTIONAL HEADER */}
       <header className="h-16 flex justify-between items-center px-6 border-b border-zinc-200 dark:border-zinc-800/60 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md shrink-0 shadow-xs z-10">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-zinc-900 dark:bg-zinc-100 rounded-md flex items-center justify-center shadow-xs">
@@ -124,37 +124,37 @@ export const LoginView: React.FC<LoginViewProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Botón discreto para demostración de arquitectura (para compañeros y profesor) */}
+          {/* Architecture demonstration button */}
           <button
             type="button"
             onClick={() => setShowTechModal(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 text-xs font-semibold shadow-xs transition-all"
-            title="Abrir consola de inspección para demostración técnica"
+            title="Open technical inspection console"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
-            <span className="hidden sm:inline">Inspección Técnica</span>
+            <span className="hidden sm:inline">Technical Inspection</span>
             <span className="text-[10px] px-1.5 py-0.2 bg-zinc-100 dark:bg-zinc-800 rounded font-mono text-zinc-500">Demo</span>
           </button>
 
-          {/* Toggle de Modo Claro / Modo Oscuro */}
+          {/* Light / Dark Mode Toggle */}
           <button 
             type="button"
             onClick={() => setIsDarkMode(!isDarkMode)}
             className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-600 dark:text-zinc-400"
-            title="Alternar Modo Oscuro / Claro"
+            title="Toggle Light / Dark Mode"
           >
             {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
         </div>
       </header>
 
-      {/* 2. CONTENIDO PRINCIPAL: FORMULARIO CENTRADO Y REALISTA */}
+      {/* 2. MAIN CONTENT: AUTHENTICATION FORM */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 my-auto">
         <div className="w-full max-w-[420px]">
           
           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl p-7 sm:p-8">
             
-            {/* Cabecera del formulario */}
+            {/* Form header */}
             <div className="mb-7 text-center">
               <div className="w-12 h-12 mx-auto mb-3 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl flex items-center justify-center">
                 <ShieldCheck className="w-6 h-6 text-zinc-900 dark:text-zinc-100" />
@@ -167,7 +167,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               </p>
             </div>
 
-            {/* Notificación de cierre de sesión exitoso */}
+            {/* Logout notification */}
             {logoutNotification && (
               <div className="mb-5 p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 rounded-xl flex items-start gap-2.5 text-emerald-800 dark:text-emerald-300 text-xs">
                 <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" />
@@ -187,7 +187,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               </div>
             )}
 
-            {/* Alerta de error si las credenciales fallan */}
+            {/* Error alert if credentials fail */}
             {error && (
               <div className="mb-5 p-3.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl flex items-start gap-2.5 text-red-800 dark:text-red-300 text-xs">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600 dark:text-red-400" />
@@ -197,7 +197,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               </div>
             )}
 
-            {/* Si ya está autenticado, muestra tarjeta de bienvenida y acción rápida */}
+            {/* Authenticated user welcome card */}
             {isAuthenticated && user ? (
               <div className="space-y-4">
                 <div className="p-4 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 rounded-xl text-center">
@@ -245,7 +245,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 </button>
               </div>
             ) : (
-              /* Formulario estándar de login */
+              /* Standard login form */
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
@@ -314,7 +314,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   </label>
                 </div>
 
-                {/* Botón limpio y realista */}
+                {/* Clean, institutional submit button */}
                 <div className="pt-2">
                   <button
                     type="submit"
@@ -324,7 +324,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                     {loading ? (
                       <>
                         <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Validando credenciales...</span>
+                        <span>Validating credentials...</span>
                       </>
                     ) : (
                       <span>Iniciar sesión</span>
@@ -334,7 +334,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               </form>
             )}
 
-            {/* Acceso rápido discreto a usuarios de prueba (útil para la evaluación y compañeros) */}
+            {/* Quick access demo accounts */}
             <div className="mt-6 pt-5 border-t border-zinc-100 dark:border-zinc-800/80">
               <button
                 type="button"
@@ -379,7 +379,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
         </div>
       </main>
 
-      {/* 3. PIE DE PÁGINA INSTITUCIONAL REALISTA */}
+      {/* 3. INSTITUTIONAL FOOTER */}
       <footer className="h-14 border-t border-zinc-200/80 dark:border-zinc-800/60 px-6 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 shrink-0 gap-2">
         <div>
           © 2026 Ayuntamiento de Málaga • Todos los derechos reservados
@@ -393,12 +393,12 @@ export const LoginView: React.FC<LoginViewProps> = ({
         </div>
       </footer>
 
-      {/* 4. MODAL DE INSPECCIÓN TÉCNICA (SOLO VISIBLE CUANDO QUEREMOS ENSEÑAR EL TOKEN Y COOKIES A LOS COMPAÑEROS) */}
+      {/* 4. TECHNICAL INSPECTION MODAL FOR ARCHITECTURE DEMO */}
       {showTechModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-4xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
             
-            {/* Cabecera del modal */}
+            {/* Modal header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg">
@@ -426,7 +426,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               </button>
             </div>
 
-            {/* Selector de pestañas técnicas */}
+            {/* Technical tab selector */}
             <div className="flex items-center gap-2 px-6 pt-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-950/20">
               <button
                 type="button"
@@ -468,10 +468,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
               </button>
             </div>
 
-            {/* Contenido de la pestaña */}
+            {/* Tab content */}
             <div className="p-6 overflow-y-auto max-h-[60vh] space-y-5">
               
-              {/* TAB 1: TOKEN JWT */}
+              {/* TAB 1: JWT TOKEN */}
               {techTab === 'jwt' && (
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -511,7 +511,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                         </span>
                       </div>
 
-                      {/* Botón de validación en vivo contra GET /auth/me */}
+                      {/* Real-time verification button against GET /auth/me */}
                       <div className="p-3.5 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-zinc-200 dark:border-zinc-700/80 flex flex-col sm:flex-row items-center justify-between gap-3">
                         <div>
                           <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
@@ -720,7 +720,7 @@ me(@CurrentUser() user: TokenPayload): TokenPayload {
 
             </div>
 
-            {/* Pie del modal */}
+            {/* Modal footer */}
             <div className="px-6 py-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex justify-end">
               <button
                 type="button"

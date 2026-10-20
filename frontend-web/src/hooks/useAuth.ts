@@ -14,7 +14,7 @@ export const useAuth = () => {
   const [error, setError] = useState<string | null>(null);
   const [lastActionMessage, setLastActionMessage] = useState<string | null>(null);
 
-  // Inicializar sesión persistente si existiese
+  // Initialize persistent session if it exists
   useEffect(() => {
     const session = authService.getCurrentSession();
     if (session.user && session.token) {
@@ -37,10 +37,10 @@ export const useAuth = () => {
       setTokenSource(response.tokenSource);
       setVerifiedClaims(response.verifiedClaims);
       setCookieInfo(response.cookie);
-      setLastActionMessage(response.message || 'Sesión iniciada con éxito.');
+      setLastActionMessage(response.message || 'Session started successfully.');
       return true;
     } catch (err: any) {
-      setError(err?.message || 'Error desconocido al iniciar sesión.');
+      setError(err?.message || 'Unknown error occurred while logging in.');
       return false;
     } finally {
       setLoading(false);
@@ -68,7 +68,7 @@ export const useAuth = () => {
       }
       setLastActionMessage(response.message);
     } catch {
-      setError('Error al procesar el cierre de sesión.');
+      setError('Error occurred while logging out.');
     } finally {
       setLoading(false);
     }
@@ -84,7 +84,7 @@ export const useAuth = () => {
         setVerifiedClaims(res.claims);
       }
     } catch (e: any) {
-      setValidationResult({ valid: false, error: e?.message || 'Error al validar token' });
+      setValidationResult({ valid: false, error: e?.message || 'Error validating token' });
     } finally {
       setValidatingToken(false);
     }
