@@ -196,3 +196,7 @@ Reglas:
   - Mantén el progreso de la sesión dentro del directorio `docs/`.
   - Documenta notas de sesión y mantén una lista de tareas estructurada que detalle todas las tareas completadas y sus subtareas (p. ej. usando checkboxes `- [x]` / `- [ ]`).
   - Actualiza este registro al completar cada tarea para que el trabajo en curso y el pasado quede transparente y trazable entre sesiones.
+
+## Github
+
+Si yo solicito que subas una feature a github, crees una rama, commit, etc. Debes leer el `README.md` de la raíz y seguir la convención que se indica.
