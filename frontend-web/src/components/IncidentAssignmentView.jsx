@@ -7,9 +7,9 @@ const findName = (items, id) => items.find((item) => item.id === id)?.name ?? 'S
 
 /**
  * Confirma el borrador completo antes de guardarlo.
- * El técnico aparece solo como información; no se puede seleccionar aquí.
+ * Incluye las tres selecciones y avisa si se elimina o sustituye el técnico.
  */
-function AssignmentConfirmation({ incident, departmentName, teamName, clearsTechnician, saving, error, onCancel, onConfirm }) {
+function AssignmentConfirmation({ incident, departmentName, teamName, technicianName, clearsTechnician, replacesTechnician, saving, error, onCancel, onConfirm }) {
   const dialogRef = useRef(null)
   // La ventana nativa limita el foco y bloquea el resto de la interfaz.
   useEffect(() => { dialogRef.current.showModal() }, [])
@@ -32,9 +32,13 @@ function AssignmentConfirmation({ incident, departmentName, teamName, clearsTech
       <dl className="confirmation-summary">
         <div><dt>Departamento</dt><dd>{departmentName}</dd></div>
         <div><dt>Equipo</dt><dd>{teamName}</dd></div>
+        <div><dt>Técnico</dt><dd>{technicianName}</dd></div>
       </dl>
       {clearsTechnician && <p className="notice warning">
-        El técnico actual quedará sin asignar porque cambian sus asignaciones superiores.
+        El técnico actual quedará sin asignar.
+      </p>}
+      {replacesTechnician && <p className="notice warning">
+        Se sustituirá el técnico actual por {technicianName}.
       </p>}
       {error && <p role="alert" className="notice error">{error}</p>}
       <div className="dialog-actions">
@@ -48,19 +52,20 @@ function AssignmentConfirmation({ incident, departmentName, teamName, clearsTech
 }
 
 /**
- * Reúne departamento y equipo dentro del detalle de la incidencia.
- * El equipo se habilita según el departamento del borrador, sin cambiar de pantalla.
+ * Reúne departamento, equipo y técnico dentro del detalle de la incidencia.
+ * Los selectores dependen del borrador, sin guardar pasos intermedios.
  */
 export default function IncidentAssignmentView() {
   const assignment = useIncidentAssignment()
-  const { data, departmentId, teamId, availableTeams, loading, saving, error,
-    success, hasChanges, clearsTechnician } = assignment
+  const { data, departmentId, teamId, technicianId, availableTeams, availableTechnicians,
+    loading, saving, error, success, hasChanges, clearsTechnician, replacesTechnician } = assignment
   const [confirming, setConfirming] = useState(false)
   const submitRef = useRef(null)
   const incident = data?.incident
   const canEdit = ['validated', 'assigned'].includes(incident?.status)
   const selectedDepartment = data?.departments.find((item) => item.id === departmentId)
   const selectedTeam = availableTeams.find((item) => item.id === teamId)
+  const selectedTechnician = availableTechnicians.find((item) => item.id === technicianId)
   const completeAssignment = Boolean(incident?.departmentId && incident?.teamId && incident?.technicianId)
 
   // Cierra la confirmación conservando el borrador y devuelve el foco al formulario.
@@ -79,7 +84,7 @@ export default function IncidentAssignmentView() {
     if (hasChanges && canEdit && !saving && !confirming) setConfirming(true)
   }
 
-  // Cierra la ventana solo tras guardar correctamente ambos campos.
+  // Cierra la ventana solo tras guardar correctamente los tres campos.
   const confirmAssignment = async () => {
     if (await assignment.save()) closeConfirmation()
   }
@@ -97,8 +102,8 @@ export default function IncidentAssignmentView() {
         <div className="page-heading">
           <div><p className="eyebrow">GESTIÓN MUNICIPAL / ASIGNACIÓN</p>
             <h1>Asignación de incidencia</h1>
-            <p className="page-description">Selecciona el departamento y después uno de sus equipos.</p></div>
-          <span className="task-tag">Tareas #31 · #32</span>
+            <p className="page-description">Selecciona el departamento, uno de sus equipos y el técnico responsable.</p></div>
+          <span className="task-tag">Tareas #31 · #32 · #33</span>
         </div>
         <p className="demo-notice"><span className="demo-dot" aria-hidden="true" />
           Entorno de prueba · Los cambios son simulados y se reinician al recargar la página.</p>
@@ -120,7 +125,7 @@ export default function IncidentAssignmentView() {
             ))}</div> : <p role="status" className="panel-description">
               {loading ? 'Cargando casos…' : 'No se han podido cargar los casos.'}</p>}
             <div className="panel-footnote"><strong>Departamento → Equipo → Técnico</strong>
-              <p>Cambiar un departamento vacía el equipo seleccionado. Los hijos se actualizan al confirmar.</p></div>
+              <p>Cambiar el departamento vacía el equipo y el técnico del borrador. Cambiar el equipo vacía el técnico. Los cambios se guardan al confirmar.</p></div>
           </aside>
 
           <section className="detail-panel" aria-label="Detalle y asignación" aria-busy={loading || saving}>
@@ -175,8 +180,26 @@ export default function IncidentAssignmentView() {
                       : availableTeams.length === 0 ? 'Este departamento no tiene equipos disponibles.'
                         : 'Equipos de ' + selectedDepartment.name + '. No necesitas guardar el departamento primero.'}
                   </p>
+                  <div className="form-heading"><span className="step-number" aria-hidden="true">03</span>
+                    <div><h3>Técnico responsable</h3><p>Solo se muestran los técnicos del equipo seleccionado.</p></div></div>
+                  <label htmlFor="technician">Técnico</label>
+                  <select id="technician" value={technicianId}
+                    onChange={(event) => assignment.selectTechnician(event.target.value)}
+                    disabled={!canEdit || !departmentId || !teamId || availableTechnicians.length === 0 || saving || confirming}
+                    aria-describedby="technician-help">
+                    <option value="">Sin técnico</option>
+                    {availableTechnicians.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                  </select>
+                  <p id="technician-help" className="field-help">
+                    {!departmentId || !teamId ? 'Elige primero un departamento y un equipo en los desplegables de arriba.'
+                      : availableTechnicians.length === 0 ? 'Este equipo no tiene técnicos disponibles. Puedes guardar la asignación sin técnico.'
+                        : 'Técnicos de ' + selectedTeam.name + '. Puedes asignar, sustituir o quitar el técnico antes de guardar.'}
+                  </p>
                   {clearsTechnician && <p className="notice warning">
                     Al confirmar, el técnico actual quedará sin asignar.
+                  </p>}
+                  {replacesTechnician && <p className="notice warning">
+                    Al confirmar, se sustituirá el técnico actual por {selectedTechnician?.name}.
                   </p>}
                   {error && !confirming && <p role="alert" className="notice error">{error}</p>}
                   {success && <p role="status" className="notice success">✓ {success}</p>}
@@ -194,6 +217,7 @@ export default function IncidentAssignmentView() {
       {confirming && incident && <AssignmentConfirmation incident={incident}
         departmentName={selectedDepartment?.name ?? 'Sin asignar'}
         teamName={selectedTeam?.name ?? 'Sin asignar'} clearsTechnician={clearsTechnician}
+        technicianName={selectedTechnician?.name ?? 'Sin asignar'} replacesTechnician={replacesTechnician}
         saving={saving} error={error} onCancel={closeConfirmation} onConfirm={confirmAssignment} />}
     </div>
   )

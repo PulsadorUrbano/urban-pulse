@@ -19,7 +19,16 @@ const teams = [
   { id: 'team-cleaning', name: 'Limpieza viaria', departmentId: 'dep-cleaning' },
   { id: 'team-waste', name: 'Mantenimiento de contenedores', departmentId: 'dep-cleaning' },
 ]
-const technicians = [{ id: 'tech-roads', name: 'Lucía Martín', teamId: 'team-roads' }]
+const technicians = [
+  { id: 'tech-roads', name: 'Lucía Martín', teamId: 'team-roads' },
+  { id: 'tech-roads-support', name: 'Diego Ruiz', teamId: 'team-roads' },
+  { id: 'tech-sidewalks', name: 'Ana López', teamId: 'team-sidewalks' },
+  { id: 'tech-lighting', name: 'Pablo García', teamId: 'team-lighting' },
+  { id: 'tech-lighting-maintenance', name: 'Marta Sánchez', teamId: 'team-lighting-maintenance' },
+  { id: 'tech-parks', name: 'Elena Romero', teamId: 'team-parks' },
+  { id: 'tech-trees', name: 'Javier Torres', teamId: 'team-trees' },
+  { id: 'tech-cleaning', name: 'Sara Molina', teamId: 'team-cleaning' },
+]
 let incidents = [
   {
     id: 'INC-0031', title: 'Bache en avenida de Andalucía',
@@ -59,15 +68,15 @@ export async function loadAssignmentData(incidentId) {
 }
 
 /**
- * Guarda departamento y equipo de forma conjunta, validando antes de escribir.
- * Así no queda un departamento guardado si falla la selección del equipo.
- * Conserva el estado y no permite seleccionar ni cambiar directamente técnicos.
+ * Guarda departamento, equipo y técnico juntos, validando antes de escribir.
+ * Si alguna selección falla, conserva toda la asignación guardada.
+ * El estado de la incidencia se mantiene en cualquier asignación.
  */
 export async function saveIncidentAssignment(incidentId, assignment) {
   await delay()
   const index = incidents.findIndex((item) => item.id === incidentId)
   if (index === -1) throw new Error('No se ha encontrado la incidencia.')
-  const updated = applyIncidentAssignment(incidents[index], assignment, departments, teams)
+  const updated = applyIncidentAssignment(incidents[index], assignment, departments, teams, technicians)
   incidents = incidents.map((item, itemIndex) => itemIndex === index ? updated : item)
   return structuredClone(updated)
 }
