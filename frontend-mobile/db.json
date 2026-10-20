@@ -21,6 +21,17 @@
       "categoryId": "2",
       "category": null,
       "id": "bALCrQcm_gw"
+    },
+    {
+      "title": "Prueba integración",
+      "description": "Prueba prueba pruebaaaaa",
+      "latitude": 36.714919870438415,
+      "longitude": -4.477916511492881,
+      "accuracy": 20.116194739706316,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "categoryId": "1",
+      "category": null,
+      "id": "5zbBHCMzWNo"
     }
   ],
   "categories": [
@@ -53,6 +64,11 @@
       "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/662B63B0-33D2-4DC5-B614-730C97C88FE4.jpg",
       "incidentId": "bALCrQcm_gw",
       "id": "m9x06zMh3r8"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/2C53BC47-DA5C-465A-B26C-022D86D30654.jpg",
+      "incidentId": "5zbBHCMzWNo",
+      "id": "vv5L8SaTNbQ"
     }
   ],
   "users": [

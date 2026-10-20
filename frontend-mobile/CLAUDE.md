@@ -109,7 +109,7 @@ En la fase actual de registro de incidencias, el backend arranca sin necesidad d
 # Desde la raíz del repositorio (fuera de frontend-mobile/)
 cd ../backend
 npm ci
-npm run start:dev
+npm PORT=4000 npm run start:dev
 ```
 
 - Requiere Node.js 22+ y npm 10+ (ver `backend/package.json`).
