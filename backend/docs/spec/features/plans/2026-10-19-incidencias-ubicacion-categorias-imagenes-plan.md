@@ -8,7 +8,7 @@
 
 **Tech Stack:** NestJS 12 / Express platform, built-in Multer integration from `@nestjs/platform-express`, TypeScript ESM, Node `fs/promises`, Vitest, Supertest, Swagger.
 
-**Spec:** `docs/specs/2026-10-19-incidencias-ubicacion-categorias-imagenes.md`
+**Spec:** [Feature specification](../specs/2026-10-19-incidencias-ubicacion-categorias-imagenes.md)
 
 ## Global Constraints
 
@@ -149,7 +149,7 @@ git commit -m "feat: accept incident locations and local images"
 ### Task 3: Documentation and end-to-end verification
 
 **Files:**
-- Modify: `README.md`, `backend/AGENTS.md`, `docs/specs/2026-10-19-incidencias-ubicacion-categorias-imagenes.md`, `docs/reports/2026-10-19-registrar-incidencia.md`.
+- Modify: `README.md`, `backend/AGENTS.md`, `backend/docs/features/specs/2026-10-19-incidencias-ubicacion-categorias-imagenes.md`, `backend/docs/reports/2026-10-19-registrar-incidencia.md`.
 
 - [ ] **Step 1: Write the documentation expectations as an e2e Swagger assertion.** Assert the generated schema declares `multipart/form-data`, `civicId`, `categoryName`, location fields, binary `images`, and response location/category/images properties.
 
@@ -187,7 +187,7 @@ Run: `git diff --check`
 Confirm no Prisma schema/generated code, database migrations, frontends, or deployment files were changed. Commit only task-owned files:
 
 ```bash
-git add README.md backend/AGENTS.md docs/specs docs/reports
+git add README.md backend/AGENTS.md backend/docs/features backend/docs/reports
 git commit -m "docs: document temporary incident uploads"
 ```
 

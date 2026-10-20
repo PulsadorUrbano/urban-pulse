@@ -8,7 +8,7 @@
 
 **Tech Stack:** Existing NestJS 12, TypeScript ESM, Node crypto, Swagger, Vitest and Supertest; no new dependencies.
 
-**Spec:** [Current feature spec](2026-10-19-registrar-incidencia.md).
+**Spec:** [Current feature spec](../specs/2026-10-19-registrar-incidencia.md).
 
 **Checkout:** `C:\Users\joseg\Documents\urban_pulse\urban-pulse`, branch `feat-registrar-incidencia`.
 
@@ -51,7 +51,7 @@ Paths below are relative to the repository root; new feature files live under `b
 | `backend/test/incidents.e2e-spec.ts`                        | HTTP contract tests.                    |
 | `backend/src/app.module.ts`, `backend/test/app.e2e-spec.ts` | Root integration without DB.            |
 | `README.md`, `backend/AGENTS.md`                            | Accurate setup and module guidance.     |
-| `docs/reports/2026-10-19-registrar-incidencia.md`           | Spanish delivery report.                |
+| `backend/docs/reports/2026-10-19-registrar-incidencia.md`   | Spanish delivery report.                |
 
 Existing Prisma/generated files, schema/config, SQL, manifests, lockfiles, frontends and deployment files stay unchanged.
 
@@ -136,12 +136,12 @@ await request(app.getHttpServer()).get("/incidents/not-a-uuid").expect(400);
 
 ## Task 4: Verification and maintained documentation
 
-**Files:** Modify `README.md`, `backend/AGENTS.md`, spec and plan; create `docs/reports/2026-10-19-registrar-incidencia.md`.
+**Files:** Modify `README.md`, `backend/AGENTS.md`, spec and plan; create `backend/docs/reports/2026-10-19-registrar-incidencia.md`.
 
 - [x] **Record baseline before code and final checks after code:** from `backend/`, run `npm run build`, `npm run lint`, `npm test`, `npm run test:e2e`. Record command results exactly. The existing PrismaService unit test provides no ConfigService; report a pre-existing DI failure separately if reproduced. Do not skip tests or claim a fully green suite with unresolved failures.
 - [x] **Smoke-test the compiled app where executable:** after build, use `npm run start:prod` without database configuration. Exercise POST/GET and health; restart and confirm the old ID returns `404`. Stop only the process started for this check. Record environment blockers accurately if any check cannot run.
 - [x] **Update README:** valid request/example, routes/defaults/errors, no civic identity, format-only reference validation and data loss at restart. Explain database-free backend startup while preserving existing database infrastructure documentation.
-- [x] **Update AGENTS facts:** reflect health/Swagger/new module and temporary memory. Correct stale claims that Prisma does not exist: it exists but root composition does not activate it in this phase. Preserve no-install and `docs/specs/` conventions.
+- [x] **Update AGENTS facts:** reflect health/Swagger/new module and temporary memory. Correct stale claims that Prisma does not exist: it exists but root composition does not activate it in this phase. Preserve no-install and the feature-specification convention.
 - [x] **Write the Spanish report:** scope, changed files, API examples, actual checks/results, baseline failures, memory/restart limitations and postponed database/identity work.
 - [x] **Update spec and plan tracking:** mark only executed steps complete; record decisions, deviations and verification gaps in the same files.
 - [x] **Review final diff:** `git diff --check` at root. Confirm feature changes exclude SQL, Prisma/generated code, manifests, lockfiles, frontends and deployment configuration. Optional documentation commit when requested: `docs: document incident module and verification`.

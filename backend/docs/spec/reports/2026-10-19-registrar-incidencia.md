@@ -9,7 +9,7 @@ Se amplió el módulo NestJS temporal para crear y consultar incidencias sin bas
 - `POST /incidents`: crea una incidencia, responde `201 Created` y añade `Location: /incidents/{id}`.
 - `GET /incidents/:id`: devuelve `200` para una incidencia existente, `400` para un UUID de ruta inválido y `404` para un UUID válido inexistente.
 
-Las entradas aceptan `title`, `description` opcional, `civicId`, `categoryName`, `latitude`, `longitude`, `accuracy` opcional, `urbanAssetId` opcional y hasta cinco imágenes JPEG/PNG/WebP de 5 MB. `civicId` y el activo urbano se comprueban solo como UUID. La categoría se resuelve por nombre normalizado contra cinco categorías simuladas o se crea temporalmente. Se rechazan campos desconocidos y los controlados por el servidor. La respuesta incluye `description: null` cuando falta, categoría, ubicación con `createdAt` y URL locales bajo `/uploads/`.
+Las entradas aceptan `title`, `description` opcional, `civicId`, `categoryName`, `latitude`, `longitude`, `accuracy` opcional, `urbanAssetId` opcional y hasta ocho imágenes JPEG/PNG/WebP de 5 MB. `civicId` y el activo urbano se comprueban solo como UUID. La categoría se resuelve por nombre normalizado contra cinco categorías simuladas o se crea temporalmente. Se rechazan campos desconocidos y los controlados por el servidor. La respuesta incluye `description: null` cuando falta, categoría, ubicación con `createdAt` y URL locales bajo `/uploads/`.
 
 ## Archivos principales
 

@@ -13,7 +13,7 @@ Applies to `backend/`. Run commands below from this directory unless stated othe
 - `../frontend-web/` and `../frontend-mobile/`: separate consumers of this API, currently starter applications.
 - `../database/diagram.dbml`: proposed incident-reporting domain, including users, roles, incidents, assignments, location, and change history. It is a design reference, not an executable migration.
 - `../docker-compose.yml`: PostgreSQL 16/PostGIS 3.5 and the backend. Compose publishes the API on port `4000` and keeps PostgreSQL internal.
-- `../docs/adr/`: decision placeholders; the files are currently empty and establish no implemented architecture.
+- `docs/adr/`: decision placeholders; the files are currently empty and establish no implemented architecture.
 
 The backend has a temporary unauthenticated incident API with local temporary uploads, but no active persistence, migration runner, authorization, or identity model. Prisma source remains in the repository for a future database phase and must not be presented as active in root startup.
 
@@ -60,7 +60,7 @@ npm run test:cov
 
 ## When implementing domain features
 
-- Always create a feature specification in `../docs/specs/` before implementation. Keep that same specification updated as requirements, decisions, API contracts, implementation status, and verification results change.
+- Always create a feature specification in `docs/features/specs/` before implementation. Keep that same specification updated as requirements, decisions, API contracts, implementation status, and verification results change. Put refactor specifications in `docs/refactors/specs/` and bug-fix specifications in `docs/bugs/specs/`; keep implementation plans in the matching category's `plans/` directory.
 - Use the specification as the source of truth for the feature. Clearly distinguish proposed behavior, approved decisions, open questions, and verified implementation; do not mark unresolved decisions or unrun checks as complete.
 
 - Treat the DBML as a starting point. Confirm role permissions, incident transitions, assignment rules, identifiers, and nullability before encoding them; enum order is not a transition policy.
