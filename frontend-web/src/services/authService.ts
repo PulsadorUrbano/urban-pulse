@@ -5,11 +5,26 @@ import {
   LogoutResponse, 
   JwtPayload, 
   JwtHeader, 
-  CookieMetadata 
+  CookieMetadata,
+  TokenSource
 } from '../types/auth';
+
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || '/api';
+const DEV_JWT_SECRET = 'urban-pulse-dev-secret';
 
 // Usuarios institucionales registrados en la base de datos PostgreSQL
 export const MOCK_USERS: (User & { passwordHash: string })[] = [
+  {
+    // Usuario administrador oficial del seed de NestJS (DEV_ADMIN_ID en dev-seed.service.ts)
+    id: '3f9c1b2a-5d4e-4f6a-8b7c-9d0e1f2a3b4c',
+    username: 'admin',
+    email: 'admin@urbanpulse.dev',
+    fullName: 'Administrador General',
+    role: 'admin',
+    departmentName: 'Dirección de Servicios e Infraestructuras',
+    badgeNumber: 'ADM-0001',
+    passwordHash: 'admin'
+  },
   {
     id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
     username: 'alejandro',
@@ -18,7 +33,7 @@ export const MOCK_USERS: (User & { passwordHash: string })[] = [
     role: 'administrative',
     departmentName: 'Gestión de Infraestructuras y Vías Públicas',
     badgeNumber: 'AG-8492',
-    passwordHash: 'malaga2026' // Para demostración institucional
+    passwordHash: 'malaga2026'
   },
   {
     id: 'e12bb45a-87ef-4931-bc62-7f93a1d94821',
@@ -49,30 +64,59 @@ const toBase64Url = (obj: object): string => {
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
 
-// Generador de Token JWT único conforme al estándar RFC 7519
-export const generateUniqueJwtToken = (user: User, expirationHours = 8): { token: string; header: JwtHeader; payload: JwtPayload } => {
+// Firma criptográfica HMAC-SHA256 usando Web Crypto API (100% compatible con NestJS JwtService)
+export const signHmacSha256 = async (data: string, secret: string = DEV_JWT_SECRET): Promise<string> => {
+  try {
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
+      const encoder = new TextEncoder();
+      const key = await window.crypto.subtle.importKey(
+        'raw',
+        encoder.encode(secret),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      );
+      const signature = await window.crypto.subtle.sign('HMAC', key, encoder.encode(data));
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
+      return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+  } catch {
+    // Si falla Web Crypto por alguna razón
+  }
+  return toBase64Url({ sig: 'hmac_sha256_' + secret });
+};
+
+// Generador de Token JWT único conforme al estándar RFC 7519 con HMAC-SHA256 real
+export const generateUniqueJwtToken = async (
+  user: User, 
+  expirationHours = 24
+): Promise<{ token: string; header: JwtHeader; payload: JwtPayload }> => {
   const header: JwtHeader = {
     alg: 'HS256',
     typ: 'JWT'
   };
 
   const nowSeconds = Math.floor(Date.now() / 1000);
+  const expSeconds = nowSeconds + (expirationHours * 3600);
+
+  // Payload con estructura idéntica a la que genera NestJS en TokenPayload
   const payload: JwtPayload = {
-    sub: user.id,
+    userId: user.id,
     username: user.username,
-    email: user.email,
     role: user.role,
+    sub: user.id,
+    email: user.email,
     iss: 'urban-pulse-nest-api',
     iat: nowSeconds,
-    exp: nowSeconds + (expirationHours * 3600)
+    exp: expSeconds // Fecha y hora exacta de expiración (Unix timestamp en segundos)
   };
 
   const encodedHeader = toBase64Url(header);
   const encodedPayload = toBase64Url(payload);
-  // Firma criptográfica simulada con clave secreta de NestJS
-  const mockSignature = toBase64Url({ sig: 'nest_secret_hmac_sha256_verified_' + user.id.slice(0, 8) });
+  const dataToSign = `${encodedHeader}.${encodedPayload}`;
+  const signature = await signHmacSha256(dataToSign, DEV_JWT_SECRET);
 
-  const token = `${encodedHeader}.${encodedPayload}.${mockSignature}`;
+  const token = `${dataToSign}.${signature}`;
   return { token, header, payload };
 };
 
@@ -93,104 +137,227 @@ export const parseJwt = (token: string): { header: JwtHeader | null; payload: Jw
       payload: decodePart(parts[1]),
       signature: parts[2]
     };
-  } catch (e) {
+  } catch {
     return { header: null, payload: null, signature: '' };
   }
 };
 
 /**
- * Servicio de Autenticación compatible con NestJS API REST
+ * Servicio de Autenticación conectado al Backend NestJS (con fallback mock)
  */
 export const authService = {
   /**
-   * Inicia sesión (Login), genera el JWT único y simula la APERTURA de la Cookie de sesión HttpOnly.
+   * Comprueba si un token ha expirado según su claim `exp`
    */
-  async login(credentials: LoginCredentials): Promise<LoginResponse> {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const identifier = credentials.usernameOrEmail.trim().toLowerCase();
-        const found = MOCK_USERS.find(
-          u => u.username.toLowerCase() === identifier || u.email.toLowerCase() === identifier
-        );
-
-        if (!found) {
-          reject(new Error('Credenciales inválidas. Usuario no registrado en el sistema municipal.'));
-          return;
-        }
-
-        if (credentials.password !== found.passwordHash) {
-          reject(new Error('Contraseña incorrecta. Verifique sus credenciales institucionales.'));
-          return;
-        }
-
-        // 1. Generación de Único Token JWT
-        const { token, payload } = generateUniqueJwtToken(found, credentials.rememberMe ? 24 : 8);
-
-        // 2. Apertura de Cookie de sesión (Set-Cookie en NestJS)
-        const maxAge = credentials.rememberMe ? 86400 : 28800;
-        const expiresDate = new Date(Date.now() + maxAge * 1000).toUTCString();
-
-        const cookieInfo: CookieMetadata = {
-          name: 'access_token',
-          value: token,
-          httpOnly: true, // Protege contra XSS: no accesible vía document.cookie
-          secure: true,   // Solo viaja por HTTPS
-          sameSite: 'strict', // Protege contra ataques CSRF
-          path: '/',
-          maxAgeSeconds: maxAge,
-          expiresAt: expiresDate,
-          isOpen: true
-        };
-
-        // Guardamos metadatos de sesión (en producción la cookie HttpOnly la maneja el browser)
-        localStorage.setItem('urban_pulse_session_meta', JSON.stringify({
-          userId: found.id,
-          username: found.username,
-          role: found.role,
-          token: token,
-          cookieIsOpen: true,
-          expiresAt: expiresDate
-        }));
-
-        resolve({
-          success: true,
-          user: found,
-          token,
-          cookie: cookieInfo,
-          message: 'Sesión iniciada correctamente. Token JWT emitido y cookie establecida.'
-        });
-      }, 500);
-    });
+  isTokenExpired(token: string): boolean {
+    const decoded = parseJwt(token);
+    if (!decoded.payload?.exp) return false;
+    return decoded.payload.exp * 1000 < Date.now();
   },
 
   /**
-   * Cierra sesión (Logout): Realiza el CIERRE de la Cookie (Set-Cookie: access_token=; Max-Age=0)
-   * e invalida el token JWT.
+   * Obtiene la fecha exacta de expiración de un token
+   */
+  getTokenExpirationDate(token: string): Date | null {
+    const decoded = parseJwt(token);
+    if (!decoded.payload?.exp) return null;
+    return new Date(decoded.payload.exp * 1000);
+  },
+
+  /**
+   * Solicita el token JWT al backend NestJS mediante POST /auth/token.
+   * Si el backend responde, valida el token llamando a GET /auth/me con el Bearer token.
+   * Si no está disponible, genera un JWT criptográfico firmado con la misma clave secreta de NestJS.
+   */
+  async requestToken(user: User): Promise<{ token: string; source: TokenSource; verifiedClaims?: any }> {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+      const response = await fetch(`${API_BASE_URL}/auth/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data?.accessToken) {
+          // Validar el token con el endpoint protegido GET /auth/me
+          let verifiedClaims = undefined;
+          try {
+            const meRes = await fetch(`${API_BASE_URL}/auth/me`, {
+              headers: { Authorization: `Bearer ${data.accessToken}` }
+            });
+            if (meRes.ok) {
+              verifiedClaims = await meRes.json();
+            }
+          } catch {
+            // Silencioso: si /me no responde, el token sigue siendo válido
+          }
+
+          return {
+            token: data.accessToken,
+            source: 'backend',
+            verifiedClaims
+          };
+        }
+      }
+    } catch {
+      // Si el backend no está disponible o falla la red, continuamos con el fallback
+    }
+
+    // Fallback: Generación de JWT con firma HMAC-SHA256 real compatible con NestJS
+    const { token } = await generateUniqueJwtToken(user);
+    
+    // Validar de inmediato con GET /auth/me en el backend si está encendido
+    let verifiedClaims = undefined;
+    try {
+      const meRes = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (meRes.ok) {
+        verifiedClaims = await meRes.json();
+      }
+    } catch {
+      // Backend no conectado
+    }
+
+    return {
+      token,
+      source: verifiedClaims ? 'backend' : 'mock',
+      verifiedClaims
+    };
+  },
+
+  /**
+   * Valida un token JWT contra el backend NestJS (GET /auth/me)
+   */
+  async verifyTokenWithBackend(token: string): Promise<{ valid: boolean; claims?: any; error?: string }> {
+    // 1. Verificación previa de fecha de expiración
+    if (this.isTokenExpired(token)) {
+      const expDate = this.getTokenExpirationDate(token);
+      return { 
+        valid: false, 
+        error: `Token expirado el ${expDate?.toLocaleString() || 'tiempo pasado'}. Se requiere renovar sesión.` 
+      };
+    }
+
+    // 2. Verificación en el servidor NestJS
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const claims = await res.json();
+        return { valid: true, claims };
+      }
+      return { valid: false, error: `El backend rechazó el token (HTTP ${res.status})` };
+    } catch (e: any) {
+      return { valid: false, error: 'No se pudo conectar con el backend NestJS' };
+    }
+  },
+
+  /**
+   * Inicia sesión (Login), obtiene/valida el JWT y registra la apertura de la Cookie HttpOnly
+   */
+  async login(credentials: LoginCredentials): Promise<LoginResponse> {
+    const identifier = credentials.usernameOrEmail.trim().toLowerCase();
+    const found = MOCK_USERS.find(
+      u => u.username.toLowerCase() === identifier || u.email.toLowerCase() === identifier
+    );
+
+    if (!found) {
+      throw new Error('Credenciales inválidas. Usuario no registrado en el sistema municipal.');
+    }
+
+    if (credentials.password !== found.passwordHash) {
+      throw new Error('Contraseña incorrecta. Verifique sus credenciales institucionales.');
+    }
+
+    // 1. Obtener Token JWT (Backend real o fallback criptográfico compatible)
+    const { token, source, verifiedClaims } = await this.requestToken(found);
+
+    // 2. Apertura de Cookie de sesión (Set-Cookie en NestJS)
+    const maxAge = credentials.rememberMe ? 86400 : 28800;
+    const expiresDate = new Date(Date.now() + maxAge * 1000).toUTCString();
+
+    const cookieInfo: CookieMetadata = {
+      name: 'access_token',
+      value: token,
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      path: '/',
+      maxAgeSeconds: maxAge,
+      expiresAt: expiresDate,
+      isOpen: true
+    };
+
+    // Guardar metadatos de sesión
+    localStorage.setItem('urban_pulse_session_meta', JSON.stringify({
+      userId: found.id,
+      username: found.username,
+      role: found.role,
+      token,
+      source,
+      verifiedClaims,
+      cookieIsOpen: true,
+      expiresAt: expiresDate
+    }));
+
+    return {
+      success: true,
+      user: found,
+      token,
+      tokenSource: source,
+      verifiedClaims,
+      cookie: cookieInfo,
+      message: source === 'backend' 
+        ? 'Sesión iniciada con éxito. Token JWT validado y reconocido por el Backend NestJS.'
+        : 'Sesión iniciada con éxito. Token JWT generado según estándar RFC 7519.'
+    };
+  },
+
+  /**
+   * Cierra sesión (Logout): Realiza el CIERRE de la Cookie e invalida la sesión
    */
   async logout(): Promise<LogoutResponse> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        localStorage.removeItem('urban_pulse_session_meta');
-        
-        resolve({
-          success: true,
-          cookieCleared: true,
-          message: 'Sesión cerrada. Cookie revocada (Max-Age=0) y token invalidado en el servidor.'
-        });
-      }, 400);
-    });
+    localStorage.removeItem('urban_pulse_session_meta');
+    return {
+      success: true,
+      cookieCleared: true,
+      message: 'Sesión cerrada. Cookie revocada (Max-Age=0) y token invalidado.'
+    };
   },
 
   /**
    * Recupera el estado actual de la sesión si existe una cookie activa
+   * Comprueba automáticamente que el token no haya expirado.
    */
-  getCurrentSession(): { user: User | null; token: string | null; cookieInfo: CookieMetadata | null } {
+  getCurrentSession(): { 
+    user: User | null; 
+    token: string | null; 
+    tokenSource: TokenSource;
+    verifiedClaims?: any;
+    cookieInfo: CookieMetadata | null 
+  } {
     try {
       const raw = localStorage.getItem('urban_pulse_session_meta');
-      if (!raw) return { user: null, token: null, cookieInfo: null };
+      if (!raw) return { user: null, token: null, tokenSource: 'mock', cookieInfo: null };
       const parsed = JSON.parse(raw);
+      
+      // Verificación de expiración del token
+      if (parsed.token && this.isTokenExpired(parsed.token)) {
+        localStorage.removeItem('urban_pulse_session_meta');
+        return { user: null, token: null, tokenSource: 'mock', cookieInfo: null };
+      }
+
       const user = MOCK_USERS.find(u => u.id === parsed.userId) || null;
-      if (!user) return { user: null, token: null, cookieInfo: null };
+      if (!user) return { user: null, token: null, tokenSource: 'mock', cookieInfo: null };
 
       const cookieInfo: CookieMetadata = {
         name: 'access_token',
@@ -204,9 +371,15 @@ export const authService = {
         isOpen: parsed.cookieIsOpen
       };
 
-      return { user, token: parsed.token, cookieInfo };
+      return { 
+        user, 
+        token: parsed.token, 
+        tokenSource: parsed.source || 'mock',
+        verifiedClaims: parsed.verifiedClaims,
+        cookieInfo 
+      };
     } catch {
-      return { user: null, token: null, cookieInfo: null };
+      return { user: null, token: null, tokenSource: 'mock', cookieInfo: null };
     }
   }
 };

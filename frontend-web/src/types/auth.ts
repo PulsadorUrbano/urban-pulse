@@ -30,17 +30,21 @@ export interface JwtHeader {
 }
 
 export interface JwtPayload {
-  sub: string; // User UUID
+  sub?: string;
+  userId?: string;
   username: string;
-  email: string;
+  email?: string;
   role: ProfileRole;
-  iss: 'urban-pulse-nest-api';
-  iat: number; // Issued at timestamp
-  exp: number; // Expiration timestamp
+  iss?: string;
+  iat?: number;
+  exp?: number;
 }
+
+export type TokenSource = 'backend' | 'mock';
 
 export interface AuthTokens {
   accessToken: string; // Token JWT único firmado
+  source: TokenSource;
 }
 
 export interface CookieMetadata {
@@ -65,6 +69,12 @@ export interface LoginResponse {
   success: boolean;
   user: User;
   token: string;
+  tokenSource: TokenSource;
+  verifiedClaims?: {
+    userId: string;
+    username: string;
+    role: ProfileRole;
+  };
   cookie: CookieMetadata;
   message?: string;
 }

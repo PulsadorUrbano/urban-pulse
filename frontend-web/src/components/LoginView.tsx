@@ -21,7 +21,9 @@ import {
   SlidersHorizontal,
   X,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  CheckCircle,
+  ExternalLink
 } from 'lucide-react';
 
 interface LoginViewProps {
@@ -38,19 +40,24 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const {
     user,
     token,
+    tokenSource,
+    verifiedClaims,
     cookieInfo,
     isAuthenticated,
     loading,
+    validatingToken,
+    validationResult,
     error,
     login,
     logout,
+    validateTokenWithBackend,
     resetError,
     demoUsers
   } = useAuth();
 
   // Estados del formulario institucional
-  const [usernameOrEmail, setUsernameOrEmail] = useState('alejandro');
-  const [password, setPassword] = useState('malaga2026');
+  const [usernameOrEmail, setUsernameOrEmail] = useState('admin');
+  const [password, setPassword] = useState('admin');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
@@ -89,7 +96,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
   const handleSelectDemoUser = (username: string) => {
     setUsernameOrEmail(username);
-    setPassword('malaga2026');
+    const selected = demoUsers.find(u => u.username === username);
+    setPassword(selected ? (selected as any).passwordHash : 'malaga2026');
     resetError();
     setShowDemoAccounts(false);
   };
@@ -202,9 +210,18 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
                     Conectado como <strong className="text-zinc-900 dark:text-zinc-100">{user.fullName}</strong>
                   </p>
-                  <span className="inline-block mt-2 px-2.5 py-0.5 bg-zinc-200/80 dark:bg-zinc-800 text-[11px] font-semibold rounded text-zinc-700 dark:text-zinc-300">
-                    {user.departmentName || `Rol: ${user.role}`}
-                  </span>
+                  <div className="mt-2 flex items-center justify-center gap-2">
+                    <span className="px-2.5 py-0.5 bg-zinc-200/80 dark:bg-zinc-800 text-[11px] font-semibold rounded text-zinc-700 dark:text-zinc-300">
+                      {user.departmentName || `Rol: ${user.role}`}
+                    </span>
+                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${
+                      tokenSource === 'backend'
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                        : 'bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                    }`}>
+                      {tokenSource === 'backend' ? 'JWT NestJS Real' : 'JWT Emulado'}
+                    </span>
+                  </div>
                 </div>
 
                 {onSuccessNavigate && (
@@ -244,7 +261,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       autoComplete="username"
                       value={usernameOrEmail}
                       onChange={(e) => setUsernameOrEmail(e.target.value)}
-                      placeholder="ej. alejandro o nombre@malaga.es"
+                      placeholder="ej. admin o usuario@malaga.es"
                       className="w-full pl-10 pr-3.5 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-300 dark:border-zinc-700 rounded-xl text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-transparent transition-all"
                     />
                   </div>
@@ -307,7 +324,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                     {loading ? (
                       <>
                         <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Iniciando sesión...</span>
+                        <span>Validando credenciales...</span>
                       </>
                     ) : (
                       <span>Iniciar sesión</span>
@@ -324,7 +341,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 onClick={() => setShowDemoAccounts(!showDemoAccounts)}
                 className="w-full flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors font-medium"
               >
-                <span>Cuentas de prueba preconfiguradas</span>
+                <span>Cuentas institucionales para pruebas</span>
                 <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showDemoAccounts ? 'rotate-90' : ''}`} />
               </button>
 
@@ -338,7 +355,14 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       className="w-full text-left p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/60 border border-zinc-200/60 dark:border-zinc-800 flex items-center justify-between transition-colors"
                     >
                       <div>
-                        <div className="font-semibold text-xs text-zinc-900 dark:text-zinc-100">{u.fullName}</div>
+                        <div className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                          {u.fullName}
+                          {u.role === 'admin' && (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-bold uppercase">
+                              Seed NestJS
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[10px] text-zinc-500 dark:text-zinc-400 capitalize">{u.role} • {u.username}</div>
                       </div>
                       <span className="text-[10px] px-2 py-0.5 bg-zinc-200/70 dark:bg-zinc-700/70 text-zinc-700 dark:text-zinc-300 rounded font-medium">
@@ -388,7 +412,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                     </span>
                   </h3>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    Inspección del token JWT único, ciclo de cookies HttpOnly y conexión con NestJS
+                    Inspección del token JWT único, validación contra NestJS y ciclo de cookies HttpOnly
                   </p>
                 </div>
               </div>
@@ -414,7 +438,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 }`}
               >
                 <Key className="w-3.5 h-3.5" />
-                Token JWT Único
+                Token JWT & Validación Backend
               </button>
 
               <button
@@ -440,7 +464,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 }`}
               >
                 <Server className="w-3.5 h-3.5" />
-                Arquitectura NestJS + BD
+                Arquitectura NestJS + DB
               </button>
             </div>
 
@@ -450,17 +474,19 @@ export const LoginView: React.FC<LoginViewProps> = ({
               {/* TAB 1: TOKEN JWT */}
               {techTab === 'jwt' && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                      Estructura del Token JWT emitido (RFC 7519)
+                      Token JWT emitido (RFC 7519)
                     </span>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                      isAuthenticated
-                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
-                        : 'bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'
-                    }`}>
-                      {isAuthenticated ? '● Token Emitido y Activo' : '○ En espera de autenticación'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                        tokenSource === 'backend'
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                          : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800'
+                      }`}>
+                        {tokenSource === 'backend' ? '● Origen: Backend NestJS (Real)' : '○ Origen: Simulación Mock Fallback'}
+                      </span>
+                    </div>
                   </div>
 
                   {token ? (
@@ -485,6 +511,57 @@ export const LoginView: React.FC<LoginViewProps> = ({
                         </span>
                       </div>
 
+                      {/* Botón de validación en vivo contra GET /auth/me */}
+                      <div className="p-3.5 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-zinc-200 dark:border-zinc-700/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div>
+                          <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                            <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                            Validar Token contra Endpoint Protegido (`GET /auth/me`)
+                          </div>
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                            Envía el token en la cabecera `Authorization: Bearer` al JwtAuthGuard de NestJS.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={validateTokenWithBackend}
+                          disabled={validatingToken}
+                          className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shrink-0 disabled:opacity-50"
+                        >
+                          {validatingToken ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Validando...</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              <span>Verificar en NestJS</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {validationResult && (
+                        <div className={`p-3 rounded-xl border text-xs ${
+                          validationResult.valid 
+                            ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-300'
+                            : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900/50 text-amber-800 dark:text-amber-300'
+                        }`}>
+                          <div className="font-bold flex items-center gap-1.5">
+                            {validationResult.valid ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertCircle className="w-4 h-4 text-amber-600" />}
+                            {validationResult.valid ? 'Token validado exitosamente por NestJS (200 OK)' : 'Aviso de validación de token'}
+                          </div>
+                          {validationResult.valid ? (
+                            <p className="text-[11px] mt-1 font-mono">
+                              Claims devueltos por el servidor: {JSON.stringify(validationResult.claims)}
+                            </p>
+                          ) : (
+                            <p className="text-[11px] mt-1 opacity-90">{validationResult.error}</p>
+                          )}
+                        </div>
+                      )}
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                         <div className="p-3.5 bg-zinc-50 dark:bg-zinc-950/60 rounded-xl border border-zinc-200 dark:border-zinc-800">
                           <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mb-2 flex items-center gap-1.5">
@@ -499,16 +576,16 @@ export const LoginView: React.FC<LoginViewProps> = ({
                         <div className="p-3.5 bg-zinc-50 dark:bg-zinc-950/60 rounded-xl border border-zinc-200 dark:border-zinc-800 text-xs space-y-2">
                           <div className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                             <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                            Justificación para los compañeros
+                            Detalles de la integración
                           </div>
                           <p className="text-zinc-600 dark:text-zinc-400">
                             • <strong>Único Token:</strong> Se emite un único JWT que centraliza autenticación y autorización.
                           </p>
                           <p className="text-zinc-600 dark:text-zinc-400">
-                            • <strong>Subject (sub):</strong> UUID de usuario registrado en PostgreSQL ({parsedToken?.payload?.sub}).
+                            • <strong>User ID:</strong> {parsedToken?.payload?.userId || parsedToken?.payload?.sub}
                           </p>
                           <p className="text-zinc-600 dark:text-zinc-400">
-                            • <strong>Rol del usuario:</strong> {parsedToken?.payload?.role} (asigna permisos en NestJS Guards).
+                            • <strong>Rol del usuario:</strong> {parsedToken?.payload?.role} (evaluado por NestJS Guards).
                           </p>
                           <p className="text-zinc-600 dark:text-zinc-400">
                             • <strong>Expiración:</strong> {parsedToken?.payload?.exp ? new Date(parsedToken.payload.exp * 1000).toLocaleString() : 'N/A'}.
@@ -599,22 +676,22 @@ export const LoginView: React.FC<LoginViewProps> = ({
                     <div className="p-3.5 bg-zinc-50 dark:bg-zinc-950/60 rounded-xl border border-zinc-200 dark:border-zinc-800">
                       <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mb-2 flex items-center gap-1.5">
                         <Server className="w-4 h-4 text-emerald-500" />
-                        Código NestJS Backend
+                        Endpoints en NestJS (`AuthController.ts`)
                       </div>
                       <pre className="text-[11px] font-mono text-zinc-700 dark:text-zinc-300 overflow-x-auto p-2 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-{`@Post('login')
-async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
-  const { user, token } = await this.authService.validateUser(dto);
-  
-  // Apertura de Cookie segura
-  res.cookie('access_token', token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'strict',
-    maxAge: 28800000 // 8 horas
-  });
+{`// 1. Emisión de Token JWT
+@Post('token')
+async createToken(@Body() { userId }: CreateTokenDto) {
+  return {
+    accessToken: await this.auth.createToken(userId),
+  };
+}
 
-  return { success: true, user };
+// 2. Validación de Token con Guard
+@Get('me')
+@UseGuards(JwtAuthGuard)
+me(@CurrentUser() user: TokenPayload): TokenPayload {
+  return user; // Retorna { userId, username, role }
 }`}
                       </pre>
                     </div>
@@ -622,17 +699,20 @@ async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
                     <div className="p-3.5 bg-zinc-50 dark:bg-zinc-950/60 rounded-xl border border-zinc-200 dark:border-zinc-800 text-xs">
                       <div className="font-bold text-zinc-900 dark:text-zinc-100 mb-2 flex items-center gap-1.5">
                         <Database className="w-4 h-4 text-blue-500" />
-                        Correspondencia en PostgreSQL
+                        Admin Seed y Roles PostgreSQL
                       </div>
                       <p className="text-zinc-600 dark:text-zinc-400 mb-2">
-                        La tabla <code className="font-mono bg-zinc-200 dark:bg-zinc-800 px-1 rounded">users</code> provee los roles que luego se evalúan con el JWT:
+                        Usuario sembrado en `backend/src/dev-seed/dev-seed.service.ts`:
                       </p>
                       <ul className="space-y-1 font-mono text-[11px] text-zinc-600 dark:text-zinc-400">
-                        <li>• id: uuid (subject)</li>
-                        <li>• username: varchar</li>
-                        <li>• password: varchar (hash bcrypt)</li>
-                        <li>• role: profile_role (ENUM)</li>
+                        <li>• id: <code>3f9c1b2a-5d4e-4f6a-8b7c-9d0e1f2a3b4c</code></li>
+                        <li>• username: <code>admin</code></li>
+                        <li>• password: <code>admin</code> (bcrypt)</li>
+                        <li>• role: <code>admin</code></li>
                       </ul>
+                      <div className="mt-3 p-2 bg-zinc-100 dark:bg-zinc-800/80 rounded border border-zinc-200 dark:border-zinc-700 text-[11px]">
+                        <strong>Real-first:</strong> El frontend solicita el token a NestJS en el puerto 3000/4000 a través del proxy `/api`. Si el backend está activo, entrega el JWT oficial firmado.
+                      </div>
                     </div>
                   </div>
                 </div>
