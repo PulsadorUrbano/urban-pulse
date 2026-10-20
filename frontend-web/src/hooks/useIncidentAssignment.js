@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { loadAssignmentData, saveIncidentAssignment } from '../services/assignmentService.js'
 
 /**
- * Mantiene un borrador conjunto de departamento y equipo.
+ * Mantiene un borrador conjunto de departamento, equipo y técnico.
  * Los selectores dependen del borrador, pero la incidencia solo se actualiza
  * cuando el usuario confirma el guardado.
  */
@@ -11,6 +11,7 @@ export default function useIncidentAssignment() {
   const [data, setData] = useState(null)
   const [departmentId, setDepartmentId] = useState('')
   const [teamId, setTeamId] = useState('')
+  const [technicianId, setTechnicianId] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -26,6 +27,7 @@ export default function useIncidentAssignment() {
         setData(result)
         setDepartmentId(result.incident.departmentId ?? '')
         setTeamId(result.incident.teamId ?? '')
+        setTechnicianId(result.incident.technicianId ?? '')
       })
       .catch((err) => {
         if (!active) return
@@ -52,24 +54,34 @@ export default function useIncidentAssignment() {
     setReloadKey((value) => value + 1)
   }
 
-  // Cambiar el padre vacía el equipo del borrador y actualiza sus opciones.
+  // Cambiar el departamento vacía sus asignaciones dependientes del borrador.
   const selectDepartment = (id) => {
     if (id === departmentId) return
     setDepartmentId(id)
     setTeamId('')
+    setTechnicianId('')
     setError('')
     setSuccess('')
   }
 
-  // Cambia solo el equipo del borrador, sin llamar todavía al servicio.
+  // Cambiar el equipo vacía el técnico del borrador, sin guardar todavía.
   const selectTeam = (id) => {
+    if (id === teamId) return
     setTeamId(id)
+    setTechnicianId('')
+    setError('')
+    setSuccess('')
+  }
+
+  // Seleccionar o quitar el técnico solo modifica el borrador.
+  const selectTechnician = (id) => {
+    setTechnicianId(id)
     setError('')
     setSuccess('')
   }
 
   /**
-   * Guarda ambos campos en una sola operación tras la confirmación.
+   * Guarda los tres campos en una sola operación tras la confirmación.
    * Las opciones vacías se convierten en null. Un fallo mantiene intacta
    * la asignación guardada y deja disponible el borrador para reintentar.
    */
@@ -82,6 +94,7 @@ export default function useIncidentAssignment() {
       const updated = await saveIncidentAssignment(incidentId, {
         departmentId: departmentId || null,
         teamId: teamId || null,
+        technicianId: technicianId || null,
       })
       setData((current) => ({
         ...current,
@@ -103,15 +116,23 @@ export default function useIncidentAssignment() {
     ? data.teams.filter((item) => item.departmentId === departmentId)
     : []
 
+  const availableTechnicians = data && departmentId && teamId
+    ? data.technicians.filter((item) => item.teamId === teamId)
+    : []
+
   const hasChanges = Boolean(data && (
     departmentId !== (data.incident.departmentId ?? '')
     || teamId !== (data.incident.teamId ?? '')
+    || technicianId !== (data.incident.technicianId ?? '')
   ))
 
   return {
-    data, departmentId, teamId, availableTeams, loading, saving, error, success,
-    selectIncident, selectDepartment, selectTeam, retry, save, hasChanges,
+    data, departmentId, teamId, technicianId, availableTeams, availableTechnicians,
+    loading, saving, error, success,
+    selectIncident, selectDepartment, selectTeam, selectTechnician, retry, save, hasChanges,
     // Permite avisar del borrado del técnico antes de confirmar el cambio.
-    clearsTechnician: Boolean(hasChanges && data?.incident.technicianId),
+    clearsTechnician: Boolean(data?.incident.technicianId && !technicianId),
+    replacesTechnician: Boolean(data?.incident.technicianId && technicianId
+      && technicianId !== data.incident.technicianId),
   }
 }

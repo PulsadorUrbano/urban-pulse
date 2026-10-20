@@ -1,12 +1,13 @@
 import { applyDepartmentAssignment } from './departmentAssignment.js'
 import { applyTeamAssignment } from './teamAssignment.js'
+import { applyTechnicianAssignment } from './technicianAssignment.js'
 
 /**
- * Valida departamento y equipo antes de devolver una única actualización.
- * Trabaja con copias: si el equipo no es válido, no se guarda parcialmente
- * el departamento. El técnico solo se conserva si sus padres no cambian.
+ * Valida departamento, equipo y técnico antes de devolver una actualización.
+ * Trabaja con copias: si cualquier selección falla, no se guarda ningún campo.
  */
-export function applyIncidentAssignment(incident, assignment, departments, teams) {
+export function applyIncidentAssignment(incident, assignment, departments, teams, technicians) {
   const withDepartment = applyDepartmentAssignment(incident, assignment.departmentId, departments)
-  return applyTeamAssignment(withDepartment, assignment.teamId, teams)
+  const withTeam = applyTeamAssignment(withDepartment, assignment.teamId, teams)
+  return applyTechnicianAssignment(withTeam, assignment.technicianId, technicians)
 }
