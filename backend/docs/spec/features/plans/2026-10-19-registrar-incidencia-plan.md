@@ -1,4 +1,6 @@
-# Incident Reporting Module Implementation Plan
+# 2026-10-19 — Plan: Registrar incidencias
+
+> Referencia histórica: conserva las decisiones y resultados de su fecha. Las instrucciones antiguas de pruebas e2e, informes o commits no son obligaciones actuales. Consultar la [especificación vigente](../specs/2026-10-21-adaptar-documentacion-registro-incidencias-spec.md), el [plan de adaptación](../plans/2026-10-21-adaptar-documentacion-registro-incidencias-plan.md) y las fichas de [endpoints](../../endpoint/README.md).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Direct execution in this session is recommended; this plan does not require or authorize delegation.
 
@@ -51,7 +53,7 @@ Paths below are relative to the repository root; new feature files live under `b
 | `backend/test/incidents.e2e-spec.ts`                        | HTTP contract tests.                    |
 | `backend/src/app.module.ts`, `backend/test/app.e2e-spec.ts` | Root integration without DB.            |
 | `README.md`, `backend/AGENTS.md`                            | Accurate setup and module guidance.     |
-| `backend/docs/reports/2026-10-19-registrar-incidencia.md`   | Spanish delivery report.                |
+| `backend/docs/spec/reports/2026-10-19-registrar-incidencia.md`   | Spanish delivery report.                |
 
 Existing Prisma/generated files, schema/config, SQL, manifests, lockfiles, frontends and deployment files stay unchanged.
 
@@ -136,7 +138,7 @@ await request(app.getHttpServer()).get("/incidents/not-a-uuid").expect(400);
 
 ## Task 4: Verification and maintained documentation
 
-**Files:** Modify `README.md`, `backend/AGENTS.md`, spec and plan; create `backend/docs/reports/2026-10-19-registrar-incidencia.md`.
+**Files:** Modify `README.md`, `backend/AGENTS.md`, spec and plan; create `backend/docs/spec/reports/2026-10-19-registrar-incidencia.md`.
 
 - [x] **Record baseline before code and final checks after code:** from `backend/`, run `npm run build`, `npm run lint`, `npm test`, `npm run test:e2e`. Record command results exactly. The existing PrismaService unit test provides no ConfigService; report a pre-existing DI failure separately if reproduced. Do not skip tests or claim a fully green suite with unresolved failures.
 - [x] **Smoke-test the compiled app where executable:** after build, use `npm run start:prod` without database configuration. Exercise POST/GET and health; restart and confirm the old ID returns `404`. Stop only the process started for this check. Record environment blockers accurately if any check cannot run.

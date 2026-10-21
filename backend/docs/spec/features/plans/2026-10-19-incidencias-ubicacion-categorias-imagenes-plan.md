@@ -1,4 +1,6 @@
-# Incidencias con ubicación, categorías e imágenes Implementation Plan
+# 2026-10-19 — Plan: Registrar incidencias con ubicación, categorías e imágenes
+
+> Referencia histórica: conserva las decisiones y resultados de su fecha. Las instrucciones antiguas de pruebas e2e, informes o commits no son obligaciones actuales. Consultar la [especificación vigente](../specs/2026-10-21-adaptar-documentacion-registro-incidencias-spec.md), el [plan de adaptación](../plans/2026-10-21-adaptar-documentacion-registro-incidencias-plan.md) y las fichas de [endpoints](../../endpoint/README.md).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -149,7 +151,7 @@ git commit -m "feat: accept incident locations and local images"
 ### Task 3: Documentation and end-to-end verification
 
 **Files:**
-- Modify: `README.md`, `backend/AGENTS.md`, `backend/docs/features/specs/2026-10-19-incidencias-ubicacion-categorias-imagenes.md`, `backend/docs/reports/2026-10-19-registrar-incidencia.md`.
+- Modify: `README.md`, `backend/AGENTS.md`, `backend/docs/features/specs/2026-10-19-incidencias-ubicacion-categorias-imagenes.md`, `backend/docs/spec/reports/2026-10-19-registrar-incidencia.md`.
 
 - [ ] **Step 1: Write the documentation expectations as an e2e Swagger assertion.** Assert the generated schema declares `multipart/form-data`, `civicId`, `categoryName`, location fields, binary `images`, and response location/category/images properties.
 

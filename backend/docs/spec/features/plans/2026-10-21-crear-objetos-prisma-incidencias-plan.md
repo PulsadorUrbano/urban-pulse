@@ -1,7 +1,9 @@
-# Plan: objetos Prisma para incidencias
+# 2026-10-21 — Plan: Crear objetos Prisma para incidencias
+
+> Referencia histórica: conserva las decisiones y resultados de su fecha. Las instrucciones antiguas de pruebas e2e, informes o commits no son obligaciones actuales. Consultar la [especificación vigente](../specs/2026-10-21-adaptar-documentacion-registro-incidencias-spec.md), el [plan de adaptación](../plans/2026-10-21-adaptar-documentacion-registro-incidencias-plan.md) y las fichas de [endpoints](../../endpoint/README.md).
 
 Fecha: 2026-10-21.
-Especificacion: spec.md, en este directorio.
+Especificación: [Objetos Prisma](../specs/2026-10-21-crear-objetos-prisma-incidencia-spec.md).
 Ejecucion: directa en esta sesion, sin agentes adicionales.
 
 ## Restricciones

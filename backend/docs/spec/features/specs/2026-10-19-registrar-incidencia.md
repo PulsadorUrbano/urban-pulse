@@ -1,4 +1,10 @@
-# Especificación: módulo de registro de incidencias
+# 2026-10-19 — Especificación: Registrar incidencias
+
+> Referencia histórica: conserva las decisiones y resultados de su fecha. Las instrucciones antiguas de pruebas e2e, informes o commits no son obligaciones actuales. Consultar la [especificación vigente](../specs/2026-10-21-adaptar-documentacion-registro-incidencias-spec.md), el [plan de adaptación](../plans/2026-10-21-adaptar-documentacion-registro-incidencias-plan.md) y las fichas de [endpoints](../../endpoint/README.md).
+
+- Desarrollador responsable original: no registrado.
+- Asistente de IA original: no registrado en el documento.
+- Modelo de IA que creó la especificación: no registrado; no se infiere retrospectivamente.
 
 - Rama: `feat-registrar-incidencia`.
 - Checkout: `C:\Users\joseg\Documents\urban_pulse\urban-pulse`.
@@ -101,7 +107,7 @@ Configuración DB, modelos/generación Prisma, cambios SQL, migraciones, claves 
 - Código y pruebas: implementados en `backend/src/incidents/`, con pruebas unitarias de servicio y pipe, y pruebas e2e de módulo y raíz.
 - Verificación: `npm run build` correcto; `npm run lint` correcto con tres avisos de Oxlint por el conteo explícito de puntos de código; `npm run test:e2e` correcto (3 pruebas); `npm test` mantiene un fallo previo en `src/prisma/prisma.service.spec.ts` porque no proporciona `ConfigService`.
 - Smoke test de producción: `POST /incidents` y `GET /health` correctos sin `DATABASE_URL`; tras reiniciar el proceso, el identificador anterior devolvió `404`.
-- Informe final: `backend/docs/reports/2026-10-19-registrar-incidencia.md`, en español.
+- Informe final: `backend/docs/spec/reports/2026-10-19-registrar-incidencia.md`, en español.
 - Mantener esta especificación actualizada durante la ejecución y conservar su nombre.
 - 2026-10-19: diseño inicial y convención de especificaciones bajo `backend/docs/features/specs/`.
 - 2026-10-19: adopción del checkout del IDE indicado por el usuario.

@@ -1,4 +1,10 @@
-# Incidencia: objetos Prisma en memoria
+# 2026-10-21 — Especificación: Crear objetos Prisma para incidencias
+
+> Referencia histórica: conserva las decisiones y resultados de su fecha. Las instrucciones antiguas de pruebas e2e, informes o commits no son obligaciones actuales. Consultar la [especificación vigente](../specs/2026-10-21-adaptar-documentacion-registro-incidencias-spec.md), el [plan de adaptación](../plans/2026-10-21-adaptar-documentacion-registro-incidencias-plan.md) y las fichas de [endpoints](../../endpoint/README.md).
+
+- Desarrollador responsable original: no registrado.
+- Asistente de IA original: no registrado en el documento.
+- Modelo de IA que creó la especificación: no registrado; no se infiere retrospectivamente.
 
 Fecha: 2026-10-21.
 Estado: implementado; build y unitarias correctos; lint bloqueado por el entorno.
