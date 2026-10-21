@@ -1,12 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { CreateIncidentInput, Incident, UploadedImageFile } from './incident.js';
+import type {
+  CreateIncidentInput,
+  Incident,
+  StoredIncident,
+  UploadedImageFile,
+} from './incident.js';
 import { UploadStorageService } from './upload-storage.service.js';
 
 @Injectable()
 export class IncidentsService {
-  // ponytail: process-local storage is lost on restart; replace this Map with persistence when database setup is available.
-  private readonly incidents = new Map<string, Incident>();
+  // ponytail: process-local records are lost on restart; use database persistence when configured.
+  private readonly incidents = new Map<string, StoredIncident>();
 
   constructor(private readonly uploadStorage: UploadStorageService) {}
 
@@ -23,7 +28,8 @@ export class IncidentsService {
       throw error;
     }
 
-    const incident: Incident = {
+    const createdAt = new Date();
+    const incident: StoredIncident = {
       id,
       title: input.title,
       description: input.description ?? null,
@@ -32,15 +38,20 @@ export class IncidentsService {
       category: input.category ?? null,
       urbanAssetId: input.urbanAssetId ?? null,
       location: {
+        incidentId: id,
         latitude: input.latitude ?? null,
         longitude: input.longitude ?? null,
         accuracy: input.accuracy ?? null,
-        createdAt: new Date().toISOString(),
+        createdAt,
       },
-      images,
+      images: images.map((image) => ({
+        ...image,
+        incidentId: id,
+        createdAt: new Date(image.createdAt),
+      })),
       status: 'reported',
       priority: 'low',
-      createdAt: new Date().toISOString(),
+      createdAt,
     };
 
     this.incidents.set(incident.id, incident);
@@ -49,19 +60,28 @@ export class IncidentsService {
 
   findOne(id: string): Incident {
     const incident = this.incidents.get(id);
-
     if (!incident) {
       throw new NotFoundException(`Incident ${id} was not found`);
     }
-
     return this.copy(incident);
   }
 
-  private copy(incident: Incident): Incident {
+  private copy(incident: StoredIncident): Incident {
     return {
       ...incident,
-      location: { ...incident.location },
-      images: incident.images.map((image) => ({ ...image })),
+      createdAt: incident.createdAt.toISOString(),
+      location: {
+        latitude: incident.location.latitude,
+        longitude: incident.location.longitude,
+        accuracy: incident.location.accuracy,
+        createdAt: incident.location.createdAt.toISOString(),
+      },
+      images: incident.images.map((image) => ({
+        id: image.id,
+        url: image.url,
+        mimeType: image.mimeType,
+        createdAt: image.createdAt.toISOString(),
+      })),
     };
   }
 }

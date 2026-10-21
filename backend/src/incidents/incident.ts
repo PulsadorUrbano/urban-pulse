@@ -1,3 +1,9 @@
+import type {
+  IncidentModel as PrismaIncident,
+  IncidentLocationModel as PrismaIncidentLocation,
+  IncidentImageModel as PrismaIncidentImage,
+} from '../generated/prisma/models.js';
+
 export interface UploadedImageFile {
   buffer: Buffer;
   mimetype: 'image/jpeg' | 'image/png' | 'image/webp';
@@ -41,3 +47,9 @@ export interface Incident {
   priority: 'low';
   createdAt: string;
 }
+
+// Generated Prisma records only; this aggregate is kept in memory, not in a database.
+export type StoredIncident = PrismaIncident & {
+  location: PrismaIncidentLocation;
+  images: (PrismaIncidentImage & { mimeType: UploadedImageFile['mimetype'] })[];
+};

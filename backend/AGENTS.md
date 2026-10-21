@@ -15,7 +15,7 @@ Applies to `backend/`. Run commands below from this directory unless stated othe
 - `../docker-compose.yml`: PostgreSQL 16/PostGIS 3.5 and the backend. Compose publishes the API on port `4000` and keeps PostgreSQL internal.
 - `docs/adr/`: decision placeholders; the files are currently empty and establish no implemented architecture.
 
-The backend has a temporary unauthenticated incident API with local temporary uploads, but no active persistence, migration runner, authorization, or identity model. Prisma source remains in the repository for a future database phase and must not be presented as active in root startup.
+The backend has a temporary unauthenticated incident API with local temporary uploads, but no active persistence, migration runner, authorization, or identity model. Prisma defines Incident, IncidentLocation and IncidentImage models and generates the types used by the in-memory incident aggregate. It is not active database persistence: do not instantiate PrismaClient or import PrismaModule into root startup for this temporary phase. Records use Date internally and ISO strings in API responses; all records are lost on restart. Generate the models with `npm exec -- prisma generate --config prisma7.config.ts`; no migration or database connection is required.
 
 ## Toolchain and commands
 
@@ -35,7 +35,7 @@ npm run test:cov
 - `start:prod` requires a successful build and starts `dist/main`.
 - Lint uses type-aware **Oxlint**, not ESLint. Preserve `.oxlintrc.json` and check async work for unhandled promises.
 - Tests use **Vitest**, not Jest; `describe`, `it`, and `expect` are configured as globals. Use `vi` for Vitest mocks when needed.
-- Unit discovery is `**/*.spec.ts`; e2e discovery is `**/*.e2e-spec.ts` using `vitest.config.e2e.ts`. Run both suites; `npm test` does not exercise the e2e suite.
+- Unit discovery is `**/*.spec.ts`; e2e discovery is `**/*.e2e-spec.ts` using `vitest.config.e2e.ts`. Run only unit tests by default. Do not create or run e2e/integration unless explicitly requested.
 - `npm run format` rewrites all source and test files. For a focused formatting check, use `npm exec -- prettier --check <changed-files>`; avoid unrelated formatting changes.
 - There is no root npm workspace or root test command. Do not use frontend tooling inside the backend.
 
@@ -64,7 +64,7 @@ npm run test:cov
 - Use the specification as the source of truth for the feature. Clearly distinguish proposed behavior, approved decisions, open questions, and verified implementation; do not mark unresolved decisions or unrun checks as complete.
 
 - Treat the DBML as a starting point. Confirm role permissions, incident transitions, assignment rules, identifiers, and nullability before encoding them; enum order is not a transition policy.
-- No persistence library has been selected in code. Introduce database dependencies and migrations only for a task that needs them, documenting the choice and keeping the DBML consistent with executable schema changes.
+- Prisma is installed and supplies model types, but no database persistence is active. The Prisma incident schema is a temporary subset aligned with the current API, not the complete DBML. Introduce migrations and database access only in a separately requested persistence task.
 - Validate request data at the HTTP boundary. TypeScript types alone do not validate JSON. Add server-side authentication and authorization before exposing protected user or incident operations; never trust client-supplied identity or role fields.
 - The current incident endpoint requires UUID-format `civicId`, a category name, latitude/longitude, and optional non-negative accuracy. It resolves or creates temporary categories and accepts up to eight JPEG/PNG/WebP files of 5 MB each under `/uploads/`. It uses an in-memory `Map` plus local files, so data is lost at restart; do not add persistence or identity work without a separate approved scope.
 - When adding password handling, store password hashes and exclude them from responses and logs.
@@ -74,7 +74,7 @@ npm run test:cov
 
 ## Verification and completion
 
-For backend runtime or dependency changes, run `npm run build`, `npm run lint`, `npm test`, and `npm run test:e2e`. Add focused regression coverage for changed behavior, including invalid input and permission failures where relevant. Do not weaken checks to make a change pass.
+For backend runtime or dependency changes, run `npm run build`, `npm run lint`, and `npm test`. Do not create or run e2e/integration unless explicitly requested. Add focused regression coverage for changed behavior, including invalid input and permission failures where relevant. Do not weaken checks to make a change pass.
 
 Use `Test.createTestingModule` for Nest unit tests and Supertest against an initialized application for HTTP tests. Close applications and resources in teardown. E2e tests construct their own application and do not execute `main.ts`; if adding global pipes, guards, prefixes, or other bootstrap behavior, ensure tests exercise the same configuration.
 
@@ -83,3 +83,10 @@ For documentation-only changes, verify paths, scripts, and claims against the ac
 If changing deployment files, verify the declared Node requirements, both Docker stages, environment handling, and the production startup command together. There is currently no `.dockerignore`; exclude secrets and local dependencies before relying on `COPY . .` for a production image. Do not delete database volumes as a verification step.
 
 Report checks actually run, their results, and any environment limitations. Separate pre-existing failures from regressions. Keep changes within the requested scope; do not silently fix unrelated frontend or schema issues.
+
+## Incident model work and test policy
+
+- Feature spec and plan: docs/spec/features/incidencia/spec.md and plan.md, as requested by the user. Keep them current for this feature.
+- New or changed unit suites belong under test/<feature>/<role>/; the touched incident service suite is test/incidents/services/incidents.service.spec.ts. Existing untouched source suites remain legacy locations.
+- Only create and run unit tests unless the user explicitly requests e2e or integration. Leave existing legacy e2e files in place.
+- Frontend compatibility was inspected statically; do not describe that inspection as a verified connection. Frontend changes and live connection tests were excluded.

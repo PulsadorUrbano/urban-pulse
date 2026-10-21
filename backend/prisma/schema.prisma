@@ -12,3 +12,47 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// Temporary incident aggregate. No database or migrations are activated.
+enum IncidentStatus {
+  reported
+}
+
+enum IncidentPriority {
+  low
+}
+
+model Incident {
+  id           String            @id @default(uuid()) @db.Uuid
+  title        String
+  description  String?
+  civicId      String            @db.Uuid
+  categoryId   String?           @db.Uuid
+  category     String?
+  urbanAssetId String?           @db.Uuid
+  status       IncidentStatus    @default(reported)
+  priority     IncidentPriority  @default(low)
+  createdAt    DateTime          @default(now())
+  location     IncidentLocation?
+  images       IncidentImage[]
+}
+
+model IncidentLocation {
+  incidentId String   @id @db.Uuid
+  incident   Incident @relation(fields: [incidentId], references: [id])
+  latitude   Float?
+  longitude  Float?
+  accuracy   Float?
+  createdAt  DateTime @default(now())
+}
+
+model IncidentImage {
+  id         String   @id @default(uuid()) @db.Uuid
+  incidentId String   @db.Uuid
+  incident   Incident @relation(fields: [incidentId], references: [id])
+  url        String
+  mimeType   String
+  createdAt  DateTime @default(now())
+
+  @@index([incidentId])
+}
