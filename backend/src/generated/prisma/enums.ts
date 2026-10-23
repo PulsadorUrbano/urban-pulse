@@ -10,7 +10,9 @@
 */
 
 export const IncidentStatus = {
-  reported: 'reported'
+  reported: 'reported',
+  validated: 'validated',
+  rejected: 'rejected'
 } as const
 
 export type IncidentStatus = (typeof IncidentStatus)[keyof typeof IncidentStatus]

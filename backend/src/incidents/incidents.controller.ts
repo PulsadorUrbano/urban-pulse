@@ -7,6 +7,7 @@ import {
   ArgumentsHost,
   Get,
   Param,
+  Patch,
   ParseUUIDPipe,
   PayloadTooLargeException,
   Post,
@@ -21,6 +22,7 @@ import {
   ApiBadRequestResponse,
   ApiBody,
   ApiConsumes,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -31,7 +33,13 @@ import {
 import type { Response } from 'express';
 import { CreateIncidentPipe } from './create-incident.pipe.js';
 import { CreateIncidentDto } from './create-incident.dto.js';
-import type { Incident, ResumenIncidencia } from './incident.js';
+import { IncidentStatus } from '../generated/prisma/enums.js';
+import { CambiarEstadoIncidenciaPipe } from './cambiar-estado-incidencia.pipe.js';
+import type {
+  CambiarEstadoIncidenciaInput,
+  Incident,
+  ResumenIncidencia,
+} from './incident.js';
 import { ListarIncidenciasPipe } from './listar-incidencias.pipe.js';
 import type { UploadedImageFile } from './incident.js';
 import { IncidentsService } from './incidents.service.js';
@@ -85,7 +93,7 @@ const incidentSchema = {
         },
       },
     },
-    status: { type: 'string', enum: ['reported'] },
+    status: { type: 'string', enum: Object.values(IncidentStatus) },
     priority: { type: 'string', enum: ['low'] },
     createdAt: { type: 'string', format: 'date-time' },
   },
@@ -128,7 +136,7 @@ export class IncidentsController {
         properties: {
           id: { type: 'string', format: 'uuid' },
           title: { type: 'string' },
-          status: { type: 'string', enum: ['reported'] },
+          status: { type: 'string', enum: Object.values(IncidentStatus) },
           createdAt: { type: 'string', format: 'date-time' },
         },
       },
@@ -210,6 +218,54 @@ export class IncidentsController {
     const incident = await this.incidentsService.create(input, files);
     response.setHeader('Location', `/incidents/${incident.id}`);
     return incident;
+  }
+
+  @Patch(':id/status')
+  @ApiOperation({
+    summary: 'Validar o rechazar una incidencia con motivo',
+    description:
+      'Prototipo sin autenticación ni autorización de operador (DEUDA-47-01). civicId declara al actor; no acredita identidad. Estado e historial solo se conservan en memoria.',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['status', 'cause', 'civicId'],
+      properties: {
+        status: { type: 'string', enum: ['validated', 'rejected'] },
+        cause: {
+          type: 'string',
+          minLength: 1,
+          description: 'Motivo obligatorio; no vacío después de trim.',
+        },
+        civicId: {
+          type: 'string',
+          format: 'uuid',
+          description:
+            'Actor declarado, sin verificar identidad ni rol; no modifica al propietario.',
+        },
+      },
+    },
+  })
+  @ApiOkResponse({
+    description:
+      'Incidencia actualizada, sin historial ni datos del actor de auditoría.',
+    schema: incidentSchema,
+  })
+  @ApiBadRequestResponse({
+    description: 'UUID o cuerpo inválido, motivo vacío o campos desconocidos.',
+  })
+  @ApiNotFoundResponse({ description: 'La incidencia no existe.' })
+  @ApiConflictResponse({
+    description:
+      'La incidencia ya no está en estado reported; no se añade historial.',
+  })
+  cambiarEstado(
+    @Param('id', new ParseUUIDPipe()) idIncidencia: string,
+    @Body(new CambiarEstadoIncidenciaPipe())
+    entrada: CambiarEstadoIncidenciaInput,
+  ): Incident {
+    return this.incidentsService.cambiarEstado(idIncidencia, entrada);
   }
 
   @Get(':id')

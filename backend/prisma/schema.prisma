@@ -16,6 +16,8 @@ datasource db {
 // Temporary incident aggregate. No database or migrations are activated.
 enum IncidentStatus {
   reported
+  validated
+  rejected
 }
 
 enum IncidentPriority {
@@ -35,6 +37,7 @@ model Incident {
   createdAt    DateTime          @default(now())
   location     IncidentLocation?
   images       IncidentImage[]
+  cambiosEstado CambioEstado[]
 }
 
 model IncidentLocation {
@@ -55,4 +58,19 @@ model IncidentImage {
   createdAt  DateTime @default(now())
 
   @@index([incidentId])
+}
+
+// Historial temporal: actor declarado por el cliente, sin identidad verificada.
+model CambioEstado {
+  id            String         @id @default(uuid()) @db.Uuid
+  incidenciaId  String         @map("incident_id") @db.Uuid
+  incidencia    Incident       @relation(fields: [incidenciaId], references: [id])
+  actorId       String         @map("user_id") @db.Uuid
+  nuevoEstado   IncidentStatus @map("new_status")
+  motivo        String         @map("cause")
+  fechaCreacion DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([incidenciaId])
+  @@index([fechaCreacion])
+  @@map("status_changes")
 }

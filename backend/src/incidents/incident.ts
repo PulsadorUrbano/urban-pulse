@@ -1,4 +1,5 @@
 import type {
+  CambioEstadoModel,
   IncidentModel as PrismaIncident,
   IncidentLocationModel as PrismaIncidentLocation,
   IncidentImageModel as PrismaIncidentImage,
@@ -43,13 +44,14 @@ export interface Incident {
     createdAt: string;
   };
   images: IncidentImage[];
-  status: 'reported';
+  status: PrismaIncident['status'];
   priority: 'low';
   createdAt: string;
 }
 
 // Generated Prisma records only; this aggregate is kept in memory, not in a database.
 export type StoredIncident = PrismaIncident & {
+  cambiosEstado: CambioEstadoModel[];
   location: PrismaIncidentLocation;
   images: (PrismaIncidentImage & { mimeType: UploadedImageFile['mimetype'] })[];
 };
@@ -58,3 +60,9 @@ export type ResumenIncidencia = Pick<
   Incident,
   'id' | 'title' | 'status' | 'createdAt'
 >;
+
+export interface CambiarEstadoIncidenciaInput {
+  status: Exclude<Incident['status'], 'reported'>;
+  cause: string;
+  civicId: string;
+}

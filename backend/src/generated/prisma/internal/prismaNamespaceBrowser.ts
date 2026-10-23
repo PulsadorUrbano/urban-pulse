@@ -53,7 +53,8 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   Incident: 'Incident',
   IncidentLocation: 'IncidentLocation',
-  IncidentImage: 'IncidentImage'
+  IncidentImage: 'IncidentImage',
+  CambioEstado: 'CambioEstado'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -108,6 +109,18 @@ export const IncidentImageScalarFieldEnum = {
 } as const
 
 export type IncidentImageScalarFieldEnum = (typeof IncidentImageScalarFieldEnum)[keyof typeof IncidentImageScalarFieldEnum]
+
+
+export const CambioEstadoScalarFieldEnum = {
+  id: 'id',
+  incidenciaId: 'incidenciaId',
+  actorId: 'actorId',
+  nuevoEstado: 'nuevoEstado',
+  motivo: 'motivo',
+  fechaCreacion: 'fechaCreacion'
+} as const
+
+export type CambioEstadoScalarFieldEnum = (typeof CambioEstadoScalarFieldEnum)[keyof typeof CambioEstadoScalarFieldEnum]
 
 
 export const SortOrder = {

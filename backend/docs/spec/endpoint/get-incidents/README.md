@@ -33,6 +33,8 @@ DEUDA-27-01 sigue abierta: no hay autenticación ni autorización. civicId es un
 
 Se conserva el Map privado del proceso y el almacenamiento local de imágenes. El listado no lee ni escribe esos archivos. Las incidencias se pierden al reiniciar; no hay base de datos activa, paginación ni consultas de auditoría.
 
+El estado actual puede ser reported, validated o rejected; no devuelve historial, motivos ni actor de auditoría. Los cambios se describen en [validar o rechazar incidencias](../patch-incidents-id-status/README.md).
+
 ## Referencias
 
 - [Especificación y deuda técnica](../../features/specs/2026-10-23-consultar-incidencias-por-ciudadano-spec.md).

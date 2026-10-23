@@ -18,6 +18,8 @@ Errores 400: campos o formatos inválidos, demasiados archivos, tamaño excesivo
 
 Incidencias y metadatos en un Map local tipado por modelos Prisma; se pierden al reiniciar y no se comparten entre procesos. Las imágenes son archivos locales; su existencia no conserva el registro de la incidencia tras un reinicio. No hay base de datos activa ni garantía de persistencia duradera.
 
+El registro sigue creando status=reported; no devuelve el historial interno. Los cambios se describen en [validar o rechazar incidencias](../patch-incidents-id-status/README.md).
+
 ## Referencias
 
 - [Especificación vigente](../../features/specs/2026-10-21-adaptar-documentacion-registro-incidencias-spec.md).

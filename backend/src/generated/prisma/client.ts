@@ -54,3 +54,8 @@ export type IncidentLocation = Prisma.IncidentLocationModel
  *
  */
 export type IncidentImage = Prisma.IncidentImageModel
+/**
+ * Model CambioEstado
+ *
+ */
+export type CambioEstado = Prisma.CambioEstadoModel
