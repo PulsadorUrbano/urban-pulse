@@ -60,6 +60,7 @@ export default function NewIncidentScreen() {
     categories,
     isLoading: isCategoriesLoading,
     errorMessage: categoriesErrorMessage,
+    fallbackNotice: categoriesFallbackNotice,
   } = useCategories();
 
   const [title, setTitle] = useState('');
@@ -351,6 +352,7 @@ export default function NewIncidentScreen() {
                   customCategory={customCategory}
                   isLoading={isCategoriesLoading}
                   errorMessage={categoriesErrorMessage}
+                  fallbackNotice={categoriesFallbackNotice}
                   onSelectCategory={handleSelectCategory}
                   onSelectOther={handleSelectOther}
                   onClear={clearCategory}
