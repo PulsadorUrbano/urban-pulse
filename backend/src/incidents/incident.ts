@@ -53,3 +53,8 @@ export type StoredIncident = PrismaIncident & {
   location: PrismaIncidentLocation;
   images: (PrismaIncidentImage & { mimeType: UploadedImageFile['mimetype'] })[];
 };
+
+export type ResumenIncidencia = Pick<
+  Incident,
+  'id' | 'title' | 'status' | 'createdAt'
+>;

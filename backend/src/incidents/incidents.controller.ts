@@ -10,6 +10,7 @@ import {
   ParseUUIDPipe,
   PayloadTooLargeException,
   Post,
+  Query,
   Res,
   UploadedFiles,
   UseFilters,
@@ -23,12 +24,15 @@ import {
   ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { CreateIncidentPipe } from './create-incident.pipe.js';
 import { CreateIncidentDto } from './create-incident.dto.js';
-import type { Incident } from './incident.js';
+import type { Incident, ResumenIncidencia } from './incident.js';
+import { ListarIncidenciasPipe } from './listar-incidencias.pipe.js';
 import type { UploadedImageFile } from './incident.js';
 import { IncidentsService } from './incidents.service.js';
 
@@ -73,7 +77,10 @@ const incidentSchema = {
         properties: {
           id: { type: 'string', format: 'uuid' },
           url: { type: 'string' },
-          mimeType: { type: 'string', enum: ['image/jpeg', 'image/png', 'image/webp'] },
+          mimeType: {
+            type: 'string',
+            enum: ['image/jpeg', 'image/png', 'image/webp'],
+          },
           createdAt: { type: 'string', format: 'date-time' },
         },
       },
@@ -87,11 +94,11 @@ const incidentSchema = {
 @Catch(PayloadTooLargeException)
 class UploadLimitFilter implements ExceptionFilter {
   catch(exception: PayloadTooLargeException, host: ArgumentsHost): void {
-    host
-      .switchToHttp()
-      .getResponse<Response>()
-      .status(400)
-      .json({ statusCode: 400, message: exception.message, error: 'Bad Request' });
+    host.switchToHttp().getResponse<Response>().status(400).json({
+      statusCode: 400,
+      message: exception.message,
+      error: 'Bad Request',
+    });
   }
 }
 
@@ -101,6 +108,41 @@ const acceptedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 @Controller('incidents')
 export class IncidentsController {
   constructor(private readonly incidentsService: IncidentsService) {}
+
+  @Get()
+  @ApiOperation({
+    summary: 'Consultar el listado de incidencias por ciudadano',
+    description:
+      'Prototipo sin autenticación: civicId es un filtro del cliente, no acredita identidad ni propiedad (DEUDA-27-01). No devuelve trazabilidad.',
+  })
+  @ApiQuery({ name: 'civicId', required: true, type: String, format: 'uuid' })
+  @ApiOkResponse({
+    description:
+      'Resúmenes ordenados del más reciente al más antiguo; array vacío si no hay coincidencias.',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id', 'title', 'status', 'createdAt'],
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          title: { type: 'string' },
+          status: { type: 'string', enum: ['reported'] },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description:
+      'civicId es obligatorio y debe ser un único UUID; no se admiten otros parámetros.',
+  })
+  listar(
+    @Query(new ListarIncidenciasPipe()) idCiudadano: string,
+  ): ResumenIncidencia[] {
+    return this.incidentsService.listarPorCiudadano(idCiudadano);
+  }
 
   @Post()
   @UseFilters(UploadLimitFilter)

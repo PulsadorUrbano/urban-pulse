@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type {
   CreateIncidentInput,
   Incident,
+  ResumenIncidencia,
   StoredIncident,
   UploadedImageFile,
 } from './incident.js';
@@ -56,6 +57,26 @@ export class IncidentsService {
 
     this.incidents.set(incident.id, incident);
     return this.copy(incident);
+  }
+
+  listarPorCiudadano(idCiudadano: string): ResumenIncidencia[] {
+    const ciudadanoNormalizado = idCiudadano.toLowerCase();
+    return Array.from(this.incidents.values())
+      .filter(
+        (incidencia) =>
+          incidencia.civicId.toLowerCase() === ciudadanoNormalizado,
+      )
+      .sort(
+        (primera, segunda) =>
+          segunda.createdAt.getTime() - primera.createdAt.getTime() ||
+          primera.id.localeCompare(segunda.id),
+      )
+      .map(({ id, title, status, createdAt }) => ({
+        id,
+        title,
+        status,
+        createdAt: createdAt.toISOString(),
+      }));
   }
 
   findOne(id: string): Incident {
