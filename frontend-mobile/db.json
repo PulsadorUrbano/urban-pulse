@@ -32,6 +32,28 @@
       "categoryId": "1",
       "category": null,
       "id": "5zbBHCMzWNo"
+    },
+    {
+      "title": "Escalones rotos en El Ejido",
+      "description": "Estos escalones son usados frecuentemente para subir a la facultad de Económicas y está causando que haya gente que se caiga.",
+      "latitude": 36.7297304205952,
+      "longitude": -4.419146054653771,
+      "accuracy": 6.011117798202053,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "categoryId": "3",
+      "category": null,
+      "id": "6NslGK70n2o"
+    },
+    {
+      "title": "Prueba de nuevo",
+      "description": "Espero que ahora si se conecte al backend",
+      "latitude": 36.72953231741549,
+      "longitude": -4.419210269928786,
+      "accuracy": 8.214889464403214,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "categoryId": "1",
+      "category": null,
+      "id": "1C_kClDKmFk"
     }
   ],
   "categories": [
@@ -69,6 +91,16 @@
       "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/2C53BC47-DA5C-465A-B26C-022D86D30654.jpg",
       "incidentId": "5zbBHCMzWNo",
       "id": "vv5L8SaTNbQ"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/0A1F28B1-C9C3-4ABF-8578-FFB2EBFD8F11/Library/Caches/ImagePicker/BD76A80F-86EC-4281-A829-0E4B06EE8EC9.jpg",
+      "incidentId": "6NslGK70n2o",
+      "id": "lQeudDGlIUc"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/0A1F28B1-C9C3-4ABF-8578-FFB2EBFD8F11/Library/Caches/ImagePicker/BCD96FDB-544A-4AC6-B693-413A7A3CF05E.jpg",
+      "incidentId": "1C_kClDKmFk",
+      "id": "8c1VmYlxHY4"
     }
   ],
   "users": [
