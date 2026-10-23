@@ -14,6 +14,7 @@ export interface CategoryPickerProps {
   customCategory: string;
   isLoading: boolean;
   errorMessage: string | null;
+  fallbackNotice: string | null;
   onSelectCategory: (categoryId: string) => void;
   onSelectOther: (customCategory: string) => void;
   onClear: () => void;
@@ -27,6 +28,7 @@ export function CategoryPicker({
   customCategory,
   isLoading,
   errorMessage,
+  fallbackNotice,
   onSelectCategory,
   onSelectOther,
   onClear,
@@ -147,6 +149,12 @@ export function CategoryPicker({
               {errorMessage ? (
                 <ThemedText type="small" style={styles.errorText}>
                   {errorMessage}
+                </ThemedText>
+              ) : null}
+
+              {fallbackNotice ? (
+                <ThemedText type="small" style={styles.errorText}>
+                  {fallbackNotice}
                 </ThemedText>
               ) : null}
 

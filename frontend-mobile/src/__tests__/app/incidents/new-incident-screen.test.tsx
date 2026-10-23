@@ -276,7 +276,7 @@ describe('NewIncidentScreen', () => {
 
     // Defaults felices de todos los límites externos: catálogo vacío,
     // ubicación resuelta y envío correcto.
-    mockedFetchCategories.mockResolvedValue([]);
+    mockedFetchCategories.mockResolvedValue({ categories: [], source: 'backend', backendErrorMessage: null });
     mockedCreateIncident.mockResolvedValue(backendCreateResult);
     mockedAreLocationServicesEnabled.mockResolvedValue(true);
     mockedRequestLocationPermission.mockResolvedValue(true);

@@ -14,6 +14,10 @@ const categories: Category[] = [
   { id: '3', name: 'Objetos urbanos' },
 ];
 
+const FALLBACK_NOTICE_TEXT =
+  'No se pudo conectar con el backend. Mostrando el catálogo de categorías guardado en el mock.';
+const ERROR_MESSAGE_TEXT = 'No se pudieron cargar las categorías.';
+
 // Construye las props por defecto del componente y permite sobreescribirlas.
 async function renderCategoryPicker(overrides: Partial<CategoryPickerProps> = {}) {
   const props: CategoryPickerProps = {
@@ -22,6 +26,7 @@ async function renderCategoryPicker(overrides: Partial<CategoryPickerProps> = {}
     customCategory: '',
     isLoading: false,
     errorMessage: null,
+    fallbackNotice: null,
     onSelectCategory: jest.fn(),
     onSelectOther: jest.fn(),
     onClear: jest.fn(),
@@ -106,5 +111,47 @@ describe('CategoryPicker', () => {
     await renderCategoryPicker({ customCategory: 'Vallado caído' });
 
     expect(screen.getByText('Vallado caído')).toBeOnTheScreen();
+  });
+
+  it('con fallbackNotice muestra el aviso dentro de la hoja sin ocultar las categorías', async () => {
+    const user = userEvent.setup();
+    const { props } = await renderCategoryPicker({ fallbackNotice: FALLBACK_NOTICE_TEXT });
+
+    await user.press(screen.getByRole('button', { name: 'Añadir categoría' }));
+
+    expect(screen.getByText(FALLBACK_NOTICE_TEXT)).toBeOnTheScreen();
+    expect(screen.getByText('Transporte')).toBeOnTheScreen();
+    expect(screen.getByText('Alumbrado público')).toBeOnTheScreen();
+    expect(screen.getByText('Otros')).toBeOnTheScreen();
+
+    await user.press(screen.getByRole('button', { name: 'Categoría Transporte' }));
+
+    expect(props.onSelectCategory).toHaveBeenCalledWith('1');
+  });
+
+  it('con fallbackNotice null no muestra ningún aviso adicional al abrir la hoja', async () => {
+    const user = userEvent.setup();
+    await renderCategoryPicker({ fallbackNotice: null });
+
+    await user.press(screen.getByRole('button', { name: 'Añadir categoría' }));
+
+    expect(screen.getByText('Transporte')).toBeOnTheScreen();
+    expect(screen.queryByText(FALLBACK_NOTICE_TEXT)).toBeNull();
+    expect(screen.queryByText(/No se pudo conectar/)).toBeNull();
+    expect(screen.queryByText(/mock/i)).toBeNull();
+  });
+
+  it('con errorMessage y fallbackNotice a la vez muestra ambos textos sin reemplazarse', async () => {
+    const user = userEvent.setup();
+    await renderCategoryPicker({
+      errorMessage: ERROR_MESSAGE_TEXT,
+      fallbackNotice: FALLBACK_NOTICE_TEXT,
+    });
+
+    await user.press(screen.getByRole('button', { name: 'Añadir categoría' }));
+
+    expect(screen.getByText(ERROR_MESSAGE_TEXT)).toBeOnTheScreen();
+    expect(screen.getByText(FALLBACK_NOTICE_TEXT)).toBeOnTheScreen();
+    expect(screen.getByText('Transporte')).toBeOnTheScreen();
   });
 });
