@@ -61,6 +61,48 @@ function toConnectionError(error: unknown): Error {
   return new Error('No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.');
 }
 
+// Extrae el `message` del cuerpo de error de NestJS (string o array de
+// strings de class-validator). Devuelve null si el cuerpo no tiene esa forma.
+function extractBackendErrorMessage(rawBody: string): string | null {
+  try {
+    const body = JSON.parse(rawBody) as { message?: string | string[] };
+    if (typeof body.message === 'string') {
+      return body.message;
+    }
+    if (Array.isArray(body.message)) {
+      return body.message.join('; ');
+    }
+  } catch {
+    // Cuerpo no-JSON: se ignora y se usa el mensaje genérico.
+  }
+  return null;
+}
+
+// Construye el mensaje de error a mostrar en la UI cuando el backend
+// responde pero rechaza la incidencia: incluye el motivo real cuando el
+// cuerpo de la respuesta lo trae, y conserva un log en consola para depurar
+// casos en los que no.
+async function buildBackendRejectionMessage(response: Response): Promise<string> {
+  const genericMessage = 'No se pudo registrar la incidencia. Inténtalo de nuevo más tarde.';
+
+  let rawBody: string;
+  try {
+    rawBody = await response.text();
+  } catch {
+    if (__DEV__) {
+      console.warn(`[incident.service] El backend rechazó la incidencia (${response.status}).`);
+    }
+    return genericMessage;
+  }
+
+  if (__DEV__) {
+    console.warn(`[incident.service] El backend rechazó la incidencia (${response.status}):`, rawBody);
+  }
+
+  const backendMessage = extractBackendErrorMessage(rawBody);
+  return backendMessage ? `${genericMessage} (${backendMessage})` : genericMessage;
+}
+
 // Fallback: registra la incidencia en el mock (json-server) con JSON y persiste
 // las imágenes por separado. Es el último recurso: si falla, se propaga el error.
 async function createIncidentOnMock(
@@ -201,17 +243,7 @@ export async function createIncident(
   }
 
   if (!response.ok) {
-    if (__DEV__) {
-      try {
-        console.warn(
-          `[incident.service] El backend rechazó la incidencia (${response.status}):`,
-          await response.text(),
-        );
-      } catch {
-        console.warn(`[incident.service] El backend rechazó la incidencia (${response.status}).`);
-      }
-    }
-    throw new Error('No se pudo registrar la incidencia. Inténtalo de nuevo más tarde.');
+    throw new Error(await buildBackendRejectionMessage(response));
   }
 
   const incident = (await response.json()) as CreatedIncident;

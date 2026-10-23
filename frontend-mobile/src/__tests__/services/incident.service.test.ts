@@ -535,6 +535,21 @@ describe('createIncident', () => {
       await expect(createIncident(fullInput)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
     });
 
+    it('con backend !ok y cuerpo con `message`, incluye el motivo real del backend en el error', async () => {
+      routeFetchByEndpoint({
+        backend: {
+          ok: false,
+          status: 400,
+          text: async () => JSON.stringify({ message: 'title must contain 4 to 35 characters' }),
+        } as unknown as Response,
+        mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
+      });
+
+      await expect(createIncident(fullInput)).rejects.toThrow(
+        `${MESSAGE_REGISTER_ERROR} (title must contain 4 to 35 characters)`,
+      );
+    });
+
     it('con backend !ok NO usa el mock: no hay segunda petición ni persistencia de imágenes', async () => {
       routeFetchByEndpoint({
         backend: jsonResponse({ message: 'boom' }, 500),
