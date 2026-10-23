@@ -1,0 +1,167 @@
+{
+  "incidents": [
+    {
+      "title": "Farola rota Trinidad",
+      "description": "En frente del Mercadona, no sé ve bien la población y se están empezando a chocar las personas",
+      "latitude": 36.722086749842845,
+      "longitude": -4.432827987470363,
+      "accuracy": 5,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "categoryId": "2",
+      "category": null,
+      "id": "RLfTcvEVqlc"
+    },
+    {
+      "title": "Farola Rota Trinidad",
+      "description": "No deja ver a la gente, esto es un caos",
+      "latitude": 36.722086749842845,
+      "longitude": -4.432827987470363,
+      "accuracy": 5,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "categoryId": "2",
+      "category": null,
+      "id": "bALCrQcm_gw"
+    },
+    {
+      "title": "Prueba integración",
+      "description": "Prueba prueba pruebaaaaa",
+      "latitude": 36.714919870438415,
+      "longitude": -4.477916511492881,
+      "accuracy": 20.116194739706316,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "categoryId": "1",
+      "category": null,
+      "id": "5zbBHCMzWNo"
+    },
+    {
+      "title": "Escalones rotos en El Ejido",
+      "description": "Estos escalones son usados frecuentemente para subir a la facultad de Económicas y está causando que haya gente que se caiga.",
+      "latitude": 36.7297304205952,
+      "longitude": -4.419146054653771,
+      "accuracy": 6.011117798202053,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "categoryId": "3",
+      "category": null,
+      "id": "6NslGK70n2o"
+    },
+    {
+      "title": "Prueba de nuevo",
+      "description": "Espero que ahora si se conecte al backend",
+      "latitude": 36.72953231741549,
+      "longitude": -4.419210269928786,
+      "accuracy": 8.214889464403214,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "categoryId": "1",
+      "category": null,
+      "id": "1C_kClDKmFk"
+    },
+    {
+      "title": "Prueba con foto",
+      "description": "Vamos a ver si va",
+      "latitude": 36.72953118414204,
+      "longitude": -4.41921104291518,
+      "accuracy": 12.035765799447288,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "categoryId": "2",
+      "category": null,
+      "id": "nZcfRC9__gA"
+    },
+    {
+      "title": "Pues a",
+      "description": "Prueba",
+      "latitude": 36.72953095187005,
+      "longitude": -4.419211148175559,
+      "accuracy": 9.823113758485901,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "categoryId": null,
+      "category": null,
+      "id": "iB09J7Gfu1k"
+    }
+  ],
+  "categories": [
+    {
+      "id": "1",
+      "name": "Transporte"
+    },
+    {
+      "id": "2",
+      "name": "Alumbrado público"
+    },
+    {
+      "id": "3",
+      "name": "Objetos urbanos"
+    }
+  ],
+  "locations": [],
+  "images": [
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/5CE26BC2-97CB-42E8-A42E-CA617FEE421F.jpg",
+      "incidentId": "RLfTcvEVqlc",
+      "id": "J3YiO1gVQpU"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/F23CDE60-9C75-4860-920F-95958B647E58.jpg",
+      "incidentId": "RLfTcvEVqlc",
+      "id": "YCG7UA8EIdc"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/662B63B0-33D2-4DC5-B614-730C97C88FE4.jpg",
+      "incidentId": "bALCrQcm_gw",
+      "id": "m9x06zMh3r8"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/2C53BC47-DA5C-465A-B26C-022D86D30654.jpg",
+      "incidentId": "5zbBHCMzWNo",
+      "id": "vv5L8SaTNbQ"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/0A1F28B1-C9C3-4ABF-8578-FFB2EBFD8F11/Library/Caches/ImagePicker/BD76A80F-86EC-4281-A829-0E4B06EE8EC9.jpg",
+      "incidentId": "6NslGK70n2o",
+      "id": "lQeudDGlIUc"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/0A1F28B1-C9C3-4ABF-8578-FFB2EBFD8F11/Library/Caches/ImagePicker/BCD96FDB-544A-4AC6-B693-413A7A3CF05E.jpg",
+      "incidentId": "1C_kClDKmFk",
+      "id": "8c1VmYlxHY4"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/0A1F28B1-C9C3-4ABF-8578-FFB2EBFD8F11/Library/Caches/ImagePicker/D953916B-CBCB-4396-80A0-D46D711F7CEB.jpg",
+      "incidentId": "nZcfRC9__gA",
+      "id": "fK2q6r08MjY"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/0A1F28B1-C9C3-4ABF-8578-FFB2EBFD8F11/Library/Caches/ImagePicker/897B7C7C-D1A1-402F-8205-4F2FF6B5E188.jpg",
+      "incidentId": "iB09J7Gfu1k",
+      "id": "3nArxKNM8X4"
+    }
+  ],
+  "users": [
+    {
+      "username": "sofia13",
+      "email": "sofia@email.com",
+      "password": "sofia13",
+      "role": "civic",
+      "id": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5"
+    },
+    {
+      "username": "mayte",
+      "email": "mayte@email.com",
+      "password": "mayte",
+      "role": "civic",
+      "id": "a62218e7563"
+    }
+  ],
+  "civics": [
+    {
+      "userId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "phone": "600388787",
+      "id": "J3_knLzOgNI"
+    },
+    {
+      "userId": "a62218e7563",
+      "phone": "123456234",
+      "id": "PjXQ-etx_j4"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}

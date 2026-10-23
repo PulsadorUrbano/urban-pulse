@@ -96,7 +96,7 @@ const inserted = await prisma.$executeRaw`
 For fully dynamic queries (use with caution!):
 
 ```typescript
-// ⚠️ SQL injection risk - only use with trusted input
+//  SQL injection risk - only use with trusted input
 const table = 'User'
 const users = await prisma.$queryRawUnsafe(
   `SELECT * FROM "${table}" WHERE id = $1`,
@@ -119,7 +119,7 @@ const result = await prisma.$executeRawUnsafe(
 ### Safe (parameterized)
 
 ```typescript
-// ✅ User input is parameterized
+//  User input is parameterized
 const email = userInput
 const users = await prisma.$queryRaw`
   SELECT * FROM "User" WHERE email = ${email}
@@ -129,7 +129,7 @@ const users = await prisma.$queryRaw`
 ### Unsafe (concatenation)
 
 ```typescript
-// ❌ SQL injection vulnerability!
+//  SQL injection vulnerability!
 const email = userInput
 const users = await prisma.$queryRawUnsafe(
   `SELECT * FROM "User" WHERE email = '${email}'`
