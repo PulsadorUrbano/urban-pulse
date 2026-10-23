@@ -43,6 +43,10 @@ Al añadir, modificar o retirar un endpoint, actualizar su carpeta en el mismo c
 
 ## Endpoints documentados
 
+- [Validar o rechazar una incidencia con motivo](patch-incidents-id-status/README.md): PATCH /incidents/:id/status; actor declarado y DEUDA-47-01 abierta.
+
+- [Consultar el listado de incidencias por ciudadano](get-incidents/README.md): GET /incidents?civicId=<UUID>, sin historial y con deuda de identidad documentada.
+
 - [Registrar incidencias](post-incidents/README.md): POST /incidents.
 - [Consultar una incidencia](get-incidents-id/README.md): GET /incidents/:id.
 - [Consultar categorías](get-categories/README.md): GET /categories.

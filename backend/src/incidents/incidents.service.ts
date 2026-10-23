@@ -1,11 +1,19 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type {
+  CambiarEstadoIncidenciaInput,
   CreateIncidentInput,
   Incident,
+  ResumenIncidencia,
   StoredIncident,
   UploadedImageFile,
 } from './incident.js';
+import type { CambioEstadoModel } from '../generated/prisma/models.js';
 import { UploadStorageService } from './upload-storage.service.js';
 
 @Injectable()
@@ -49,6 +57,7 @@ export class IncidentsService {
         incidentId: id,
         createdAt: new Date(image.createdAt),
       })),
+      cambiosEstado: [],
       status: 'reported',
       priority: 'low',
       createdAt,
@@ -56,6 +65,26 @@ export class IncidentsService {
 
     this.incidents.set(incident.id, incident);
     return this.copy(incident);
+  }
+
+  listarPorCiudadano(idCiudadano: string): ResumenIncidencia[] {
+    const ciudadanoNormalizado = idCiudadano.toLowerCase();
+    return Array.from(this.incidents.values())
+      .filter(
+        (incidencia) =>
+          incidencia.civicId.toLowerCase() === ciudadanoNormalizado,
+      )
+      .sort(
+        (primera, segunda) =>
+          segunda.createdAt.getTime() - primera.createdAt.getTime() ||
+          primera.id.localeCompare(segunda.id),
+      )
+      .map(({ id, title, status, createdAt }) => ({
+        id,
+        title,
+        status,
+        createdAt: createdAt.toISOString(),
+      }));
   }
 
   findOne(id: string): Incident {
@@ -66,9 +95,67 @@ export class IncidentsService {
     return this.copy(incident);
   }
 
+  cambiarEstado(
+    idIncidencia: string,
+    entrada: CambiarEstadoIncidenciaInput,
+  ): Incident {
+    const incidencia = this.obtenerIncidencia(idIncidencia);
+    if (
+      (entrada.status !== 'validated' && entrada.status !== 'rejected') ||
+      !entrada.cause.trim()
+    ) {
+      throw new BadRequestException(
+        'El estado debe ser validated o rejected y el motivo no puede estar vacío',
+      );
+    }
+    if (incidencia.status !== 'reported') {
+      throw new ConflictException(
+        'Solo se puede validar o rechazar una incidencia en estado reported',
+      );
+    }
+    const cambio: CambioEstadoModel = {
+      id: randomUUID(),
+      incidenciaId: incidencia.id,
+      actorId: entrada.civicId.toLowerCase(),
+      nuevoEstado: entrada.status,
+      motivo: entrada.cause.trim(),
+      fechaCreacion: new Date(),
+    };
+    const actualizada: StoredIncident = {
+      ...incidencia,
+      status: entrada.status,
+      cambiosEstado: [...incidencia.cambiosEstado, cambio],
+    };
+    // Construir también la respuesta antes de publicar: un fallo no deja cambios parciales.
+    const respuesta = this.copy(actualizada);
+    this.incidents.set(incidencia.id, actualizada);
+    return respuesta;
+  }
+
+  consultarCambiosEstado(idIncidencia: string): CambioEstadoModel[] {
+    return this.obtenerIncidencia(idIncidencia).cambiosEstado.map((cambio) => ({
+      ...cambio,
+      fechaCreacion: new Date(cambio.fechaCreacion),
+    }));
+  }
+
+  private obtenerIncidencia(idIncidencia: string): StoredIncident {
+    const incidencia = this.incidents.get(idIncidencia.toLowerCase());
+    if (!incidencia) throw new NotFoundException('La incidencia no existe');
+    return incidencia;
+  }
+
   private copy(incident: StoredIncident): Incident {
     return {
-      ...incident,
+      id: incident.id,
+      title: incident.title,
+      description: incident.description,
+      civicId: incident.civicId,
+      categoryId: incident.categoryId,
+      category: incident.category,
+      urbanAssetId: incident.urbanAssetId,
+      status: incident.status,
+      priority: incident.priority,
       createdAt: incident.createdAt.toISOString(),
       location: {
         latitude: incident.location.latitude,
