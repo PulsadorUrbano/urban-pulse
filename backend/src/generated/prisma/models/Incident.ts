@@ -224,6 +224,7 @@ export type IncidentWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"Incident"> | Date | string
   location?: Prisma.XOR<Prisma.IncidentLocationNullableScalarRelationFilter, Prisma.IncidentLocationWhereInput> | null
   images?: Prisma.IncidentImageListRelationFilter
+  cambiosEstado?: Prisma.CambioEstadoListRelationFilter
 }
 
 export type IncidentOrderByWithRelationInput = {
@@ -239,6 +240,7 @@ export type IncidentOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   location?: Prisma.IncidentLocationOrderByWithRelationInput
   images?: Prisma.IncidentImageOrderByRelationAggregateInput
+  cambiosEstado?: Prisma.CambioEstadoOrderByRelationAggregateInput
 }
 
 export type IncidentWhereUniqueInput = Prisma.AtLeast<{
@@ -257,6 +259,7 @@ export type IncidentWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"Incident"> | Date | string
   location?: Prisma.XOR<Prisma.IncidentLocationNullableScalarRelationFilter, Prisma.IncidentLocationWhereInput> | null
   images?: Prisma.IncidentImageListRelationFilter
+  cambiosEstado?: Prisma.CambioEstadoListRelationFilter
 }, "id">
 
 export type IncidentOrderByWithAggregationInput = {
@@ -304,6 +307,7 @@ export type IncidentCreateInput = {
   createdAt?: Date | string
   location?: Prisma.IncidentLocationCreateNestedOneWithoutIncidentInput
   images?: Prisma.IncidentImageCreateNestedManyWithoutIncidentInput
+  cambiosEstado?: Prisma.CambioEstadoCreateNestedManyWithoutIncidenciaInput
 }
 
 export type IncidentUncheckedCreateInput = {
@@ -319,6 +323,7 @@ export type IncidentUncheckedCreateInput = {
   createdAt?: Date | string
   location?: Prisma.IncidentLocationUncheckedCreateNestedOneWithoutIncidentInput
   images?: Prisma.IncidentImageUncheckedCreateNestedManyWithoutIncidentInput
+  cambiosEstado?: Prisma.CambioEstadoUncheckedCreateNestedManyWithoutIncidenciaInput
 }
 
 export type IncidentUpdateInput = {
@@ -334,6 +339,7 @@ export type IncidentUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   location?: Prisma.IncidentLocationUpdateOneWithoutIncidentNestedInput
   images?: Prisma.IncidentImageUpdateManyWithoutIncidentNestedInput
+  cambiosEstado?: Prisma.CambioEstadoUpdateManyWithoutIncidenciaNestedInput
 }
 
 export type IncidentUncheckedUpdateInput = {
@@ -349,6 +355,7 @@ export type IncidentUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   location?: Prisma.IncidentLocationUncheckedUpdateOneWithoutIncidentNestedInput
   images?: Prisma.IncidentImageUncheckedUpdateManyWithoutIncidentNestedInput
+  cambiosEstado?: Prisma.CambioEstadoUncheckedUpdateManyWithoutIncidenciaNestedInput
 }
 
 export type IncidentCreateManyInput = {
@@ -482,6 +489,20 @@ export type IncidentUpdateOneRequiredWithoutImagesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.IncidentUpdateToOneWithWhereWithoutImagesInput, Prisma.IncidentUpdateWithoutImagesInput>, Prisma.IncidentUncheckedUpdateWithoutImagesInput>
 }
 
+export type IncidentCreateNestedOneWithoutCambiosEstadoInput = {
+  create?: Prisma.XOR<Prisma.IncidentCreateWithoutCambiosEstadoInput, Prisma.IncidentUncheckedCreateWithoutCambiosEstadoInput>
+  connectOrCreate?: Prisma.IncidentCreateOrConnectWithoutCambiosEstadoInput
+  connect?: Prisma.IncidentWhereUniqueInput
+}
+
+export type IncidentUpdateOneRequiredWithoutCambiosEstadoNestedInput = {
+  create?: Prisma.XOR<Prisma.IncidentCreateWithoutCambiosEstadoInput, Prisma.IncidentUncheckedCreateWithoutCambiosEstadoInput>
+  connectOrCreate?: Prisma.IncidentCreateOrConnectWithoutCambiosEstadoInput
+  upsert?: Prisma.IncidentUpsertWithoutCambiosEstadoInput
+  connect?: Prisma.IncidentWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.IncidentUpdateToOneWithWhereWithoutCambiosEstadoInput, Prisma.IncidentUpdateWithoutCambiosEstadoInput>, Prisma.IncidentUncheckedUpdateWithoutCambiosEstadoInput>
+}
+
 export type IncidentCreateWithoutLocationInput = {
   id?: string
   title: string
@@ -494,6 +515,7 @@ export type IncidentCreateWithoutLocationInput = {
   priority?: $Enums.IncidentPriority
   createdAt?: Date | string
   images?: Prisma.IncidentImageCreateNestedManyWithoutIncidentInput
+  cambiosEstado?: Prisma.CambioEstadoCreateNestedManyWithoutIncidenciaInput
 }
 
 export type IncidentUncheckedCreateWithoutLocationInput = {
@@ -508,6 +530,7 @@ export type IncidentUncheckedCreateWithoutLocationInput = {
   priority?: $Enums.IncidentPriority
   createdAt?: Date | string
   images?: Prisma.IncidentImageUncheckedCreateNestedManyWithoutIncidentInput
+  cambiosEstado?: Prisma.CambioEstadoUncheckedCreateNestedManyWithoutIncidenciaInput
 }
 
 export type IncidentCreateOrConnectWithoutLocationInput = {
@@ -538,6 +561,7 @@ export type IncidentUpdateWithoutLocationInput = {
   priority?: Prisma.EnumIncidentPriorityFieldUpdateOperationsInput | $Enums.IncidentPriority
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.IncidentImageUpdateManyWithoutIncidentNestedInput
+  cambiosEstado?: Prisma.CambioEstadoUpdateManyWithoutIncidenciaNestedInput
 }
 
 export type IncidentUncheckedUpdateWithoutLocationInput = {
@@ -552,6 +576,7 @@ export type IncidentUncheckedUpdateWithoutLocationInput = {
   priority?: Prisma.EnumIncidentPriorityFieldUpdateOperationsInput | $Enums.IncidentPriority
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.IncidentImageUncheckedUpdateManyWithoutIncidentNestedInput
+  cambiosEstado?: Prisma.CambioEstadoUncheckedUpdateManyWithoutIncidenciaNestedInput
 }
 
 export type IncidentCreateWithoutImagesInput = {
@@ -566,6 +591,7 @@ export type IncidentCreateWithoutImagesInput = {
   priority?: $Enums.IncidentPriority
   createdAt?: Date | string
   location?: Prisma.IncidentLocationCreateNestedOneWithoutIncidentInput
+  cambiosEstado?: Prisma.CambioEstadoCreateNestedManyWithoutIncidenciaInput
 }
 
 export type IncidentUncheckedCreateWithoutImagesInput = {
@@ -580,6 +606,7 @@ export type IncidentUncheckedCreateWithoutImagesInput = {
   priority?: $Enums.IncidentPriority
   createdAt?: Date | string
   location?: Prisma.IncidentLocationUncheckedCreateNestedOneWithoutIncidentInput
+  cambiosEstado?: Prisma.CambioEstadoUncheckedCreateNestedManyWithoutIncidenciaInput
 }
 
 export type IncidentCreateOrConnectWithoutImagesInput = {
@@ -610,6 +637,7 @@ export type IncidentUpdateWithoutImagesInput = {
   priority?: Prisma.EnumIncidentPriorityFieldUpdateOperationsInput | $Enums.IncidentPriority
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   location?: Prisma.IncidentLocationUpdateOneWithoutIncidentNestedInput
+  cambiosEstado?: Prisma.CambioEstadoUpdateManyWithoutIncidenciaNestedInput
 }
 
 export type IncidentUncheckedUpdateWithoutImagesInput = {
@@ -624,6 +652,83 @@ export type IncidentUncheckedUpdateWithoutImagesInput = {
   priority?: Prisma.EnumIncidentPriorityFieldUpdateOperationsInput | $Enums.IncidentPriority
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   location?: Prisma.IncidentLocationUncheckedUpdateOneWithoutIncidentNestedInput
+  cambiosEstado?: Prisma.CambioEstadoUncheckedUpdateManyWithoutIncidenciaNestedInput
+}
+
+export type IncidentCreateWithoutCambiosEstadoInput = {
+  id?: string
+  title: string
+  description?: string | null
+  civicId: string
+  categoryId?: string | null
+  category?: string | null
+  urbanAssetId?: string | null
+  status?: $Enums.IncidentStatus
+  priority?: $Enums.IncidentPriority
+  createdAt?: Date | string
+  location?: Prisma.IncidentLocationCreateNestedOneWithoutIncidentInput
+  images?: Prisma.IncidentImageCreateNestedManyWithoutIncidentInput
+}
+
+export type IncidentUncheckedCreateWithoutCambiosEstadoInput = {
+  id?: string
+  title: string
+  description?: string | null
+  civicId: string
+  categoryId?: string | null
+  category?: string | null
+  urbanAssetId?: string | null
+  status?: $Enums.IncidentStatus
+  priority?: $Enums.IncidentPriority
+  createdAt?: Date | string
+  location?: Prisma.IncidentLocationUncheckedCreateNestedOneWithoutIncidentInput
+  images?: Prisma.IncidentImageUncheckedCreateNestedManyWithoutIncidentInput
+}
+
+export type IncidentCreateOrConnectWithoutCambiosEstadoInput = {
+  where: Prisma.IncidentWhereUniqueInput
+  create: Prisma.XOR<Prisma.IncidentCreateWithoutCambiosEstadoInput, Prisma.IncidentUncheckedCreateWithoutCambiosEstadoInput>
+}
+
+export type IncidentUpsertWithoutCambiosEstadoInput = {
+  update: Prisma.XOR<Prisma.IncidentUpdateWithoutCambiosEstadoInput, Prisma.IncidentUncheckedUpdateWithoutCambiosEstadoInput>
+  create: Prisma.XOR<Prisma.IncidentCreateWithoutCambiosEstadoInput, Prisma.IncidentUncheckedCreateWithoutCambiosEstadoInput>
+  where?: Prisma.IncidentWhereInput
+}
+
+export type IncidentUpdateToOneWithWhereWithoutCambiosEstadoInput = {
+  where?: Prisma.IncidentWhereInput
+  data: Prisma.XOR<Prisma.IncidentUpdateWithoutCambiosEstadoInput, Prisma.IncidentUncheckedUpdateWithoutCambiosEstadoInput>
+}
+
+export type IncidentUpdateWithoutCambiosEstadoInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  civicId?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  urbanAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumIncidentStatusFieldUpdateOperationsInput | $Enums.IncidentStatus
+  priority?: Prisma.EnumIncidentPriorityFieldUpdateOperationsInput | $Enums.IncidentPriority
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  location?: Prisma.IncidentLocationUpdateOneWithoutIncidentNestedInput
+  images?: Prisma.IncidentImageUpdateManyWithoutIncidentNestedInput
+}
+
+export type IncidentUncheckedUpdateWithoutCambiosEstadoInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  civicId?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  urbanAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumIncidentStatusFieldUpdateOperationsInput | $Enums.IncidentStatus
+  priority?: Prisma.EnumIncidentPriorityFieldUpdateOperationsInput | $Enums.IncidentPriority
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  location?: Prisma.IncidentLocationUncheckedUpdateOneWithoutIncidentNestedInput
+  images?: Prisma.IncidentImageUncheckedUpdateManyWithoutIncidentNestedInput
 }
 
 
@@ -633,10 +738,12 @@ export type IncidentUncheckedUpdateWithoutImagesInput = {
 
 export type IncidentCountOutputType = {
   images: number
+  cambiosEstado: number
 }
 
 export type IncidentCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   images?: boolean | IncidentCountOutputTypeCountImagesArgs
+  cambiosEstado?: boolean | IncidentCountOutputTypeCountCambiosEstadoArgs
 }
 
 /**
@@ -656,6 +763,13 @@ export type IncidentCountOutputTypeCountImagesArgs<ExtArgs extends runtime.Types
   where?: Prisma.IncidentImageWhereInput
 }
 
+/**
+ * IncidentCountOutputType without action
+ */
+export type IncidentCountOutputTypeCountCambiosEstadoArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CambioEstadoWhereInput
+}
+
 
 export type IncidentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -670,6 +784,7 @@ export type IncidentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   createdAt?: boolean
   location?: boolean | Prisma.Incident$locationArgs<ExtArgs>
   images?: boolean | Prisma.Incident$imagesArgs<ExtArgs>
+  cambiosEstado?: boolean | Prisma.Incident$cambiosEstadoArgs<ExtArgs>
   _count?: boolean | Prisma.IncidentCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["incident"]>
 
@@ -716,6 +831,7 @@ export type IncidentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs =
 export type IncidentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   location?: boolean | Prisma.Incident$locationArgs<ExtArgs>
   images?: boolean | Prisma.Incident$imagesArgs<ExtArgs>
+  cambiosEstado?: boolean | Prisma.Incident$cambiosEstadoArgs<ExtArgs>
   _count?: boolean | Prisma.IncidentCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type IncidentIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -726,6 +842,7 @@ export type $IncidentPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   objects: {
     location: Prisma.$IncidentLocationPayload<ExtArgs> | null
     images: Prisma.$IncidentImagePayload<ExtArgs>[]
+    cambiosEstado: Prisma.$CambioEstadoPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1134,6 +1251,7 @@ export interface Prisma__IncidentClient<T, Null = never, ExtArgs extends runtime
   readonly [Symbol.toStringTag]: "PrismaPromise"
   location<T extends Prisma.Incident$locationArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Incident$locationArgs<ExtArgs>>): Prisma.Prisma__IncidentLocationClient<runtime.Types.Result.GetResult<Prisma.$IncidentLocationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   images<T extends Prisma.Incident$imagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Incident$imagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$IncidentImagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  cambiosEstado<T extends Prisma.Incident$cambiosEstadoArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Incident$cambiosEstadoArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CambioEstadoPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1606,6 +1724,30 @@ export type Incident$imagesArgs<ExtArgs extends runtime.Types.Extensions.Interna
   take?: number
   skip?: number
   distinct?: Prisma.IncidentImageScalarFieldEnum | Prisma.IncidentImageScalarFieldEnum[]
+}
+
+/**
+ * Incident.cambiosEstado
+ */
+export type Incident$cambiosEstadoArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CambioEstado
+   */
+  select?: Prisma.CambioEstadoSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CambioEstado
+   */
+  omit?: Prisma.CambioEstadoOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CambioEstadoInclude<ExtArgs> | null
+  where?: Prisma.CambioEstadoWhereInput
+  orderBy?: Prisma.CambioEstadoOrderByWithRelationInput | Prisma.CambioEstadoOrderByWithRelationInput[]
+  cursor?: Prisma.CambioEstadoWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CambioEstadoScalarFieldEnum | Prisma.CambioEstadoScalarFieldEnum[]
 }
 
 /**

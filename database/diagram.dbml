@@ -110,7 +110,7 @@ Table status_changes {
   incident_id uuid [ref: > incidents.id, not null]
   user_id uuid [ref: > users.id, not null]
   new_status incident_status [not null]
-  cause varchar // o reason / comment
+  cause varchar [not null] // Motivo obligatorio del cambio de estado
   created_at timestamp [default: `now()`]
 
   indexes {

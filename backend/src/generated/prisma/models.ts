@@ -11,4 +11,5 @@
 export type * from './models/Incident.js'
 export type * from './models/IncidentLocation.js'
 export type * from './models/IncidentImage.js'
+export type * from './models/CambioEstado.js'
 export type * from './commonInputTypes.js'

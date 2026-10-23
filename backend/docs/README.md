@@ -18,3 +18,9 @@ Los nombres y títulos nuevos deben incluir fecha AAAA-MM-DD y descripción conc
 - [Plan y confirmación de adaptación](spec/features/plans/2026-10-21-adaptar-documentacion-registro-incidencias-plan.md).
 
 Los documentos anteriores se conservan con una nota de referencia histórica. spec/reports/ contiene informes anteriores; no se crean informes ni archivos de tareas separados para los cambios nuevos. El catálogo documenta el estado leído en el código; no acredita una conexión probada.
+
+## Issue #27: consulta por ciudadano
+
+- [Especificación](spec/features/specs/2026-10-23-consultar-incidencias-por-ciudadano-spec.md).
+- [Plan y confirmación de implementación](spec/features/plans/2026-10-23-consultar-incidencias-por-ciudadano-plan.md).
+- [Contrato GET /incidents](spec/endpoint/get-incidents/README.md).
