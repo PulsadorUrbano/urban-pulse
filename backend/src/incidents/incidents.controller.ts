@@ -33,16 +33,25 @@ import {
 import type { Response } from 'express';
 import { CreateIncidentPipe } from './create-incident.pipe.js';
 import { CreateIncidentDto } from './create-incident.dto.js';
-import { IncidentStatus } from '../generated/prisma/enums.js';
+import { IncidentPriority, IncidentStatus } from '../generated/prisma/enums.js';
+import { CambiarPrioridadIncidenciaPipe } from './cambiar-prioridad-incidencia.pipe.js';
 import { CambiarEstadoIncidenciaPipe } from './cambiar-estado-incidencia.pipe.js';
 import type {
   CambiarEstadoIncidenciaInput,
+  CambiarPrioridadIncidenciaInput,
   Incident,
   ResumenIncidencia,
 } from './incident.js';
 import { ListarIncidenciasPipe } from './listar-incidencias.pipe.js';
 import type { UploadedImageFile } from './incident.js';
 import { IncidentsService } from './incidents.service.js';
+
+const esquemaPrioridad = {
+  type: 'string',
+  enum: Object.values(IncidentPriority),
+  description:
+    'Prioridad de la incidencia: Baja (low), Media (medium) o Alta (high).',
+};
 
 const incidentSchema = {
   type: 'object',
@@ -94,7 +103,7 @@ const incidentSchema = {
       },
     },
     status: { type: 'string', enum: Object.values(IncidentStatus) },
-    priority: { type: 'string', enum: ['low'] },
+    priority: esquemaPrioridad,
     createdAt: { type: 'string', format: 'date-time' },
   },
 };
@@ -266,6 +275,55 @@ export class IncidentsController {
     entrada: CambiarEstadoIncidenciaInput,
   ): Incident {
     return this.incidentsService.cambiarEstado(idIncidencia, entrada);
+  }
+
+  @Patch(':id/priority')
+  @ApiOperation({
+    summary: 'Asignar prioridad manual con motivo',
+    description:
+      'Solo incidencias validadas. Prioridades: Baja, Media y Alta. Cada asignación conserva su motivo y actor declarado. Prototipo sin autenticación ni autorización (DEUDA-28-01); civicId no acredita identidad. Historial en memoria.',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['priority', 'cause', 'civicId'],
+      properties: {
+        priority: esquemaPrioridad,
+        cause: {
+          type: 'string',
+          minLength: 1,
+          description: 'Motivo obligatorio; no vacío después de trim.',
+        },
+        civicId: {
+          type: 'string',
+          format: 'uuid',
+          description:
+            'Actor declarado sin verificar; no cambia al propietario.',
+        },
+      },
+    },
+  })
+  @ApiOkResponse({
+    description:
+      'Incidencia con prioridad actualizada, sin historial ni actor de auditoría.',
+    schema: incidentSchema,
+  })
+  @ApiBadRequestResponse({
+    description:
+      'UUID, prioridad o cuerpo inválidos; motivo vacío o campos desconocidos.',
+  })
+  @ApiNotFoundResponse({ description: 'La incidencia no existe.' })
+  @ApiConflictResponse({
+    description:
+      'Solo se admite asignación de prioridad en incidencias validadas.',
+  })
+  cambiarPrioridad(
+    @Param('id', new ParseUUIDPipe()) idIncidencia: string,
+    @Body(new CambiarPrioridadIncidenciaPipe())
+    entrada: CambiarPrioridadIncidenciaInput,
+  ): Incident {
+    return this.incidentsService.cambiarPrioridad(idIncidencia, entrada);
   }
 
   @Get(':id')

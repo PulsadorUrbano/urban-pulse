@@ -47,6 +47,8 @@ Cada cambio es un CambioEstado tipado desde Prisma y mapeado a status_changes: i
 
 Incidencias e historial se pierden al reiniciar. Las imágenes permanecen en archivos locales y no se modifican en esta operación. Sin base de datos, migraciones ni auditoría duradera; al activar persistencia será necesaria una transacción para estado e historial.
 
+Las prioridades se etiquetan Baja (low), Media (medium) y Alta (high). El registro inicia Baja (low); las lecturas y respuestas completas pueden reflejar cualquier prioridad vigente. Véase [asignación manual](../patch-incidents-id-priority/README.md).
+
 ## Referencias
 
 - [Especificación y deuda](../../features/specs/2026-10-23-validar-rechazar-incidencias-con-motivo-spec.md).

@@ -19,7 +19,9 @@ export type IncidentStatus = (typeof IncidentStatus)[keyof typeof IncidentStatus
 
 
 export const IncidentPriority = {
-  low: 'low'
+  low: 'low',
+  medium: 'medium',
+  high: 'high'
 } as const
 
 export type IncidentPriority = (typeof IncidentPriority)[keyof typeof IncidentPriority]

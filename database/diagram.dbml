@@ -147,13 +147,17 @@ Table categories {
 }
 
 Table priority_changes {
-  id uuid
+  id uuid [pk]
   is_manual boolean [not null, default: `true`]
   new_priority incident_priority [not null]
-  cause varchar 
+  cause varchar [not null]
   created_at timestamp [default: `now()`]
   incident_id uuid [ref: > incidents.id, not null]
   user_id uuid [ref: > users.id, not null]
+
+  indexes {
+    incident_id
+  }
 }
 
 // Relacionados con la localización ------------------------------

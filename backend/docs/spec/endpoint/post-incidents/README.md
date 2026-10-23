@@ -20,6 +20,8 @@ Incidencias y metadatos en un Map local tipado por modelos Prisma; se pierden al
 
 El registro sigue creando status=reported; no devuelve el historial interno. Los cambios se describen en [validar o rechazar incidencias](../patch-incidents-id-status/README.md).
 
+Las prioridades se etiquetan Baja (low), Media (medium) y Alta (high). El registro inicia Baja (low); las lecturas y respuestas completas pueden reflejar cualquier prioridad vigente. Véase [asignación manual](../patch-incidents-id-priority/README.md).
+
 ## Referencias
 
 - [Especificación vigente](../../features/specs/2026-10-21-adaptar-documentacion-registro-incidencias-spec.md).

@@ -37,3 +37,8 @@ export type IncidentImage = Prisma.IncidentImageModel
  *
  */
 export type CambioEstado = Prisma.CambioEstadoModel
+/**
+ * Model CambioPrioridad
+ *
+ */
+export type CambioPrioridad = Prisma.CambioPrioridadModel

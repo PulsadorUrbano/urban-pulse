@@ -22,6 +22,8 @@ enum IncidentStatus {
 
 enum IncidentPriority {
   low
+  medium
+  high
 }
 
 model Incident {
@@ -38,6 +40,7 @@ model Incident {
   location     IncidentLocation?
   images       IncidentImage[]
   cambiosEstado CambioEstado[]
+  cambiosPrioridad CambioPrioridad[]
 }
 
 model IncidentLocation {
@@ -73,4 +76,19 @@ model CambioEstado {
   @@index([incidenciaId])
   @@index([fechaCreacion])
   @@map("status_changes")
+}
+
+// Decisiones manuales en memoria; actor declarado, sin identidad verificada.
+model CambioPrioridad {
+  id            String           @id @default(uuid()) @db.Uuid
+  esManual      Boolean          @default(true) @map("is_manual")
+  nuevaPrioridad IncidentPriority @map("new_priority")
+  motivo        String           @map("cause")
+  fechaCreacion DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  incidenciaId  String           @map("incident_id") @db.Uuid
+  incidencia    Incident         @relation(fields: [incidenciaId], references: [id])
+  actorId       String           @map("user_id") @db.Uuid
+
+  @@index([incidenciaId])
+  @@map("priority_changes")
 }

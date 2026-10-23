@@ -400,7 +400,8 @@ export const ModelName = {
   Incident: 'Incident',
   IncidentLocation: 'IncidentLocation',
   IncidentImage: 'IncidentImage',
-  CambioEstado: 'CambioEstado'
+  CambioEstado: 'CambioEstado',
+  CambioPrioridad: 'CambioPrioridad'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -416,7 +417,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "incident" | "incidentLocation" | "incidentImage" | "cambioEstado"
+    modelProps: "incident" | "incidentLocation" | "incidentImage" | "cambioEstado" | "cambioPrioridad"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -716,6 +717,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    CambioPrioridad: {
+      payload: Prisma.$CambioPrioridadPayload<ExtArgs>
+      fields: Prisma.CambioPrioridadFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CambioPrioridadFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CambioPrioridadPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CambioPrioridadFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CambioPrioridadPayload>
+        }
+        findFirst: {
+          args: Prisma.CambioPrioridadFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CambioPrioridadPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CambioPrioridadFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CambioPrioridadPayload>
+        }
+        findMany: {
+          args: Prisma.CambioPrioridadFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CambioPrioridadPayload>[]
+        }
+        create: {
+          args: Prisma.CambioPrioridadCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CambioPrioridadPayload>
+        }
+        createMany: {
+          args: Prisma.CambioPrioridadCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CambioPrioridadCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CambioPrioridadPayload>[]
+        }
+        delete: {
+          args: Prisma.CambioPrioridadDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CambioPrioridadPayload>
+        }
+        update: {
+          args: Prisma.CambioPrioridadUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CambioPrioridadPayload>
+        }
+        deleteMany: {
+          args: Prisma.CambioPrioridadDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CambioPrioridadUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CambioPrioridadUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CambioPrioridadPayload>[]
+        }
+        upsert: {
+          args: Prisma.CambioPrioridadUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CambioPrioridadPayload>
+        }
+        aggregate: {
+          args: Prisma.CambioPrioridadAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCambioPrioridad>
+        }
+        groupBy: {
+          args: Prisma.CambioPrioridadGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CambioPrioridadGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CambioPrioridadCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CambioPrioridadCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -803,6 +878,19 @@ export const CambioEstadoScalarFieldEnum = {
 } as const
 
 export type CambioEstadoScalarFieldEnum = (typeof CambioEstadoScalarFieldEnum)[keyof typeof CambioEstadoScalarFieldEnum]
+
+
+export const CambioPrioridadScalarFieldEnum = {
+  id: 'id',
+  esManual: 'esManual',
+  nuevaPrioridad: 'nuevaPrioridad',
+  motivo: 'motivo',
+  fechaCreacion: 'fechaCreacion',
+  incidenciaId: 'incidenciaId',
+  actorId: 'actorId'
+} as const
+
+export type CambioPrioridadScalarFieldEnum = (typeof CambioPrioridadScalarFieldEnum)[keyof typeof CambioPrioridadScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -902,6 +990,13 @@ export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, '
  * Reference to a field of type 'Float[]'
  */
 export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
+
+
+
+/**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
 
 
 
@@ -1073,6 +1168,7 @@ export type GlobalOmitConfig = {
   incidentLocation?: Prisma.IncidentLocationOmit
   incidentImage?: Prisma.IncidentImageOmit
   cambioEstado?: Prisma.CambioEstadoOmit
+  cambioPrioridad?: Prisma.CambioPrioridadOmit
 }
 
 /* Types for Logging */

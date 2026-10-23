@@ -8,7 +8,7 @@
 
 Sin cuerpo. id debe tener formato UUID. Ejemplo: GET /incidents/20ac442e-0f00-4fe4-bad3-61c8e8e0bff5.
 
-Respuesta 200 con la misma estructura pública del registro: identidad del recurso, datos enviados, ubicación e imágenes, status actual (reported, validated o rejected), priority=low y fechas ISO. No se devuelven referencias mutables del almacenamiento.
+Respuesta 200 con la misma estructura pública del registro: identidad del recurso, datos enviados, ubicación e imágenes, status actual (reported, validated o rejected), priority vigente (low, medium o high) y fechas ISO. No se devuelven referencias mutables del almacenamiento.
 
 Errores: 400 para UUID mal formado; 404 para un UUID válido no almacenado en esta instancia. No requiere autenticación ni comprueba propiedad del recurso.
 
@@ -17,6 +17,8 @@ Errores: 400 para UUID mal formado; 404 para un UUID válido no almacenado en es
 Incidencias y metadatos en un Map local tipado por modelos Prisma; se pierden al reiniciar y no se comparten entre procesos. Las imágenes son archivos locales; su existencia no conserva el registro de la incidencia tras un reinicio. No hay base de datos activa ni garantía de persistencia duradera.
 
 El estado actual puede ser reported, validated o rejected; no devuelve historial, motivos ni actor de auditoría. Los cambios se describen en [validar o rechazar incidencias](../patch-incidents-id-status/README.md).
+
+Las prioridades se etiquetan Baja (low), Media (medium) y Alta (high). El registro inicia Baja (low); las lecturas y respuestas completas pueden reflejar cualquier prioridad vigente. Véase [asignación manual](../patch-incidents-id-priority/README.md).
 
 ## Referencias
 

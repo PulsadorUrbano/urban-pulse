@@ -7,13 +7,17 @@ import {
 import { randomUUID } from 'node:crypto';
 import type {
   CambiarEstadoIncidenciaInput,
+  CambiarPrioridadIncidenciaInput,
   CreateIncidentInput,
   Incident,
   ResumenIncidencia,
   StoredIncident,
   UploadedImageFile,
 } from './incident.js';
-import type { CambioEstadoModel } from '../generated/prisma/models.js';
+import type {
+  CambioEstadoModel,
+  CambioPrioridadModel,
+} from '../generated/prisma/models.js';
 import { UploadStorageService } from './upload-storage.service.js';
 
 @Injectable()
@@ -58,6 +62,7 @@ export class IncidentsService {
         createdAt: new Date(image.createdAt),
       })),
       cambiosEstado: [],
+      cambiosPrioridad: [],
       status: 'reported',
       priority: 'low',
       createdAt,
@@ -137,6 +142,52 @@ export class IncidentsService {
       ...cambio,
       fechaCreacion: new Date(cambio.fechaCreacion),
     }));
+  }
+
+  cambiarPrioridad(
+    idIncidencia: string,
+    entrada: CambiarPrioridadIncidenciaInput,
+  ): Incident {
+    const incidencia = this.obtenerIncidencia(idIncidencia);
+    if (
+      !['low', 'medium', 'high'].includes(entrada.priority) ||
+      !entrada.cause.trim()
+    ) {
+      throw new BadRequestException(
+        'La prioridad debe ser Baja (low), Media (medium) o Alta (high) y el motivo no puede estar vacío',
+      );
+    }
+    if (incidencia.status !== 'validated') {
+      throw new ConflictException(
+        'Solo se puede asignar prioridad a una incidencia validada',
+      );
+    }
+    const cambio: CambioPrioridadModel = {
+      id: randomUUID(),
+      esManual: true,
+      nuevaPrioridad: entrada.priority,
+      motivo: entrada.cause.trim(),
+      fechaCreacion: new Date(),
+      incidenciaId: incidencia.id,
+      actorId: entrada.civicId.toLowerCase(),
+    };
+    const actualizada: StoredIncident = {
+      ...incidencia,
+      priority: entrada.priority,
+      cambiosPrioridad: [...incidencia.cambiosPrioridad, cambio],
+    };
+    const respuesta = this.copy(actualizada);
+    this.incidents.set(incidencia.id, actualizada);
+    return respuesta;
+  }
+
+  consultarCambiosPrioridad(idIncidencia: string): CambioPrioridadModel[] {
+    return this.obtenerIncidencia(idIncidencia).cambiosPrioridad.map(
+      (cambio) => ({
+        ...cambio,
+        fechaCreacion: new Date(cambio.fechaCreacion),
+      }),
+    );
   }
 
   private obtenerIncidencia(idIncidencia: string): StoredIncident {
