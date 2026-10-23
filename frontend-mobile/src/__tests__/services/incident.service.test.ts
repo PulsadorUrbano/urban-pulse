@@ -1,4 +1,6 @@
 /// <reference types="jest" />
+import { File } from 'expo-file-system';
+
 import { API_BASE_URL, BACKEND_API_URL } from '@/constants/config';
 import { RequestTimeoutError, fetchWithTimeout } from '@/services/http';
 import { createImage } from '@/services/image.service';
@@ -82,12 +84,9 @@ class RecordingFormData {
   }
 }
 
-// Forma de la parte de fichero que React Native acepta dentro de FormData.
-interface ImageFilePart {
-  uri: string;
-  name: string;
-  type: string;
-}
+// Forma de la parte de fichero: instancia de `File` de expo-file-system (el
+// fetch de Expo ya no admite el antiguo `{ uri, name, type }` de React Native).
+type ImageFilePart = File;
 
 const OriginalFormData = globalThis.FormData;
 
@@ -446,77 +445,33 @@ describe('createIncident', () => {
       expect(readSentFormData().getAll('images')).toHaveLength(5);
     });
 
-    it('nombra cada parte como image_<índice>.<extensión> según su posición', async () => {
+    it('envía cada parte images como una instancia de File con la URI original', async () => {
       await createIncident(fullInput, ['file:///photos/a.png', 'file:///photos/b.webp', 'file:///photos/c.jpg']);
 
       const imageParts = readSentFormData().getAll('images') as ImageFilePart[];
-      expect(imageParts.map((part) => part.name)).toEqual([
-        'image_0.png',
-        'image_1.webp',
-        'image_2.jpg',
+      expect(imageParts.every((part) => part instanceof File)).toBe(true);
+      expect(imageParts.map((part) => part.uri)).toEqual([
+        'file:///photos/a.png',
+        'file:///photos/b.webp',
+        'file:///photos/c.jpg',
       ]);
     });
 
-    it('asigna image/png a URIs .png', async () => {
+    it('usa el nombre de fichero real derivado de la URI, no uno generado', async () => {
       await createIncident(fullInput, ['file:///photos/foto.png']);
 
       const [imagePart] = readSentFormData().getAll('images') as ImageFilePart[];
-      expect(imagePart).toEqual({
-        uri: 'file:///photos/foto.png',
-        name: 'image_0.png',
-        type: 'image/png',
-      });
+      expect(imagePart.name).toBe('foto.png');
     });
 
-    it('asigna image/webp a URIs .webp', async () => {
-      await createIncident(fullInput, ['file:///photos/foto.webp']);
-
-      const [imagePart] = readSentFormData().getAll('images') as ImageFilePart[];
-      expect(imagePart).toEqual({
-        uri: 'file:///photos/foto.webp',
-        name: 'image_0.webp',
-        type: 'image/webp',
-      });
-    });
-
-    it('asigna image/jpeg y extensión jpg a URIs .jpg', async () => {
-      await createIncident(fullInput, ['file:///photos/foto.jpg']);
-
-      const [imagePart] = readSentFormData().getAll('images') as ImageFilePart[];
-      expect(imagePart).toEqual({
-        uri: 'file:///photos/foto.jpg',
-        name: 'image_0.jpg',
-        type: 'image/jpeg',
-      });
-    });
-
-    it('usa JPEG por defecto para extensiones no reconocidas (.heic o .jpeg)', async () => {
-      await createIncident(fullInput, ['file:///photos/foto.heic', 'file:///photos/foto.jpeg']);
-
-      const imageParts = readSentFormData().getAll('images') as ImageFilePart[];
-      expect(imageParts.map((part) => [part.name, part.type])).toEqual([
-        ['image_0.jpg', 'image/jpeg'],
-        ['image_1.jpg', 'image/jpeg'],
-      ]);
-    });
-
-    it('detecta la extensión ignorando el query string y conserva la URI completa', async () => {
+    it('conserva la URI completa (con query string) aunque el nombre derivado la ignore', async () => {
       const uriWithQuery = 'file:///photos/foto.png?timestamp=1700000000';
 
       await createIncident(fullInput, [uriWithQuery]);
 
       const [imagePart] = readSentFormData().getAll('images') as ImageFilePart[];
       expect(imagePart.uri).toBe(uriWithQuery);
-      expect(imagePart.name).toBe('image_0.png');
-      expect(imagePart.type).toBe('image/png');
-    });
-
-    it('detecta la extensión sin distinguir mayúsculas', async () => {
-      await createIncident(fullInput, ['file:///photos/FOTO.PNG']);
-
-      const [imagePart] = readSentFormData().getAll('images') as ImageFilePart[];
-      expect(imagePart.name).toBe('image_0.png');
-      expect(imagePart.type).toBe('image/png');
+      expect(imagePart.name).toBe('foto.png');
     });
 
     it('mantiene el orden de las URIs en las partes images', async () => {

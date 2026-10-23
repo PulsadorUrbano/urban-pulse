@@ -1,3 +1,5 @@
+import { File } from 'expo-file-system';
+
 import { API_BASE_URL, BACKEND_API_URL } from '@/constants/config';
 import {
   type CreateIncidentInput,
@@ -19,6 +21,11 @@ export const INCIDENTS_ENDPOINT = BACKEND_INCIDENTS_ENDPOINT;
 // El backend limita a 5 los ficheros por incidencia (FilesInterceptor).
 export const MAX_INCIDENT_IMAGES = 5;
 
+// Subir varias fotos por wifi puede tardar más que una petición JSON normal;
+// se amplía el timeout solo para esta llamada en vez de tocar el valor por
+// defecto que usan el resto de peticiones.
+const INCIDENT_WITH_IMAGES_TIMEOUT_MS = 30000;
+
 // TEMPORAL: id del ciudadano `sofia13` (role civic) tomado del mock de
 // feature/token. Se sustituirá cuando exista una sesión real.
 const TEMPORARY_CIVIC_ID = '20ac442e-0f00-4fe4-bad3-61c8e8e0bff5';
@@ -36,12 +43,11 @@ function inferImageFormat(uri: string): { extension: string; mimeType: string } 
   return { extension: 'jpg', mimeType: 'image/jpeg' };
 }
 
-// React Native acepta `{ uri, name, type }` como parte de un FormData, pero el
-// tipo DOM no lo modela; se encapsula aquí con un cast mínimo a Blob.
-function buildImagePart(uri: string, index: number): Blob {
-  const { extension, mimeType } = inferImageFormat(uri);
-  const filePart = { uri, name: `image_${index}.${extension}`, type: mimeType };
-  return filePart as unknown as Blob;
+// El fetch de Expo (runtime "winter") ya no admite el formato propio de React
+// Native `{ uri, name, type }` como parte de un FormData: solo acepta un Blob
+// o algo con `.bytes()`, que es justo lo que implementa `File`.
+function buildImagePart(uri: string): File {
+  return new File(uri);
 }
 
 // Traduce un fallo de conexión (timeout o red) a un Error con mensaje amigable.
@@ -169,24 +175,42 @@ export async function createIncident(
     formData.append('accuracy', String(input.accuracy));
   }
 
-  imageUris.slice(0, MAX_INCIDENT_IMAGES).forEach((uri, index) => {
-    formData.append('images', buildImagePart(uri, index));
+  imageUris.slice(0, MAX_INCIDENT_IMAGES).forEach((uri) => {
+    formData.append('images', buildImagePart(uri));
   });
 
   let response: Response;
 
   try {
     // Sin cabecera Content-Type: fetch añade el boundary multipart solo.
-    response = await fetchWithTimeout(BACKEND_INCIDENTS_ENDPOINT, {
-      method: 'POST',
-      body: formData,
-    });
-  } catch {
-    // Sin conexión con el backend: simulación en el mock.
+    response = await fetchWithTimeout(
+      BACKEND_INCIDENTS_ENDPOINT,
+      {
+        method: 'POST',
+        body: formData,
+      },
+      INCIDENT_WITH_IMAGES_TIMEOUT_MS,
+    );
+  } catch (error) {
+    // Sin conexión con el backend: simulación en el mock. Se deja constancia
+    // del motivo real en consola porque el aviso en pantalla es genérico.
+    if (__DEV__) {
+      console.warn('[incident.service] Fallback a mock, fallo al conectar con el backend:', error);
+    }
     return createIncidentOnMock(input, imageUris);
   }
 
   if (!response.ok) {
+    if (__DEV__) {
+      try {
+        console.warn(
+          `[incident.service] El backend rechazó la incidencia (${response.status}):`,
+          await response.text(),
+        );
+      } catch {
+        console.warn(`[incident.service] El backend rechazó la incidencia (${response.status}).`);
+      }
+    }
     throw new Error('No se pudo registrar la incidencia. Inténtalo de nuevo más tarde.');
   }
 
