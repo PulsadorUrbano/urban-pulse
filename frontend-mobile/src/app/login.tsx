@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -25,10 +25,22 @@ const ERROR_COLOR = '#d92d20';
 export default function LoginScreen() {
   const theme = useTheme();
   const { isSubmitting, errorMessage, isLocked, lockMessage, submitLogin } = useLogin();
-  const { signIn } = useSession();
+  const { signIn, user, isRestoringSession } = useSession();
 
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  if (isRestoringSession) {
+    return (
+      <ThemedView style={styles.container}>
+        <ActivityIndicator testID="session-restoring-indicator" />
+      </ThemedView>
+    );
+  }
+
+  if (user) {
+    return <Redirect href="/" />;
+  }
 
   // Validación manual: ambos campos con contenido (tras trim)
   const hasEmptyField = usernameOrEmail.trim().length === 0 || password.trim().length === 0;

@@ -13,6 +13,11 @@ export interface User {
   role: string;
 }
 
+// SessionUser es la forma persistible del usuario: igual que User pero sin
+// password. Nunca debe escribirse en disco (ni en SecureStore) porque hoy
+// viaja en texto plano (ver el comentario de User.password arriba).
+export type SessionUser = Omit<User, 'password'>;
+
 // Usará o username o email
 export interface LoginUserInput {
   username_email: string;
