@@ -42,6 +42,7 @@ const userFixture: User = {
   email: 'ana@example.com',
   password: 'secreto',
   role: 'civic',
+  civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
 };
 
 const tokenFixture: AuthToken = { accessToken: 'token-abc', source: 'backend' };

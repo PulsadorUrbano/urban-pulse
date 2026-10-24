@@ -110,6 +110,7 @@ const registeredUser: User = {
   email: 'ciudadano@example.com',
   password: 'Abcdefg1',
   role: 'civic',
+  civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
 };
 
 const registeredAuthToken: AuthToken = {
@@ -123,6 +124,7 @@ const registeredSessionUser: SessionUser = {
   username: registeredUser.username,
   email: registeredUser.email,
   role: registeredUser.role,
+  civicId: registeredUser.civicId,
 };
 
 // Valor por defecto del hook de registro: formulario en estado inicial, sin errores.

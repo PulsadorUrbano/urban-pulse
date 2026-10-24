@@ -91,6 +91,7 @@ const persistedSessionUser: SessionUser = {
   username: 'ciudadano-test',
   email: 'ciudadano@example.com',
   role: 'civic',
+  civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
 };
 
 // Token válido según el contrato `AuthToken` de `src/types/token.ts`.

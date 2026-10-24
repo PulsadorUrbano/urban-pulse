@@ -9,6 +9,9 @@ import {
 import { RequestTimeoutError } from '@/services/http';
 import type { RegisterUserInput, User } from '@/types/user';
 
+// Formato UUID v4 (versión 4 en el tercer grupo, variante 8-b en el cuarto).
+const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 // Usuario de referencia que devuelve el servidor mock (json-server).
 const ana: User = {
   id: '1',
@@ -16,6 +19,7 @@ const ana: User = {
   email: 'ana@example.com',
   password: 'Secreta123',
   role: 'civic',
+  civicId: '0b9f3c1a-5d2e-4a7b-8c6d-9e0f1a2b3c4d',
 };
 
 // Respuesta mínima compatible con lo que usa `fetchUsersByField`.
@@ -201,6 +205,7 @@ describe('register', () => {
     email: 'luis@example.com',
     password: 'OtraSecreta456',
     role: 'civic',
+    civicId: '7d3e8f2a-1b4c-4d5e-9f60-a1b2c3d4e5f6',
   };
 
   beforeEach(() => {
@@ -231,6 +236,7 @@ describe('register', () => {
       email: 'luis@example.com',
       password: 'OtraSecreta456',
       role: 'civic',
+      civicId: expect.stringMatching(UUID_V4_PATTERN),
     });
   });
 
@@ -243,7 +249,9 @@ describe('register', () => {
     await register(nuevoInput);
 
     const [, postInit] = fetchMock.mock.calls[2] as [string, RequestInit];
-    expect(JSON.parse(postInit.body as string)).not.toHaveProperty('id');
+    const postBody = JSON.parse(postInit.body as string);
+    expect(postBody).not.toHaveProperty('id');
+    expect(postBody.civicId).toEqual(expect.stringMatching(UUID_V4_PATTERN));
   });
 
   it('si el username ya existe lanza UsernameOrEmailTakenError con mensaje de username y no hace POST ni comprueba el email', async () => {
@@ -294,6 +302,7 @@ describe('register', () => {
       email: 'luis@example.com',
       password: 'OtraSecreta456',
       role: 'civic',
+      civicId: expect.stringMatching(UUID_V4_PATTERN),
     });
   });
 

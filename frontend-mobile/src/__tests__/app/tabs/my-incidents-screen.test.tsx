@@ -84,6 +84,7 @@ const mockSessionUser: SessionUser = {
   username: 'ciudadano-test',
   email: 'ciudadano@example.com',
   role: 'civic',
+  civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
 };
 
 // Incidencias en un orden deliberadamente distinto al de id y al de título,
@@ -313,6 +314,27 @@ describe('MyIncidentsScreen (tab Mis incidencias)', () => {
 
     expect(treeContainsActivityIndicator(view.toJSON())).toBe(true);
     expect(screen.queryByText(EMPTY_STATE_TEXT)).toBeNull();
+  });
+
+  it('pide las incidencias con el civicId de la sesión, no con el id de usuario', async () => {
+    await renderMyIncidentsScreen();
+
+    expect(mockedUseMyIncidents).toHaveBeenCalled();
+    const requestedCivicIds = mockedUseMyIncidents.mock.calls.map((call) => call[0]);
+    expect(requestedCivicIds.every((civicId) => civicId === mockSessionUser.civicId)).toBe(true);
+    // El fixture distingue ambos valores: el id de usuario ('1') no debe usarse.
+    expect(mockSessionUser.civicId).not.toBe(mockSessionUser.id);
+    expect(requestedCivicIds).not.toContain(mockSessionUser.id);
+  });
+
+  it('sin sesión resuelta pide las incidencias con civicId null', async () => {
+    mockedUseSession.mockReturnValue(
+      buildSessionValue({ user: null, isRestoringSession: false }),
+    );
+
+    await renderMyIncidentsScreen();
+
+    expect(mockedUseMyIncidents).toHaveBeenCalledWith(null);
   });
 
   it('registra un useFocusEffect al montar la pantalla', async () => {

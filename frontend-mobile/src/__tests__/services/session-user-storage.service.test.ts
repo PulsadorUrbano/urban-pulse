@@ -27,6 +27,7 @@ const civicSessionUser: SessionUser = {
   username: 'ciudadana42',
   email: 'ciudadana42@urbanpulse.test',
   role: 'civic',
+  civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
 };
 
 describe('session-user-storage.service', () => {
@@ -116,6 +117,9 @@ describe('session-user-storage.service', () => {
       ['sin role', JSON.stringify({ id: '1', username: 'a', email: 'a@a.com' })],
       ['role no string (número)', JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', role: 2 })],
       ['role null', JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', role: null })],
+      ['sin civicId', JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', role: 'civic' })],
+      ['civicId no string (número)', JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', role: 'civic', civicId: 5 })],
+      ['civicId null', JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', role: 'civic', civicId: null })],
     ])('devuelve null cuando el valor guardado es inválido: %s', async (_caseName, storedValue) => {
       getItemAsyncMock.mockResolvedValueOnce(storedValue);
 
@@ -129,6 +133,7 @@ describe('session-user-storage.service', () => {
           username: 'a',
           email: 'a@a.com',
           role: 'civic',
+          civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
           password: 'secret',
         }),
       );
@@ -136,7 +141,13 @@ describe('session-user-storage.service', () => {
       const loadedSessionUser = await loadSessionUser();
 
       expect(loadedSessionUser).not.toHaveProperty('password');
-      expect(Object.keys(loadedSessionUser ?? {}).sort()).toEqual(['email', 'id', 'role', 'username']);
+      expect(Object.keys(loadedSessionUser ?? {}).sort()).toEqual([
+        'civicId',
+        'email',
+        'id',
+        'role',
+        'username',
+      ]);
     });
 
     it('devuelve solo id, username, email y role aunque el JSON guardado tenga campos extra', async () => {
@@ -146,14 +157,27 @@ describe('session-user-storage.service', () => {
           username: 'a',
           email: 'a@a.com',
           role: 'admin',
+          civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
           extra: true,
         }),
       );
 
       const loadedSessionUser = await loadSessionUser();
 
-      expect(loadedSessionUser).toEqual({ id: '1', username: 'a', email: 'a@a.com', role: 'admin' });
-      expect(Object.keys(loadedSessionUser ?? {}).sort()).toEqual(['email', 'id', 'role', 'username']);
+      expect(loadedSessionUser).toEqual({
+        id: '1',
+        username: 'a',
+        email: 'a@a.com',
+        role: 'admin',
+        civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
+      });
+      expect(Object.keys(loadedSessionUser ?? {}).sort()).toEqual([
+        'civicId',
+        'email',
+        'id',
+        'role',
+        'username',
+      ]);
     });
   });
 

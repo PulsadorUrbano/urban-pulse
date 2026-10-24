@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '@/constants/config';
 import type { LoginUserInput, RegisterUserInput, User } from '@/types/user';
+import { generateMockUuid } from '@/utils/uuid';
 
 import { RequestTimeoutError, fetchWithTimeout } from './http';
 
@@ -95,7 +96,13 @@ export async function register(input: RegisterUserInput): Promise<User> {
     response = await fetchWithTimeout(USERS_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, email, password: input.password, role: 'civic' }),
+      body: JSON.stringify({
+        username,
+        email,
+        password: input.password,
+        role: 'civic',
+        civicId: generateMockUuid(),
+      }),
     });
   } catch (error) {
     if (error instanceof RequestTimeoutError) {

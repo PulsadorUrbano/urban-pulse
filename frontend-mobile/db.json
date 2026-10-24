@@ -141,21 +141,24 @@
       "email": "sofia@email.com",
       "password": "sofia13",
       "role": "civic",
-      "id": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5"
+      "id": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5"
     },
     {
       "username": "mayte",
       "email": "mayte@email.com",
       "password": "mayte",
       "role": "civic",
-      "id": "a62218e7563"
+      "id": "a62218e7563",
+      "civicId": "6219c6e4-3813-4b8f-92e1-8ba4700a5bfb"
     },
     {
       "username": "patri",
       "email": "patri123@gmail.com",
       "password": "Patricia06",
       "role": "civic",
-      "id": "6pCIt-utylE"
+      "id": "6pCIt-utylE",
+      "civicId": "343db3b2-655d-419e-ba17-37d1262cd979"
     }
   ],
   "civics": [

@@ -34,10 +34,6 @@ export const MAX_INCIDENT_IMAGES = 5;
 // defecto que usan el resto de peticiones.
 const INCIDENT_WITH_IMAGES_TIMEOUT_MS = 30000;
 
-// TEMPORAL: id del ciudadano `sofia13` (role civic) tomado del mock de
-// feature/token. Se sustituirá cuando exista una sesión real.
-const TEMPORARY_CIVIC_ID = '20ac442e-0f00-4fe4-bad3-61c8e8e0bff5';
-
 // Error específico para un 404 (real o del mock): la incidencia no existe.
 // Nunca debe caer al mock, a diferencia de un fallo de conexión.
 export class IncidentNotFoundError extends Error {}
@@ -108,24 +104,24 @@ function extractBackendErrorMessage(rawBody: string): string | null {
 }
 
 // Construye el mensaje de error a mostrar en la UI cuando el backend
-// responde pero rechaza la incidencia: incluye el motivo real cuando el
+// responde pero rechaza la petición: incluye el motivo real cuando el
 // cuerpo de la respuesta lo trae, y conserva un log en consola para depurar
-// casos en los que no.
-async function buildBackendRejectionMessage(response: Response): Promise<string> {
-  const genericMessage = 'No se pudo registrar la incidencia. Inténtalo de nuevo más tarde.';
-
+// casos en los que no. Se reutiliza tanto para crear una incidencia como
+// para consultar "Mis incidencias", por lo que el mensaje genérico de cada
+// caso se recibe por parámetro.
+async function buildBackendRejectionMessage(response: Response, genericMessage: string): Promise<string> {
   let rawBody: string;
   try {
     rawBody = await response.text();
   } catch {
     if (__DEV__) {
-      console.warn(`[incident.service] El backend rechazó la incidencia (${response.status}).`);
+      console.warn(`[incident.service] El backend rechazó la petición (${response.status}).`);
     }
     return genericMessage;
   }
 
   if (__DEV__) {
-    console.warn(`[incident.service] El backend rechazó la incidencia (${response.status}):`, rawBody);
+    console.warn(`[incident.service] El backend rechazó la petición (${response.status}):`, rawBody);
   }
 
   const backendMessage = extractBackendErrorMessage(rawBody);
@@ -136,6 +132,7 @@ async function buildBackendRejectionMessage(response: Response): Promise<string>
 // las imágenes por separado. Es el último recurso: si falla, se propaga el error.
 async function createIncidentOnMock(
   input: CreateIncidentInput,
+  civicId: string,
   imageUris: string[],
 ): Promise<CreateIncidentResult> {
   // Se calcula una sola vez y se reutiliza en payload, location e images para
@@ -148,7 +145,7 @@ async function createIncidentOnMock(
     latitude: input.latitude ?? null,
     longitude: input.longitude ?? null,
     accuracy: input.accuracy ?? null,
-    civicId: TEMPORARY_CIVIC_ID,
+    civicId,
     categoryId: input.categoryId ?? null,
     category: input.category?.trim() || null,
     status: DEFAULT_INCIDENT_STATUS,
@@ -219,6 +216,7 @@ async function createIncidentOnMock(
 // responde con rechazo (!ok) se lanza el error sin usar el mock.
 export async function createIncident(
   input: CreateIncidentInput,
+  civicId: string,
   imageUris: string[] = [],
 ): Promise<CreateIncidentResult> {
   const formData = new FormData();
@@ -230,7 +228,7 @@ export async function createIncident(
     formData.append('description', trimmedDescription);
   }
 
-  formData.append('civicId', TEMPORARY_CIVIC_ID);
+  formData.append('civicId', civicId);
 
   if (input.categoryId != null) {
     formData.append('categoryId', input.categoryId);
@@ -273,11 +271,13 @@ export async function createIncident(
     if (__DEV__) {
       console.warn('[incident.service] Fallback a mock, fallo al conectar con el backend:', error);
     }
-    return createIncidentOnMock(input, imageUris);
+    return createIncidentOnMock(input, civicId, imageUris);
   }
 
   if (!response.ok) {
-    throw new Error(await buildBackendRejectionMessage(response));
+    throw new Error(
+      await buildBackendRejectionMessage(response, 'No se pudo registrar la incidencia. Inténtalo de nuevo más tarde.'),
+    );
   }
 
   const incident = (await response.json()) as CreatedIncident;
@@ -345,7 +345,12 @@ export async function fetchMyIncidents(civicId: string): Promise<FetchMyIncident
   }
 
   if (!response.ok) {
-    throw new Error('No se pudieron obtener tus incidencias. Inténtalo de nuevo más tarde.');
+    throw new Error(
+      await buildBackendRejectionMessage(
+        response,
+        'No se pudieron obtener tus incidencias. Inténtalo de nuevo más tarde.',
+      ),
+    );
   }
 
   const incidents = (await response.json()) as IncidentSummary[];
