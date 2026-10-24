@@ -11,6 +11,10 @@ export interface User {
   // Ahora la usaremos en texto plano porque será en el backend donde se comprobará el hash
   password: string;
   role: string;
+  // Identidad estable usada en el dominio de incidencias (UUID generado en el
+  // cliente al registrarse), distinta del `id` interno de json-server, que no
+  // se puede controlar vía HTTP y no siempre tiene forma de UUID.
+  civicId: string;
 }
 
 // SessionUser es la forma persistible del usuario: igual que User pero sin
@@ -22,4 +26,12 @@ export type SessionUser = Omit<User, 'password'>;
 export interface LoginUserInput {
   username_email: string;
   password: string;
+}
+
+// Datos del formulario de registro de un nuevo ciudadano.
+export interface RegisterUserInput {
+  username: string;
+  email: string;
+  password: string;
+  phone?: string;
 }

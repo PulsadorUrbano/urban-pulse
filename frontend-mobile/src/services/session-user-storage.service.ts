@@ -28,7 +28,8 @@ export async function loadSessionUser(): Promise<SessionUser | null> {
       typeof parsedValue.id !== 'string' ||
       typeof parsedValue.username !== 'string' ||
       typeof parsedValue.email !== 'string' ||
-      typeof parsedValue.role !== 'string'
+      typeof parsedValue.role !== 'string' ||
+      typeof parsedValue.civicId !== 'string'
     ) {
       return null;
     }
@@ -38,6 +39,7 @@ export async function loadSessionUser(): Promise<SessionUser | null> {
       username: parsedValue.username,
       email: parsedValue.email,
       role: parsedValue.role,
+      civicId: parsedValue.civicId,
     };
   } catch {
     return null;

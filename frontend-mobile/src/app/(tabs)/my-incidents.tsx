@@ -16,7 +16,7 @@ export default function MyIncidentsScreen() {
   // que en HomeScreen: el guard de sesión de abajo no puede saltarse esto.
   const { user, isRestoringSession } = useSession();
   const { incidents, isLoading, errorMessage, backendFallbackNotice, reload } = useMyIncidents(
-    user?.id ?? null,
+    user?.civicId ?? null,
   );
 
   // Las tabs de Expo Router no desmontan esta pantalla al navegar a

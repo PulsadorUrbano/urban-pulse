@@ -80,6 +80,7 @@ const mockUser: User = {
   email: 'ciudadano@example.com',
   password: 'password-test',
   role: 'civic',
+  civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
 };
 
 // Texto de la pantalla que indica que el contenido normal sigue visible.

@@ -53,8 +53,8 @@ const mockedFetchCategories = jest.mocked(fetchCategories);
 // Endpoint del mock (json-server) al que cae el servicio sin conexión con el backend.
 const MOCK_INCIDENTS_ENDPOINT = `${API_BASE_URL}/incidents`;
 
-// Identificador temporal del ciudadano que el servicio envía en todos los casos.
-const TEMPORARY_CIVIC_ID = '20ac442e-0f00-4fe4-bad3-61c8e8e0bff5';
+// Identificador del ciudadano que se pasa explícitamente a createIncident en cada llamada.
+const TEST_CIVIC_ID = '20ac442e-0f00-4fe4-bad3-61c8e8e0bff5';
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Instante fijo para verificar los `createdAt` que el servicio genera en el mock.
@@ -132,7 +132,7 @@ const serverCreatedIncident: CreatedIncident = {
   id: '42',
   title: 'Bache en la avenida principal',
   description: 'Hay un bache profundo que pone en riesgo a los vehículos.',
-  civicId: TEMPORARY_CIVIC_ID,
+  civicId: TEST_CIVIC_ID,
   categoryId: '2',
   category: 'Vallado',
   urbanAssetId: null,
@@ -245,7 +245,7 @@ describe('createIncident', () => {
 
   describe('camino backend: petición multipart', () => {
     it('hace POST a `${BACKEND_API_URL}/incidents`', async () => {
-      await createIncident(fullInput);
+      await createIncident(fullInput, TEST_CIVIC_ID);
 
       expect(INCIDENTS_ENDPOINT).toBe(`${BACKEND_API_URL}/incidents`);
       expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
@@ -254,13 +254,13 @@ describe('createIncident', () => {
     });
 
     it('envía el body como FormData', async () => {
-      await createIncident(fullInput);
+      await createIncident(fullInput, TEST_CIVIC_ID);
 
       expect(readSentInit().body).toBeInstanceOf(RecordingFormData);
     });
 
     it('no pasa cabecera Content-Type (fetch añade el boundary multipart)', async () => {
-      await createIncident(fullInput);
+      await createIncident(fullInput, TEST_CIVIC_ID);
 
       const requestHeaders = readSentInit().headers as Record<string, string> | undefined;
       expect(requestHeaders?.['Content-Type']).toBeUndefined();
@@ -269,20 +269,20 @@ describe('createIncident', () => {
   });
 
   describe('camino backend: campos del formulario', () => {
-    it('con input completo envía title con trim, civicId UUID temporal y description con trim', async () => {
-      await createIncident(fullInput);
+    it('con input completo envía title con trim, civicId recibido como argumento y description con trim', async () => {
+      await createIncident(fullInput, TEST_CIVIC_ID);
 
       const sentFormData = readSentFormData();
       expect(sentFormData.get('title')).toBe('Bache en la avenida principal');
       expect(sentFormData.get('description')).toBe(
         'Hay un bache profundo que pone en riesgo a los vehículos.',
       );
-      expect(sentFormData.get('civicId')).toBe(TEMPORARY_CIVIC_ID);
+      expect(sentFormData.get('civicId')).toBe(TEST_CIVIC_ID);
       expect(UUID_PATTERN.test(String(sentFormData.get('civicId')))).toBe(true);
     });
 
     it('con input completo envía categoryId y category (con trim)', async () => {
-      await createIncident(fullInput);
+      await createIncident(fullInput, TEST_CIVIC_ID);
 
       const sentFormData = readSentFormData();
       expect(sentFormData.get('categoryId')).toBe('2');
@@ -290,7 +290,7 @@ describe('createIncident', () => {
     });
 
     it('con input completo envía latitude, longitude y accuracy como string', async () => {
-      await createIncident(fullInput);
+      await createIncident(fullInput, TEST_CIVIC_ID);
 
       const sentFormData = readSentFormData();
       expect(sentFormData.get('latitude')).toBe('40.4168');
@@ -299,7 +299,7 @@ describe('createIncident', () => {
     });
 
     it('con input completo envía exactamente los 8 campos de texto y ninguno más', async () => {
-      await createIncident(fullInput);
+      await createIncident(fullInput, TEST_CIVIC_ID);
 
       expect(readSentFormData().fieldNames().sort()).toEqual(
         [
@@ -316,7 +316,7 @@ describe('createIncident', () => {
     });
 
     it('no envía campos de gestión (status, priority, createdAt) ni relaciones', async () => {
-      await createIncident(fullInput);
+      await createIncident(fullInput, TEST_CIVIC_ID);
 
       const sentFieldNames = readSentFormData().fieldNames();
       for (const managedField of [
@@ -334,7 +334,7 @@ describe('createIncident', () => {
     });
 
     it('con input mínimo omite description, categoryId, category, latitude, longitude y accuracy', async () => {
-      await createIncident(minimalInput);
+      await createIncident(minimalInput, TEST_CIVIC_ID);
 
       const sentFormData = readSentFormData();
       expect(sentFormData.fieldNames().sort()).toEqual(['civicId', 'title']);
@@ -347,7 +347,7 @@ describe('createIncident', () => {
     });
 
     it('omite description cuando solo tiene espacios en blanco', async () => {
-      await createIncident({ ...fullInput, description: '   \n\t  ' });
+      await createIncident({ ...fullInput, description: '   \n\t  ' }, TEST_CIVIC_ID);
 
       expect(readSentFormData().has('description')).toBe(false);
     });
@@ -358,31 +358,31 @@ describe('createIncident', () => {
         description: fullInput.description,
       };
 
-      await createIncident(inputWithoutCategoryId);
+      await createIncident(inputWithoutCategoryId, TEST_CIVIC_ID);
 
       expect(readSentFormData().has('categoryId')).toBe(false);
     });
 
     it('omite category cuando es null', async () => {
-      await createIncident({ ...fullInput, category: null });
+      await createIncident({ ...fullInput, category: null }, TEST_CIVIC_ID);
 
       expect(readSentFormData().has('category')).toBe(false);
     });
 
     it('omite category cuando es cadena vacía o solo espacios', async () => {
-      await createIncident({ ...fullInput, category: '   ' });
+      await createIncident({ ...fullInput, category: '   ' }, TEST_CIVIC_ID);
 
       expect(readSentFormData().has('category')).toBe(false);
     });
 
     it('envía categoryId aunque sea cadena vacía, porque solo filtra null y undefined', async () => {
-      await createIncident({ ...fullInput, categoryId: '' });
+      await createIncident({ ...fullInput, categoryId: '' }, TEST_CIVIC_ID);
 
       expect(readSentFormData().get('categoryId')).toBe('');
     });
 
     it('omite latitude, longitude y accuracy cuando son null, sin afectar a los demás', async () => {
-      await createIncident({ ...fullInput, latitude: null, longitude: null, accuracy: null });
+      await createIncident({ ...fullInput, latitude: null, longitude: null, accuracy: null }, TEST_CIVIC_ID);
 
       const sentFormData = readSentFormData();
       expect(sentFormData.has('latitude')).toBe(false);
@@ -392,7 +392,7 @@ describe('createIncident', () => {
     });
 
     it('omite solo accuracy cuando hay coordenadas pero la precisión es null', async () => {
-      await createIncident({ ...fullInput, accuracy: null });
+      await createIncident({ ...fullInput, accuracy: null }, TEST_CIVIC_ID);
 
       const sentFormData = readSentFormData();
       expect(sentFormData.get('latitude')).toBe('40.4168');
@@ -401,13 +401,13 @@ describe('createIncident', () => {
     });
 
     it('envía latitude 0 como "0" (el cero no es un valor ausente)', async () => {
-      await createIncident({ ...fullInput, latitude: 0 });
+      await createIncident({ ...fullInput, latitude: 0 }, TEST_CIVIC_ID);
 
       expect(readSentFormData().get('latitude')).toBe('0');
     });
 
     it('envía longitude 0 y accuracy 0 como "0"', async () => {
-      await createIncident({ ...fullInput, longitude: 0, accuracy: 0 });
+      await createIncident({ ...fullInput, longitude: 0, accuracy: 0 }, TEST_CIVIC_ID);
 
       const sentFormData = readSentFormData();
       expect(sentFormData.get('longitude')).toBe('0');
@@ -417,13 +417,13 @@ describe('createIncident', () => {
 
   describe('camino backend: imágenes', () => {
     it('sin imageUris no añade ninguna parte images', async () => {
-      await createIncident(fullInput);
+      await createIncident(fullInput, TEST_CIVIC_ID);
 
       expect(readSentFormData().has('images')).toBe(false);
     });
 
     it('con un array vacío no añade ninguna parte images', async () => {
-      await createIncident(fullInput, []);
+      await createIncident(fullInput, TEST_CIVIC_ID, []);
 
       expect(readSentFormData().has('images')).toBe(false);
     });
@@ -438,7 +438,7 @@ describe('createIncident', () => {
         'file:///photos/f.jpg',
       ];
 
-      await createIncident(fullInput, sixImageUris);
+      await createIncident(fullInput, TEST_CIVIC_ID, sixImageUris);
 
       const imageParts = readSentFormData().getAll('images') as ImageFilePart[];
       expect(MAX_INCIDENT_IMAGES).toBe(5);
@@ -455,13 +455,13 @@ describe('createIncident', () => {
         'file:///photos/5.jpg',
       ];
 
-      await createIncident(fullInput, fiveImageUris);
+      await createIncident(fullInput, TEST_CIVIC_ID, fiveImageUris);
 
       expect(readSentFormData().getAll('images')).toHaveLength(5);
     });
 
     it('envía cada parte images como una instancia de File con la URI original', async () => {
-      await createIncident(fullInput, ['file:///photos/a.png', 'file:///photos/b.webp', 'file:///photos/c.jpg']);
+      await createIncident(fullInput, TEST_CIVIC_ID, ['file:///photos/a.png', 'file:///photos/b.webp', 'file:///photos/c.jpg']);
 
       const imageParts = readSentFormData().getAll('images') as ImageFilePart[];
       expect(imageParts.every((part) => part instanceof File)).toBe(true);
@@ -473,7 +473,7 @@ describe('createIncident', () => {
     });
 
     it('usa el nombre de fichero real derivado de la URI, no uno generado', async () => {
-      await createIncident(fullInput, ['file:///photos/foto.png']);
+      await createIncident(fullInput, TEST_CIVIC_ID, ['file:///photos/foto.png']);
 
       const [imagePart] = readSentFormData().getAll('images') as ImageFilePart[];
       expect(imagePart.name).toBe('foto.png');
@@ -482,7 +482,7 @@ describe('createIncident', () => {
     it('conserva la URI completa (con query string) aunque el nombre derivado la ignore', async () => {
       const uriWithQuery = 'file:///photos/foto.png?timestamp=1700000000';
 
-      await createIncident(fullInput, [uriWithQuery]);
+      await createIncident(fullInput, TEST_CIVIC_ID, [uriWithQuery]);
 
       const [imagePart] = readSentFormData().getAll('images') as ImageFilePart[];
       expect(imagePart.uri).toBe(uriWithQuery);
@@ -492,14 +492,14 @@ describe('createIncident', () => {
     it('mantiene el orden de las URIs en las partes images', async () => {
       const orderedUris = ['file:///photos/z.webp', 'file:///photos/a.png', 'file:///photos/m.jpg'];
 
-      await createIncident(fullInput, orderedUris);
+      await createIncident(fullInput, TEST_CIVIC_ID, orderedUris);
 
       const imageParts = readSentFormData().getAll('images') as ImageFilePart[];
       expect(imageParts.map((part) => part.uri)).toEqual(orderedUris);
     });
 
     it('en el camino backend no persiste imágenes por separado (createImage no se llama)', async () => {
-      await createIncident(fullInput, ['file:///photos/a.jpg', 'file:///photos/b.png']);
+      await createIncident(fullInput, TEST_CIVIC_ID, ['file:///photos/a.jpg', 'file:///photos/b.png']);
 
       expect(mockedCreateImage).not.toHaveBeenCalled();
     });
@@ -507,13 +507,13 @@ describe('createIncident', () => {
 
   describe('camino backend: éxito y rechazo', () => {
     it('con backend OK devuelve { incident, source: "backend" } con la respuesta parseada', async () => {
-      const result = await createIncident(fullInput);
+      const result = await createIncident(fullInput, TEST_CIVIC_ID);
 
       expect(result).toEqual({ incident: serverCreatedIncident, source: 'backend' });
     });
 
     it('con backend OK no contacta con el mock ni persiste imágenes', async () => {
-      await createIncident(fullInput, ['file:///photos/a.jpg']);
+      await createIncident(fullInput, TEST_CIVIC_ID, ['file:///photos/a.jpg']);
 
       expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
       expect(readRequestUrlAt(0)).not.toBe(MOCK_INCIDENTS_ENDPOINT);
@@ -527,7 +527,7 @@ describe('createIncident', () => {
         mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
       });
 
-      await createIncident(minimalInput);
+      await createIncident(minimalInput, TEST_CIVIC_ID);
 
       expect(jsonSpy).toHaveBeenCalledTimes(1);
     });
@@ -538,7 +538,7 @@ describe('createIncident', () => {
         mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
       });
 
-      await expect(createIncident(fullInput)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
+      await expect(createIncident(fullInput, TEST_CIVIC_ID)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
     });
 
     it('con backend !ok (400) lanza el mensaje de registro fallido', async () => {
@@ -547,7 +547,7 @@ describe('createIncident', () => {
         mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
       });
 
-      await expect(createIncident(fullInput)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
+      await expect(createIncident(fullInput, TEST_CIVIC_ID)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
     });
 
     it('con backend !ok y cuerpo con `message`, incluye el motivo real del backend en el error', async () => {
@@ -560,7 +560,7 @@ describe('createIncident', () => {
         mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
       });
 
-      await expect(createIncident(fullInput)).rejects.toThrow(
+      await expect(createIncident(fullInput, TEST_CIVIC_ID)).rejects.toThrow(
         `${MESSAGE_REGISTER_ERROR} (title must contain 4 to 35 characters)`,
       );
     });
@@ -571,7 +571,7 @@ describe('createIncident', () => {
         mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
       });
 
-      await expect(createIncident(fullInput, ['file:///photos/a.jpg'])).rejects.toThrow(
+      await expect(createIncident(fullInput, TEST_CIVIC_ID, ['file:///photos/a.jpg'])).rejects.toThrow(
         MESSAGE_REGISTER_ERROR,
       );
 
@@ -587,7 +587,7 @@ describe('createIncident', () => {
         mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
       });
 
-      await expect(createIncident(fullInput)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
+      await expect(createIncident(fullInput, TEST_CIVIC_ID)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
       expect(jsonSpy).not.toHaveBeenCalled();
     });
   });
@@ -604,7 +604,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        const result = await createIncident(minimalInput);
+        const result = await createIncident(minimalInput, TEST_CIVIC_ID);
 
         expect(result.source).toBe('mock');
         expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(2);
@@ -616,7 +616,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        const result = await createIncident(minimalInput);
+        const result = await createIncident(minimalInput, TEST_CIVIC_ID);
 
         expect(result.source).toBe('mock');
         expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(2);
@@ -628,7 +628,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        await createIncident(fullInput);
+        await createIncident(fullInput, TEST_CIVIC_ID);
 
         expect(readRequestUrlAt(0)).toBe(`${BACKEND_API_URL}/incidents`);
         expect(readSentInit(0).body).toBeInstanceOf(RecordingFormData);
@@ -643,7 +643,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        await createIncident(fullInput);
+        await createIncident(fullInput, TEST_CIVIC_ID);
 
         expect(readRequestUrlAt(1)).toBe(`${API_BASE_URL}/incidents`);
         expect(readSentInit(1).method).toBe('POST');
@@ -656,7 +656,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        await createIncident(fullInput);
+        await createIncident(fullInput, TEST_CIVIC_ID);
 
         expect(readSentJsonBody(1)).toEqual({
           title: 'Bache en la avenida principal',
@@ -664,7 +664,7 @@ describe('createIncident', () => {
           latitude: 40.4168,
           longitude: -3.7038,
           accuracy: 10,
-          civicId: TEMPORARY_CIVIC_ID,
+          civicId: TEST_CIVIC_ID,
           categoryId: '2',
           category: 'Vallado',
           status: 'reported',
@@ -678,7 +678,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        await createIncident(minimalInput);
+        await createIncident(minimalInput, TEST_CIVIC_ID);
 
         expect(readSentJsonBody(1)).toEqual({
           title: 'Farola fundida',
@@ -686,7 +686,7 @@ describe('createIncident', () => {
           latitude: null,
           longitude: null,
           accuracy: null,
-          civicId: TEMPORARY_CIVIC_ID,
+          civicId: TEST_CIVIC_ID,
           categoryId: null,
           category: null,
           status: 'reported',
@@ -700,7 +700,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        await createIncident(fullInput);
+        await createIncident(fullInput, TEST_CIVIC_ID);
 
         expect(typeof readSentInit(1).body).toBe('string');
       });
@@ -713,7 +713,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        const result = await createIncident({ ...fullInput, description: '   ' });
+        const result = await createIncident({ ...fullInput, description: '   ' }, TEST_CIVIC_ID);
 
         expect(result.incident.description).toBeNull();
       });
@@ -724,7 +724,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        const result = await createIncident({ ...fullInput, category: '   ' });
+        const result = await createIncident({ ...fullInput, category: '   ' }, TEST_CIVIC_ID);
 
         expect(result.incident.category).toBeNull();
       });
@@ -735,13 +735,13 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        const result = await createIncident(fullInput);
+        const result = await createIncident(fullInput, TEST_CIVIC_ID);
 
         const expectedIncident: CreatedIncident = {
           id: MOCK_CREATED_INCIDENT_ID,
           title: 'Bache en la avenida principal',
           description: 'Hay un bache profundo que pone en riesgo a los vehículos.',
-          civicId: TEMPORARY_CIVIC_ID,
+          civicId: TEST_CIVIC_ID,
           categoryId: '2',
           category: 'Vallado',
           urbanAssetId: null,
@@ -765,7 +765,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        const { incident } = await createIncident(minimalInput);
+        const { incident } = await createIncident(minimalInput, TEST_CIVIC_ID);
 
         expect(incident.id).toBe(MOCK_CREATED_INCIDENT_ID);
         expect(incident.title).toBe('Farola fundida');
@@ -793,7 +793,7 @@ describe('createIncident', () => {
           latitude: 0,
           longitude: 0,
           accuracy: null,
-        });
+        }, TEST_CIVIC_ID);
 
         expect(incident.location).toEqual({
           latitude: 0,
@@ -811,7 +811,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        const { incident } = await createIncident(minimalInput);
+        const { incident } = await createIncident(minimalInput, TEST_CIVIC_ID);
 
         expect(mockedCreateImage).not.toHaveBeenCalled();
         expect(incident.images).toEqual([]);
@@ -823,7 +823,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        await createIncident(fullInput, ['file:///photos/a.jpg', 'file:///photos/b.png']);
+        await createIncident(fullInput, TEST_CIVIC_ID, ['file:///photos/a.jpg', 'file:///photos/b.png']);
 
         expect(mockedCreateImage).toHaveBeenCalledTimes(2);
         expect(mockedCreateImage).toHaveBeenNthCalledWith(1, {
@@ -842,7 +842,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        const { incident } = await createIncident(fullInput, [
+        const { incident } = await createIncident(fullInput, TEST_CIVIC_ID, [
           'file:///photos/a.png',
           'file:///photos/b.jpg',
         ]);
@@ -877,7 +877,7 @@ describe('createIncident', () => {
           'file:///photos/6.jpg',
         ];
 
-        const { incident } = await createIncident(fullInput, sixImageUris);
+        const { incident } = await createIncident(fullInput, TEST_CIVIC_ID, sixImageUris);
 
         expect(mockedCreateImage).toHaveBeenCalledTimes(MAX_INCIDENT_IMAGES);
         expect(mockedCreateImage.mock.calls.map(([input]) => input.url)).toEqual(
@@ -898,7 +898,7 @@ describe('createIncident', () => {
           return fakeCreateImageImplementation(input);
         });
 
-        const result = await createIncident(fullInput, [
+        const result = await createIncident(fullInput, TEST_CIVIC_ID, [
           'file:///photos/a.png',
           'file:///photos/b.jpg',
           'file:///photos/c.webp',
@@ -918,7 +918,7 @@ describe('createIncident', () => {
         });
         mockedCreateImage.mockRejectedValue(new Error('No se pudo guardar la imagen.'));
 
-        const result = await createIncident(fullInput, ['file:///photos/a.jpg']);
+        const result = await createIncident(fullInput, TEST_CIVIC_ID, ['file:///photos/a.jpg']);
 
         expect(result.source).toBe('mock');
         expect(result.incident.id).toBe(MOCK_CREATED_INCIDENT_ID);
@@ -933,7 +933,7 @@ describe('createIncident', () => {
           mock: new RequestTimeoutError(),
         });
 
-        await expect(createIncident(fullInput, ['file:///photos/a.jpg'])).rejects.toThrow(
+        await expect(createIncident(fullInput, TEST_CIVIC_ID, ['file:///photos/a.jpg'])).rejects.toThrow(
           MESSAGE_TIMEOUT_ERROR,
         );
         expect(mockedCreateImage).not.toHaveBeenCalled();
@@ -945,7 +945,7 @@ describe('createIncident', () => {
           mock: new TypeError('Network request failed'),
         });
 
-        await expect(createIncident(fullInput)).rejects.toThrow(MESSAGE_CONNECTION_ERROR);
+        await expect(createIncident(fullInput, TEST_CIVIC_ID)).rejects.toThrow(MESSAGE_CONNECTION_ERROR);
       });
 
       it('con backend caído y mock !ok (500) lanza el mensaje de registro fallido', async () => {
@@ -954,7 +954,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ message: 'boom' }, 500),
         });
 
-        await expect(createIncident(fullInput, ['file:///photos/a.jpg'])).rejects.toThrow(
+        await expect(createIncident(fullInput, TEST_CIVIC_ID, ['file:///photos/a.jpg'])).rejects.toThrow(
           MESSAGE_REGISTER_ERROR,
         );
         expect(mockedCreateImage).not.toHaveBeenCalled();
@@ -966,7 +966,7 @@ describe('createIncident', () => {
           mock: jsonResponse({}, 400),
         });
 
-        await expect(createIncident(minimalInput)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
+        await expect(createIncident(minimalInput, TEST_CIVIC_ID)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
       });
 
       it('con backend caído y mock !ok no intenta parsear el cuerpo del mock', async () => {
@@ -976,7 +976,7 @@ describe('createIncident', () => {
           mock: { ok: false, status: 500, json: mockJsonSpy } as unknown as Response,
         });
 
-        await expect(createIncident(minimalInput)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
+        await expect(createIncident(minimalInput, TEST_CIVIC_ID)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
         expect(mockJsonSpy).not.toHaveBeenCalled();
       });
     });
@@ -1316,6 +1316,240 @@ describe('fetchMyIncidents', () => {
         'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
       );
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Motivo del rechazo del backend (buildBackendRejectionMessage). createIncident
+// y fetchMyIncidents comparten esa función interna, pero cada uno conserva su
+// mensaje genérico. Las respuestas aquí exponen solo `ok`, `status` y `text`,
+// que es lo único que lee el servicio en la rama !ok.
+// ---------------------------------------------------------------------------
+
+// Respuesta !ok cuyo cuerpo llega como texto plano.
+function rawBodyResponse(status: number, rawBody: string): Response {
+  return {
+    ok: false,
+    status,
+    text: async () => rawBody,
+  } as unknown as Response;
+}
+
+// Respuesta !ok cuya lectura del cuerpo falla (p. ej. conexión cortada al leer).
+function unreadableBodyResponse(status: number): Response {
+  return {
+    ok: false,
+    status,
+    text: async () => {
+      throw new Error('Stream cortado');
+    },
+  } as unknown as Response;
+}
+
+// Devuelve el Error con el que rechaza una promesa; falla la prueba si se resuelve.
+async function captureRejection(operation: Promise<unknown>): Promise<Error> {
+  try {
+    await operation;
+  } catch (error) {
+    if (error instanceof Error) {
+      return error;
+    }
+    throw error;
+  }
+  throw new Error('Se esperaba un rechazo y la promesa se resolvió.');
+}
+
+describe('motivo del rechazo del backend en fetchMyIncidents', () => {
+  beforeEach(() => {
+    fetchWithTimeoutMock.mockReset();
+  });
+
+  it('con backend !ok y message como string añade el motivo entre paréntesis', async () => {
+    routeMyIncidentsRequests(rawBodyResponse(400, JSON.stringify({ message: 'civicId must be a UUID' })));
+
+    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID));
+
+    expect(error.message).toBe(`${MESSAGE_MY_INCIDENTS_ERROR} (civicId must be a UUID)`);
+    expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('con backend !ok y message como array une los motivos con "; " entre paréntesis', async () => {
+    routeMyIncidentsRequests(
+      rawBodyResponse(400, JSON.stringify({ message: ['status must be a string', 'civicId is required'] })),
+    );
+
+    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID));
+
+    expect(error.message).toBe(
+      `${MESSAGE_MY_INCIDENTS_ERROR} (status must be a string; civicId is required)`,
+    );
+  });
+
+  it('con backend !ok y cuerpo no JSON lanza solo el mensaje genérico', async () => {
+    routeMyIncidentsRequests(rawBodyResponse(500, 'Internal Server Error'));
+
+    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID));
+
+    expect(error.message).toBe(MESSAGE_MY_INCIDENTS_ERROR);
+  });
+
+  it('con backend !ok y JSON sin message lanza solo el mensaje genérico', async () => {
+    routeMyIncidentsRequests(rawBodyResponse(500, JSON.stringify({ error: 'Internal', statusCode: 500 })));
+
+    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID));
+
+    expect(error.message).toBe(MESSAGE_MY_INCIDENTS_ERROR);
+  });
+
+  it('con backend !ok y message vacío lanza solo el mensaje genérico, sin paréntesis vacíos', async () => {
+    routeMyIncidentsRequests(rawBodyResponse(400, JSON.stringify({ message: '' })));
+
+    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID));
+
+    expect(error.message).toBe(MESSAGE_MY_INCIDENTS_ERROR);
+  });
+
+  it('con backend !ok y cuerpo ilegible lanza solo el mensaje genérico', async () => {
+    routeMyIncidentsRequests(unreadableBodyResponse(500));
+
+    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID));
+
+    expect(error.message).toBe(MESSAGE_MY_INCIDENTS_ERROR);
+    expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('motivo del rechazo del backend en createIncident', () => {
+  beforeEach(() => {
+    fetchWithTimeoutMock.mockReset();
+    globalThis.FormData = RecordingFormData as unknown as typeof FormData;
+  });
+
+  afterEach(() => {
+    globalThis.FormData = OriginalFormData;
+  });
+
+  it('con backend !ok y message como array une los motivos con "; " entre paréntesis', async () => {
+    routeFetchByEndpoint({
+      backend: rawBodyResponse(
+        400,
+        JSON.stringify({ message: ['title is required', 'description is too long'] }),
+      ),
+      mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }, 201),
+    });
+
+    const error = await captureRejection(createIncident(fullInput, TEST_CIVIC_ID));
+
+    expect(error.message).toBe(`${MESSAGE_REGISTER_ERROR} (title is required; description is too long)`);
+    expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('con backend !ok y cuerpo no JSON lanza solo el mensaje genérico de registro', async () => {
+    routeFetchByEndpoint({
+      backend: rawBodyResponse(502, '<html>Bad Gateway</html>'),
+      mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }, 201),
+    });
+
+    const error = await captureRejection(createIncident(fullInput, TEST_CIVIC_ID));
+
+    expect(error.message).toBe(MESSAGE_REGISTER_ERROR);
+  });
+
+  it('con backend !ok y JSON sin message lanza solo el mensaje genérico de registro', async () => {
+    routeFetchByEndpoint({
+      backend: rawBodyResponse(400, JSON.stringify({ statusCode: 400 })),
+      mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }, 201),
+    });
+
+    const error = await captureRejection(createIncident(fullInput, TEST_CIVIC_ID));
+
+    expect(error.message).toBe(MESSAGE_REGISTER_ERROR);
+  });
+
+  it('con backend !ok y cuerpo ilegible lanza solo el mensaje genérico de registro', async () => {
+    routeFetchByEndpoint({
+      backend: unreadableBodyResponse(500),
+      mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }, 201),
+    });
+
+    const error = await captureRejection(createIncident(fullInput, TEST_CIVIC_ID));
+
+    expect(error.message).toBe(MESSAGE_REGISTER_ERROR);
+    expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('mensajes genéricos independientes entre createIncident y fetchMyIncidents', () => {
+  beforeEach(() => {
+    fetchWithTimeoutMock.mockReset();
+    globalThis.FormData = RecordingFormData as unknown as typeof FormData;
+  });
+
+  afterEach(() => {
+    globalThis.FormData = OriginalFormData;
+  });
+
+  it('con el mismo cuerpo de error ambos mensajes genéricos siguen siendo distintos', async () => {
+    fetchWithTimeoutMock.mockImplementation(async () => rawBodyResponse(500, JSON.stringify({ message: 'boom' })));
+
+    const registerError = await captureRejection(createIncident(fullInput, TEST_CIVIC_ID));
+    const listError = await captureRejection(fetchMyIncidents(TEST_CIVIC_ID));
+
+    expect(MESSAGE_REGISTER_ERROR).not.toBe(MESSAGE_MY_INCIDENTS_ERROR);
+    expect(registerError.message).toBe(`${MESSAGE_REGISTER_ERROR} (boom)`);
+    expect(listError.message).toBe(`${MESSAGE_MY_INCIDENTS_ERROR} (boom)`);
+    expect(registerError.message).not.toBe(listError.message);
+  });
+});
+
+describe('aislamiento del civicId entre llamadas sucesivas', () => {
+  const FIRST_CIVIC_ID = '11111111-1111-4111-8111-111111111111';
+  const SECOND_CIVIC_ID = '22222222-2222-4222-8222-222222222222';
+
+  beforeEach(() => {
+    fetchWithTimeoutMock.mockReset();
+    globalThis.FormData = RecordingFormData as unknown as typeof FormData;
+  });
+
+  afterEach(() => {
+    globalThis.FormData = OriginalFormData;
+  });
+
+  it('dos civicId distintos en createIncident por backend llegan cada uno en su propia petición', async () => {
+    routeFetchByEndpoint({
+      backend: jsonResponse(serverCreatedIncident, 201),
+      mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }, 201),
+    });
+
+    await createIncident(fullInput, FIRST_CIVIC_ID);
+    await createIncident(fullInput, SECOND_CIVIC_ID);
+
+    expect(readSentFormData(0).get('civicId')).toBe(FIRST_CIVIC_ID);
+    expect(readSentFormData(1).get('civicId')).toBe(SECOND_CIVIC_ID);
+  });
+
+  it('dos civicId distintos en createIncident con fallback al mock no se mezclan en el payload', async () => {
+    routeFetchByEndpoint({
+      backend: new RequestTimeoutError(),
+      mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }, 201),
+    });
+
+    await createIncident(minimalInput, FIRST_CIVIC_ID);
+    await createIncident(minimalInput, SECOND_CIVIC_ID);
+
+    // Orden de llamadas: backend, mock, backend, mock.
+    expect(readSentJsonBody(1).civicId).toBe(FIRST_CIVIC_ID);
+    expect(readSentJsonBody(3).civicId).toBe(SECOND_CIVIC_ID);
+  });
+
+  it('dos civicId distintos en fetchMyIncidents consultan cada uno su propio listado', async () => {
+    fetchWithTimeoutMock.mockImplementation(async () => jsonResponse([], 200));
+
+    await fetchMyIncidents(FIRST_CIVIC_ID);
+    await fetchMyIncidents(SECOND_CIVIC_ID);
+
+    expect(readRequestUrlAt(0)).toBe(`${BACKEND_API_URL}/incidents?civicId=${FIRST_CIVIC_ID}`);
+    expect(readRequestUrlAt(1)).toBe(`${BACKEND_API_URL}/incidents?civicId=${SECOND_CIVIC_ID}`);
   });
 });
 

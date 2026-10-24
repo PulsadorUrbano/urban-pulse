@@ -72,6 +72,7 @@ const mockSessionUser: SessionUser = {
   username: 'ciudadano-test',
   email: 'ciudadano@example.com',
   role: 'civic',
+  civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
 };
 
 function buildSessionValue(): SessionContextValue {
@@ -115,7 +116,9 @@ describe('MyIncidentsScreen con useMyIncidents real (refresco por foco)', () => 
 
     await waitFor(() => expect(screen.getByText(EMPTY_STATE_TEXT)).toBeOnTheScreen());
     expect(mockedFetchMyIncidents).toHaveBeenCalledTimes(1);
-    expect(mockedFetchMyIncidents).toHaveBeenCalledWith('1');
+    // Se pide por civicId de la sesión, no por el id numérico del usuario ('1').
+    expect(mockedFetchMyIncidents).toHaveBeenCalledWith(mockSessionUser.civicId);
+    expect(mockedFetchMyIncidents).not.toHaveBeenCalledWith(mockSessionUser.id);
   });
 
   it('un reenfoque posterior al montaje vuelve a pedir las incidencias (2 peticiones en total)', async () => {

@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '@/constants/config';
-import type { LoginUserInput, User } from '@/types/user';
+import type { LoginUserInput, RegisterUserInput, User } from '@/types/user';
+import { generateMockUuid } from '@/utils/uuid';
 
 import { RequestTimeoutError, fetchWithTimeout } from './http';
 
@@ -65,4 +66,59 @@ export async function login(input: LoginUserInput): Promise<User> {
   }
 
   return matchedUser;
+}
+
+// Username o email ya registrados; se distingue cuál para dar un mensaje preciso.
+export class UsernameOrEmailTakenError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'UsernameOrEmailTakenError';
+  }
+}
+
+// Crea un ciudadano nuevo en el mock tras comprobar que username y email están libres.
+export async function register(input: RegisterUserInput): Promise<User> {
+  const username = input.username.trim();
+  const email = input.email.trim();
+
+  const existingByUsername = await fetchUsersByField('username', username);
+  if (existingByUsername.length > 0) {
+    throw new UsernameOrEmailTakenError('Ese nombre de usuario ya está en uso.');
+  }
+
+  const existingByEmail = await fetchUsersByField('email', email);
+  if (existingByEmail.length > 0) {
+    throw new UsernameOrEmailTakenError('Ese correo ya está registrado.');
+  }
+
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(USERS_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username,
+        email,
+        password: input.password,
+        role: 'civic',
+        civicId: generateMockUuid(),
+      }),
+    });
+  } catch (error) {
+    if (error instanceof RequestTimeoutError) {
+      throw new Error(
+        'El servidor tardó demasiado en responder. Comprueba que el servidor mock (npm run mock) esté activo y sea accesible desde tu dispositivo.',
+      );
+    }
+
+    throw new Error(
+      'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error('No se pudo crear la cuenta. Inténtalo de nuevo más tarde.');
+  }
+
+  return (await response.json()) as User;
 }
