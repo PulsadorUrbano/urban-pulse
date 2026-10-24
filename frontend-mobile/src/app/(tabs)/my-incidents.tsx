@@ -1,4 +1,5 @@
-import { Redirect, router } from 'expo-router';
+import { Redirect, router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -16,6 +17,23 @@ export default function MyIncidentsScreen() {
   const { user, isRestoringSession } = useSession();
   const { incidents, isLoading, errorMessage, backendFallbackNotice, reload } = useMyIncidents(
     user?.id ?? null,
+  );
+
+  // Las tabs de Expo Router no desmontan esta pantalla al navegar a
+  // "incidents/new" y volver; sin este efecto, el listado quedaba obsoleto
+  // tras crear una incidencia porque `useMyIncidents` solo recarga al montar.
+  // La pantalla nace ya enfocada, así que el primer foco se ignora (el
+  // `useEffect` interno del hook ya dispara esa carga inicial) y solo los
+  // reenfoques posteriores fuerzan un `reload()`, evitando una petición duplicada.
+  const hasFocusedOnceRef = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocusedOnceRef.current) {
+        hasFocusedOnceRef.current = true;
+        return;
+      }
+      reload();
+    }, [reload]),
   );
 
   // Sin sesión activa (y ya resuelta) la tab nunca es alcanzable: mismo guard

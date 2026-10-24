@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 import { cleanup, render, screen, userEvent, within } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React from 'react';
 import { Text } from 'react-native';
 
@@ -43,6 +43,9 @@ jest.mock('expo-router', () => {
     },
     Redirect: ({ href }: { href: string }) =>
       mockReact.createElement(MockText, null, `redirect:${href}`),
+    // Se sustituye para poder disparar el foco manualmente desde los tests
+    // (ver `simulateScreenFocus`). Por defecto no ejecuta nada.
+    useFocusEffect: jest.fn(),
   };
 });
 
@@ -69,6 +72,7 @@ jest.mock('@/hooks/use-my-incidents', () => ({
 
 const mockedUseSession = jest.mocked(useSession);
 const mockedUseMyIncidents = jest.mocked(useMyIncidents);
+const mockedUseFocusEffect = jest.mocked(useFocusEffect);
 
 const BACKEND_FALLBACK_NOTICE =
   'No se ha podido conectar al backend, mostrando los datos del mock.';
@@ -161,6 +165,19 @@ function getRenderedIncidentTitlesInOrder(expectedTitles: string[]): string[] {
     .getAllByRole('button')
     .map((itemButton) => expectedTitles.find((title) => within(itemButton).queryByText(title) !== null))
     .filter((title): title is string => title !== undefined);
+}
+
+// Dispara el callback de `useFocusEffect` registrado en el último render de la
+// pantalla, simulando un foco (montaje inicial o reenfoque tras volver de
+// `incidents/new`). `reload` está mockeado, así que no hay actualizaciones de estado.
+function simulateScreenFocus(): void {
+  const focusRegistrations = mockedUseFocusEffect.mock.calls;
+  const lastRegistration = focusRegistrations[focusRegistrations.length - 1];
+  if (lastRegistration === undefined) {
+    throw new Error('La pantalla no registró ningún useFocusEffect');
+  }
+  const focusEffect = lastRegistration[0];
+  focusEffect();
 }
 
 describe('MyIncidentsScreen (tab Mis incidencias)', () => {
@@ -296,5 +313,48 @@ describe('MyIncidentsScreen (tab Mis incidencias)', () => {
 
     expect(treeContainsActivityIndicator(view.toJSON())).toBe(true);
     expect(screen.queryByText(EMPTY_STATE_TEXT)).toBeNull();
+  });
+
+  it('registra un useFocusEffect al montar la pantalla', async () => {
+    await renderMyIncidentsScreen();
+
+    expect(mockedUseFocusEffect).toHaveBeenCalled();
+  });
+
+  it('el primer foco (montaje inicial) no llama a reload, porque la carga inicial ya la hace useMyIncidents', async () => {
+    const reloadSpy = jest.fn();
+    mockedUseMyIncidents.mockReturnValue(buildMyIncidentsResult({ reload: reloadSpy }));
+    await renderMyIncidentsScreen();
+
+    simulateScreenFocus();
+
+    expect(reloadSpy).not.toHaveBeenCalled();
+  });
+
+  it('un reenfoque posterior al montaje llama a reload una vez', async () => {
+    const reloadSpy = jest.fn();
+    mockedUseMyIncidents.mockReturnValue(buildMyIncidentsResult({ reload: reloadSpy }));
+    await renderMyIncidentsScreen();
+    simulateScreenFocus();
+
+    simulateScreenFocus();
+
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('cada reenfoque posterior al primero vuelve a llamar a reload, sin quedarse bloqueado', async () => {
+    const reloadSpy = jest.fn();
+    mockedUseMyIncidents.mockReturnValue(buildMyIncidentsResult({ reload: reloadSpy }));
+    await renderMyIncidentsScreen();
+    simulateScreenFocus();
+
+    simulateScreenFocus();
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+
+    simulateScreenFocus();
+    expect(reloadSpy).toHaveBeenCalledTimes(2);
+
+    simulateScreenFocus();
+    expect(reloadSpy).toHaveBeenCalledTimes(3);
   });
 });
