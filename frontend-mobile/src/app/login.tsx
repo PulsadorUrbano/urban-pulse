@@ -114,6 +114,14 @@ export default function LoginScreen() {
               <ThemedText type="link">¿Has olvidado tu contraseña?</ThemedText>
             </Pressable>
 
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="No tienes cuenta, créate una"
+              onPress={() => router.push('/register')}
+              className="self-start active:opacity-70">
+              <ThemedText type="link">¿No tienes cuenta? Créate una</ThemedText>
+            </Pressable>
+
             {visibleErrorMessage ? (
               <ThemedText type="small" style={{ color: ERROR_COLOR }} accessibilityRole="alert">
                 {visibleErrorMessage}

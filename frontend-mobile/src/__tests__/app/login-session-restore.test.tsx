@@ -1,5 +1,6 @@
 /// <reference types="jest" />
-import { act, cleanup, render, screen } from '@testing-library/react-native';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react-native';
+import { router } from 'expo-router';
 
 import LoginScreen from '@/app/login';
 import { useLogin, type UseLoginResult } from '@/hooks/use-login';
@@ -189,5 +190,17 @@ describe('LoginScreen: gate de restauración de sesión', () => {
 
     expect(await screen.findByLabelText(usernameInputLabel)).toBeOnTheScreen();
     expect(screen.queryByTestId(restoringIndicatorTestId)).toBeNull();
+  });
+
+  it('el enlace "¿No tienes cuenta? Créate una" navega a /register', async () => {
+    mockedLoadSessionUser.mockResolvedValue(null);
+    mockedLoadToken.mockResolvedValue(null);
+    jest.mocked(router.push).mockClear();
+
+    await renderLoginScreenWithSessionProvider();
+
+    fireEvent.press(await screen.findByRole('button', { name: 'No tienes cuenta, créate una' }));
+
+    expect(router.push).toHaveBeenCalledWith('/register');
   });
 });

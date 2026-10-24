@@ -23,3 +23,11 @@ export interface LoginUserInput {
   username_email: string;
   password: string;
 }
+
+// Datos del formulario de registro de un nuevo ciudadano.
+export interface RegisterUserInput {
+  username: string;
+  email: string;
+  password: string;
+  phone?: string;
+}
