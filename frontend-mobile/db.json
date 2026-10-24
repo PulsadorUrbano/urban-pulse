@@ -9,7 +9,9 @@
       "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
       "categoryId": "2",
       "category": null,
-      "id": "RLfTcvEVqlc"
+      "id": "RLfTcvEVqlc",
+      "status": "reported",
+      "createdAt": "2026-10-20T09:00:00.000Z"
     },
     {
       "title": "Farola Rota Trinidad",
@@ -20,7 +22,9 @@
       "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
       "categoryId": "2",
       "category": null,
-      "id": "bALCrQcm_gw"
+      "id": "bALCrQcm_gw",
+      "status": "reported",
+      "createdAt": "2026-10-20T09:15:00.000Z"
     },
     {
       "title": "Prueba integración",
@@ -31,7 +35,9 @@
       "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
       "categoryId": "1",
       "category": null,
-      "id": "5zbBHCMzWNo"
+      "id": "5zbBHCMzWNo",
+      "status": "reported",
+      "createdAt": "2026-10-21T10:00:00.000Z"
     },
     {
       "title": "Escalones rotos en El Ejido",
@@ -42,7 +48,9 @@
       "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
       "categoryId": "3",
       "category": null,
-      "id": "6NslGK70n2o"
+      "id": "6NslGK70n2o",
+      "status": "reported",
+      "createdAt": "2026-10-21T16:30:00.000Z"
     },
     {
       "title": "Prueba de nuevo",
@@ -53,7 +61,9 @@
       "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
       "categoryId": "1",
       "category": null,
-      "id": "1C_kClDKmFk"
+      "id": "1C_kClDKmFk",
+      "status": "reported",
+      "createdAt": "2026-10-22T08:45:00.000Z"
     },
     {
       "title": "Prueba con foto",
@@ -64,7 +74,9 @@
       "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
       "categoryId": "2",
       "category": null,
-      "id": "nZcfRC9__gA"
+      "id": "nZcfRC9__gA",
+      "status": "reported",
+      "createdAt": "2026-10-22T18:10:00.000Z"
     },
     {
       "title": "Pues a",
@@ -76,6 +88,19 @@
       "categoryId": null,
       "category": null,
       "id": "iB09J7Gfu1k"
+    },
+    {
+      "title": "Prueba de nuevo última",
+      "description": "Skakdjejwsksiejs.",
+      "latitude": 36.729538622655674,
+      "longitude": -4.4192084981422575,
+      "accuracy": 11.250946138980234,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "categoryId": "3",
+      "category": null,
+      "status": "reported",
+      "createdAt": "2026-10-24T14:46:03.135Z",
+      "id": "mtP2PoOmH5g"
     }
   ],
   "categories": [
@@ -133,6 +158,16 @@
       "url": "file:///var/mobile/Containers/Data/Application/0A1F28B1-C9C3-4ABF-8578-FFB2EBFD8F11/Library/Caches/ImagePicker/897B7C7C-D1A1-402F-8205-4F2FF6B5E188.jpg",
       "incidentId": "iB09J7Gfu1k",
       "id": "3nArxKNM8X4"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/0A1F28B1-C9C3-4ABF-8578-FFB2EBFD8F11/Library/Caches/ImagePicker/1FD0808C-1FDB-4417-A616-966DEB96A753.jpg",
+      "incidentId": "mtP2PoOmH5g",
+      "id": "9tNW3FdUNKQ"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/0A1F28B1-C9C3-4ABF-8578-FFB2EBFD8F11/Library/Caches/ImagePicker/6528DC7B-0DFD-4657-BC3D-F916ADFCAED2.jpg",
+      "incidentId": "mtP2PoOmH5g",
+      "id": "oROihtEYI6Y"
     }
   ],
   "users": [

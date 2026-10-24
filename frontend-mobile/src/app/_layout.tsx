@@ -17,6 +17,7 @@ export default function RootLayout() {
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="incidents/new" options={{ title: 'Registrar incidencia' }} />
+        <Stack.Screen name="incidents/[id]" options={{ title: 'Detalle de la incidencia' }} />
       </Stack>
     </ThemeProvider>
     </SessionProvider>

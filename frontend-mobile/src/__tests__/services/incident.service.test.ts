@@ -2,16 +2,23 @@
 import { File } from 'expo-file-system';
 
 import { API_BASE_URL, BACKEND_API_URL } from '@/constants/config';
+import { fetchCategories } from '@/services/category.service';
 import { RequestTimeoutError, fetchWithTimeout } from '@/services/http';
-import { createImage } from '@/services/image.service';
+import { IMAGES_ENDPOINT, createImage } from '@/services/image.service';
 import {
   INCIDENTS_ENDPOINT,
+  IncidentNotFoundError,
   MAX_INCIDENT_IMAGES,
   createIncident,
+  fetchIncidentById,
+  fetchMyIncidents,
 } from '@/services/incident.service';
-import type {
-  CreateIncidentInput,
-  CreatedIncident,
+import {
+  DEFAULT_INCIDENT_STATUS,
+  type CreateIncidentInput,
+  type CreatedIncident,
+  type IncidentDetail,
+  type IncidentSummary,
 } from '@/types/incident';
 import type { IncidentImage } from '@/types/incident-image';
 
@@ -28,12 +35,20 @@ jest.mock('@/services/http', () => {
 });
 
 // Persistencia de imágenes del fallback al mock: se controla por separado.
+// Se conserva el módulo real (IMAGES_ENDPOINT lo usa el detalle de incidencia) y solo se simula createImage.
 jest.mock('@/services/image.service', () => ({
+  ...jest.requireActual<typeof import('@/services/image.service')>('@/services/image.service'),
   createImage: jest.fn(),
+}));
+
+// Catálogo de categorías: se simula para controlar la resolución de `category` por `categoryId`.
+jest.mock('@/services/category.service', () => ({
+  fetchCategories: jest.fn(),
 }));
 
 const fetchWithTimeoutMock = jest.mocked(fetchWithTimeout);
 const mockedCreateImage = jest.mocked(createImage);
+const mockedFetchCategories = jest.mocked(fetchCategories);
 
 // Endpoint del mock (json-server) al que cae el servicio sin conexión con el backend.
 const MOCK_INCIDENTS_ENDPOINT = `${API_BASE_URL}/incidents`;
@@ -652,6 +667,8 @@ describe('createIncident', () => {
           civicId: TEMPORARY_CIVIC_ID,
           categoryId: '2',
           category: 'Vallado',
+          status: 'reported',
+          createdAt: FIXED_NOW_ISO,
         });
       });
 
@@ -672,6 +689,8 @@ describe('createIncident', () => {
           civicId: TEMPORARY_CIVIC_ID,
           categoryId: null,
           category: null,
+          status: 'reported',
+          createdAt: FIXED_NOW_ISO,
         });
       });
 
@@ -960,6 +979,676 @@ describe('createIncident', () => {
         await expect(createIncident(minimalInput)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
         expect(mockJsonSpy).not.toHaveBeenCalled();
       });
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Consulta de incidencias: fetchMyIncidents y fetchIncidentById
+// ---------------------------------------------------------------------------
+
+// Ciudadano de la sesión que pide sus incidencias (distinto del temporal para no confundir fuentes).
+const CITIZEN_CIVIC_ID = 'ciudadano-civic-id-01';
+const DETAIL_INCIDENT_ID = 'inc-7';
+const DETAIL_CREATED_AT = '2026-10-18T09:30:00.000Z';
+const LIST_NEWEST_CREATED_AT = '2026-10-20T08:00:00.000Z';
+const LIST_OLDER_CREATED_AT = '2026-10-10T10:00:00.000Z';
+
+const BACKEND_LIST_URL = `${BACKEND_API_URL}/incidents?civicId=${CITIZEN_CIVIC_ID}`;
+const MOCK_LIST_URL = `${MOCK_INCIDENTS_ENDPOINT}?civicId=${CITIZEN_CIVIC_ID}`;
+const BACKEND_DETAIL_URL = `${BACKEND_API_URL}/incidents/${DETAIL_INCIDENT_ID}`;
+const MOCK_DETAIL_URL = `${MOCK_INCIDENTS_ENDPOINT}/${DETAIL_INCIDENT_ID}`;
+const DETAIL_IMAGES_URL = `${IMAGES_ENDPOINT}?incidentId=${DETAIL_INCIDENT_ID}`;
+
+const MESSAGE_MY_INCIDENTS_ERROR =
+  'No se pudieron obtener tus incidencias. Inténtalo de nuevo más tarde.';
+const MESSAGE_INCIDENT_DETAIL_ERROR =
+  'No se pudo obtener la incidencia. Inténtalo de nuevo más tarde.';
+
+// Resolución de cada URL pedida: una respuesta, o un fallo de red/timeout si devuelve un Error.
+// Una URL no prevista devuelve un Error, que se propaga como fallo de conexión; las aserciones
+// sobre número y URL de las llamadas detectan cualquier desviación.
+type UrlOutcomeResolver = (requestUrl: string) => EndpointOutcome;
+
+function routeFetchByUrl(resolveOutcome: UrlOutcomeResolver): void {
+  fetchWithTimeoutMock.mockImplementation(async (requestUrl: string) => {
+    const outcome = resolveOutcome(requestUrl);
+    if (outcome instanceof Error) {
+      throw outcome;
+    }
+    return outcome;
+  });
+}
+
+// Registro plano de `incidents` tal como lo sirve json-server; los campos no indicados quedan vacíos.
+function buildMockIncidentRecord(overrides: Record<string, unknown>): Record<string, unknown> {
+  return {
+    description: '',
+    latitude: null,
+    longitude: null,
+    accuracy: null,
+    civicId: CITIZEN_CIVIC_ID,
+    categoryId: null,
+    category: null,
+    ...overrides,
+  };
+}
+
+// Registros del mock en un orden distinto al esperado (3, 2, 1). Los ids 2 y 3 empatan en createdAt.
+const mockIncidentRecordsInReceivedOrder = [
+  buildMockIncidentRecord({
+    id: '3',
+    title: 'Bache calle Mayor',
+    categoryId: '1',
+    status: 'resolved',
+    createdAt: LIST_OLDER_CREATED_AT,
+  }),
+  buildMockIncidentRecord({
+    id: '2',
+    title: 'Contenedor desbordado',
+    status: 'in_progress',
+    createdAt: LIST_OLDER_CREATED_AT,
+  }),
+  buildMockIncidentRecord({
+    id: '1',
+    title: 'Farola fundida',
+    status: 'reported',
+    createdAt: LIST_NEWEST_CREATED_AT,
+  }),
+];
+
+// Orden esperado: desc por createdAt, con desempate asc por id (2 antes que 3).
+const expectedOrderedSummaries: IncidentSummary[] = [
+  { id: '1', title: 'Farola fundida', status: 'reported', createdAt: LIST_NEWEST_CREATED_AT },
+  { id: '2', title: 'Contenedor desbordado', status: 'in_progress', createdAt: LIST_OLDER_CREATED_AT },
+  { id: '3', title: 'Bache calle Mayor', status: 'resolved', createdAt: LIST_OLDER_CREATED_AT },
+];
+
+// Respuesta del backend: el contrato ya viene ordenado, pero este fixture NO está ordenado a propósito
+// para comprobar que el servicio no reordena lo que devuelve el backend.
+const backendIncidentSummaries: IncidentSummary[] = [
+  { id: '3', title: 'Bache calle Mayor', status: 'resolved', createdAt: LIST_OLDER_CREATED_AT },
+  { id: '1', title: 'Farola fundida', status: 'reported', createdAt: LIST_NEWEST_CREATED_AT },
+  { id: '2', title: 'Contenedor desbordado', status: 'in_progress', createdAt: LIST_OLDER_CREATED_AT },
+];
+
+// Enruta el listado: backend (exacto) y mock (exacto), con respuestas configurables.
+function routeMyIncidentsRequests(
+  backendOutcome: EndpointOutcome,
+  mockOutcome: EndpointOutcome = jsonResponse(mockIncidentRecordsInReceivedOrder, 200),
+): void {
+  routeFetchByUrl((requestUrl) => {
+    if (requestUrl === BACKEND_LIST_URL) {
+      return backendOutcome;
+    }
+    if (requestUrl === MOCK_LIST_URL) {
+      return mockOutcome;
+    }
+    return new Error(`URL no prevista: ${requestUrl}`);
+  });
+}
+
+// Detalle del backend y del mock, con imágenes del mock configurables.
+const mockDetailRecord = buildMockIncidentRecord({
+  id: DETAIL_INCIDENT_ID,
+  title: 'Farola fundida',
+  description: 'Sin luz desde el lunes',
+  latitude: 40.4168,
+  longitude: -3.7038,
+  accuracy: 8,
+  categoryId: '2',
+  status: 'validated',
+  createdAt: DETAIL_CREATED_AT,
+});
+
+// Imágenes tal como las sirve json-server (IncidentImage): extensiones distintas para cubrir mimeType.
+const mockImageRecords: IncidentImage[] = [
+  { id: 'img-1', url: 'file:///photos/farola-1.png', incidentId: DETAIL_INCIDENT_ID },
+  { id: 'img-2', url: 'file:///photos/farola-2.webp', incidentId: DETAIL_INCIDENT_ID },
+  { id: 'img-3', url: 'file:///photos/farola-3.jpg', incidentId: DETAIL_INCIDENT_ID },
+];
+
+const expectedDetailImages = [
+  { id: 'img-1', url: 'file:///photos/farola-1.png', mimeType: 'image/png', createdAt: DETAIL_CREATED_AT },
+  { id: 'img-2', url: 'file:///photos/farola-2.webp', mimeType: 'image/webp', createdAt: DETAIL_CREATED_AT },
+  { id: 'img-3', url: 'file:///photos/farola-3.jpg', mimeType: 'image/jpeg', createdAt: DETAIL_CREATED_AT },
+];
+
+// Catálogo de categorías usado para resolver `category` cuando solo hay `categoryId`.
+const catalogCategories = [
+  { id: '1', name: 'Transporte' },
+  { id: '2', name: 'Alumbrado público' },
+];
+
+const backendIncidentDetail: IncidentDetail = {
+  id: DETAIL_INCIDENT_ID,
+  title: 'Farola fundida',
+  description: 'Sin luz desde el lunes',
+  civicId: CITIZEN_CIVIC_ID,
+  categoryId: '2',
+  category: null,
+  urbanAssetId: null,
+  location: { latitude: 40.4168, longitude: -3.7038, accuracy: 8, createdAt: DETAIL_CREATED_AT },
+  images: [
+    {
+      id: 'img-1',
+      url: 'file:///photos/farola-1.png',
+      mimeType: 'image/png',
+      createdAt: DETAIL_CREATED_AT,
+    },
+  ],
+  status: 'validated',
+  priority: 'low',
+  createdAt: DETAIL_CREATED_AT,
+};
+
+interface DetailRoutingOptions {
+  backend: EndpointOutcome;
+  mockDetail?: EndpointOutcome;
+  mockImages?: EndpointOutcome;
+}
+
+function routeIncidentDetailRequests({
+  backend,
+  mockDetail = jsonResponse(mockDetailRecord, 200),
+  mockImages = jsonResponse(mockImageRecords, 200),
+}: DetailRoutingOptions): void {
+  routeFetchByUrl((requestUrl) => {
+    if (requestUrl === BACKEND_DETAIL_URL) {
+      return backend;
+    }
+    if (requestUrl === MOCK_DETAIL_URL) {
+      return mockDetail;
+    }
+    if (requestUrl === DETAIL_IMAGES_URL) {
+      return mockImages;
+    }
+    return new Error(`URL no prevista: ${requestUrl}`);
+  });
+}
+
+describe('fetchMyIncidents', () => {
+  beforeEach(() => {
+    fetchWithTimeoutMock.mockReset();
+    routeMyIncidentsRequests(jsonResponse(backendIncidentSummaries, 200));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  describe('camino backend', () => {
+    it('pide las incidencias al backend con el civicId recibido y devuelve source "backend"', async () => {
+      await fetchMyIncidents(CITIZEN_CIVIC_ID);
+
+      expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+      expect(readRequestUrlAt(0)).toBe(BACKEND_LIST_URL);
+      expect(readSentInit(0).method).toBe('GET');
+    });
+
+    it('mapea la respuesta del backend 1:1 como IncidentSummary[] sin reordenarla', async () => {
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+
+      expect(result).toEqual({ incidents: backendIncidentSummaries, source: 'backend' });
+    });
+
+    it('con lista vacía del backend devuelve incidents vacío con source "backend"', async () => {
+      routeMyIncidentsRequests(jsonResponse([], 200));
+
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+
+      expect(result).toEqual({ incidents: [], source: 'backend' });
+    });
+
+    it('con backend OK no consulta el mock', async () => {
+      await fetchMyIncidents(CITIZEN_CIVIC_ID);
+
+      expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+      expect(readRequestUrlAt(0)).not.toBe(MOCK_LIST_URL);
+    });
+  });
+
+  describe('fallback al mock sin conexión con el backend', () => {
+    it('con RequestTimeoutError cae al mock, ordena desc por createdAt y devuelve source "mock"', async () => {
+      routeMyIncidentsRequests(new RequestTimeoutError());
+
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+
+      expect(result).toEqual({ incidents: expectedOrderedSummaries, source: 'mock' });
+      expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(2);
+      expect(readRequestUrlAt(1)).toBe(MOCK_LIST_URL);
+    });
+
+    it('con error de red (TypeError) cae al mock y devuelve source "mock" con el mismo orden', async () => {
+      routeMyIncidentsRequests(new TypeError('Network request failed'));
+
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+
+      expect(result.source).toBe('mock');
+      expect(result.incidents.map((incident) => incident.id)).toEqual(['1', '2', '3']);
+      expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('desempata por id ascendente cuando dos incidencias tienen el mismo createdAt', async () => {
+      routeMyIncidentsRequests(new RequestTimeoutError());
+
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+
+      const tiedIncidentIds = result.incidents
+        .filter((incident) => incident.createdAt === LIST_OLDER_CREATED_AT)
+        .map((incident) => incident.id);
+      expect(tiedIncidentIds).toEqual(['2', '3']);
+    });
+
+    it('con mock sin incidencias devuelve incidents vacío con source "mock"', async () => {
+      routeMyIncidentsRequests(new RequestTimeoutError(), jsonResponse([], 200));
+
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+
+      expect(result).toEqual({ incidents: [], source: 'mock' });
+    });
+  });
+
+  describe('registros del mock sin status ni createdAt', () => {
+    it('asigna DEFAULT_INCIDENT_STATUS cuando el registro no trae status', async () => {
+      jest.useFakeTimers().setSystemTime(new Date(FIXED_NOW_ISO));
+      routeMyIncidentsRequests(
+        new RequestTimeoutError(),
+        jsonResponse([buildMockIncidentRecord({ id: '4', title: 'Registro sin estado' })], 200),
+      );
+
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+
+      expect(result.incidents).toHaveLength(1);
+      expect(result.incidents[0].status).toBe(DEFAULT_INCIDENT_STATUS);
+    });
+
+    it('sin createdAt usa el instante actual para el orden (comportamiento actual del servicio)', async () => {
+      // Con el reloj fijado en FIXED_NOW_ISO (2026-10-19), el registro sin fecha se ordena como "ahora":
+      // queda entre la incidencia del 10-20 y las del 10-10. Ver reporte: posible comportamiento a revisar.
+      jest.useFakeTimers().setSystemTime(new Date(FIXED_NOW_ISO));
+      routeMyIncidentsRequests(
+        new RequestTimeoutError(),
+        jsonResponse(
+          [
+            ...mockIncidentRecordsInReceivedOrder,
+            buildMockIncidentRecord({ id: '4', title: 'Registro sin fecha ni estado' }),
+          ],
+          200,
+        ),
+      );
+
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+
+      expect(result.incidents.map((incident) => incident.id)).toEqual(['1', '4', '2', '3']);
+      expect(result.incidents[1]).toEqual({
+        id: '4',
+        title: 'Registro sin fecha ni estado',
+        status: DEFAULT_INCIDENT_STATUS,
+        createdAt: FIXED_NOW_ISO,
+      });
+    });
+  });
+
+  describe('errores', () => {
+    it.each([400, 500])(
+      'con backend !ok (%i) lanza error genérico y no hace segunda petición al mock',
+      async (status) => {
+        routeMyIncidentsRequests(jsonResponse({ message: 'boom' }, status));
+
+        await expect(fetchMyIncidents(CITIZEN_CIVIC_ID)).rejects.toThrow(MESSAGE_MY_INCIDENTS_ERROR);
+
+        expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+        expect(readRequestUrlAt(0)).toBe(BACKEND_LIST_URL);
+      },
+    );
+
+    it('con mock !ok tras caída del backend lanza error genérico', async () => {
+      routeMyIncidentsRequests(new RequestTimeoutError(), jsonResponse({}, 500));
+
+      await expect(fetchMyIncidents(CITIZEN_CIVIC_ID)).rejects.toThrow(MESSAGE_MY_INCIDENTS_ERROR);
+    });
+
+    it('con mock sin conexión tras caída del backend lanza el mensaje de conexión', async () => {
+      routeMyIncidentsRequests(new RequestTimeoutError(), new TypeError('Network request failed'));
+
+      await expect(fetchMyIncidents(CITIZEN_CIVIC_ID)).rejects.toThrow(
+        'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
+      );
+    });
+  });
+});
+
+describe('fetchIncidentById', () => {
+  beforeEach(() => {
+    fetchWithTimeoutMock.mockReset();
+    mockedFetchCategories.mockReset();
+    mockedFetchCategories.mockResolvedValue(catalogCategories);
+    routeIncidentDetailRequests({ backend: jsonResponse(backendIncidentDetail, 200) });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  describe('camino backend', () => {
+    it('pide el detalle a `${BACKEND_API_URL}/incidents/:id` y devuelve source "backend"', async () => {
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+
+      expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+      expect(readRequestUrlAt(0)).toBe(BACKEND_DETAIL_URL);
+      expect(readSentInit(0).method).toBe('GET');
+      expect(result).toEqual({ incident: backendIncidentDetail, source: 'backend' });
+    });
+
+    it('con backend OK no consulta imágenes, categorías ni el mock', async () => {
+      await fetchIncidentById(DETAIL_INCIDENT_ID);
+
+      expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+      expect(mockedFetchCategories).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('404 del backend', () => {
+    it('404 real lanza IncidentNotFoundError y no hace segunda petición al mock', async () => {
+      routeIncidentDetailRequests({ backend: jsonResponse({ message: 'Not Found' }, 404) });
+
+      await expect(fetchIncidentById(DETAIL_INCIDENT_ID)).rejects.toBeInstanceOf(
+        IncidentNotFoundError,
+      );
+
+      expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+      expect(readRequestUrlAt(0)).toBe(BACKEND_DETAIL_URL);
+    });
+  });
+
+  describe('fallback al mock sin conexión con el backend', () => {
+    it('con RequestTimeoutError cae al mock y devuelve source "mock"', async () => {
+      routeIncidentDetailRequests({ backend: new RequestTimeoutError() });
+
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+
+      expect(result.source).toBe('mock');
+      expect(result.incident.id).toBe(DETAIL_INCIDENT_ID);
+      expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(3);
+      expect(readRequestUrlAt(1)).toBe(MOCK_DETAIL_URL);
+    });
+
+    it('con error de red (TypeError) cae al mock y devuelve source "mock"', async () => {
+      routeIncidentDetailRequests({ backend: new TypeError('Network request failed') });
+
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+
+      expect(result.source).toBe('mock');
+      expect(result.incident.title).toBe('Farola fundida');
+    });
+
+    it('404 del mock lanza IncidentNotFoundError', async () => {
+      routeIncidentDetailRequests({
+        backend: new RequestTimeoutError(),
+        mockDetail: jsonResponse({ message: 'Not Found' }, 404),
+      });
+
+      await expect(fetchIncidentById(DETAIL_INCIDENT_ID)).rejects.toBeInstanceOf(
+        IncidentNotFoundError,
+      );
+    });
+
+    it('mock !ok distinto de 404 lanza error genérico, no IncidentNotFoundError', async () => {
+      routeIncidentDetailRequests({
+        backend: new RequestTimeoutError(),
+        mockDetail: jsonResponse({}, 500),
+      });
+
+      const error = await fetchIncidentById(DETAIL_INCIDENT_ID).catch((caught: unknown) => caught);
+
+      expect(error).toBeInstanceOf(Error);
+      expect(error).not.toBeInstanceOf(IncidentNotFoundError);
+      expect((error as Error).message).toBe(MESSAGE_INCIDENT_DETAIL_ERROR);
+    });
+
+    it('mock sin conexión lanza el mensaje de conexión', async () => {
+      routeIncidentDetailRequests({
+        backend: new RequestTimeoutError(),
+        mockDetail: new TypeError('Network request failed'),
+      });
+
+      await expect(fetchIncidentById(DETAIL_INCIDENT_ID)).rejects.toThrow(
+        'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
+      );
+    });
+  });
+
+  describe('backend !ok distinto de 404', () => {
+    it.each([400, 500])(
+      'con backend !ok (%i) lanza error genérico, no IncidentNotFoundError, y no consulta el mock',
+      async (status) => {
+        routeIncidentDetailRequests({ backend: jsonResponse({ message: 'boom' }, status) });
+
+        const error = await fetchIncidentById(DETAIL_INCIDENT_ID).catch((caught: unknown) => caught);
+
+        expect(error).toBeInstanceOf(Error);
+        expect(error).not.toBeInstanceOf(IncidentNotFoundError);
+        expect((error as Error).message).toBe(MESSAGE_INCIDENT_DETAIL_ERROR);
+        expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+      },
+    );
+  });
+
+  describe('ensamblado desde el mock', () => {
+    beforeEach(() => {
+      routeIncidentDetailRequests({ backend: new RequestTimeoutError() });
+    });
+
+    it('ensambla el detalle completo con categoría resuelta por categoryId', async () => {
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+
+      expect(result).toEqual({
+        incident: {
+          id: DETAIL_INCIDENT_ID,
+          title: 'Farola fundida',
+          description: 'Sin luz desde el lunes',
+          civicId: CITIZEN_CIVIC_ID,
+          categoryId: '2',
+          category: 'Alumbrado público',
+          urbanAssetId: null,
+          location: {
+            latitude: 40.4168,
+            longitude: -3.7038,
+            accuracy: 8,
+            createdAt: DETAIL_CREATED_AT,
+          },
+          images: expectedDetailImages,
+          status: 'validated',
+          priority: 'low',
+          createdAt: DETAIL_CREATED_AT,
+        },
+        source: 'mock',
+      });
+    });
+
+    it('pide las imágenes a `${IMAGES_ENDPOINT}?incidentId=:id`', async () => {
+      await fetchIncidentById(DETAIL_INCIDENT_ID);
+
+      const requestedUrls = fetchWithTimeoutMock.mock.calls.map(([requestUrl]) => requestUrl);
+      expect(requestedUrls).toContain(DETAIL_IMAGES_URL);
+    });
+
+    it('mapea imágenes con mimeType según la extensión y createdAt igual al de la incidencia', async () => {
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+
+      expect(result.incident.images).toEqual(expectedDetailImages);
+      result.incident.images.forEach((image) => {
+        expect(image.createdAt).toBe(result.incident.createdAt);
+      });
+    });
+
+    it('si la petición de imágenes falla por red devuelve images vacío y el resto del detalle se ensambla', async () => {
+      routeIncidentDetailRequests({
+        backend: new RequestTimeoutError(),
+        mockImages: new TypeError('Network request failed'),
+      });
+
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+
+      expect(result.incident.images).toEqual([]);
+      expect(result.incident.title).toBe('Farola fundida');
+      expect(result.incident.category).toBe('Alumbrado público');
+      expect(result.source).toBe('mock');
+    });
+
+    it('si la petición de imágenes responde !ok devuelve images vacío sin romper el detalle', async () => {
+      routeIncidentDetailRequests({
+        backend: new RequestTimeoutError(),
+        mockImages: jsonResponse({}, 500),
+      });
+
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+
+      expect(result.incident.images).toEqual([]);
+      expect(result.incident.id).toBe(DETAIL_INCIDENT_ID);
+    });
+  });
+
+  describe('resolución de categoría', () => {
+    beforeEach(() => {
+      routeIncidentDetailRequests({ backend: new RequestTimeoutError() });
+    });
+
+    it('con category de texto libre la usa tal cual y no llama a fetchCategories', async () => {
+      routeIncidentDetailRequests({
+        backend: new RequestTimeoutError(),
+        mockDetail: jsonResponse({ ...mockDetailRecord, category: 'Vallado' }, 200),
+      });
+
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+
+      expect(result.incident.category).toBe('Vallado');
+      expect(mockedFetchCategories).not.toHaveBeenCalled();
+    });
+
+    it('con solo categoryId llama a fetchCategories y resuelve el nombre por id', async () => {
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+
+      expect(mockedFetchCategories).toHaveBeenCalledTimes(1);
+      expect(result.incident.category).toBe('Alumbrado público');
+    });
+
+    it('con category vacía y categoryId presente resuelve por catálogo', async () => {
+      routeIncidentDetailRequests({
+        backend: new RequestTimeoutError(),
+        mockDetail: jsonResponse({ ...mockDetailRecord, category: '' }, 200),
+      });
+
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+
+      expect(mockedFetchCategories).toHaveBeenCalledTimes(1);
+      expect(result.incident.category).toBe('Alumbrado público');
+    });
+
+    it('con categoryId sin coincidencia en el catálogo devuelve category null', async () => {
+      routeIncidentDetailRequests({
+        backend: new RequestTimeoutError(),
+        mockDetail: jsonResponse({ ...mockDetailRecord, categoryId: '99' }, 200),
+      });
+
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+
+      expect(result.incident.category).toBeNull();
+    });
+
+    it('si fetchCategories falla devuelve category null sin romper el detalle ni las imágenes', async () => {
+      mockedFetchCategories.mockRejectedValue(new Error('No se pudieron cargar las categorías.'));
+
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+
+      expect(result.incident.category).toBeNull();
+      expect(result.incident.title).toBe('Farola fundida');
+      expect(result.incident.images).toEqual(expectedDetailImages);
+    });
+
+    it('sin categoryId ni category no llama a fetchCategories y devuelve null', async () => {
+      routeIncidentDetailRequests({
+        backend: new RequestTimeoutError(),
+        mockDetail: jsonResponse({ ...mockDetailRecord, categoryId: null, category: null }, 200),
+      });
+
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+
+      expect(mockedFetchCategories).not.toHaveBeenCalled();
+      expect(result.incident.category).toBeNull();
+    });
+  });
+
+  describe('campos null o vacíos', () => {
+    it('description vacía se devuelve como null', async () => {
+      routeIncidentDetailRequests({
+        backend: new RequestTimeoutError(),
+        mockDetail: jsonResponse({ ...mockDetailRecord, description: '' }, 200),
+      });
+
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+
+      expect(result.incident.description).toBeNull();
+    });
+
+    it('sin categoría, sin descripción, sin coordenadas y sin imágenes ensambla el detalle con null y []', async () => {
+      routeIncidentDetailRequests({
+        backend: new RequestTimeoutError(),
+        mockDetail: jsonResponse(
+          buildMockIncidentRecord({
+            id: DETAIL_INCIDENT_ID,
+            title: 'Incidencia mínima',
+            createdAt: DETAIL_CREATED_AT,
+            status: 'reported',
+          }),
+          200,
+        ),
+        mockImages: jsonResponse([], 200),
+      });
+
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+
+      expect(result).toEqual({
+        incident: {
+          id: DETAIL_INCIDENT_ID,
+          title: 'Incidencia mínima',
+          description: null,
+          civicId: CITIZEN_CIVIC_ID,
+          categoryId: null,
+          category: null,
+          urbanAssetId: null,
+          location: { latitude: null, longitude: null, accuracy: null, createdAt: DETAIL_CREATED_AT },
+          images: [],
+          status: 'reported',
+          priority: 'low',
+          createdAt: DETAIL_CREATED_AT,
+        },
+        source: 'mock',
+      });
+      expect(mockedFetchCategories).not.toHaveBeenCalled();
+    });
+
+    it('sin createdAt ni status en el registro usa el instante actual y DEFAULT_INCIDENT_STATUS', async () => {
+      jest.useFakeTimers().setSystemTime(new Date(FIXED_NOW_ISO));
+      routeIncidentDetailRequests({
+        backend: new RequestTimeoutError(),
+        mockDetail: jsonResponse(
+          buildMockIncidentRecord({ id: DETAIL_INCIDENT_ID, title: 'Registro antiguo' }),
+          200,
+        ),
+      });
+
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+
+      expect(result.incident.status).toBe(DEFAULT_INCIDENT_STATUS);
+      expect(result.incident.createdAt).toBe(FIXED_NOW_ISO);
+      expect(result.incident.location.createdAt).toBe(FIXED_NOW_ISO);
+      expect(result.incident.images.map((image) => image.createdAt)).toEqual([
+        FIXED_NOW_ISO,
+        FIXED_NOW_ISO,
+        FIXED_NOW_ISO,
+      ]);
     });
   });
 });
