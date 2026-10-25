@@ -1,84 +1,143 @@
-# Backend agent guide
+# Guía del backend
 
-Applies to `backend/`. Run commands below from this directory unless stated otherwise. Read the relevant implementation and configuration before editing; keep this guide aligned with the repository when those facts change.
+Estas instrucciones se aplican a backend/. Ejecutar los comandos desde esa carpeta, salvo indicación contraria. Leer el código y la configuración antes de modificar nada; mantener esta guía alineada con el repositorio.
 
-## Project map and current capabilities
+## Contexto y alcance
 
-- `src/main.ts`: HTTP bootstrap, Observe instrumentation, and `PORT` (default `3000`).
-- `src/app.module.ts`: root module, global `ConfigModule`, Observe setup, health and incidents. Prisma is intentionally not imported during the temporary in-memory incident phase.
-- `src/incidents/`: standalone incident module. `POST /incidents` and `GET /incidents/:id` use strict request validation and process-local memory only.
-- `src/app.controller.ts` / `src/app.service.ts`: `GET /` returns `Hello World!`; `GET /health` returns `{ "status": "ok" }`.
-- `src/**/*.spec.ts`: unit tests; `test/**/*.e2e-spec.ts`: HTTP integration tests.
-- `../frontend-web/` and `../frontend-mobile/`: separate consumers of this API, currently starter applications.
-- `../database/diagram.dbml`: proposed incident-reporting domain, including users, roles, incidents, assignments, location, and change history. It is a design reference, not an executable migration.
-- `../docker-compose.yml`: PostgreSQL 16/PostGIS 3.5 and the backend. Compose publishes the API on port `4000` and keeps PostgreSQL internal.
-- `../docs/adr/`: decision placeholders; the files are currently empty and establish no implemented architecture.
+UrbanPulse es un proyecto universitario para comunicar y gestionar incidencias urbanas de Málaga. El backend proporciona los contratos y la lógica de dominio que consumen la aplicación móvil de ciudadanía y la aplicación web. La visión del producto incluye seguimiento, gestión municipal y análisis; no presentar esas capacidades futuras como implementadas.
 
-The backend has a temporary unauthenticated incident API, but no active persistence, migration runner, authorization, upload integration, or identity model. Prisma source remains in the repository for a future database phase and must not be presented as active in root startup.
+El stack del backend es NestJS con TypeScript estricto, Prisma para modelos y tipos, PostgreSQL como base de datos prevista y Vitest para pruebas unitarias. Consultar las versiones instaladas en package.json antes de usar APIs concretas.
 
-## Toolchain and commands
+## Idioma y forma de trabajar
 
-Use npm and the committed `package-lock.json`. `package.json` declares Node.js `>=22` and npm `>=10`; check the locked tools' engine requirements when choosing a concrete Node release. The current Dockerfile uses Node 20 and does not match the declared backend requirement.
+- Programar y documentar en español: nombres propios del dominio, variables, funciones, comentarios, mensajes, descripciones de pruebas, especificaciones y planes nuevos.
+- Conservar los nombres exigidos por TypeScript, NestJS, Prisma y otras dependencias. Mantener los identificadores, rutas HTTP y campos públicos existentes para no romper consumidores; cualquier traducción de un contrato requiere un cambio acordado y documentado.
+- No usar emojis en respuestas, código propio, comentarios, mensajes ni documentación.
+- Mantener las soluciones simples. Reutilizar lo existente antes de añadir dependencias, capas, repositorios o abstracciones.
+- Mantener el alcance solicitado. No cambiar frontend, conectar servicios, desplegar, crear commits ni hacer push sin que se haya solicitado.
 
-```sh
-npm ci
-npm run start:dev
-npm run build
-npm run start:prod
-npm run lint
-npm test
-npm run test:e2e
-npm run test:cov
-```
+## Herramientas y comandos
 
-- `start:prod` requires a successful build and starts `dist/main`.
-- Lint uses type-aware **Oxlint**, not ESLint. Preserve `.oxlintrc.json` and check async work for unhandled promises.
-- Tests use **Vitest**, not Jest; `describe`, `it`, and `expect` are configured as globals. Use `vi` for Vitest mocks when needed.
-- Unit discovery is `**/*.spec.ts`; e2e discovery is `**/*.e2e-spec.ts` using `vitest.config.e2e.ts`. Run both suites; `npm test` does not exercise the e2e suite.
-- `npm run format` rewrites all source and test files. For a focused formatting check, use `npm exec -- prettier --check <changed-files>`; avoid unrelated formatting changes.
-- There is no root npm workspace or root test command. Do not use frontend tooling inside the backend.
+Usar npm y package-lock.json. package.json declara Node.js >=22 y npm >=10. El Dockerfile actual usa Node 20 en la etapa de construcción; comprobar esa discrepancia si se modifica el despliegue.
 
-## TypeScript and Nest conventions
+| Comando | Uso |
+| --- | --- |
+| npm ci | Restaurar las dependencias del lockfile cuando sea necesario y esté dentro del alcance. |
+| npm run start:dev | Iniciar el backend en desarrollo. |
+| npm run build | Compilar el código de producción en dist/. |
+| npm run start:prod | Iniciar dist/main después de compilar. |
+| npm run lint | Analizar src/ y test/ con Oxlint y comprobación de tipos. |
+| npm test | Ejecutar las pruebas unitarias con Vitest. |
+| npm run test:cov | Obtener cobertura de las pruebas unitarias. |
+| npm exec -- prisma generate --config prisma7.config.ts | Regenerar los tipos después de modificar modelos Prisma. |
 
-- Preserve ESM: `"type": "module"`, NodeNext module resolution, and `.js` suffixes on relative TypeScript imports. Do not introduce CommonJS `require`, extensionless relative imports, or new aliases without configuring build and tests together.
-- Keep strict TypeScript checking, decorators, and emitted decorator metadata enabled. Production compilation excludes tests and writes application files directly to `dist/`.
-- Keep controllers focused on HTTP contracts; put business behavior in injectable services with constructor injection. Register providers and imports explicitly in their owning modules.
-- Add a feature module when implementing a real feature. Reuse existing code before introducing shared layers, repositories, interfaces, or new dependencies.
-- Use Nest HTTP exceptions for expected request failures. Do not return stack traces or internal configuration to clients.
-- Before changing version-sensitive framework or tool APIs, resolve the library with Context7 and query the relevant documentation. Prefer a version matching `package.json`/the lockfile; explicitly note missing version coverage. Static code review and business-logic analysis do not require a documentation lookup.
+No ejecutar npm install ni npm i, con o sin argumentos; tampoco pnpm install. No cambiar dependencias o el lockfile para resolver un problema ajeno al trabajo. npm run format reescribe todos los archivos de código y pruebas; limitar el formato a los archivos modificados cuando sea posible.
 
-## Configuration and external services
+No hay un workspace npm ni un comando de pruebas en la raíz. No ejecutar herramientas del frontend como si pertenecieran al backend.
 
-- For direct local startup, copy `backend/.env.example` to `backend/.env`; never commit real credentials. Document new variables in the relevant example file and README.
-- For Compose, run from the repository root with a root `.env` based on root `.env.example`. Root database variables and `backend/.env` serve different startup paths. Compose sets `PORT=4000` and `DATABASE_URL` explicitly.
-- `DATABASE_URL` is supplied by Compose but is not consumed by the current root application. Starting PostgreSQL does not create the DBML tables.
-- Observe is initialized unconditionally in `app.module.ts`, and production bootstrap passes `ObserveInstrument`. Blank example credentials do not establish an offline mode. Check the installed Observe API before changing enablement; isolate external telemetry in tests when necessary.
-- Preserve `/health` as a lightweight liveness check. It currently proves neither database connectivity nor application readiness. Add a separate readiness contract if dependencies later require one.
-- Do not log credentials, authorization headers, passwords, or personal incident/location data.
-- Dont use npm install or pnpm install
+## Consultar documentación actual
 
-## When implementing domain features
+Antes de usar o cambiar una API, configuración o comando dependiente de una biblioteca, consultar Context7: resolver primero la biblioteca y después consultar el concepto concreto, preferiblemente para la versión instalada. No asumir que una API recordada sigue siendo válida. La revisión estática, la lógica de negocio y los cambios puramente documentales no requieren una consulta por sí mismos.
 
-- Always create a feature specification in `../docs/specs/` before implementation. Keep that same specification updated as requirements, decisions, API contracts, implementation status, and verification results change.
-- Use the specification as the source of truth for the feature. Clearly distinguish proposed behavior, approved decisions, open questions, and verified implementation; do not mark unresolved decisions or unrun checks as complete.
+## Código y organización
 
-- Treat the DBML as a starting point. Confirm role permissions, incident transitions, assignment rules, identifiers, and nullability before encoding them; enum order is not a transition policy.
-- No persistence library has been selected in code. Introduce database dependencies and migrations only for a task that needs them, documenting the choice and keeping the DBML consistent with executable schema changes.
-- Validate request data at the HTTP boundary. TypeScript types alone do not validate JSON. Add server-side authentication and authorization before exposing protected user or incident operations; never trust client-supplied identity or role fields.
-- The current incident endpoints reject unknown fields and validate category/asset UUID format only. They use an in-memory `Map`, so data is lost at restart; do not add persistence or identity work without a separate approved scope.
-- When adding password handling, store password hashes and exclude them from responses and logs.
-- When implementing incident status or priority changes with audit history, commit the state update and history entry atomically and test rejection paths.
-- Treat API changes as shared contracts for web and mobile. Document request/response shapes, status codes, and compatibility implications in the backend README.
-- Generate a report in spanish about the feature implemmented
+- No introducir any en código propio; usar tipos explícitos o unknown con validación y estrechamiento. Elegir nombres autodescriptivos: PascalCase para clases y tipos, camelCase para funciones y variables, y kebab-case para archivos, respetando los sufijos de NestJS.
+- Mantener TypeScript estricto, ESM, resolución NodeNext y sufijos .js en imports relativos. No introducir require, nuevos alias ni imports sin extensión en código propio sin adaptar compilación y pruebas.
+- Organizar por funcionalidad y después por responsabilidad: controllers/, services/, pipes/, dto/ y types/ cuando existan archivos que lo justifiquen. Dejar el módulo de cada funcionalidad en su raíz. No crear carpetas vacías.
+- Conservar los decoradores y la emisión de metadatos de NestJS. La compilación de producción excluye las pruebas y escribe en dist/.
+- Mantener los controladores centrados en HTTP; colocar la lógica de negocio en servicios inyectables y registrar explícitamente proveedores e imports en su módulo.
+- Validar las entradas en el límite HTTP. Los tipos TypeScript y los modelos Prisma no sustituyen la validación de datos externos.
+- Usar excepciones HTTP de NestJS para errores esperados; no exponer trazas ni configuración interna.
+- Tratar las rutas, campos y códigos de respuesta como contratos compartidos con los consumidores. Documentar sus cambios y consecuencias de compatibilidad antes de conectarlos.
 
-## Verification and completion
+## Modelos y objetos Prisma por funcionalidad
 
-For backend runtime or dependency changes, run `npm run build`, `npm run lint`, `npm test`, and `npm run test:e2e`. Add focused regression coverage for changed behavior, including invalid input and permission failures where relevant. Do not weaken checks to make a change pass.
+- Al implementar cada funcionalidad, crear o actualizar los modelos Prisma que representan sus entidades en prisma/schema.prisma. Reutilizar modelos compartidos cuando corresponda, sin duplicarlos.
+- Regenerar el cliente y utilizar sus tipos para los objetos de dominio almacenados. No mantener una copia manual independiente del modelo persistible ni editar a mano src/generated/prisma/.
+- Documentar campos, relaciones, identificadores, valores iniciales, nulabilidad y almacenamiento en la especificación de la funcionalidad. Contrastar las decisiones con el diagrama; no deducir permisos ni transiciones del orden de un enum.
+- Mientras la base de datos no esté configurada, conservar los objetos tipados en memoria y declarar que se pierden al reiniciar. Prisma proporciona modelos y tipos; no es una base de datos ni aporta persistencia por sí solo.
+- Crear modelos o generar tipos no autoriza a conectar PostgreSQL, activar PrismaModule, aplicar migraciones ni ejecutar db push. Esas acciones deben formar parte del alcance solicitado.
+- Separar el objeto interno de la respuesta pública cuando difieran: serializar fechas, ocultar datos internos y evitar devolver referencias que permitan modificar el almacenamiento.
+- No introducir por defecto identidades, autenticación, permisos o relaciones todavía no implementadas. Si se solicitan operaciones protegidas, validar identidad y permisos en el servidor.
 
-Use `Test.createTestingModule` for Nest unit tests and Supertest against an initialized application for HTTP tests. Close applications and resources in teardown. E2e tests construct their own application and do not execute `main.ts`; if adding global pipes, guards, prefixes, or other bootstrap behavior, ensure tests exercise the same configuration.
+## Estructura de las pruebas
 
-For documentation-only changes, verify paths, scripts, and claims against the actual repository and inspect the diff. Do not add tests that merely duplicate prose.
+Por defecto, crear y ejecutar exclusivamente pruebas unitarias. No crear ni ejecutar pruebas e2e o de integración salvo petición explícita del usuario, aunque exista un script test:e2e.
 
-If changing deployment files, verify the declared Node requirements, both Docker stages, environment handling, and the production startup command together. There is currently no `.dockerignore`; exclude secrets and local dependencies before relying on `COPY . .` for a production image. Do not delete database volumes as a verification step.
+Las pruebas van en test/, separadas por funcionalidad y rol, reflejando la ubicación del código:
 
-Report checks actually run, their results, and any environment limitations. Separate pre-existing failures from regressions. Keep changes within the requested scope; do not silently fix unrelated frontend or schema issues.
+~~~text
+backend/
+  src/
+    <funcionalidad>/
+      <funcionalidad>.module.ts
+      controllers/
+      services/
+      pipes/
+      dto/
+      types/
+  test/
+    <funcionalidad>/
+      controllers/
+        <funcionalidad>.controller.spec.ts
+      services/
+        <funcionalidad>.service.spec.ts
+      pipes/
+        <funcionalidad>.pipe.spec.ts
+~~~
+
+- Crear solo las carpetas y suites necesarias. No colocar pruebas nuevas junto al código de producción ni dentro de src/generated/.
+- Usar Vitest, no Jest; vi para dobles de prueba y Test.createTestingModule cuando sea necesario comprobar inyección de NestJS.
+- Probar comportamiento observable y errores relevantes. Sustituir acceso a base de datos, red, archivos y telemetría por dobles cuando corresponda; una prueba unitaria no debe necesitar servicios externos.
+- Cerrar los módulos y recursos abiertos, y restaurar los dobles y variables de entorno modificados.
+- Estado heredado: actualmente hay unitarias en src/**/*.spec.ts y dos archivos e2e en test/. No moverlos ni ampliarlos en un cambio ajeno a su reorganización. Si los archivos e2e se encuentran en test/test-e2e/ en otra rama, conservar esa ubicación acordada.
+- vitest.config.ts descubre **/*.spec.ts. Las e2e usan **/*.e2e-spec.ts mediante vitest.config.e2e.ts y no deben entrar en la ejecución unitaria. Revisar ambas configuraciones si se reorganizan las pruebas.
+
+## Documentación
+
+Guardar la documentación en backend/docs/. Las rutas siguientes parten de la raíz del repositorio.
+
+- Crear la especificación en backend/docs/spec/specs/ usando backend/docs/spec/templates/spec-template.md.
+- Crear el plan en backend/docs/spec/plans/ usando backend/docs/spec/templates/plan-template.md.
+- Registrar el progreso, las comprobaciones y la confirmación de implementación en ese mismo plan, sin archivos adicionales de tareas o informes.
+- Escribir en español y mantener los documentos alineados con el comportamiento real.
+
+## Catálogo de endpoints
+
+El catálogo está en **backend/docs/spec/endpoint/**. Antes de consultar o modificar un contrato, listar sus carpetas y leer la ficha correspondiente.
+
+Desde la raíz del repositorio:
+
+~~~sh
+ls backend/docs/spec/endpoint
+~~~
+
+Desde backend/:
+
+~~~sh
+ls docs/spec/endpoint
+~~~
+
+En PowerShell puede usarse Get-ChildItem con las mismas rutas.
+
+- Una carpeta por método y ruta dentro de backend/docs/spec/endpoint/: por ejemplo, post-incidents/ para POST /incidents y get-incidents-id/ para GET /incidents/:id. Son ejemplos de organización, no evidencia de implementación.
+- Cada carpeta contiene un README.md con estado y fecha de revisión, método/ruta, finalidad, acceso, entrada, validaciones, respuesta, cabeceras, errores, límites de almacenamiento y enlaces a la especificación, plan y código.
+- Crear o actualizar la ficha al implementar, modificar o retirar el endpoint. No describir un endpoint propuesto como activo; si falta la ficha, consultar el código y documentar su estado real.
+- endpoint/ contiene documentación; no implica mover controladores ni cambiar rutas HTTP.
+- Consultar el catálogo no autoriza a iniciar servicios, enviar peticiones en vivo ni conectar frontends.
+
+## Configuración y seguridad
+
+- Para ejecución local, usar backend/.env a partir de backend/.env.example. Para Compose, usar el .env de la raíz a partir de su ejemplo. No versionar credenciales reales.
+- Documentar variables nuevas en el ejemplo correspondiente y en la documentación afectada. No registrar contraseñas, cabeceras de autorización ni datos personales de incidencias o ubicaciones.
+- DATABASE_URL llega desde Compose, pero el módulo raíz actual no la consume mediante Prisma. Levantar PostgreSQL no aplica automáticamente tablas o migraciones.
+- Observe se configura en app.module.ts y main.ts. Las credenciales vacías no garantizan un modo sin conexión; aislar la telemetría en las pruebas unitarias.
+- Si se solicitan contraseñas, almacenar hashes y excluirlos de respuestas y registros. Si se solicitan cambios con auditoría, guardar el cambio y su historial de forma atómica.
+- No borrar volúmenes de base de datos para verificar un cambio.
+
+## Verificación y entrega
+
+- Para cambios de código o dependencias, ejecutar npm run build, npm run lint y npm test. Añadir solo las pruebas unitarias pertinentes; no debilitar validaciones para conseguir un resultado correcto.
+- Para cambios únicamente documentales, comprobar rutas, comandos, coherencia con la rama y git diff --check. No añadir pruebas ni ejecutar servicios para verificar texto.
+- Si una comprobación está bloqueada por el entorno, informar del comando y la causa; no presentarla como correcta ni cambiar políticas del sistema para sortear el bloqueo.
+- Entregar un resumen en español con lo modificado, las comprobaciones reales y las limitaciones. Confirmar el resultado y las comprobaciones en el mismo plan.
