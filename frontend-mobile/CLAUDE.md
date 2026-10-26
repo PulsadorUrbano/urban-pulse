@@ -9,7 +9,7 @@
 - **Público objetivo:** solo ciudadanía / público general.
 - **Fuera de alcance:** paneles de gestión del ayuntamiento/personal, herramientas de triaje o flujos administrativos (pertenecen estrictamente a los servicios web o backend).
 - **Capacidades móviles principales:** crear nuevos reportes de incidencias con ubicación/multimedia y hacer seguimiento del estado de los reportes propios.
-- **Datos simulados vía json-server:** no intentes conectarte ni leer los endpoints en vivo del backend NestJS todavía. Toda la interacción con la API y las pruebas de integración deben basarse estrictamente en datos mock locales (p. ej. usando `json-server`).
+- **Datos y conexión con el backend:** ver la sección [Integración con backend y datos mock](#integración-con-backend-y-datos-mock) para la política completa (mock vs. backend real).
 
 Esta es una aplicación móvil Expo/React Native. Prioriza patrones mobile-first, el rendimiento y la compatibilidad multiplataforma.
 
@@ -21,14 +21,13 @@ Esta es una aplicación móvil Expo/React Native. Prioriza patrones mobile-first
 - **Lenguaje:** TypeScript (modo estricto, cero `any`)
 - **Rutas:** Expo Router (navegación basada en archivos)
 - **Estilos:** NativeWind (Tailwind CSS para React Native)
-- **Estado y obtención de datos:** servidor mock local (`json-server`) vía `db.json`
+- **Estado y obtención de datos:** servidor mock local (`json-server`) vía `db.json`, con backend real (NestJS) disponible como se describe en *Integración con backend y datos mock*.
 
 ### Arquitectura general del proyecto completo
 
-- **Lenguaje:** TypeScript
 - **Framework frontend móvil:** React Native + Expo // NativeWind
 - **Framework frontend web:** React
-- **Framework backend:** NestJS
+- **Framework backend:** NestJS (TypeScript)
 - **Base de datos:** PostgreSQL
 
 ---
@@ -44,7 +43,9 @@ Esta es una aplicación móvil Expo/React Native. Prioriza patrones mobile-first
 - `src/constants/` — Configuración global, design tokens y paletas de tema.
 - `src/utils/` — Funciones puras de ayuda, parseadores de fechas y validadores de entrada.
 - `db.json` — Archivo fixture de la base de datos local para los endpoints mock de `json-server`.
-- `docs/` — Notas de sesión y listas de tareas (con subtareas).
+- `docs/` — Notas de sesión y listas de tareas (con subtareas); incluye `docs/spec/` con la trazabilidad de specs, planes, bugs y refactors (ver `docs/spec/README.md`).
+
+Nota: `backend/` y `database/` (fuera de `frontend-mobile/`) son de solo lectura — ver *Qué NO hacer*.
 
 ---
 
@@ -84,19 +85,56 @@ npx expo install --fix      # corrige versiones de paquetes incompatibles
 
 Ejecuta lint y typecheck antes de dar por terminada cualquier tarea.
 
-### Backend + BD
-
-Para levantar los servicios de backend y la base de datos solo para pruebas y únicamente cuando el usuario lo pida explícitamente:
-
-```bash
-docker compose -f ../docker-compose.yml up -d
-```
-
 ### Servidor mock
 
 ```bash
 npm run mock
 ```
+
+### Backend + BD
+
+Levanta esto solo para pruebas y únicamente cuando el usuario lo pida explícitamente (ver también *Integración con backend y datos mock*).
+
+**Opción 1 — Docker Compose (backend + PostgreSQL/PostGIS):**
+
+```bash
+docker compose -f ../docker-compose.yml up -d
+```
+
+**Opción 2 — Backend standalone sin Docker (para probar solo la conexión del front):**
+
+En la fase actual de registro de incidencias, el backend arranca sin necesidad de base de datos (`AppModule` todavía no activa Prisma), por lo que basta con levantarlo de forma standalone:
+
+```bash
+# Desde la raíz del repositorio (fuera de frontend-mobile/)
+cd ../backend
+npm ci
+PORT=4000 npm run start:dev
+```
+
+- Requiere Node.js 22+ y npm 10+ (ver `backend/package.json`).
+- La API escucha por defecto en `http://localhost:3000` (configurable con la variable `PORT`; copia `backend/.env.example` a `backend/.env` si hace falta cambiarla).
+- Swagger se publica en `/` y `GET /health` responde `{ "status": "ok" }` para verificar que el backend está arriba.
+- Endpoints relevantes para la feature de registro de incidencias: `GET /categories`, `POST /incidents` (multipart/form-data), `GET /incidents/:id`.
+- Los datos viven solo en memoria y se pierden al reiniciar el backend; no hay autenticación ni persistencia real todavía.
+
+---
+
+## Integración con backend y datos mock
+
+- **Datos simulados vía json-server:** no intentes conectarte ni leer los endpoints en vivo del backend NestJS hasta que se pida explícitamente; toda la interacción con la API y las pruebas de integración deben basarse estrictamente en datos mock locales (p. ej. usando `json-server`), salvo que se esté verificando explícitamente la conexión al backend real (ver *Backend + BD* en *Comandos*).
+- **No verifiques ni depures el backend: NO es tu trabajo.** Cuando se conecte el front con el backend, comprueba ÚNICAMENTE que el **front se conecta y envía correctamente** (petición bien formada, que llega al endpoint y obtiene respuesta). NO gastes tokens en comprobar ni depurar si el backend *funciona como debería* (su lógica interna, sus tests, su almacenamiento): eso es responsabilidad del equipo de backend. Si el backend falla, **repórtalo y continúa**; no intentes arreglarlo salvo que se pida explícitamente.
+- **Backend real + simulación mock:** si una feature ya está implementada en el backend, el móvil la consume del backend real; además, el mock (`json-server` / capa de servicio) mantiene una simulación equivalente de esa feature para conservar trazabilidad y permitir desarrollo y pruebas sin backend levantado. Impleméntalo como **real-first con fallback al mock**: intenta el backend y, si **no hay conexión**, cae al mock mostrando un **aviso claro en pantalla** (p. ej. "No se ha podido conectar al backend, realizando en el mock").
+- **NUNCA borres del front lógica o simulación que el backend aún no cubra de forma estable.** Si una feature todavía no está en el backend —o no está completa, estable o verificada— **no elimines** su implementación ni su simulación mock del front. Al conectar con el backend, **AÑADE** el camino real pero **CONSERVA** el del mock: el front nunca debe quedar dependiendo solo del backend para algo que antes funcionaba contra el mock. Regla dura: **si dudas, no borras — se conserva el mock.**
+- **Flujo de datos mock y esquema:** al trabajar con `db.json`:
+  1. Verifica si la entidad o los datos mock requeridos ya existen.
+  2. Si faltan, define primero el contrato/interfaz en `src/types/`.
+  3. Añade la entidad/registro mock en `db.json` y pide confirmación al usuario antes de continuar con la integración de UI.
+- **Estrategia de medios locales e imágenes:**
+  - **Nada de almacenamiento en la nube todavía:** no propongas, configures ni esperes por S3, MinIO o endpoints de subida del backend.
+  - **Fotos capturadas/seleccionadas:** usa la URI local temporal (`file://...`) que devuelven directamente `expo-image-picker` o los módulos de cámara. Guarda esa URI local directamente en `photoURL` al persistir en `db.json`.
+  - **Datos mock semilla:** usa URLs de imágenes placeholder (p. ej. `https://picsum.photos/...`) para los fixtures iniciales en `db.json`.
+  - **Encapsulación del servicio de almacenamiento:** aísla el manejo de imágenes dentro de `src/services/storage.service.ts` con un retardo de red simulado (`setTimeout`) para probar los estados de carga/error de la UI sin tocar servicios externos.
 
 ---
 
@@ -161,7 +199,7 @@ Reglas:
 - **Nada de listas sin optimizar:** no renderices colecciones dinámicas o sin límite con `.map()` dentro de un `<ScrollView>` estándar; usa siempre `<FlatList>` o virtualización para el rendimiento de listas.
 - **Nada de estilos inline sin control:** evita objetos `style={{ ... }}` inline y voluminosos; da estilo a los componentes con clases de utilidad de NativeWind (`className="..."`) o tokens de tema.
 - **No modifiques archivos fuera de frontend-mobile:** todas las ediciones deben confinarse estrictamente a `frontend-mobile/`. Otros directorios (como `backend/` o `database/`) son de solo lectura, para inspeccionar endpoints de la API, contratos DTO o ejecutar comandos docker a nivel raíz.
-- **Nada de inspección del backend en vivo:** no analices ni consultes los endpoints del backend hasta que se pida explícitamente; asume y construye contra datos REST mock locales vía `json-server`.
+- **Política de backend y datos mock:** ver la sección [Integración con backend y datos mock](#integración-con-backend-y-datos-mock) (qué consultar, cuándo depurar backend y cuándo conservar el mock).
 
 ---
 
@@ -173,24 +211,15 @@ Reglas:
 - **Cambios mínimos y específicos:** toca solo el código estrictamente relacionado con la tarea actual. No reformatees ni refactorices archivos no relacionados.
 - **Verificación de calidad obligatoria:** ejecuta siempre `npx expo lint` y `npx tsc --noEmit` para asegurar que no hay errores de lint ni de tipos antes de dar por terminada cualquier tarea.
 - **Nada de commits de git autónomos:** no crees commits ni hagas push a ramas remotas salvo que se pida explícitamente.
-- **Backend real + simulación mock:** si una feature ya está implementada en el backend, el móvil la consume del backend real; además, el mock (`json-server` / capa de servicio) mantiene una simulación equivalente de esa feature para conservar trazabilidad y permitir desarrollo y pruebas sin backend levantado.
-- **Flujo de datos mock y esquema:** al trabajar con `db.json`:
-  1. Verifica si la entidad o los datos mock requeridos ya existen.
-  2. Si faltan, define primero el contrato/interfaz en `src/types/`.
-  3. Añade la entidad/registro mock en `db.json` y pide confirmación al usuario antes de continuar con la integración de UI.
-- **Estrategia de medios locales e imágenes:**
-  - **Nada de almacenamiento en la nube todavía:** no propongas, configures ni esperes por S3, MinIO o endpoints de subida del backend.
-  - **Fotos capturadas/seleccionadas:** usa la URI local temporal (`file://...`) que devuelven directamente `expo-image-picker` o los módulos de cámara. Guarda esa URI local directamente en `photoURL` al persistir en `db.json`.
-  - **Datos mock semilla:** usa URLs de imágenes placeholder (p. ej. `https://picsum.photos/...`) para los fixtures iniciales en `db.json`.
-  - **Encapsulación del servicio de almacenamiento:** aísla el manejo de imágenes dentro de `src/services/storage.service.ts` con un retardo de red simulado (`setTimeout`) para probar los estados de carga/error de la UI sin tocar servicios externos.
-- **Sincronización del roadmap y ciclo de vida de specs (`spec/`):**
-  - **Andamiaje de features:** siempre que se solicite una feature nueva, el `planner` debe inicializar automáticamente su directorio dedicado en `spec/features/NNN-<feature-name>/` (p. ej. `001-registro-incidencia/`).
-  - **Adherencia a las plantillas:** dentro de la carpeta de la feature, el `planner` debe crear `spec.md`, `plan.md` y `tasks.md`, siguiendo estrictamente los blueprints definidos en `spec/templates/` antes de empezar cualquier implementación.
-  - **Sobrescritura del roadmap en vivo:** el `planner` debe mantener y sobrescribir activamente `spec/constitution/roadmap.md` para reflejar el progreso real del proyecto:
-    - Mueve la feature activa a `## Siguiente 🔜` cuando empiece el trabajo.
-    - Mueve la feature a `## Hecho ✅` una vez que pasen todas las comprobaciones de calidad, tests y tareas.
-    - Mantén las features futuras listadas bajo `## Backlog / ideas 💡`.
+- **Backend y datos mock:** ver [Integración con backend y datos mock](#integración-con-backend-y-datos-mock) para la política de real-first/fallback, el flujo de datos en `db.json` y la estrategia de medios locales.
+- **Specs y trazabilidad (`docs/spec/`):** la estructura de carpetas, las plantillas y la diferencia entre `spec.md` y `plan.md` están documentadas en `docs/spec/README.md` — es la única fuente de verdad, no se duplica aquí. El agente `organizador` es responsable de mantenerlo.
 - **Documentación de sesión y seguimiento de tareas (`docs/`):**
   - Mantén el progreso de la sesión dentro del directorio `docs/`.
   - Documenta notas de sesión y mantén una lista de tareas estructurada que detalle todas las tareas completadas y sus subtareas (p. ej. usando checkboxes `- [x]` / `- [ ]`).
   - Actualiza este registro al completar cada tarea para que el trabajo en curso y el pasado quede transparente y trazable entre sesiones.
+
+---
+
+## Github
+
+Si yo solicito que subas una feature a github, crees una rama, commit, etc. Debes leer el `README.md` de la raíz y seguir la convención que se indica.
