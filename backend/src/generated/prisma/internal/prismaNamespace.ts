@@ -401,7 +401,9 @@ export const ModelName = {
   IncidentLocation: 'IncidentLocation',
   IncidentImage: 'IncidentImage',
   CambioEstado: 'CambioEstado',
-  CambioPrioridad: 'CambioPrioridad'
+  CambioPrioridad: 'CambioPrioridad',
+  users: 'users',
+  citizens: 'citizens'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -417,7 +419,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "incident" | "incidentLocation" | "incidentImage" | "cambioEstado" | "cambioPrioridad"
+    modelProps: "incident" | "incidentLocation" | "incidentImage" | "cambioEstado" | "cambioPrioridad" | "users" | "citizens"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -791,6 +793,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    users: {
+      payload: Prisma.$usersPayload<ExtArgs>
+      fields: Prisma.usersFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.usersFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$usersPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.usersFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$usersPayload>
+        }
+        findFirst: {
+          args: Prisma.usersFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$usersPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.usersFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$usersPayload>
+        }
+        findMany: {
+          args: Prisma.usersFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$usersPayload>[]
+        }
+        create: {
+          args: Prisma.usersCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$usersPayload>
+        }
+        createMany: {
+          args: Prisma.usersCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.usersCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$usersPayload>[]
+        }
+        delete: {
+          args: Prisma.usersDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$usersPayload>
+        }
+        update: {
+          args: Prisma.usersUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$usersPayload>
+        }
+        deleteMany: {
+          args: Prisma.usersDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.usersUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.usersUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$usersPayload>[]
+        }
+        upsert: {
+          args: Prisma.usersUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$usersPayload>
+        }
+        aggregate: {
+          args: Prisma.UsersAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUsers>
+        }
+        groupBy: {
+          args: Prisma.usersGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UsersGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.usersCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UsersCountAggregateOutputType> | number
+        }
+      }
+    }
+    citizens: {
+      payload: Prisma.$citizensPayload<ExtArgs>
+      fields: Prisma.citizensFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.citizensFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$citizensPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.citizensFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$citizensPayload>
+        }
+        findFirst: {
+          args: Prisma.citizensFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$citizensPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.citizensFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$citizensPayload>
+        }
+        findMany: {
+          args: Prisma.citizensFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$citizensPayload>[]
+        }
+        create: {
+          args: Prisma.citizensCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$citizensPayload>
+        }
+        createMany: {
+          args: Prisma.citizensCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.citizensCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$citizensPayload>[]
+        }
+        delete: {
+          args: Prisma.citizensDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$citizensPayload>
+        }
+        update: {
+          args: Prisma.citizensUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$citizensPayload>
+        }
+        deleteMany: {
+          args: Prisma.citizensDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.citizensUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.citizensUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$citizensPayload>[]
+        }
+        upsert: {
+          args: Prisma.citizensUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$citizensPayload>
+        }
+        aggregate: {
+          args: Prisma.CitizensAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCitizens>
+        }
+        groupBy: {
+          args: Prisma.citizensGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CitizensGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.citizensCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CitizensCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -891,6 +1041,27 @@ export const CambioPrioridadScalarFieldEnum = {
 } as const
 
 export type CambioPrioridadScalarFieldEnum = (typeof CambioPrioridadScalarFieldEnum)[keyof typeof CambioPrioridadScalarFieldEnum]
+
+
+export const UsersScalarFieldEnum = {
+  id: 'id',
+  username: 'username',
+  email: 'email',
+  password: 'password',
+  created_at: 'created_at',
+  role: 'role'
+} as const
+
+export type UsersScalarFieldEnum = (typeof UsersScalarFieldEnum)[keyof typeof UsersScalarFieldEnum]
+
+
+export const CitizensScalarFieldEnum = {
+  user_id: 'user_id',
+  phone: 'phone',
+  created_at: 'created_at'
+} as const
+
+export type CitizensScalarFieldEnum = (typeof CitizensScalarFieldEnum)[keyof typeof CitizensScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -997,6 +1168,20 @@ export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMode
  * Reference to a field of type 'Boolean'
  */
 export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+
+
+
+/**
+ * Reference to a field of type 'profile_role'
+ */
+export type Enumprofile_roleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'profile_role'>
+
+
+
+/**
+ * Reference to a field of type 'profile_role[]'
+ */
+export type ListEnumprofile_roleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'profile_role[]'>
 
 
 
@@ -1169,6 +1354,8 @@ export type GlobalOmitConfig = {
   incidentImage?: Prisma.IncidentImageOmit
   cambioEstado?: Prisma.CambioEstadoOmit
   cambioPrioridad?: Prisma.CambioPrioridadOmit
+  users?: Prisma.usersOmit
+  citizens?: Prisma.citizensOmit
 }
 
 /* Types for Logging */

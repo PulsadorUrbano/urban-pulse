@@ -92,3 +92,31 @@ model CambioPrioridad {
   @@index([incidenciaId])
   @@map("priority_changes")
 }
+
+// Identidad de token-backend; las incidencias siguen almacenándose en memoria.
+enum profile_role {
+  administrative
+  department
+  team
+  technician
+  civic
+  admin
+  analyst
+}
+
+model users {
+  id         String       @id @default(uuid()) @db.Uuid
+  username   String       @unique
+  email      String       @unique
+  password   String
+  created_at DateTime     @default(now())
+  role       profile_role
+  citizen    citizens?
+}
+
+model citizens {
+  user_id    String   @id @db.Uuid
+  phone      String?  @unique
+  created_at DateTime @default(now())
+  user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}

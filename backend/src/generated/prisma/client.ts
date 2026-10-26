@@ -64,3 +64,13 @@ export type CambioEstado = Prisma.CambioEstadoModel
  *
  */
 export type CambioPrioridad = Prisma.CambioPrioridadModel
+/**
+ * Model users
+ *
+ */
+export type users = Prisma.usersModel
+/**
+ * Model citizens
+ *
+ */
+export type citizens = Prisma.citizensModel

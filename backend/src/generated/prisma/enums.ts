@@ -25,3 +25,16 @@ export const IncidentPriority = {
 } as const
 
 export type IncidentPriority = (typeof IncidentPriority)[keyof typeof IncidentPriority]
+
+
+export const profile_role = {
+  administrative: 'administrative',
+  department: 'department',
+  team: 'team',
+  technician: 'technician',
+  civic: 'civic',
+  admin: 'admin',
+  analyst: 'analyst'
+} as const
+
+export type profile_role = (typeof profile_role)[keyof typeof profile_role]

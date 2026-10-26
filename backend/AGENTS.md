@@ -131,7 +131,7 @@ En PowerShell puede usarse Get-ChildItem con las mismas rutas.
 
 - Para ejecución local, usar backend/.env a partir de backend/.env.example. Para Compose, usar el .env de la raíz a partir de su ejemplo. No versionar credenciales reales.
 - Documentar variables nuevas en el ejemplo correspondiente y en la documentación afectada. No registrar contraseñas, cabeceras de autorización ni datos personales de incidencias o ubicaciones.
-- DATABASE_URL llega desde Compose, pero el módulo raíz actual no la consume mediante Prisma. Levantar PostgreSQL no aplica automáticamente tablas o migraciones.
+- AppModule incorpora AuthModule y PrismaModule: autenticación requiere PostgreSQL, DATABASE_URL, JWT_SECRET y JWT_EXPIRES_IN al arrancar. Incidencias conserva almacenamiento en memoria y no queda protegida por importar auth. DB_SYNC está vacío en el ejemplo; no activar dbpush/deploy ni ejecutar semillas fuera del alcance solicitado.
 - Observe se configura en app.module.ts y main.ts. Las credenciales vacías no garantizan un modo sin conexión; aislar la telemetría en las pruebas unitarias.
 - Si se solicitan contraseñas, almacenar hashes y excluirlos de respuestas y registros. Si se solicitan cambios con auditoría, guardar el cambio y su historial de forma atómica.
 - No borrar volúmenes de base de datos para verificar un cambio.

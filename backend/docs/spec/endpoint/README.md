@@ -54,3 +54,11 @@ Al añadir, modificar o retirar un endpoint, actualizar su carpeta en el mismo c
 - [Consultar categorías](get-categories/README.md): GET /categories.
 
 Contratos revisados estáticamente; consultar cada ficha para los límites y la fecha de revisión.
+
+## Autenticación incorporada desde token-backend
+
+
+- [Registrar ciudadano](post-auth-register/README.md): POST /auth/register.
+- [Iniciar sesión](post-auth-login/README.md): POST /auth/login.
+- [Validar sesión](get-auth-me/README.md): GET /auth/me.
+- [Emisión anterior retirada](post-auth-token/README.md): POST /auth/token, sin ruta activa.

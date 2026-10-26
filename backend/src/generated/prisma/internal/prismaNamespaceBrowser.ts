@@ -55,7 +55,9 @@ export const ModelName = {
   IncidentLocation: 'IncidentLocation',
   IncidentImage: 'IncidentImage',
   CambioEstado: 'CambioEstado',
-  CambioPrioridad: 'CambioPrioridad'
+  CambioPrioridad: 'CambioPrioridad',
+  users: 'users',
+  citizens: 'citizens'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -135,6 +137,27 @@ export const CambioPrioridadScalarFieldEnum = {
 } as const
 
 export type CambioPrioridadScalarFieldEnum = (typeof CambioPrioridadScalarFieldEnum)[keyof typeof CambioPrioridadScalarFieldEnum]
+
+
+export const UsersScalarFieldEnum = {
+  id: 'id',
+  username: 'username',
+  email: 'email',
+  password: 'password',
+  created_at: 'created_at',
+  role: 'role'
+} as const
+
+export type UsersScalarFieldEnum = (typeof UsersScalarFieldEnum)[keyof typeof UsersScalarFieldEnum]
+
+
+export const CitizensScalarFieldEnum = {
+  user_id: 'user_id',
+  phone: 'phone',
+  created_at: 'created_at'
+} as const
+
+export type CitizensScalarFieldEnum = (typeof CitizensScalarFieldEnum)[keyof typeof CitizensScalarFieldEnum]
 
 
 export const SortOrder = {
