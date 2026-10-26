@@ -20,10 +20,17 @@ export class JwtAuthGuard implements CanActivate {
 
     const [scheme, token] = request.headers.authorization?.split(' ') ?? [];
     if (scheme !== 'Bearer' || !token) {
-      throw new UnauthorizedException('Missing bearer token');
+      throw new UnauthorizedException('Falta el token Bearer');
     }
 
-    request.user = await this.jwt.verifyAsync<TokenPayload>(token);
+    try {
+      request.user = await this.jwt.verifyAsync<TokenPayload>(token, {
+        algorithms: ['HS256'],
+      });
+    } catch {
+      throw new UnauthorizedException('Token inválido o expirado');
+    }
+
     return true;
   }
 }
