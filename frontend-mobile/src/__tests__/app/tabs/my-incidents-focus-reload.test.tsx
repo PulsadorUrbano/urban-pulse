@@ -73,6 +73,7 @@ const mockSessionUser: SessionUser = {
   email: 'ciudadano@example.com',
   role: 'civic',
   civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
+  source: 'mock',
 };
 
 function buildSessionValue(): SessionContextValue {

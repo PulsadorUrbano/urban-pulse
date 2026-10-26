@@ -1,7 +1,4 @@
-import { BACKEND_API_URL } from '@/constants/config';
-import type { AuthToken, CreateTokenRequest, CreateTokenResponse } from '@/types/token';
-
-import { fetchWithTimeout } from './http';
+import type { AuthToken } from '@/types/token';
 
 // Rango de latencia simulada (ms) para el token generado localmente.
 export const SIMULATED_TOKEN_MIN_DELAY_MS = 300;
@@ -42,9 +39,11 @@ function encodeBase64Url(text: string): string {
   return encoded;
 }
 
-// Genera un token local de respaldo tras una latencia de red simulada.
+// Genera un token local de respaldo tras una latencia de red simulada, para
+// el camino mock de login/registro (auth.service.ts). El token real para el
+// camino backend viene embebido en la respuesta de /auth/login, no de aquí.
 // Formato: mock.<base64url(payload)>.simulated (sin criptografía real).
-async function simulateToken(userId: string): Promise<AuthToken> {
+export async function simulateToken(userId: string): Promise<AuthToken> {
   const delayMs =
     SIMULATED_TOKEN_MIN_DELAY_MS +
     Math.random() * (SIMULATED_TOKEN_MAX_DELAY_MS - SIMULATED_TOKEN_MIN_DELAY_MS);
@@ -57,34 +56,4 @@ async function simulateToken(userId: string): Promise<AuthToken> {
     accessToken: `mock.${encodeBase64Url(JSON.stringify(payload))}.simulated`,
     source: 'mock',
   };
-}
-
-// Intenta obtener un token del backend; ante CUALQUIER fallo (404, timeout, red,
-// JSON inválido, token vacío) degrada a un token simulado. Nunca lanza.
-export async function requestToken(userId: string): Promise<AuthToken | null> {
-  try {
-    const requestBody: CreateTokenRequest = { userId };
-    const response = await fetchWithTimeout(`${BACKEND_API_URL}/auth/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (response.ok) {
-      const responseBody = (await response.json()) as Partial<CreateTokenResponse> | null;
-      const accessToken = responseBody?.accessToken;
-
-      if (typeof accessToken === 'string' && accessToken.length > 0) {
-        return { accessToken, source: 'backend' };
-      }
-    }
-  } catch {
-    // Fallo de red, timeout o JSON inválido: se continúa con la simulación.
-  }
-
-  try {
-    return await simulateToken(userId);
-  } catch {
-    return null;
-  }
 }

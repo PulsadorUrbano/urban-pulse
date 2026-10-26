@@ -139,6 +139,7 @@ const sessionUser: SessionUser = {
   email: 'ciudadano@example.com',
   role: 'civic',
   civicId: SESSION_CIVIC_ID,
+  source: 'mock',
 };
 
 // Construye un valor de sesión completo; por defecto hay un ciudadano activo.

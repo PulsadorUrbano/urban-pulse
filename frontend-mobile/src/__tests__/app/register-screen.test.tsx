@@ -103,14 +103,26 @@ const validFormValues: Required<Omit<RegisterFormValues, 'phone'>> = {
   confirmPassword: 'Abcdefg1',
 };
 
-// Usuario y token devueltos por el registro exitoso.
-const registeredUser: User = {
+// Usuario y token devueltos por el registro exitoso vía backend (éxito limpio,
+// navegación inmediata) y vía mock (fallback, requiere confirmar el aviso).
+const registeredBackendUser: User = {
+  id: 'backend-2',
+  username: 'ciudadano_test',
+  email: 'ciudadano@example.com',
+  role: 'civic',
+  civicId: 'backend-2',
+  phone: null,
+  source: 'backend',
+};
+
+const registeredMockUser: User = {
   id: '2',
   username: 'ciudadano_test',
   email: 'ciudadano@example.com',
   password: 'Abcdefg1',
   role: 'civic',
   civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
+  source: 'mock',
 };
 
 const registeredAuthToken: AuthToken = {
@@ -120,11 +132,12 @@ const registeredAuthToken: AuthToken = {
 
 // Forma persistible del usuario en sesión (sin password).
 const registeredSessionUser: SessionUser = {
-  id: registeredUser.id,
-  username: registeredUser.username,
-  email: registeredUser.email,
-  role: registeredUser.role,
-  civicId: registeredUser.civicId,
+  id: registeredMockUser.id,
+  username: registeredMockUser.username,
+  email: registeredMockUser.email,
+  role: registeredMockUser.role,
+  civicId: registeredMockUser.civicId,
+  source: 'mock',
 };
 
 // Valor por defecto del hook de registro: formulario en estado inicial, sin errores.
@@ -330,8 +343,13 @@ describe('RegisterScreen', () => {
   });
 
   describe('flujo de envío', () => {
-    it('con registro exitoso inicia sesión con el usuario y token devueltos y navega a "/"', async () => {
-      const registerSuccess: RegisterSuccess = { user: registeredUser, token: registeredAuthToken };
+    it('con registro exitoso vía backend inicia sesión con el usuario y token devueltos y navega a "/" sin aviso', async () => {
+      const registerSuccess: RegisterSuccess = {
+        user: registeredBackendUser,
+        token: registeredAuthToken,
+        source: 'backend',
+        autoLoginFailed: false,
+      };
       const signInMock = jest.fn().mockResolvedValue(undefined);
       mockedUseRegister.mockReturnValue({
         ...buildIdleRegisterResult(),
@@ -345,7 +363,71 @@ describe('RegisterScreen', () => {
       await user.press(getSubmitButton());
 
       await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'));
-      expect(signInMock).toHaveBeenCalledWith(registeredUser, registeredAuthToken);
+      expect(signInMock).toHaveBeenCalledWith(registeredBackendUser, registeredAuthToken);
+    });
+
+    it('con registro exitoso vía mock muestra el aviso de fallback y solo navega tras pulsar "Continuar"', async () => {
+      const registerSuccess: RegisterSuccess = {
+        user: registeredMockUser,
+        token: registeredAuthToken,
+        source: 'mock',
+        autoLoginFailed: false,
+      };
+      const signInMock = jest.fn().mockResolvedValue(undefined);
+      mockedUseRegister.mockReturnValue({
+        ...buildIdleRegisterResult(),
+        submitRegister: jest.fn().mockResolvedValue(registerSuccess),
+      });
+      mockedUseSession.mockReturnValue({ ...buildIdleSessionValue(), signIn: signInMock });
+      const user = userEvent.setup();
+      await renderRegisterScreen();
+
+      await fillRegisterForm(user, validFormValues);
+      await user.press(getSubmitButton());
+
+      const fallbackNoticeText = await screen.findByText(
+        'No se ha podido conectar al backend, realizando en el mock',
+      );
+      expect(fallbackNoticeText).toBeOnTheScreen();
+      // signIn se retiene hasta confirmar: si se llamara ya, el guard
+      // `if (user) return <Redirect .../>` navegaría antes de ver el aviso.
+      expect(signInMock).not.toHaveBeenCalled();
+      expect(router.replace).not.toHaveBeenCalled();
+
+      await user.press(screen.getByRole('button', { name: 'Continuar' }));
+
+      await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'));
+      expect(signInMock).toHaveBeenCalledWith(registeredMockUser, registeredAuthToken);
+    });
+
+    it('con autoLoginFailed muestra el aviso de cuenta creada sin iniciar sesión y navega a /login tras confirmar', async () => {
+      const registerSuccess: RegisterSuccess = {
+        user: registeredBackendUser,
+        token: null,
+        source: 'backend',
+        autoLoginFailed: true,
+      };
+      const signInMock = jest.fn().mockResolvedValue(undefined);
+      mockedUseRegister.mockReturnValue({
+        ...buildIdleRegisterResult(),
+        submitRegister: jest.fn().mockResolvedValue(registerSuccess),
+      });
+      mockedUseSession.mockReturnValue({ ...buildIdleSessionValue(), signIn: signInMock });
+      const user = userEvent.setup();
+      await renderRegisterScreen();
+
+      await fillRegisterForm(user, validFormValues);
+      await user.press(getSubmitButton());
+
+      const autoLoginFailedText = await screen.findByText(
+        'Tu cuenta se ha creado, pero no se pudo iniciar sesión automáticamente. Inicia sesión.',
+      );
+      expect(autoLoginFailedText).toBeOnTheScreen();
+      expect(signInMock).not.toHaveBeenCalled();
+
+      await user.press(screen.getByRole('button', { name: 'Iniciar sesión' }));
+
+      expect(router.replace).toHaveBeenCalledWith('/login');
     });
 
     it('con registro fallido no inicia sesión, no navega y muestra el errorMessage del hook', async () => {
