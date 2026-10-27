@@ -1,3 +1,8 @@
+const operadorPrueba = {
+  id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  role: 'admin',
+  ciudadanoId: null,
+} as const;
 import { Test, type TestingModule } from '@nestjs/testing';
 import { IncidentsService } from '../../../src/incidents/incidents.service.js';
 import { UploadStorageService } from '../../../src/incidents/upload-storage.service.js';
@@ -104,7 +109,9 @@ describe('Listado de incidencias por ciudadano', () => {
     expect(servicio.listarPorCiudadano(idCiudadano)[0].title).toBe(
       creada.title,
     );
-    expect(servicio.findOne(creada.id).title).toBe(creada.title);
+    expect(servicio.findOne(creada.id, operadorPrueba).title).toBe(
+      creada.title,
+    );
     const nuevaInstancia = new IncidentsService(
       modulo.get(UploadStorageService),
     );

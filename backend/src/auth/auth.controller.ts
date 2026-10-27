@@ -12,6 +12,7 @@ import {
   ApiBody,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -55,7 +56,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Inicia sesión con usuario o email y contraseña',
     description:
-      'Devuelve un JWT firmado. La duración la controla JWT_EXPIRES_IN; no hay refresh token.',
+      'Devuelve un JWT HS256 con identidad del usuario y expiración configurada en JWT_EXPIRES_IN. No hay refresh token ni token de respaldo.',
   })
   @ApiBody({ type: LoginDto })
   @ApiOkResponse({
@@ -70,7 +71,12 @@ export class AuthController {
   })
   @ApiBadRequestResponse({ description: 'La petición no es válida.' })
   @ApiUnauthorizedResponse({
-    description: 'Credenciales incorrectas. El mensaje no revela si el usuario existe.',
+    description:
+      'Credenciales incorrectas. El mensaje no revela si el usuario existe.',
+  })
+  @ApiInternalServerErrorResponse({
+    description:
+      'Error de configuración, firma o acceso a datos; no se emite token de respaldo.',
   })
   async login(
     @Body(new LoginPipe()) input: LoginDto,
@@ -86,11 +92,15 @@ export class AuthController {
   @ApiOperation({
     summary: 'Valida la sesión y devuelve los datos actuales del usuario',
     description:
-      'Lee el usuario de la base de datos. Si el token es válido pero el usuario ya no existe, responde 401.',
+      'Verifica HS256, expiración y claims obligatorias sub/userId UUID coincidentes, username, role, iat y exp. Devuelve datos actuales de la base de datos; si el usuario ya no existe, responde 401.',
   })
   @ApiOkResponse({ type: PublicUserDto })
   @ApiUnauthorizedResponse({
-    description: 'Token ausente, inválido, expirado o usuario inexistente.',
+    description:
+      'Bearer ausente o ambiguo, firma/algoritmo/claims inválidos, expiración o usuario inexistente.',
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Error de acceso a datos; no se devuelve usuario de respaldo.',
   })
   me(@CurrentUser() user: TokenPayload): Promise<PublicUserDto> {
     return this.auth.obtenerUsuarioActual(user);

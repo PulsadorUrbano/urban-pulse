@@ -1,5 +1,14 @@
 # 2026-10-23 — Especificación: consultar incidencias por ciudadano
 
+## Actualización de identidad y permisos — 2026-10-27
+
+**DEUDA-27-01 cerrada en la implementación de identidad/permisos.** Creación/listado derivados del ciudadano actual y lectura propia con 404 ante acceso cruzado. El cliente deja de elegir civicId. Véanse [contrato vigente](../specs/2026-10-27-autenticar-incidencias-y-verificar-permisos-spec.md) y [plan con evidencia](../plans/2026-10-27-autenticar-incidencias-y-verificar-permisos-plan.md).
+
+Los apartados posteriores conservan el registro histórico del prototipo. Sus referencias a identidad declarada, ausencia de autenticación y civicId como entrada quedan sustituidas por el contrato vigente. La persistencia permanece pendiente; el acceso de imágenes se ha protegido posteriormente según la [especificación de uploads](../specs/2026-10-27-proteger-imagenes-de-incidencias-con-jwt-spec.md). Evidencia unitaria: guard de roles actuales, controlador con identidad servidor, rechazo de identidad externa y regresiones de servicios.
+
+## Registro histórico de la funcionalidad
+
+
 - Desarrollador responsable: pendiente de indicar por el equipo.
 - Asistente de IA: Codex.
 - Modelo de IA que creó la especificación: identificador exacto no expuesto por la sesión.

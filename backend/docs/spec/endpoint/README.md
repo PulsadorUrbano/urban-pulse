@@ -43,11 +43,13 @@ Al añadir, modificar o retirar un endpoint, actualizar su carpeta en el mismo c
 
 ## Endpoints documentados
 
-- [Asignar prioridad manual con motivo](patch-incidents-id-priority/README.md): PATCH /incidents/:id/priority, solo incidencias validadas; deuda de actor declarado.
+- [Descargar imagen de incidencia](get-uploads-incidents-id-archivo/README.md): GET /uploads/incidents/:id/:archivo, solo propietario u operador autenticado.
 
-- [Validar o rechazar una incidencia con motivo](patch-incidents-id-status/README.md): PATCH /incidents/:id/status; actor declarado y DEUDA-47-01 abierta.
+- [Asignar prioridad manual con motivo](patch-incidents-id-priority/README.md): PATCH /incidents/:id/priority, solo incidencias validadas y operadores autenticados.
 
-- [Consultar el listado de incidencias por ciudadano](get-incidents/README.md): GET /incidents?civicId=<UUID>, sin historial y con deuda de identidad documentada.
+- [Validar o rechazar una incidencia con motivo](patch-incidents-id-status/README.md): PATCH /incidents/:id/status; solo admin/administrative actuales, con actor autenticado.
+
+- [Consultar el listado de incidencias por ciudadano](get-incidents/README.md): GET /incidents sin parámetros, solo incidencias del ciudadano autenticado.
 
 - [Registrar incidencias](post-incidents/README.md): POST /incidents.
 - [Consultar una incidencia](get-incidents-id/README.md): GET /incidents/:id.

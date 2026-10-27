@@ -9,9 +9,6 @@ export class CreateIncidentDto {
   })
   description?: string;
 
-  @ApiProperty({ format: 'uuid' })
-  civicId!: string;
-
   @ApiPropertyOptional({ format: 'uuid' })
   categoryId?: string;
 

@@ -1,61 +1,29 @@
-# 2026-10-23 - Validar o rechazar una incidencia con motivo
+# 2026-10-27 - Cambiar el estado con actor autenticado
 
 - Método y ruta: PATCH /incidents/:id/status.
-- Última revisión: 2026-10-23.
-- Estado: implementado; verificado con unitarias, compilación y lint. Sin peticiones HTTP de integración.
+- Estado: implementado; unitarias, compilación y lint correctos.
+- Acceso: Bearer y rol actual admin o administrative; ningún otro rol puede operar.
 
-## Acceso y deuda técnica
+## Entrada y respuesta
 
-DEUDA-47-01 abierta: no hay autenticación ni autorización de operador. civicId identifica al actor declarado por el cliente y solo se valida su formato UUID. Puede suplantarse; no acredita identidad, existencia ni permisos. El actor puede ser distinto del ciudadano propietario y no lo reemplaza.
+id UUID. Cuerpo JSON solo con status (validated o rejected, en minúsculas) y cause (cadena obligatoria, trim y no vacía). No admite civicId, actorId, userId, fechas o identificadores de historial elegidos por el cliente. Omisión, null, tipos incorrectos o campos extra: 400. UUID válido ausente: 404. Estado distinto de reported: 409, incluida repetición.
 
-La resolución requiere sesión/token verificado en servidor, vinculación real al usuario y comprobación del rol y permisos de operador. No existen respuestas 401/403 en este prototipo.
+Ejemplo: {"status":"validated","cause":"Reporte confirmado"}.
 
-## Entrada y validaciones
+200 con recurso completo, misma estructura que el registro. Conserva dueño y datos originales, cambiando solo status; no expone auditoría. ActorId de CambioEstado es users.id actual del operador autenticado, no el dueño ni un identificador recibido en el cuerpo. Estado e historial se publican juntos con UUID/fecha de servidor y motivo normalizado.
 
-id en ruta: UUID; se compara sin distinguir mayúsculas. Cuerpo JSON obligatorio, solo con status, cause y civicId:
+DEUDA-47-01 de identidad/permisos cerrada; historial en memoria sin durabilidad. El actor puede ser distinto del dueño y no lo reemplaza.
 
-~~~json
-{
-  "status": "validated",
-  "cause": "Se confirma la incidencia tras revisar el reporte.",
-  "civicId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
-}
-~~~
+## Identidad, errores y almacenamiento
 
-- status: únicamente validated o rejected, en minúsculas.
-- cause: cadena obligatoria, no vacía después de trim; sin coerción ni máximo adicional.
-- civicId: UUID obligatorio del actor declarado; se normaliza a minúsculas.
-- Rechaza cuerpos no objeto, arrays, campos desconocidos, valores omitidos, null y tipos incorrectos. El cliente no asigna identificador ni fecha del historial.
+Se ejecutan JwtAuthGuard y después la comprobación del usuario y rol actuales en PostgreSQL, antes de interceptores y pipes. Un usuario eliminado o JWT inválido/ausente devuelve 401. Rol actual insuficiente o civic sin vinculación citizens devuelve 403. Un fallo de DB es error de servidor; no se acepta identidad de respaldo del cliente. El rol firmado antiguo no conserva privilegios tras cambiar el usuario en DB.
 
-Solo se admite reported -> validated o reported -> rejected. Las repeticiones, incluso del mismo estado, no crean otro registro.
-
-## Respuesta, cabeceras y errores
-
-200 con el recurso completo y la misma estructura pública de POST/GET individual: id, title, description, civicId del propietario, categoryId, category, urbanAssetId, location, images, status, priority y createdAt ISO. status refleja la transición; el resto permanece igual. No incluye cambiosEstado, motivo ni actor de auditoría. Sin cabeceras propias adicionales.
-
-Ejemplo parcial ilustrativo del campo modificado: status=validated. Consultar el [contrato de registro](../post-incidents/README.md) para todos los campos del recurso.
-
-- 400: UUID o cuerpo inválido, estado no permitido, motivo vacío o campos desconocidos.
-- 404: UUID válido de incidencia no almacenada en esta instancia.
-- 409: incidencia cuyo estado ya no es reported, sin cambios ni nueva auditoría.
-
-## Almacenamiento y límites
-
-Estado e historial se publican juntos mediante una única sustitución síncrona del agregado en el Map, después de construir y serializar el resultado. Dos intentos en la misma instancia solo aceptan una transición. No constituye una transacción de base de datos ni coordinación entre procesos.
-
-Cada cambio es un CambioEstado tipado desde Prisma y mapeado a status_changes: id y fecha de servidor, incidenciaId, actorId declarado, nuevoEstado y motivo normalizado. actorId es escalar, sin relación de usuario ficticia. El servicio permite consultar copias del historial para uso interno; no se expone ruta HTTP de historial.
-
-Incidencias e historial se pierden al reiniciar. Las imágenes permanecen en archivos locales y no se modifican en esta operación. Sin base de datos, migraciones ni auditoría duradera; al activar persistencia será necesaria una transacción para estado e historial.
-
-Las prioridades se etiquetan Baja (low), Media (medium) y Alta (high). El registro inicia Baja (low); las lecturas y respuestas completas pueden reflejar cualquier prioridad vigente. Véase [asignación manual](../patch-incidents-id-priority/README.md).
+Metadatos e historial siguen en el Map de esta instancia y se pierden al reiniciar; imágenes locales. Las imágenes de /uploads requieren ahora JWT y permiso de propietario u operador; no existe el montaje estático público. Véase [descarga protegida](../get-uploads-incidents-id-archivo/README.md). No se han ejecutado pruebas HTTP, DB o frontend.
 
 ## Referencias
 
-- [Especificación y deuda](../../features/specs/2026-10-23-validar-rechazar-incidencias-con-motivo-spec.md).
-- [Plan y confirmación](../../features/plans/2026-10-23-validar-rechazar-incidencias-con-motivo-plan.md).
+- [Identidad y permisos vigentes](../../features/specs/2026-10-27-autenticar-incidencias-y-verificar-permisos-spec.md).
+- [Plan y evidencia de cierre](../../features/plans/2026-10-27-autenticar-incidencias-y-verificar-permisos-plan.md).
 - [Controlador](../../../../src/incidents/incidents.controller.ts).
-- [Validación](../../../../src/incidents/cambiar-estado-incidencia.pipe.ts).
 - [Servicio](../../../../src/incidents/incidents.service.ts).
-- [Modelos Prisma](../../../../prisma/schema.prisma).
-- [Unitarias del servicio](../../../../test/incidents/services/cambiar-estado-incidencia.service.spec.ts).
-- [Unitarias del pipe](../../../../test/incidents/pipes/cambiar-estado-incidencia.pipe.spec.ts).
+- [Autorización actual](../../../../src/incidents/guards/acceso-incidencias.guard.ts).

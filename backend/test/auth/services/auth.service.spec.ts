@@ -11,7 +11,11 @@ const ID_CIUDADANO = '8d2f6a4e-1b3c-4d5e-9f70-a1b2c3d4e5f6';
 
 describe('AuthService', () => {
   let prisma: {
-    users: { create: ReturnType<typeof vi.fn>; findFirst: ReturnType<typeof vi.fn>; findUnique: ReturnType<typeof vi.fn> };
+    users: {
+      create: ReturnType<typeof vi.fn>;
+      findFirst: ReturnType<typeof vi.fn>;
+      findUnique: ReturnType<typeof vi.fn>;
+    };
     citizens: { create: ReturnType<typeof vi.fn> };
     $transaction: ReturnType<typeof vi.fn>;
   };
@@ -202,9 +206,92 @@ describe('AuthService', () => {
     it('responde 401 cuando el usuario del token ya no existe', async () => {
       prisma.users.findUnique.mockResolvedValue(null);
 
-      await expect(service.obtenerUsuarioActual(payload)).rejects.toBeInstanceOf(
-        UnauthorizedException,
-      );
+      await expect(
+        service.obtenerUsuarioActual(payload),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
     });
+  });
+
+  afterEach(() => vi.restoreAllMocks());
+  it.each(['persona', 'Persona@Example.com'])(
+    'emite token con identidad pública y una hora de vida para %s',
+    async (identificador) => {
+      prisma.users.findFirst.mockResolvedValue({
+        id: ID_CIUDADANO,
+        username: 'persona',
+        role: 'civic',
+        password: await hash(' clave ', 4),
+      });
+      const token = await service.login(identificador, ' clave ');
+      const claims = await jwt.verifyAsync<
+        TokenPayload & { iat: number; exp: number }
+      >(token, { algorithms: ['HS256'] });
+      expect(Object.keys(claims).sort()).toEqual([
+        'exp',
+        'iat',
+        'role',
+        'sub',
+        'userId',
+        'username',
+      ]);
+      expect(claims).toMatchObject({
+        sub: ID_CIUDADANO,
+        userId: ID_CIUDADANO,
+        username: 'persona',
+        role: 'civic',
+      });
+      expect(claims.exp - claims.iat).toBe(3600);
+      expect(prisma.users.create).not.toHaveBeenCalled();
+    },
+  );
+  it('propaga el fallo de base de datos sin devolver credenciales ficticias', async () => {
+    const fallo = new Error('DB no disponible');
+    prisma.users.findFirst.mockRejectedValue(fallo);
+    await expect(service.login('persona', 'clave')).rejects.toBe(fallo);
+  });
+  it('propaga un fallo de firma sin emitir token de respaldo', async () => {
+    prisma.users.findFirst.mockResolvedValue({
+      id: ID_CIUDADANO,
+      username: 'persona',
+      role: 'civic',
+      password: await hash('clave', 4),
+    });
+    const fallo = new Error('Firma no disponible');
+    vi.spyOn(jwt, 'signAsync').mockRejectedValue(fallo);
+    await expect(service.login('persona', 'clave')).rejects.toBe(fallo);
+  });
+  it('me devuelve el perfil actual, no el rol o nombre antiguo del JWT', async () => {
+    prisma.users.findUnique.mockResolvedValue({
+      id: ID_CIUDADANO,
+      username: 'nombre.actual',
+      email: 'actual@example.com',
+      role: 'technician',
+      citizen: null,
+    });
+    const resultado = await service.obtenerUsuarioActual({
+      sub: ID_CIUDADANO,
+      userId: ID_CIUDADANO,
+      username: 'nombre.antiguo',
+      role: 'civic',
+    });
+    expect(resultado).toEqual({
+      userId: ID_CIUDADANO,
+      username: 'nombre.actual',
+      email: 'actual@example.com',
+      role: 'technician',
+      phone: null,
+    });
+  });
+  it('me propaga el fallo de DB sin inventar un usuario', async () => {
+    const fallo = new Error('DB no disponible');
+    prisma.users.findUnique.mockRejectedValue(fallo);
+    await expect(
+      service.obtenerUsuarioActual({
+        sub: ID_CIUDADANO,
+        userId: ID_CIUDADANO,
+        username: 'persona',
+        role: 'civic',
+      }),
+    ).rejects.toBe(fallo);
   });
 });

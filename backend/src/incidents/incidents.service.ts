@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
@@ -10,6 +11,7 @@ import type {
   CambiarPrioridadIncidenciaInput,
   CreateIncidentInput,
   Incident,
+  IncidentImage,
   ResumenIncidencia,
   StoredIncident,
   UploadedImageFile,
@@ -18,7 +20,11 @@ import type {
   CambioEstadoModel,
   CambioPrioridadModel,
 } from '../generated/prisma/models.js';
-import { UploadStorageService } from './upload-storage.service.js';
+import type { UsuarioIncidencias } from './types/usuario-incidencias.js';
+import {
+  nombreArchivoImagen,
+  UploadStorageService,
+} from './upload-storage.service.js';
 
 @Injectable()
 export class IncidentsService {
@@ -92,17 +98,43 @@ export class IncidentsService {
       }));
   }
 
-  findOne(id: string): Incident {
-    const incident = this.incidents.get(id);
-    if (!incident) {
-      throw new NotFoundException(`Incident ${id} was not found`);
+  findOne(id: string, usuario: UsuarioIncidencias): Incident {
+    if (
+      !usuario ||
+      !['civic', 'admin', 'administrative'].includes(usuario.role)
+    ) {
+      throw new ForbiddenException('No tiene acceso a las incidencias');
+    }
+    const incident = this.obtenerIncidencia(id);
+    if (usuario.role === 'civic') {
+      if (!usuario.ciudadanoId)
+        throw new ForbiddenException('Se requiere un ciudadano vinculado');
+      if (
+        incident.civicId.toLowerCase() !== usuario.ciudadanoId.toLowerCase()
+      ) {
+        throw new NotFoundException('La incidencia no existe');
+      }
     }
     return this.copy(incident);
+  }
+
+  obtenerImagen(
+    id: string,
+    archivo: string,
+    usuario: UsuarioIncidencias,
+  ): { incidenciaId: string; imagen: IncidentImage } {
+    const incidencia = this.findOne(id, usuario);
+    const imagen = incidencia.images.find(
+      (imagen) => nombreArchivoImagen(imagen) === archivo,
+    );
+    if (!imagen) throw new NotFoundException('La imagen no existe');
+    return { incidenciaId: incidencia.id, imagen };
   }
 
   cambiarEstado(
     idIncidencia: string,
     entrada: CambiarEstadoIncidenciaInput,
+    idActor: string,
   ): Incident {
     const incidencia = this.obtenerIncidencia(idIncidencia);
     if (
@@ -121,7 +153,7 @@ export class IncidentsService {
     const cambio: CambioEstadoModel = {
       id: randomUUID(),
       incidenciaId: incidencia.id,
-      actorId: entrada.civicId.toLowerCase(),
+      actorId: idActor.toLowerCase(),
       nuevoEstado: entrada.status,
       motivo: entrada.cause.trim(),
       fechaCreacion: new Date(),
@@ -147,6 +179,7 @@ export class IncidentsService {
   cambiarPrioridad(
     idIncidencia: string,
     entrada: CambiarPrioridadIncidenciaInput,
+    idActor: string,
   ): Incident {
     const incidencia = this.obtenerIncidencia(idIncidencia);
     if (
@@ -169,7 +202,7 @@ export class IncidentsService {
       motivo: entrada.cause.trim(),
       fechaCreacion: new Date(),
       incidenciaId: incidencia.id,
-      actorId: entrada.civicId.toLowerCase(),
+      actorId: idActor.toLowerCase(),
     };
     const actualizada: StoredIncident = {
       ...incidencia,
