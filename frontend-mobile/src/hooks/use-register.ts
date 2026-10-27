@@ -2,13 +2,14 @@ import { useCallback, useRef, useState } from 'react';
 
 import { register, UsernameOrEmailTakenError } from '@/services/auth.service';
 import { createCivic } from '@/services/civic.service';
-import { requestToken } from '@/services/token.service';
 import type { AuthToken } from '@/types/token';
 import type { RegisterUserInput, User } from '@/types/user';
 
 export interface RegisterSuccess {
   user: User;
   token: AuthToken | null;
+  source: 'backend' | 'mock';
+  autoLoginFailed: boolean;
 }
 
 export interface UseRegisterResult {
@@ -35,10 +36,29 @@ export function useRegister(): UseRegisterResult {
       setErrorMessage(null);
       setIsSubmitting(true);
 
-      let user: User;
-
       try {
-        user = await register(input);
+        const result = await register(input);
+
+        // El teléfono ya viaja dentro de /auth/register en el camino backend;
+        // createCivic (mock) solo aplica cuando el registro cayó al mock.
+        // Es opcional: si falla su creación no debe bloquear el registro (el
+        // usuario ya existe), solo se avisa en consola durante desarrollo.
+        if (result.source === 'mock' && input.phone && input.phone.trim().length > 0) {
+          try {
+            await createCivic({ userId: result.user.id, phone: input.phone });
+          } catch (error) {
+            if (__DEV__) {
+              console.warn('[use-register] No se pudo guardar el teléfono del ciudadano:', error);
+            }
+          }
+        }
+
+        return {
+          user: result.user,
+          token: result.token,
+          source: result.source,
+          autoLoginFailed: result.autoLoginFailed ?? false,
+        };
       } catch (error) {
         if (error instanceof UsernameOrEmailTakenError) {
           setErrorMessage(error.message);
@@ -47,27 +67,7 @@ export function useRegister(): UseRegisterResult {
             error instanceof Error ? error.message : 'Ocurrió un error inesperado al crear la cuenta.',
           );
         }
-        isSubmittingRef.current = false;
-        setIsSubmitting(false);
         return null;
-      }
-
-      // El teléfono es opcional; si falla su creación no debe bloquear el registro
-      // (el usuario ya existe), solo se avisa en consola durante desarrollo.
-      if (input.phone && input.phone.trim().length > 0) {
-        try {
-          await createCivic({ userId: user.id, phone: input.phone });
-        } catch (error) {
-          if (__DEV__) {
-            console.warn('[use-register] No se pudo guardar el teléfono del ciudadano:', error);
-          }
-        }
-      }
-
-      // Fuera del try/catch de registro: un fallo de token nunca debe bloquear el registro.
-      try {
-        const token = await requestToken(user.id);
-        return { user, token };
       } finally {
         isSubmittingRef.current = false;
         setIsSubmitting(false);

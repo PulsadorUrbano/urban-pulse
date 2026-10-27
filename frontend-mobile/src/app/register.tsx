@@ -6,6 +6,7 @@ import {
   Platform,
   Pressable,
   StyleSheet,
+  Text,
   TextInput,
   View,
 } from 'react-native';
@@ -18,7 +19,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { DEFAULT_COUNTRY } from '@/constants/countries';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useRegister } from '@/hooks/use-register';
+import { type RegisterSuccess, useRegister } from '@/hooks/use-register';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import type { Country } from '@/types/country';
@@ -38,6 +39,11 @@ export default function RegisterScreen() {
   const [selectedCountry, setSelectedCountry] = useState<Country>(DEFAULT_COUNTRY);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  // Igual que en pendingFallbackLogin de login.tsx: se retiene el resultado
+  // sin llamar a signIn hasta confirmar, para que el guard `if (user)` de
+  // abajo no navegue antes de que el aviso llegue a verse.
+  const [pendingFallbackRegister, setPendingFallbackRegister] = useState<RegisterSuccess | null>(null);
+  const [autoLoginFailedNotice, setAutoLoginFailedNotice] = useState(false);
 
   if (isRestoringSession) {
     return (
@@ -82,11 +88,85 @@ export default function RegisterScreen() {
     };
 
     const registerResult = await submitRegister(input);
-    if (registerResult) {
-      await signIn(registerResult.user, registerResult.token);
-      router.replace('/');
+    if (!registerResult) {
+      return;
     }
+
+    if (registerResult.autoLoginFailed) {
+      // Cuenta creada en el backend, pero sin token válido: no hay sesión que
+      // guardar, así que no se llama a signIn.
+      setAutoLoginFailedNotice(true);
+      return;
+    }
+
+    if (registerResult.source === 'mock') {
+      setPendingFallbackRegister(registerResult);
+      return;
+    }
+
+    await signIn(registerResult.user, registerResult.token);
+    router.replace('/');
   };
+
+  const handleContinueAfterFallback = async () => {
+    if (!pendingFallbackRegister) return;
+    await signIn(pendingFallbackRegister.user, pendingFallbackRegister.token);
+    router.replace('/');
+  };
+
+  if (autoLoginFailedNotice) {
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <ThemedView className="flex-1 items-center justify-center gap-4 px-6">
+            <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
+              <Text className="text-center text-sm font-medium" style={{ color: ERROR_COLOR }}>
+                Tu cuenta se ha creado, pero no se pudo iniciar sesión automáticamente. Inicia sesión.
+              </Text>
+            </ThemedView>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Iniciar sesión"
+              onPress={() => router.replace('/login')}
+              className="active:opacity-70 rounded-3xl">
+              <View className="items-center justify-center rounded-3xl px-6 py-4" style={{ backgroundColor: '#ffffff' }}>
+                <ThemedText type="smallBold" style={{ color: '#000000' }}>
+                  Iniciar sesión
+                </ThemedText>
+              </View>
+            </Pressable>
+          </ThemedView>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
+
+  if (pendingFallbackRegister) {
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <ThemedView className="flex-1 items-center justify-center gap-4 px-6">
+            <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
+              <Text className="text-center text-sm font-medium" style={{ color: ERROR_COLOR }}>
+                No se ha podido conectar al backend, realizando en el mock
+              </Text>
+            </ThemedView>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Continuar"
+              onPress={handleContinueAfterFallback}
+              className="active:opacity-70 rounded-3xl">
+              <View className="items-center justify-center rounded-3xl px-6 py-4" style={{ backgroundColor: '#ffffff' }}>
+                <ThemedText type="smallBold" style={{ color: '#000000' }}>
+                  Continuar
+                </ThemedText>
+              </View>
+            </Pressable>
+          </ThemedView>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView style={styles.container}>

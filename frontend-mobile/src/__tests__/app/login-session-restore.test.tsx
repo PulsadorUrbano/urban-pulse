@@ -81,6 +81,13 @@ jest.mock('@/services/session-user-storage.service', () => ({
   clearSessionUser: jest.fn(),
 }));
 
+// Defensivo: los fixtures de este archivo usan token source "mock", así que
+// use-session.ts no debería llamar a esto, pero se mockea para blindar el
+// test contra una llamada de red real si algún fixture cambiara a "backend".
+jest.mock('@/services/auth.service', () => ({
+  validateBackendSession: jest.fn().mockResolvedValue('valid'),
+}));
+
 const mockedUseLogin = useLogin as jest.MockedFunction<typeof useLogin>;
 const mockedLoadSessionUser = loadSessionUser as jest.MockedFunction<typeof loadSessionUser>;
 const mockedLoadToken = loadToken as jest.MockedFunction<typeof loadToken>;
@@ -92,6 +99,7 @@ const persistedSessionUser: SessionUser = {
   email: 'ciudadano@example.com',
   role: 'civic',
   civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
+  source: 'mock',
 };
 
 // Token válido según el contrato `AuthToken` de `src/types/token.ts`.

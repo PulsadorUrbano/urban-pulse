@@ -34,12 +34,33 @@ export async function loadSessionUser(): Promise<SessionUser | null> {
       return null;
     }
 
+    if (parsedValue.source === 'backend') {
+      if (typeof parsedValue.phone !== 'string' && parsedValue.phone !== null) {
+        return null;
+      }
+
+      return {
+        id: parsedValue.id,
+        username: parsedValue.username,
+        email: parsedValue.email,
+        role: parsedValue.role,
+        civicId: parsedValue.civicId,
+        phone: parsedValue.phone,
+        source: 'backend',
+      };
+    }
+
+    if (parsedValue.source !== 'mock') {
+      return null;
+    }
+
     return {
       id: parsedValue.id,
       username: parsedValue.username,
       email: parsedValue.email,
       role: parsedValue.role,
       civicId: parsedValue.civicId,
+      source: 'mock',
     };
   } catch {
     return null;

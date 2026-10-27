@@ -6,7 +6,7 @@ import {
   loadSessionUser,
   saveSessionUser,
 } from '@/services/session-user-storage.service';
-import type { SessionUser } from '@/types/user';
+import type { BackendUser, MockSessionUser } from '@/types/user';
 
 // Mock de SecureStore: los tests no tocan el almacenamiento nativo.
 jest.mock('expo-secure-store', () => ({
@@ -22,12 +22,23 @@ const getItemAsyncMock = jest.mocked(SecureStore.getItemAsync);
 const setItemAsyncMock = jest.mocked(SecureStore.setItemAsync);
 const deleteItemAsyncMock = jest.mocked(SecureStore.deleteItemAsync);
 
-const civicSessionUser: SessionUser = {
+const civicSessionUser: MockSessionUser = {
   id: 'user-42',
   username: 'ciudadana42',
   email: 'ciudadana42@urbanpulse.test',
   role: 'civic',
   civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
+  source: 'mock',
+};
+
+const backendSessionUser: BackendUser = {
+  id: 'backend-user-1',
+  username: 'ciudadana-backend',
+  email: 'ciudadana-backend@urbanpulse.test',
+  role: 'civic',
+  civicId: 'backend-user-1',
+  phone: '+34600111222',
+  source: 'backend',
 };
 
 describe('session-user-storage.service', () => {
@@ -51,10 +62,16 @@ describe('session-user-storage.service', () => {
       });
     });
 
-    it('recupera el mismo SessionUser (id, username, email, role) que se guardó', async () => {
+    it('recupera el mismo MockSessionUser (id, username, email, role, civicId, source) que se guardó', async () => {
       await saveSessionUser(civicSessionUser);
 
       await expect(loadSessionUser()).resolves.toEqual(civicSessionUser);
+    });
+
+    it('recupera el mismo BackendUser (con phone) que se guardó', async () => {
+      await saveSessionUser(backendSessionUser);
+
+      await expect(loadSessionUser()).resolves.toEqual(backendSessionUser);
     });
   });
 
@@ -105,21 +122,75 @@ describe('session-user-storage.service', () => {
       ['valor null tras parsear', 'null'],
       ['valor string', '"x"'],
       ['valor array', '[]'],
-      ['sin id', JSON.stringify({ username: 'a', email: 'a@a.com', role: 'civic' })],
-      ['id no string (número)', JSON.stringify({ id: 1, username: 'a', email: 'a@a.com', role: 'civic' })],
-      ['id null', JSON.stringify({ id: null, username: 'a', email: 'a@a.com', role: 'civic' })],
-      ['sin username', JSON.stringify({ id: '1', email: 'a@a.com', role: 'civic' })],
-      ['username no string (número)', JSON.stringify({ id: '1', username: 7, email: 'a@a.com', role: 'civic' })],
-      ['username null', JSON.stringify({ id: '1', username: null, email: 'a@a.com', role: 'civic' })],
-      ['sin email', JSON.stringify({ id: '1', username: 'a', role: 'civic' })],
-      ['email no string (booleano)', JSON.stringify({ id: '1', username: 'a', email: true, role: 'civic' })],
-      ['email null', JSON.stringify({ id: '1', username: 'a', email: null, role: 'civic' })],
-      ['sin role', JSON.stringify({ id: '1', username: 'a', email: 'a@a.com' })],
-      ['role no string (número)', JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', role: 2 })],
-      ['role null', JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', role: null })],
-      ['sin civicId', JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', role: 'civic' })],
-      ['civicId no string (número)', JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', role: 'civic', civicId: 5 })],
-      ['civicId null', JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', role: 'civic', civicId: null })],
+      ['sin id', JSON.stringify({ username: 'a', email: 'a@a.com', role: 'civic', civicId: 'x', source: 'mock' })],
+      [
+        'id no string (número)',
+        JSON.stringify({ id: 1, username: 'a', email: 'a@a.com', role: 'civic', civicId: 'x', source: 'mock' }),
+      ],
+      [
+        'id null',
+        JSON.stringify({ id: null, username: 'a', email: 'a@a.com', role: 'civic', civicId: 'x', source: 'mock' }),
+      ],
+      ['sin username', JSON.stringify({ id: '1', email: 'a@a.com', role: 'civic', civicId: 'x', source: 'mock' })],
+      [
+        'username no string (número)',
+        JSON.stringify({ id: '1', username: 7, email: 'a@a.com', role: 'civic', civicId: 'x', source: 'mock' }),
+      ],
+      [
+        'username null',
+        JSON.stringify({ id: '1', username: null, email: 'a@a.com', role: 'civic', civicId: 'x', source: 'mock' }),
+      ],
+      ['sin email', JSON.stringify({ id: '1', username: 'a', role: 'civic', civicId: 'x', source: 'mock' })],
+      [
+        'email no string (booleano)',
+        JSON.stringify({ id: '1', username: 'a', email: true, role: 'civic', civicId: 'x', source: 'mock' }),
+      ],
+      [
+        'email null',
+        JSON.stringify({ id: '1', username: 'a', email: null, role: 'civic', civicId: 'x', source: 'mock' }),
+      ],
+      ['sin role', JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', civicId: 'x', source: 'mock' })],
+      [
+        'role no string (número)',
+        JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', role: 2, civicId: 'x', source: 'mock' }),
+      ],
+      [
+        'role null',
+        JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', role: null, civicId: 'x', source: 'mock' }),
+      ],
+      ['sin civicId', JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', role: 'civic', source: 'mock' })],
+      [
+        'civicId no string (número)',
+        JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', role: 'civic', civicId: 5, source: 'mock' }),
+      ],
+      [
+        'civicId null',
+        JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', role: 'civic', civicId: null, source: 'mock' }),
+      ],
+      [
+        'sin source',
+        JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', role: 'civic', civicId: 'x' }),
+      ],
+      [
+        'source desconocido',
+        JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', role: 'civic', civicId: 'x', source: 'otro' }),
+      ],
+      [
+        'source backend sin phone',
+        JSON.stringify({ id: '1', username: 'a', email: 'a@a.com', role: 'civic', civicId: 'x', source: 'backend' }),
+      ],
+      [
+        'source backend con phone no string ni null',
+        JSON.stringify({
+          id: '1',
+          username: 'a',
+          email: 'a@a.com',
+          role: 'civic',
+          civicId: 'x',
+          source: 'backend',
+          phone: 123,
+        }),
+      ],
     ])('devuelve null cuando el valor guardado es inválido: %s', async (_caseName, storedValue) => {
       getItemAsyncMock.mockResolvedValueOnce(storedValue);
 
@@ -134,6 +205,7 @@ describe('session-user-storage.service', () => {
           email: 'a@a.com',
           role: 'civic',
           civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
+          source: 'mock',
           password: 'secret',
         }),
       );
@@ -146,11 +218,12 @@ describe('session-user-storage.service', () => {
         'email',
         'id',
         'role',
+        'source',
         'username',
       ]);
     });
 
-    it('devuelve solo id, username, email y role aunque el JSON guardado tenga campos extra', async () => {
+    it('devuelve solo los campos de MockSessionUser aunque el JSON guardado tenga campos extra', async () => {
       getItemAsyncMock.mockResolvedValueOnce(
         JSON.stringify({
           id: '1',
@@ -158,6 +231,7 @@ describe('session-user-storage.service', () => {
           email: 'a@a.com',
           role: 'admin',
           civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
+          source: 'mock',
           extra: true,
         }),
       );
@@ -170,14 +244,40 @@ describe('session-user-storage.service', () => {
         email: 'a@a.com',
         role: 'admin',
         civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
+        source: 'mock',
       });
       expect(Object.keys(loadedSessionUser ?? {}).sort()).toEqual([
         'civicId',
         'email',
         'id',
         'role',
+        'source',
         'username',
       ]);
+    });
+
+    it('acepta phone: null en un BackendUser guardado', async () => {
+      getItemAsyncMock.mockResolvedValueOnce(
+        JSON.stringify({
+          id: 'backend-1',
+          username: 'a',
+          email: 'a@a.com',
+          role: 'civic',
+          civicId: 'backend-1',
+          source: 'backend',
+          phone: null,
+        }),
+      );
+
+      await expect(loadSessionUser()).resolves.toEqual({
+        id: 'backend-1',
+        username: 'a',
+        email: 'a@a.com',
+        role: 'civic',
+        civicId: 'backend-1',
+        source: 'backend',
+        phone: null,
+      });
     });
   });
 

@@ -2,10 +2,11 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 
 import { SessionProvider, useSession } from '@/hooks/use-session';
+import { validateBackendSession } from '@/services/auth.service';
 import { clearSessionUser, loadSessionUser, saveSessionUser } from '@/services/session-user-storage.service';
 import { clearToken, loadToken, saveToken } from '@/services/token-storage.service';
 import type { AuthToken } from '@/types/token';
-import type { SessionUser, User } from '@/types/user';
+import type { MockSessionUser, MockUser } from '@/types/user';
 
 jest.mock('@/services/token-storage.service', () => ({
   saveToken: jest.fn(),
@@ -19,31 +20,39 @@ jest.mock('@/services/session-user-storage.service', () => ({
   clearSessionUser: jest.fn(),
 }));
 
+jest.mock('@/services/auth.service', () => ({
+  validateBackendSession: jest.fn(),
+}));
+
 const mockedSaveToken = jest.mocked(saveToken);
 const mockedLoadToken = jest.mocked(loadToken);
 const mockedClearToken = jest.mocked(clearToken);
 const mockedSaveSessionUser = jest.mocked(saveSessionUser);
 const mockedLoadSessionUser = jest.mocked(loadSessionUser);
 const mockedClearSessionUser = jest.mocked(clearSessionUser);
+const mockedValidateBackendSession = jest.mocked(validateBackendSession);
 
-const userWithPasswordFixture: User = {
+const userWithPasswordFixture: MockUser = {
   id: 'user-1',
   username: 'ana',
   email: 'ana@example.com',
   password: 'secreto-en-texto-plano',
   role: 'civic',
   civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
+  source: 'mock',
 };
 
-const expectedSessionUserFixture: SessionUser = {
+const expectedSessionUserFixture: MockSessionUser = {
   id: 'user-1',
   username: 'ana',
   email: 'ana@example.com',
   role: 'civic',
   civicId: '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b',
+  source: 'mock',
 };
 
-const tokenFixture: AuthToken = { accessToken: 'token-abc', source: 'backend' };
+const backendTokenFixture: AuthToken = { accessToken: 'token-abc', source: 'backend' };
+const mockTokenFixture: AuthToken = { accessToken: 'mock.token.simulated', source: 'mock' };
 
 interface Deferred<T> {
   promise: Promise<T>;
@@ -89,6 +98,7 @@ describe('useSession / SessionProvider', () => {
     mockedSaveSessionUser.mockResolvedValue(undefined);
     mockedClearToken.mockResolvedValue(undefined);
     mockedClearSessionUser.mockResolvedValue(undefined);
+    mockedValidateBackendSession.mockResolvedValue('valid');
   });
 
   describe('signIn', () => {
@@ -96,26 +106,26 @@ describe('useSession / SessionProvider', () => {
       const { result } = await renderSessionHook();
 
       await act(async () => {
-        await result.current.signIn(userWithPasswordFixture, tokenFixture);
+        await result.current.signIn(userWithPasswordFixture, backendTokenFixture);
       });
 
       expect(mockedSaveSessionUser).toHaveBeenCalledTimes(1);
       expect(mockedSaveSessionUser).toHaveBeenCalledWith(expectedSessionUserFixture);
       expect(mockedSaveSessionUser.mock.calls[0][0]).not.toHaveProperty('password');
       expect(mockedSaveToken).toHaveBeenCalledTimes(1);
-      expect(mockedSaveToken).toHaveBeenCalledWith(tokenFixture);
+      expect(mockedSaveToken).toHaveBeenCalledWith(backendTokenFixture);
     });
 
     it('expone user sin password y token en el contexto tras iniciar sesión', async () => {
       const { result } = await renderSessionHook();
 
       await act(async () => {
-        await result.current.signIn(userWithPasswordFixture, tokenFixture);
+        await result.current.signIn(userWithPasswordFixture, backendTokenFixture);
       });
 
       expect(result.current.user).toEqual(expectedSessionUserFixture);
       expect(result.current.user).not.toHaveProperty('password');
-      expect(result.current.token).toEqual(tokenFixture);
+      expect(result.current.token).toEqual(backendTokenFixture);
     });
 
     it('con token null no llama a saveToken pero sí a saveSessionUser', async () => {
@@ -137,7 +147,7 @@ describe('useSession / SessionProvider', () => {
       const { result } = await renderSessionHook();
 
       await act(async () => {
-        await result.current.signIn(userWithPasswordFixture, tokenFixture);
+        await result.current.signIn(userWithPasswordFixture, backendTokenFixture);
       });
 
       expect(mockedSaveSessionUser).toHaveBeenCalledWith(expectedSessionUserFixture);
@@ -149,11 +159,11 @@ describe('useSession / SessionProvider', () => {
       const { result } = await renderSessionHook();
 
       await act(async () => {
-        await result.current.signIn(userWithPasswordFixture, tokenFixture);
+        await result.current.signIn(userWithPasswordFixture, backendTokenFixture);
       });
 
-      expect(mockedSaveToken).toHaveBeenCalledWith(tokenFixture);
-      expect(result.current.token).toEqual(tokenFixture);
+      expect(mockedSaveToken).toHaveBeenCalledWith(backendTokenFixture);
+      expect(result.current.token).toEqual(backendTokenFixture);
     });
   });
 
@@ -162,7 +172,7 @@ describe('useSession / SessionProvider', () => {
       const { result } = await renderSessionHook();
 
       await act(async () => {
-        await result.current.signIn(userWithPasswordFixture, tokenFixture);
+        await result.current.signIn(userWithPasswordFixture, backendTokenFixture);
       });
 
       await act(async () => {
@@ -179,7 +189,7 @@ describe('useSession / SessionProvider', () => {
       const { result } = await renderSessionHook();
 
       await act(async () => {
-        await result.current.signIn(userWithPasswordFixture, tokenFixture);
+        await result.current.signIn(userWithPasswordFixture, backendTokenFixture);
       });
 
       mockedClearToken.mockRejectedValueOnce(new Error('SecureStore caído'));
@@ -197,7 +207,7 @@ describe('useSession / SessionProvider', () => {
       const { result } = await renderSessionHook();
 
       await act(async () => {
-        await result.current.signIn(userWithPasswordFixture, tokenFixture);
+        await result.current.signIn(userWithPasswordFixture, backendTokenFixture);
       });
 
       mockedClearSessionUser.mockRejectedValueOnce(new Error('SecureStore caído'));
@@ -213,15 +223,16 @@ describe('useSession / SessionProvider', () => {
   });
 
   describe('restauración de sesión al montar', () => {
-    it('restaura user y token cuando ambos storages resuelven valores válidos', async () => {
+    it('restaura user y token cuando ambos storages resuelven valores válidos (token mock)', async () => {
       mockedLoadSessionUser.mockResolvedValueOnce(expectedSessionUserFixture);
-      mockedLoadToken.mockResolvedValueOnce(tokenFixture);
+      mockedLoadToken.mockResolvedValueOnce(mockTokenFixture);
 
       const { result } = await renderSessionHook();
 
       expect(result.current.user).toEqual(expectedSessionUserFixture);
-      expect(result.current.token).toEqual(tokenFixture);
+      expect(result.current.token).toEqual(mockTokenFixture);
       expect(result.current.isRestoringSession).toBe(false);
+      expect(mockedValidateBackendSession).not.toHaveBeenCalled();
     });
 
     it('restaura user y deja token en null cuando loadToken resuelve null', async () => {
@@ -233,21 +244,23 @@ describe('useSession / SessionProvider', () => {
       expect(result.current.user).toEqual(expectedSessionUserFixture);
       expect(result.current.token).toBeNull();
       expect(result.current.isRestoringSession).toBe(false);
+      expect(mockedValidateBackendSession).not.toHaveBeenCalled();
     });
 
     it('no restaura nada si no hay usuario persistido, aunque haya token, y acaba isRestoringSession en false', async () => {
       mockedLoadSessionUser.mockResolvedValueOnce(null);
-      mockedLoadToken.mockResolvedValueOnce(tokenFixture);
+      mockedLoadToken.mockResolvedValueOnce(backendTokenFixture);
 
       const { result } = await renderSessionHook();
 
       expect(result.current.user).toBeNull();
       expect(result.current.token).toBeNull();
       expect(result.current.isRestoringSession).toBe(false);
+      expect(mockedValidateBackendSession).not.toHaveBeenCalled();
     });
 
     it('isRestoringSession es true justo al montar, antes de resolver los storages', async () => {
-      const pendingUserLoad = createDeferred<SessionUser | null>();
+      const pendingUserLoad = createDeferred<MockSessionUser | null>();
       const pendingTokenLoad = createDeferred<AuthToken | null>();
       mockedLoadSessionUser.mockReturnValueOnce(pendingUserLoad.promise);
       mockedLoadToken.mockReturnValueOnce(pendingTokenLoad.promise);
@@ -260,7 +273,7 @@ describe('useSession / SessionProvider', () => {
 
       await act(async () => {
         pendingUserLoad.resolve(expectedSessionUserFixture);
-        pendingTokenLoad.resolve(tokenFixture);
+        pendingTokenLoad.resolve(mockTokenFixture);
       });
 
       await waitFor(() => {
@@ -272,7 +285,7 @@ describe('useSession / SessionProvider', () => {
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
       const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
-      const pendingUserLoad = createDeferred<SessionUser | null>();
+      const pendingUserLoad = createDeferred<MockSessionUser | null>();
       const pendingTokenLoad = createDeferred<AuthToken | null>();
       mockedLoadSessionUser.mockReturnValueOnce(pendingUserLoad.promise);
       mockedLoadToken.mockReturnValueOnce(pendingTokenLoad.promise);
@@ -286,7 +299,7 @@ describe('useSession / SessionProvider', () => {
 
       await act(async () => {
         pendingUserLoad.resolve(expectedSessionUserFixture);
-        pendingTokenLoad.resolve(tokenFixture);
+        pendingTokenLoad.resolve(mockTokenFixture);
       });
 
       await flushPendingPromises();
@@ -301,7 +314,7 @@ describe('useSession / SessionProvider', () => {
     it('si se desmonta antes de resolver, un rechazo posterior tampoco produce errores en consola', async () => {
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-      const pendingUserLoad = createDeferred<SessionUser | null>();
+      const pendingUserLoad = createDeferred<MockSessionUser | null>();
       const pendingTokenLoad = createDeferred<AuthToken | null>();
       mockedLoadSessionUser.mockReturnValueOnce(pendingUserLoad.promise);
       mockedLoadToken.mockReturnValueOnce(pendingTokenLoad.promise);
@@ -320,6 +333,46 @@ describe('useSession / SessionProvider', () => {
       expect(consoleErrorSpy).not.toHaveBeenCalled();
 
       consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe('validación de sesión backend al montar', () => {
+    it('token backend válido: se restaura user y token, y se llama a validateBackendSession con el accessToken', async () => {
+      mockedLoadSessionUser.mockResolvedValueOnce(expectedSessionUserFixture);
+      mockedLoadToken.mockResolvedValueOnce(backendTokenFixture);
+      mockedValidateBackendSession.mockResolvedValueOnce('valid');
+
+      const { result } = await renderSessionHook();
+
+      expect(mockedValidateBackendSession).toHaveBeenCalledWith(backendTokenFixture.accessToken);
+      expect(result.current.user).toEqual(expectedSessionUserFixture);
+      expect(result.current.token).toEqual(backendTokenFixture);
+    });
+
+    it('token backend inválido/expirado (rechazo definitivo): limpia el storage y no restaura sesión', async () => {
+      mockedLoadSessionUser.mockResolvedValueOnce(expectedSessionUserFixture);
+      mockedLoadToken.mockResolvedValueOnce(backendTokenFixture);
+      mockedValidateBackendSession.mockResolvedValueOnce('invalid');
+
+      const { result } = await renderSessionHook();
+
+      expect(mockedClearToken).toHaveBeenCalledTimes(1);
+      expect(mockedClearSessionUser).toHaveBeenCalledTimes(1);
+      expect(result.current.user).toBeNull();
+      expect(result.current.token).toBeNull();
+    });
+
+    it('sin conexión (unknown): se confía en la sesión local, sin limpiar nada', async () => {
+      mockedLoadSessionUser.mockResolvedValueOnce(expectedSessionUserFixture);
+      mockedLoadToken.mockResolvedValueOnce(backendTokenFixture);
+      mockedValidateBackendSession.mockResolvedValueOnce('unknown');
+
+      const { result } = await renderSessionHook();
+
+      expect(mockedClearToken).not.toHaveBeenCalled();
+      expect(mockedClearSessionUser).not.toHaveBeenCalled();
+      expect(result.current.user).toEqual(expectedSessionUserFixture);
+      expect(result.current.token).toEqual(backendTokenFixture);
     });
   });
 });
