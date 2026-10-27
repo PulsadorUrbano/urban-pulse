@@ -21,11 +21,6 @@ npm run build
 - No instalar dependencias, crear commits ni hacer push sin petición explícita.
 - Para ramas, commits y PR, seguir el `README.md` de la raíz.
 
-## Trazabilidad de IA (obligatoria)
+## Specs y trazabilidad (`docs/spec/`)
 
-La estructura, plantillas y flujo están en `docs/spec/README.md`, que es la única fuente de verdad. En resumen, en cada sesión que use IA:
-
-1. Abrir o crear `docs/spec/prompts/AAAA-MM-DD.md` (fecha de hoy) desde `docs/spec/templates/prompts-template.md`.
-2. Añadir una entrada por cada prompt que produzca un cambio: prompt literal, asistente, modelo exacto, rama, resultado y archivos tocados.
-3. Si el cambio es una feature, bug o refactor, crear también su documento en `docs/spec/` y enlazarlo con la entrada del prompt.
-4. Incluir el historial del día en el mismo commit o PR que los cambios.
+La estructura de carpetas, las plantillas y la diferencia entre `spec.md` y `plan.md` están en `docs/spec/README.md`, que es la única fuente de verdad. Cada feature, bug o refactor se documenta ahí y declara el desarrollador responsable, el asistente de IA y el modelo exacto utilizados.

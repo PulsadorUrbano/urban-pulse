@@ -1,12 +1,11 @@
-# {{AAAA-MM-DD}} — Refactor: {{asunto}}
+# {{fecha}} — Refactor: {{asunto}}
 
-> Copiar a frontend-web/docs/spec/refactor/nombre-feature/AAAA-MM-DD-asunto.md, o a refactor/independent/ si no pertenece a una feature.
+> Copiar a frontend-web/docs/spec/refactor/nombre-feature/DD-MM-YY-asunto.md, o a refactor/independent/ si no pertenece a una feature.
 
 - Feature afectada: {{nombre de la feature o "independiente"}}.
 - Desarrollador responsable: {{nombre}}.
 - Asistente de IA: {{herramienta utilizada o No utilizada}}.
 - Modelo de IA: {{identificador y versión exactos o No utilizada}}.
-- Historial de prompts: {{enlaces a ../../prompts/AAAA-MM-DD.md#NN}}.
 - Rama: {{rama de trabajo}}.
 - Estado: {{Pendiente / Implementado con verificación pendiente / Implementado y verificado}}.
 

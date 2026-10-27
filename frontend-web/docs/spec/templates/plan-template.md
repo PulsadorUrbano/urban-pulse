@@ -1,11 +1,10 @@
-# {{AAAA-MM-DD}} — Plan de implementación: {{descripción de la acción o cambio}}
+# {{fecha}} — Plan de implementación: {{descripción de la acción o cambio}}
 
-> Copiar a frontend-web/docs/spec/features/AAAA-MM-DD-nombre-feature/plan.md.
+> Copiar a frontend-web/docs/spec/features/DD-MM-YY-nombre-feature/plan.md.
 
 - Desarrollador responsable: {{nombre}}.
 - Asistente de IA: {{herramienta utilizada o No utilizada}}.
 - Modelo de IA: {{identificador y versión exactos o No utilizada}}.
-- Historial de prompts: {{enlaces a ../../prompts/AAAA-MM-DD.md#NN}}.
 - Objetivo: {{resultado observable definido por la especificación}}.
 - Especificación: [Contrato y criterios](./spec.md).
 - Rama: {{rama de trabajo}}.
@@ -33,7 +32,7 @@
 - [ ] Definir el caso de prueba: {{entradas, resultado y errores}}.
 - [ ] Implementar el cambio mínimo.
 - [ ] Ejecutar la prueba y registrar evidencia: {{comando y resultado}}.
-- [ ] Revisar el diff y actualizar spec, plan e historial de prompts.
+- [ ] Revisar el diff y actualizar spec y plan.
 
 ## Comprobaciones finales
 

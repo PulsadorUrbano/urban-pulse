@@ -1,12 +1,11 @@
-# {{AAAA-MM-DD}} — Bug: {{asunto}}
+# {{fecha}} — Bug: {{asunto}}
 
-> Copiar a frontend-web/docs/spec/bugs/nombre-feature/AAAA-MM-DD-asunto.md. Si venía de `bugs/todo.md`, marcarlo como resuelto ahí.
+> Copiar a frontend-web/docs/spec/bugs/nombre-feature/DD-MM-YY-asunto.md. Si venía de `bugs/todo.md`, marcarlo como resuelto ahí.
 
 - Feature afectada: {{nombre de la feature o "independiente"}}.
 - Desarrollador responsable: {{nombre}}.
 - Asistente de IA: {{herramienta utilizada o No utilizada}}.
 - Modelo de IA: {{identificador y versión exactos o No utilizada}}.
-- Historial de prompts: {{enlaces a ../../prompts/AAAA-MM-DD.md#NN}}.
 - Rama: {{rama de trabajo}}.
 - Estado: {{Pendiente / En diagnóstico / Corregido con verificación pendiente / Corregido y verificado}}.
 

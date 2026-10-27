@@ -1,11 +1,10 @@
-# {{AAAA-MM-DD}} — Especificación: {{descripción de la acción o cambio}}
+# {{fecha}} — Especificación: {{descripción de la acción o cambio}}
 
 - Desarrollador responsable: {{nombre del desarrollador humano que crea y asume la especificación}}.
 - Asistente de IA: {{herramienta utilizada o No utilizada}}.
 - Modelo de IA que creó la especificación: {{identificador y versión exactos o No utilizada; si no están disponibles, declararlo sin inventarlos}}.
-- Historial de prompts: {{enlaces a ../../prompts/AAAA-MM-DD.md#NN}}.
 
-> Copiar a frontend-web/docs/spec/features/AAAA-MM-DD-nombre-feature/spec.md. Sustituir los marcadores y usar rutas relativas desde el documento.
+> Copiar a frontend-web/docs/spec/features/DD-MM-YY-nombre-feature/spec.md. Sustituir los marcadores y usar rutas relativas desde el documento.
 
 - Rama: {{rama de trabajo}}.
 - Última actualización: {{AAAA-MM-DD}}.
