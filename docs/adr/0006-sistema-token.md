@@ -1,4 +1,4 @@
-# ADR-0005: Estrategia de autenticación por doble token
+# ADR-0006: Estrategia de autenticación por doble token
 
 **Estado**: 
 	Aproved
