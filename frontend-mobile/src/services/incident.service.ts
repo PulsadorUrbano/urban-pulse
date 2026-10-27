@@ -395,7 +395,7 @@ async function resolveIncidentCategory(record: MockIncidentRecord): Promise<stri
     return null;
   }
 
-  const categories = await fetchCategories();
+  const { categories } = await fetchCategories();
   const matchingCategory = categories.find((category) => category.id === record.categoryId);
   return matchingCategory?.name ?? null;
 }

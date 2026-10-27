@@ -1557,7 +1557,7 @@ describe('fetchIncidentById', () => {
   beforeEach(() => {
     fetchWithTimeoutMock.mockReset();
     mockedFetchCategories.mockReset();
-    mockedFetchCategories.mockResolvedValue(catalogCategories);
+    mockedFetchCategories.mockResolvedValue({ categories: catalogCategories, source: 'backend', backendErrorMessage: null });
     routeIncidentDetailRequests({ backend: jsonResponse(backendIncidentDetail, 200) });
   });
 
