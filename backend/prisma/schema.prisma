@@ -30,4 +30,12 @@ model users {
   password   String
   created_at DateTime     @default(now())
   role       profile_role
+  citizen    citizens?
+}
+
+model citizens {
+  user_id    String   @id @db.Uuid
+  phone      String?  @unique
+  created_at DateTime @default(now())
+  user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }

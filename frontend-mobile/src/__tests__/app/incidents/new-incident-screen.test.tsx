@@ -1,29 +1,37 @@
 /// <reference types="jest" />
+import { Alert, type AlertButton, Text } from 'react-native';
 import { act, render, screen, userEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import React from 'react';
 
 import NewIncidentScreen from '@/app/incidents/new';
 import { SHEET_DISMISS_DELAY_MS } from '@/components/photo-picker';
+import { useSession, type SessionContextValue } from '@/hooks/use-session';
 import { fetchCategories } from '@/services/category.service';
 import {
   areLocationServicesEnabled,
   getCurrentCoordinates,
   requestLocationPermission,
 } from '@/services/device-location';
-import { createImage } from '@/services/image.service';
 import { createIncident } from '@/services/incident.service';
-import { createLocation } from '@/services/location.service';
 import { pickPhotoFromCamera, pickPhotoFromLibrary } from '@/services/photo-picker';
 import { storePhoto } from '@/services/storage.service';
-import type { Incident } from '@/types/incident';
-import type { IncidentImage } from '@/types/incident-image';
-import type { Location, LocationCoordinates } from '@/types/location';
+import type {
+  CreateIncidentInput,
+  CreateIncidentResult,
+  CreatedIncident,
+} from '@/types/incident';
+import type { LocationCoordinates } from '@/types/location';
+import type { SessionUser } from '@/types/user';
 
 // ---------------------------------------------------------------------------
 // Test de INTEGRACIÓN de la pantalla de nueva incidencia: se monta el
 // componente real y solo se sustituyen los límites externos (servicios de
 // red, del dispositivo y navegación). Los hooks, la validación y el flujo de
 // envío corren con su implementación real.
+//
+// Las fotos viajan dentro del mismo POST multipart de la incidencia: la
+// pantalla ya no persiste imágenes por separado.
 // ---------------------------------------------------------------------------
 
 // El tema importa `global.css` (Tailwind) que Jest no puede transformar;
@@ -34,13 +42,27 @@ jest.mock('@/global.css', () => ({}));
 // que `photo-picker.test.tsx` y `location-toggle.test.tsx`).
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');
 
-// La pantalla solo usa `router.back()` desde la confirmación.
-jest.mock('expo-router', () => ({
-  router: {
-    back: jest.fn(),
-    push: jest.fn(),
-    replace: jest.fn(),
-  },
+// La pantalla usa `router.back()` desde la confirmación y `<Redirect>` cuando
+// no hay sesión. `Redirect` se sustituye por un stub que pinta el `href`, para
+// distinguir "se redirigió a /login" por contenido visible.
+jest.mock('expo-router', () => {
+  const mockReact = jest.requireActual<typeof React>('react');
+  const { Text: MockText } = jest.requireActual<{ Text: typeof Text }>('react-native');
+
+  return {
+    router: {
+      back: jest.fn(),
+      push: jest.fn(),
+      replace: jest.fn(),
+    },
+    Redirect: ({ href }: { href: string }) =>
+      mockReact.createElement(MockText, null, `redirect:${href}`),
+  };
+});
+
+// Sesión controlada por test: la pantalla lee `user.civicId` para el envío.
+jest.mock('@/hooks/use-session', () => ({
+  useSession: jest.fn(),
 }));
 
 // Insets del área segura a cero; el resto del módulo (SafeAreaView nativo)
@@ -57,16 +79,10 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
+// Creación de incidencia (POST multipart): se controla su respuesta y se
+// verifica con qué input y con qué URIs de fotos se invoca.
 jest.mock('@/services/incident.service', () => ({
   createIncident: jest.fn(),
-}));
-
-jest.mock('@/services/image.service', () => ({
-  createImage: jest.fn(),
-}));
-
-jest.mock('@/services/location.service', () => ({
-  createLocation: jest.fn(),
 }));
 
 // Ubicación del dispositivo: en los defaults felices los servicios están
@@ -94,8 +110,6 @@ jest.mock('@/services/category.service', () => ({
 
 // Versiones tipadas de los mocks para configurar respuestas y verificar llamadas.
 const mockedCreateIncident = createIncident as jest.MockedFunction<typeof createIncident>;
-const mockedCreateImage = createImage as jest.MockedFunction<typeof createImage>;
-const mockedCreateLocation = createLocation as jest.MockedFunction<typeof createLocation>;
 const mockedFetchCategories = fetchCategories as jest.MockedFunction<typeof fetchCategories>;
 const mockedAreLocationServicesEnabled = areLocationServicesEnabled as jest.MockedFunction<
   typeof areLocationServicesEnabled
@@ -113,6 +127,34 @@ const mockedPickPhotoFromLibrary = pickPhotoFromLibrary as jest.MockedFunction<
   typeof pickPhotoFromLibrary
 >;
 const mockedStorePhoto = storePhoto as jest.MockedFunction<typeof storePhoto>;
+const mockedUseSession = jest.mocked(useSession);
+
+// Civic ID de la sesión activa de fixture. Es el valor que la pantalla debe
+// pasar a `createIncident` como segundo argumento (distinto del `id` de usuario).
+const SESSION_CIVIC_ID = '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b';
+
+const sessionUser: SessionUser = {
+  id: '1',
+  username: 'ciudadano-test',
+  email: 'ciudadano@example.com',
+  role: 'civic',
+  civicId: SESSION_CIVIC_ID,
+  source: 'mock',
+};
+
+// Construye un valor de sesión completo; por defecto hay un ciudadano activo.
+function buildSessionValue(
+  overrides: Partial<SessionContextValue> = {},
+): SessionContextValue {
+  return {
+    user: sessionUser,
+    token: null,
+    isRestoringSession: false,
+    signIn: jest.fn().mockResolvedValue(undefined),
+    signOut: jest.fn().mockResolvedValue(undefined),
+    ...overrides,
+  };
+}
 
 // URI local fija que devuelve el picker de Galería en el test.
 const libraryPhotoUri = 'file:///photos/library-2.jpg';
@@ -124,33 +166,64 @@ const deviceCoordinates: LocationCoordinates = {
   accuracy: 10,
 };
 
-const createdLocation: Location = {
-  ...deviceCoordinates,
-  id: 'loc-1',
-  createdAt: '2026-10-13T10:00:00.000Z',
-};
+// Texto del formulario: se usa tanto para rellenar la UI como para las aserciones.
+const incidentTitle = 'Bache en la avenida';
+const incidentDescription = 'Hay un bache profundo que pone en riesgo a los vehículos.';
 
-const createdIncident: Incident = {
+// Incidencia devuelta por el backend tras el POST multipart (shape CreatedIncident).
+const createdIncident: CreatedIncident = {
   id: '42',
-  title: 'Bache en la avenida principal',
-  description: 'Hay un bache profundo que pone en riesgo a los vehículos.',
-  status: 'reported',
-  priority: null,
-  createdAt: '2026-10-13T10:05:00.000Z',
-  civicId: null,
-  locationId: createdLocation.id,
-  urbanAssetId: null,
+  title: incidentTitle,
+  description: incidentDescription,
+  civicId: '20ac442e-0f00-4fe4-bad3-61c8e8e0bff5',
   categoryId: null,
   category: null,
-  departmentId: null,
-  teamId: null,
-  technicianId: null,
+  urbanAssetId: null,
+  location: {
+    latitude: deviceCoordinates.latitude,
+    longitude: deviceCoordinates.longitude,
+    accuracy: deviceCoordinates.accuracy,
+    createdAt: '2026-10-19T10:00:00.000Z',
+  },
+  images: [],
+  status: 'reported',
+  priority: 'low',
+  createdAt: '2026-10-19T10:00:00.000Z',
 };
 
-const createdIncidentImage: IncidentImage = {
-  id: 'img-1',
-  url: libraryPhotoUri,
-  incidentId: createdIncident.id,
+// Resultado de `createIncident` cuando la incidencia la registra el backend real.
+const backendCreateResult: CreateIncidentResult = {
+  incident: createdIncident,
+  source: 'backend',
+};
+
+// Resultado de `createIncident` cuando el backend no respondió y se simuló en el mock.
+const mockCreateResult: CreateIncidentResult = {
+  incident: createdIncident,
+  source: 'mock',
+};
+
+// Aviso que muestra la confirmación cuando la incidencia se guardó en el mock.
+const MOCK_FALLBACK_NOTICE = 'No se ha podido conectar al backend, realizando en el mock';
+
+// Input esperado en `createIncident` con los datos del formulario relleno por
+// `fillValidIncidentForm`, sin categoría y con la ubicación del dispositivo.
+const expectedDeviceSubmission: CreateIncidentInput = {
+  title: incidentTitle,
+  description: incidentDescription,
+  categoryId: null,
+  category: null,
+  latitude: deviceCoordinates.latitude,
+  longitude: deviceCoordinates.longitude,
+  accuracy: deviceCoordinates.accuracy,
+};
+
+// Mismo envío pero sin ubicación (los tres valores de coordenadas a null).
+const expectedNoLocationSubmission: CreateIncidentInput = {
+  ...expectedDeviceSubmission,
+  latitude: null,
+  longitude: null,
+  accuracy: null,
 };
 
 // Monta la pantalla real con los límites externos ya simulados.
@@ -160,10 +233,10 @@ async function renderScreen() {
 
 // Rellena título y descripción válidos, evitando así los avisos de envío.
 async function fillValidIncidentForm(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(screen.getByLabelText('Título de la incidencia'), createdIncident.title);
+  await user.type(screen.getByLabelText('Título de la incidencia'), incidentTitle);
   await user.type(
     screen.getByLabelText('Descripción de la incidencia'),
-    createdIncident.description,
+    incidentDescription,
   );
 }
 
@@ -189,14 +262,55 @@ async function attachPhotoFromLibrary(user: ReturnType<typeof userEvent.setup>) 
   await screen.findByLabelText('Foto adjunta');
 }
 
+// Añade una segunda foto desde la galería cuando ya hay al menos una adjunta
+// (el acceso es el tile "Añadir imagen" en lugar del recuadro vacío).
+async function attachAnotherPhotoFromLibrary(
+  user: ReturnType<typeof userEvent.setup>,
+  expectedPhotoCount: number,
+) {
+  await user.press(screen.getByLabelText('Añadir imagen'));
+  await user.press(screen.getByRole('button', { name: 'Galería' }));
+
+  await act(async () => {
+    jest.advanceTimersByTime(SHEET_DISMISS_DELAY_MS);
+  });
+
+  await screen.findByText(`Imágenes subidas (${expectedPhotoCount}):`);
+}
+
+// Pulsa el botón del último `Alert.alert` que coincida con el texto indicado.
+// El diálogo nativo no existe en Jest: se ejecuta directamente su `onPress`.
+async function pressLastAlertButton(
+  alertSpy: jest.SpyInstance,
+  buttonText: string,
+): Promise<void> {
+  const lastAlertCall = alertSpy.mock.calls.at(-1) as Parameters<typeof Alert.alert> | undefined;
+  if (!lastAlertCall) {
+    throw new Error('Alert.alert no fue llamado.');
+  }
+
+  const alertButtons: AlertButton[] = lastAlertCall[2] ?? [];
+  const targetButton = alertButtons.find((button) => button.text === buttonText);
+  if (!targetButton?.onPress) {
+    throw new Error(`No hay un botón de Alert con el texto "${buttonText}".`);
+  }
+
+  await act(async () => {
+    targetButton.onPress?.();
+  });
+}
+
 describe('NewIncidentScreen', () => {
+  // Espía de Alert.alert: evita el diálogo nativo y permite pulsar sus botones.
+  let alertSpy: jest.SpyInstance;
+
   beforeEach(() => {
     // userEvent.press simula una pulsación con duración; los fake timers la aceleran.
     jest.useFakeTimers();
 
+    alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+
     mockedCreateIncident.mockReset();
-    mockedCreateImage.mockReset();
-    mockedCreateLocation.mockReset();
     mockedFetchCategories.mockReset();
     mockedAreLocationServicesEnabled.mockReset();
     mockedRequestLocationPermission.mockReset();
@@ -204,13 +318,12 @@ describe('NewIncidentScreen', () => {
     mockedPickPhotoFromCamera.mockReset();
     mockedPickPhotoFromLibrary.mockReset();
     mockedStorePhoto.mockReset();
+    mockedUseSession.mockReturnValue(buildSessionValue());
 
     // Defaults felices de todos los límites externos: catálogo vacío,
     // ubicación resuelta y envío correcto.
     mockedFetchCategories.mockResolvedValue([]);
-    mockedCreateIncident.mockResolvedValue(createdIncident);
-    mockedCreateImage.mockResolvedValue(createdIncidentImage);
-    mockedCreateLocation.mockResolvedValue(createdLocation);
+    mockedCreateIncident.mockResolvedValue(backendCreateResult);
     mockedAreLocationServicesEnabled.mockResolvedValue(true);
     mockedRequestLocationPermission.mockResolvedValue(true);
     mockedGetCurrentCoordinates.mockResolvedValue(deviceCoordinates);
@@ -221,6 +334,7 @@ describe('NewIncidentScreen', () => {
   });
 
   afterEach(() => {
+    alertSpy.mockRestore();
     jest.useRealTimers();
   });
 
@@ -261,7 +375,7 @@ describe('NewIncidentScreen', () => {
     });
   });
 
-  it('al adjuntar una foto y enviar, crea la incidencia y guarda la imagen vinculada sin aviso de fotos', async () => {
+  it('al adjuntar una foto y enviar, pasa la URI adjunta como segundo argumento de createIncident', async () => {
     const user = userEvent.setup();
     await renderScreen();
 
@@ -281,49 +395,41 @@ describe('NewIncidentScreen', () => {
     // Pantalla de confirmación tras el registro correcto.
     expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
 
-    // La incidencia se crea con la ubicación resuelta por el mock del dispositivo.
+    // Una sola llamada: el input de la incidencia y las URIs de las fotos
+    // viajan juntos en el mismo envío multipart.
     expect(mockedCreateIncident).toHaveBeenCalledTimes(1);
-    expect(mockedCreateIncident).toHaveBeenCalledWith({
-      title: createdIncident.title,
-      description: createdIncident.description,
-      categoryId: null,
-      category: null,
-      locationId: createdLocation.id,
-    });
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedDeviceSubmission, SESSION_CIVIC_ID,[libraryPhotoUri]);
 
-    // Cada URI adjunta se persiste vinculada a la incidencia recién creada.
-    expect(mockedCreateImage).toHaveBeenCalledTimes(1);
-    expect(mockedCreateImage).toHaveBeenCalledWith({
-      url: libraryPhotoUri,
-      incidentId: createdIncident.id,
-    });
-
-    // Sin fallos de imágenes no aparece ningún aviso de fotos.
+    // Sin aviso de fotos en la confirmación.
     expect(screen.queryByText(/no pudo guardarse/)).not.toBeOnTheScreen();
     expect(screen.queryByText(/no pudieron guardarse/)).not.toBeOnTheScreen();
   });
 
-  it('si falla el guardado de la imagen, la confirmación muestra el aviso en español', async () => {
-    mockedCreateImage.mockRejectedValue(new Error('No se pudo guardar la imagen.'));
+  it('con dos fotos adjuntas envía ambas URIs en orden de adjunto', async () => {
+    const firstPhotoUri = 'file:///photos/first-1.png';
+    mockedPickPhotoFromLibrary
+      .mockResolvedValueOnce(firstPhotoUri)
+      .mockResolvedValueOnce(libraryPhotoUri);
 
     const user = userEvent.setup();
     await renderScreen();
 
     await fillValidIncidentForm(user);
     await attachPhotoFromLibrary(user);
+    await attachAnotherPhotoFromLibrary(user, 2);
 
     await user.press(screen.getByLabelText('Enviar incidencia'));
 
     expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
 
-    // La incidencia sí se creó; solo la imagen falló, con aviso no bloqueante.
     expect(mockedCreateIncident).toHaveBeenCalledTimes(1);
-    expect(
-      screen.getByText('La incidencia se registró, pero 1 foto no pudo guardarse.'),
-    ).toBeOnTheScreen();
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedDeviceSubmission, SESSION_CIVIC_ID,[
+      firstPhotoUri,
+      libraryPhotoUri,
+    ]);
   });
 
-  it('al enviar sin fotos no guarda ninguna imagen ni muestra aviso de fotos', async () => {
+  it('al enviar sin fotos pasa un array vacío como segundo argumento y no muestra aviso de fotos', async () => {
     const user = userEvent.setup();
     await renderScreen();
 
@@ -334,7 +440,7 @@ describe('NewIncidentScreen', () => {
     expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
 
     expect(mockedCreateIncident).toHaveBeenCalledTimes(1);
-    expect(mockedCreateImage).not.toHaveBeenCalled();
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedDeviceSubmission, SESSION_CIVIC_ID,[]);
     expect(screen.queryByText(/no pudo guardarse/)).not.toBeOnTheScreen();
     expect(screen.queryByText(/no pudieron guardarse/)).not.toBeOnTheScreen();
   });
@@ -355,7 +461,6 @@ describe('NewIncidentScreen', () => {
       await screen.findByText('No se pudo registrar la incidencia. Inténtalo de nuevo más tarde.'),
     ).toBeOnTheScreen();
     expect(screen.queryByText('Incidencia registrada')).not.toBeOnTheScreen();
-    expect(mockedCreateImage).not.toHaveBeenCalled();
   });
 
   it('"Volver" en la confirmación navega hacia atrás', async () => {
@@ -370,5 +475,204 @@ describe('NewIncidentScreen', () => {
     await user.press(screen.getByLabelText('Volver al inicio'));
 
     expect(router.back).toHaveBeenCalledTimes(1);
+  });
+
+  it('con la ubicación activa envía latitude, longitude y accuracy del dispositivo y confirma con estado "reported"', async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+
+    expect(mockedGetCurrentCoordinates).toHaveBeenCalledTimes(1);
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedDeviceSubmission, SESSION_CIVIC_ID,[]);
+    expect(screen.getByText('reported')).toBeOnTheScreen();
+    expect(alertSpy).not.toHaveBeenCalled();
+  });
+
+  it('con el toggle de ubicación apagado envía latitude, longitude y accuracy null tras confirmar el aviso', async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText('Desactivar ubicación'));
+    await fillValidIncidentForm(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    // Con la ubicación desactivada se pide confirmación antes de enviar.
+    expect(alertSpy).toHaveBeenCalledTimes(1);
+    await pressLastAlertButton(alertSpy, 'Enviar de todas formas');
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+
+    // Con el toggle apagado no se consulta al dispositivo y se envían los tres null.
+    expect(mockedAreLocationServicesEnabled).not.toHaveBeenCalled();
+    expect(mockedGetCurrentCoordinates).not.toHaveBeenCalled();
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedNoLocationSubmission, SESSION_CIVIC_ID,[]);
+    expect(screen.getByText('reported')).toBeOnTheScreen();
+  });
+
+  it('si el dispositivo no devuelve coordenadas envía los tres null y avisa en la confirmación', async () => {
+    mockedGetCurrentCoordinates.mockResolvedValue(null);
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedNoLocationSubmission, SESSION_CIVIC_ID,[]);
+    expect(
+      screen.getByText('No se pudo obtener la ubicación; la incidencia se registró sin posición.'),
+    ).toBeOnTheScreen();
+  });
+
+  it('si no hay permiso de ubicación y el usuario envía sin ubicación, envía los tres null', async () => {
+    mockedRequestLocationPermission.mockResolvedValue(false);
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(alertSpy).toHaveBeenCalledTimes(1);
+    await pressLastAlertButton(alertSpy, 'Enviar sin ubicación');
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+
+    expect(mockedGetCurrentCoordinates).not.toHaveBeenCalled();
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedNoLocationSubmission, SESSION_CIVIC_ID,[]);
+    expect(
+      screen.getByText('La incidencia se registró sin ubicación porque no hay permiso de ubicación.'),
+    ).toBeOnTheScreen();
+  });
+
+  it('si los servicios de ubicación del dispositivo están desactivados y el usuario envía sin ubicación, envía los tres null', async () => {
+    mockedAreLocationServicesEnabled.mockResolvedValue(false);
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(alertSpy).toHaveBeenCalledTimes(1);
+    await pressLastAlertButton(alertSpy, 'Enviar sin ubicación');
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+
+    expect(mockedRequestLocationPermission).not.toHaveBeenCalled();
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedNoLocationSubmission, SESSION_CIVIC_ID,[]);
+  });
+
+  it('con source "mock" muestra el aviso de fallback al backend en la confirmación', async () => {
+    mockedCreateIncident.mockResolvedValue(mockCreateResult);
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+    expect(screen.getByText(MOCK_FALLBACK_NOTICE)).toBeOnTheScreen();
+  });
+
+  it('con source "backend" NO muestra el aviso de fallback al backend', async () => {
+    mockedCreateIncident.mockResolvedValue(backendCreateResult);
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+    expect(screen.queryByText(MOCK_FALLBACK_NOTICE)).not.toBeOnTheScreen();
+    expect(screen.queryByText(/realizando en el mock/)).not.toBeOnTheScreen();
+  });
+
+  it('con source "mock" mantiene el estado "reported", el envío con fotos y el resto de la confirmación', async () => {
+    mockedCreateIncident.mockResolvedValue(mockCreateResult);
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+    await attachPhotoFromLibrary(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+    expect(screen.getByText('reported')).toBeOnTheScreen();
+    expect(screen.getByText(MOCK_FALLBACK_NOTICE)).toBeOnTheScreen();
+    expect(mockedCreateIncident).toHaveBeenCalledTimes(1);
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedDeviceSubmission, SESSION_CIVIC_ID,[libraryPhotoUri]);
+  });
+
+  it('el aviso de fallback no aparece en el formulario antes de enviar', async () => {
+    mockedCreateIncident.mockResolvedValue(mockCreateResult);
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    expect(screen.queryByText(MOCK_FALLBACK_NOTICE)).not.toBeOnTheScreen();
+  });
+
+  describe('control de sesión', () => {
+    it('sin sesión (user null y ya resuelta) redirige a /login y no muestra el formulario', async () => {
+      mockedUseSession.mockReturnValue(
+        buildSessionValue({ user: null, isRestoringSession: false }),
+      );
+
+      await renderScreen();
+
+      expect(screen.getByText('redirect:/login')).toBeOnTheScreen();
+      expect(screen.queryByLabelText('Enviar incidencia')).not.toBeOnTheScreen();
+      expect(screen.queryByLabelText('Título de la incidencia')).not.toBeOnTheScreen();
+    });
+
+    it('mientras se restaura la sesión muestra el formulario y no redirige a /login', async () => {
+      mockedUseSession.mockReturnValue(
+        buildSessionValue({ user: null, isRestoringSession: true }),
+      );
+
+      await renderScreen();
+
+      expect(screen.queryByText('redirect:/login')).not.toBeOnTheScreen();
+      expect(screen.getByLabelText('Enviar incidencia')).toBeOnTheScreen();
+      expect(screen.getByLabelText('Título de la incidencia')).toBeOnTheScreen();
+    });
+
+    it('con sesión activa envía la incidencia con el civicId de la sesión como segundo argumento', async () => {
+      const user = userEvent.setup();
+      await renderScreen();
+
+      await fillValidIncidentForm(user);
+      await user.press(screen.getByLabelText('Enviar incidencia'));
+
+      expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+      expect(mockedCreateIncident).toHaveBeenCalledTimes(1);
+      // El fixture de usuario tiene `id: '1'` y `civicId` distinto: la aserción
+      // exige el civicId, no el id de usuario.
+      expect(mockedCreateIncident).toHaveBeenCalledWith(
+        expectedDeviceSubmission,
+        SESSION_CIVIC_ID,
+        [],
+      );
+    });
   });
 });
