@@ -76,6 +76,19 @@
       "categoryId": null,
       "category": null,
       "id": "iB09J7Gfu1k"
+    },
+    {
+      "title": "Prueba de mock",
+      "description": "Prueba de mock a ver si va",
+      "latitude": 36.722168357960356,
+      "longitude": -4.432757262449463,
+      "accuracy": 7.413813957328224,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "categoryId": "2",
+      "category": null,
+      "status": "reported",
+      "createdAt": "2026-10-26T12:07:57.525Z",
+      "id": "r051uLJN6S8"
     }
   ],
   "categories": [
@@ -133,6 +146,16 @@
       "url": "file:///var/mobile/Containers/Data/Application/0A1F28B1-C9C3-4ABF-8578-FFB2EBFD8F11/Library/Caches/ImagePicker/897B7C7C-D1A1-402F-8205-4F2FF6B5E188.jpg",
       "incidentId": "iB09J7Gfu1k",
       "id": "3nArxKNM8X4"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/0A1F28B1-C9C3-4ABF-8578-FFB2EBFD8F11/Library/Caches/ImagePicker/5E1132F6-CBFF-4460-BAF0-530E1430C9BB.jpg",
+      "incidentId": "r051uLJN6S8",
+      "id": "u70Hnq2jOMA"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/0A1F28B1-C9C3-4ABF-8578-FFB2EBFD8F11/Library/Caches/ImagePicker/0C3CA8AD-E015-45B4-A808-27182686E5D2.jpg",
+      "incidentId": "r051uLJN6S8",
+      "id": "vYMIilPFj_U"
     }
   ],
   "users": [
