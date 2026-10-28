@@ -252,4 +252,4 @@ git commit -m "feat: añadir endpoint de registro"
 ---
 
 ##  Documentación Adicional
-- **ADRs (Architecture Decision Records):** Las decisiones importantes sobre el diseño del sistema se documentan en `backend/docs/adr/`.
+- **ADRs (Architecture Decision Records):** Las decisiones importantes sobre el diseño del sistema se documentan en `docs/adr/`.

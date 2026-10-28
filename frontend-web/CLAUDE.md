@@ -21,11 +21,14 @@ npm run build
 - No instalar dependencias, crear commits ni hacer push sin petición explícita.
 - Para ramas, commits y PR, seguir el `README.md` de la raíz.
 
-## Trazabilidad de IA (obligatoria)
+## Specs y trazabilidad (`docs/spec/`)
 
-La estructura, plantillas y flujo están en `docs/spec/README.md`, que es la única fuente de verdad. En resumen, en cada sesión que use IA:
+- La estructura de carpetas, las plantillas y la diferencia entre `spec.md` y `plan.md` están documentadas en `docs/spec/README.md` — es la única fuente de verdad, no se duplica aquí. Es la misma que `frontend-mobile/docs/spec/`.
+- Cada feature, bug, refactor o cambio de documentación se documenta ahí y declara el desarrollador responsable, el asistente de IA y el modelo exacto utilizados. No existe historial de prompts: no crear `docs/spec/prompts/`.
+- La skill `trazabilidad` (`.claude/skills/trazabilidad/`) aplica este flujo; usarla siempre que se haga una feature, fix, refactor o docs.
 
-1. Abrir o crear `docs/spec/prompts/AAAA-MM-DD.md` (fecha de hoy) desde `docs/spec/templates/prompts-template.md`.
-2. Añadir una entrada por cada prompt que produzca un cambio: prompt literal, asistente, modelo exacto, rama, resultado y archivos tocados.
-3. Si el cambio es una feature, bug o refactor, crear también su documento en `docs/spec/` y enlazarlo con la entrada del prompt.
-4. Incluir el historial del día en el mismo commit o PR que los cambios.
+## Documentación de sesión y seguimiento de tareas (`docs/`)
+
+- Mantén el progreso de la sesión dentro del directorio `docs/`, en `docs/AAAA-MM-DD-NNN-nombre.md`.
+- Documenta notas de sesión y mantén una lista de tareas estructurada que detalle todas las tareas completadas y sus subtareas (p. ej. usando checkboxes `- [x]` / `- [ ]`).
+- Actualiza este registro al completar cada tarea para que el trabajo en curso y el pasado quede transparente y trazable entre sesiones.
