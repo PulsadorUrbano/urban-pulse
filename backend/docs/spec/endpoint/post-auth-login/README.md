@@ -1,7 +1,7 @@
 # POST /auth/login
 
-- Estado: implementado, verificación pendiente (sin ejecución de pruebas).
-- Última revisión: 2026-10-25.
+- Estado: implementado; unitarias, compilación y lint verificados en la fusión. Sin pruebas HTTP ni DB real.
+- Última revisión: 2026-10-26.
 - Método y ruta: `POST /auth/login`.
 - Finalidad: iniciar sesión con usuario o email y contraseña, y obtener un JWT.
 - Acceso: público.

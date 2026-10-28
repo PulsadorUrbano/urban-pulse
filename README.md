@@ -1,16 +1,16 @@
-# 🏙️ Urban Pulse
+#  Urban Pulse
 
 Plataforma cloud para la gestión inteligente de incidencias urbanas en la ciudad de Málaga. 
 Este repositorio contiene el código fuente, la documentación técnica y la configuración para el despliegue del sistema.
 
-## 📖 Visión del Producto
+##  Visión del Producto
 La idea es que UrbanPulse transforme un reporte aislado en una unidad de trabajo enriquecida con datos contextuales, trazable y susceptible de análisis. La plataforma apoya al ciudadano, al operador municipal y al responsable de planificación sin sustituir la decisión humana en actuaciones sensibles. 
 
 - **Ciudadanía:** Permitirá comunicar una incidencia, aportar localización y evidencias y seguir su evolución. 
 - **Personal municipal:** Ofrecerá validación, asignación, priorización y contexto. 
 - **Responsables y analistas:** Aportará indicadores, modelos predictivos y consultas basadas en datos y en documentos.
 
-## 🧠 Conceptos Core del Dominio
+##  Conceptos Core del Dominio
 - **Incident:** Reporte central con descripción, categoría, localización, prioridad, estado y marcas temporales.
 - **User:** Ciudadano o profesional que crea, consulta o modifica según sus permisos.
 - **UrbanAsset:** Elemento físico identificable como semáforo, contenedor, fuente, parada, aparcamiento o zona verde.
@@ -18,7 +18,7 @@ La idea es que UrbanPulse transforme un reporte aislado en una unidad de trabajo
 
 ---
 
-## 💻 Stack Tecnológico
+##  Stack Tecnológico
 El sistema está construido utilizando las siguientes tecnologías:
 - **Base de Datos:** PostgreSQL
 - **Backend:** NestJS con TypeScript
@@ -27,7 +27,7 @@ El sistema está construido utilizando las siguientes tecnologías:
 
 ---
 
-## 🚀 Instalación y Ejecución
+##  Instalación y Ejecución
 
 **1. Clonar el repositorio y acceder a la carpeta:**
 ```bash
@@ -112,20 +112,47 @@ Las funcionalidades disponibles dependen de la rama. El registro de incidencias 
 
 ### Backend — NestJS y TypeScript
 
-Requisitos documentados: Node.js 22 o superior y npm 10 o superior. Configura la conexión a PostgreSQL antes de arrancar el backend.
+Requisitos documentados: Node.js 22 o superior y npm 10 o superior. La fase actual de registro de incidencias arranca sin configurar una base de datos; el código Prisma se conserva, pero `AppModule` no lo activa todavía.
 
-Desde la raíz del repositorio, usando Git Bash:
+Desde la raíz del repositorio:
 
 ```bash
 cd backend
-npm install
-cp .env.example .env
+npm ci
 npm run start:dev
 ```
 
-Completa `DATABASE_URL` y las variables necesarias en el archivo local `.env`.
-La API usa el puerto 3000 por defecto; se puede modificar con `PORT`.
-La documentación Swagger se publica en `/` y `GET /health` devuelve `{ "status": "ok" }`.
+La API usa el puerto 3000 por defecto; se puede modificar con `PORT`. Swagger se publica en `/` y `GET /health` devuelve `{ "status": "ok" }`.
+
+#### Catalogo temporal de categorias
+
+`GET /categories` devuelve `200 OK` y un array de objetos `{ id, name, createdAt }`, sin envoltorio. Reutiliza las cinco categorias iniciales del servicio y cualquier categoria creada posteriormente por el propio servicio. Los UUID y fechas permanecen estables durante la vida del proceso; el catalogo es temporal y se reinicia con la aplicacion. Swagger documenta la respuesta en `/`.
+
+#### Registro temporal de incidencias
+
+| Método y ruta | Resultado |
+| --- | --- |
+| `POST /incidents` | `201 Created`, el recurso y `Location: /incidents/{id}`. |
+| `GET /incidents/:id` | `200 OK`; `404` si el UUID válido no existe. |
+
+La creación usa `multipart/form-data`. Ejemplo con una imagen:
+
+```bash
+curl -X POST http://localhost:3000/incidents \
+  -F "title=Farola apagada" \
+  -F "civicId=00000000-0000-4000-8000-000000000002" \
+  -F "categoryName=Iluminación" \
+  -F "latitude=36.7213" \
+  -F "longitude=-4.4214" \
+  -F "accuracy=8.5" \
+  -F "images=@farola.png;type=image/png"
+```
+
+`title` se recorta y debe tener 4–35 puntos de código. `description` es opcional y, cuando se aporta, tiene al menos 10. `civicId` es UUID obligatorio y solo se valida por formato. `categoryName` es obligatorio: el catálogo temporal reutiliza `Iluminación`, `Limpieza`, `Vía pública`, `Movilidad` y `Zonas verdes` sin distinguir mayúsculas/minúsculas ni espacios; un nombre nuevo crea una categoría temporal. `latitude` y `longitude` son obligatorias; `accuracy` es opcional y no negativa. La ubicación resultante incluye su fecha de creación del servidor.
+
+Se aceptan de cero a ocho imágenes JPEG, PNG o WebP de hasta 5 MB por archivo en el campo repetible `images`. Se guardan temporalmente en `backend/uploads/incidents/<id>/` y la respuesta devuelve sus URL relativas bajo `/uploads/`. Los campos desconocidos y los gestionados por el servidor se rechazan con `400`.
+
+Los metadatos viven únicamente en memoria y se pierden al reiniciar el backend. Las imágenes son archivos locales temporales sin limpieza programada, por lo que pueden seguir accesibles aunque el registro en memoria ya no exista. No hay autenticación, autorización ni consulta de identidad ciudadana; tampoco se comprueba la existencia de `civicId` ni `urbanAssetId`.
 
 | Comando | Uso |
 | --- | --- |
@@ -141,7 +168,7 @@ Las variables `OBSERVE_APP_KEY` y `OBSERVE_APP_SECRET` se reservan para Nest Obs
 
 ### Base de datos — PostgreSQL y PostGIS
 
-El modelo de referencia está en `database/diagram.dbml`; su representación SQL está en `docs/urbanPulse_diagram.sql`. El modelo documentado y el esquema
+El modelo de referencia está en `database/diagram.dbml`; su representación SQL está en `backend/docs/migrations/001_base_diagram.sql`. El modelo documentado y el esquema
 implementado deben contrastarse con la rama de backend correspondiente.
 
 El servicio `database` de `docker-compose.yml` utiliza PostgreSQL con PostGIS.
@@ -158,7 +185,7 @@ fuera de Docker necesita una conexión accesible configurada para ese entorno. E
 
 ---
 
-## 👥 Guía de Contribución y Flujo de Trabajo
+##  Guía de Contribución y Flujo de Trabajo
 Para asegurar la calidad del código, el equipo sigue una estrategia inspirada en GitHub Flow con un entorno de integración.
 
 ### 1. Gestión de Ramas
@@ -215,5 +242,5 @@ git commit -m "feat: añadir endpoint de registro"
 
 ---
 
-## 📚 Documentación Adicional
-- **ADRs (Architecture Decision Records):** Las decisiones importantes sobre el diseño del sistema se documentan en la carpeta `/docs/adr/`.
+##  Documentación Adicional
+- **ADRs (Architecture Decision Records):** Las decisiones importantes sobre el diseño del sistema se documentan en `backend/docs/adr/`.

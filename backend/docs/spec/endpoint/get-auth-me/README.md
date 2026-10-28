@@ -1,7 +1,7 @@
 # GET /auth/me
 
-- Estado: implementado, verificación pendiente (sin ejecución de pruebas).
-- Última revisión: 2026-10-25.
+- Estado: implementado; unitarias, compilación y lint verificados en la fusión. Sin pruebas HTTP ni DB real.
+- Última revisión: 2026-10-26.
 - Método y ruta: `GET /auth/me`.
 - Finalidad: validar la sesión y devolver los datos actuales del usuario.
 - Acceso: Bearer JWT válido y usuario existente en la base de datos.

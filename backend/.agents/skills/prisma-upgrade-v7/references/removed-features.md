@@ -7,7 +7,7 @@ Several features have been removed in Prisma v7. Here's how to migrate.
 ### Removed
 
 ```typescript
-// ❌ No longer works in v7
+//  No longer works in v7
 prisma.$use(async (params, next) => {
   const before = Date.now()
   const result = await next(params)
@@ -20,7 +20,7 @@ prisma.$use(async (params, next) => {
 ### Use Client Extensions Instead
 
 ```typescript
-// ✅ v7 approach
+//  v7 approach
 const prisma = new PrismaClient({ adapter }).$extends({
   query: {
     $allModels: {
@@ -83,7 +83,7 @@ const prisma = new PrismaClient({ adapter }).$extends({
 The Metrics preview feature has been removed.
 
 ```typescript
-// ❌ No longer works
+//  No longer works
 const metrics = await prisma.$metrics.json()
 ```
 
@@ -214,12 +214,12 @@ const userSelect = {
 Removed in v5.0.0 (already deprecated).
 
 ```typescript
-// ❌ Removed
+//  Removed
 const prisma = new PrismaClient({
   rejectOnNotFound: true,
 })
 
-// ✅ Use OrThrow methods
+//  Use OrThrow methods
 const user = await prisma.user.findUniqueOrThrow({
   where: { id: 1 },
 })
