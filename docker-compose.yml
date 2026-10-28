@@ -5,7 +5,7 @@ services:
   # 1. Base de Datos (PostgreSQL + PostGIS)
   # -----------------------------------------------------------
   database:
-    image: postgis/postgis:16-3.5-alpine
+    image: imresamu/postgis:16-3.5-bookworm
     container_name: urbanpulse_db
     restart: always # 'always' es más robusto en producción que 'unless-stopped'
     ports:
