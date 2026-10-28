@@ -13,18 +13,26 @@ export interface UseCreateIncidentResult {
 }
 
 // Encapsula el estado de envío de una incidencia para que la UI solo consuma
-// `isSubmitting`, `errorMessage` y `submitIncident`.
-export function useCreateIncident(): UseCreateIncidentResult {
+// `isSubmitting`, `errorMessage` y `submitIncident`. Recibe el `civicId` de la
+// sesión activa, necesario para asociar la incidencia a su autor real.
+export function useCreateIncident(civicId: string | null): UseCreateIncidentResult {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const submitIncident = useCallback(
     async (input: CreateIncidentInput, imageUris?: string[]): Promise<CreateIncidentResult | null> => {
       setErrorMessage(null);
+
+      // Sin `civicId` no hay sesión identificable: no se intenta el envío.
+      if (civicId == null) {
+        setErrorMessage('No se pudo identificar tu sesión. Vuelve a iniciar sesión.');
+        return null;
+      }
+
       setIsSubmitting(true);
 
       try {
-        const result = await createIncident(input, imageUris);
+        const result = await createIncident(input, civicId, imageUris);
         return result;
       } catch (error) {
         const message =
@@ -37,7 +45,7 @@ export function useCreateIncident(): UseCreateIncidentResult {
         setIsSubmitting(false);
       }
     },
-    [],
+    [civicId],
   );
 
   return { isSubmitting, errorMessage, submitIncident };

@@ -35,6 +35,14 @@ git clone https://github.com/PulsadorUrbano/urban-pulse.git
 cd urban-pulse
 ```
 
+Cada parte usa su propio gestor de paquetes y un único lockfile:
+
+| Parte | Gestor | Lockfile |
+| --- | --- | --- |
+| `frontend-web/` | npm | `package-lock.json` |
+| `frontend-mobile/` | pnpm | `pnpm-lock.yaml` |
+| `backend/` | npm | `package-lock.json` |
+
 ### Frontend web — React y Vite
 
 Desde la raíz del repositorio, en la terminal de VS Code:
@@ -54,20 +62,20 @@ npm run build
 
 ### Frontend móvil — React Native y Expo
 
-Desde la raíz del repositorio, instala las dependencias:
+Desde la raíz del repositorio, instala las dependencias con pnpm:
 
 ```bash
 cd frontend-mobile
-npm ci
+pnpm install --frozen-lockfile
 ```
 
 #### Probar en el navegador del ordenador
 
 ```bash
-npm run web
+pnpm run web
 ```
 
-Abre la dirección que indique Expo en la terminal. También puedes ejecutar `npm run start` y pulsar `w` para abrir la versión web.
+Abre la dirección que indique Expo en la terminal. También puedes ejecutar `pnpm run start` y pulsar `w` para abrir la versión web.
 
 #### Probar en un dispositivo móvil con Expo Go
 
@@ -82,7 +90,7 @@ Abre la dirección que indique Expo en la terminal. También puedes ejecutar `np
 4. Desde `frontend-mobile/`, inicia el servidor:
 
    ```bash
-   npm run start
+   pnpm run start
    ```
 
 5. Busca el proyecto `frontend` en la sección **Development servers** de Expo Go. Si no aparece, utiliza el código QR generado en la terminal.
@@ -93,9 +101,10 @@ En modo LAN, el ordenador y el móvil deben estar conectados a la misma red Wi-F
 
 | Comando | Uso |
 | --- | --- |
-| `npm run android` | Abrir la aplicación en Android, con un dispositivo o emulador configurado. |
-| `npm run ios` | Abrir la aplicación en el simulador iOS; requiere macOS y Xcode. |
-| `npx expo lint` | Comprobar el código con el linter de Expo. |
+| `pnpm run android` | Abrir la aplicación en Android, con un dispositivo o emulador configurado. |
+| `pnpm run ios` | Abrir la aplicación en el simulador iOS; requiere macOS y Xcode. |
+| `pnpm expo lint` | Comprobar el código con el linter de Expo. |
+| `pnpm run mock` | Levantar el servidor simulado (`json-server` con `db.json`) que usa la app cuando no hay backend. |
 
 #### Estructura y funcionalidades
 
@@ -112,7 +121,7 @@ Las funcionalidades disponibles dependen de la rama. El registro de incidencias 
 
 ### Backend — NestJS y TypeScript
 
-Requisitos documentados: Node.js 22 o superior y npm 10 o superior. La fase actual de registro de incidencias arranca sin configurar una base de datos; el código Prisma se conserva, pero `AppModule` no lo activa todavía.
+Requisitos documentados: Node.js 22 o superior y npm 10 o superior. `AppModule` activa Prisma y la autenticación, así que el backend necesita PostgreSQL y las variables `DATABASE_URL`, `JWT_SECRET` y `JWT_EXPIRES_IN` para arrancar. Copia `backend/.env.example` a `backend/.env` y ajústalo; para levantar backend y base de datos juntos, usa `docker compose up --build` desde la raíz.
 
 Desde la raíz del repositorio:
 

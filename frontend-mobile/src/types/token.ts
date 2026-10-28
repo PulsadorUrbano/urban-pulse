@@ -8,16 +8,6 @@ export interface TokenPayload {
   role: UserRole;
 }
 
-// Cuerpo de la petición al backend para generar un token.
-export interface CreateTokenRequest {
-  userId: string;
-}
-
-// Respuesta del backend al generar un token.
-export interface CreateTokenResponse {
-  accessToken: string;
-}
-
 // Origen del token: emitido por el backend real o generado localmente (mock).
 export type TokenSource = 'backend' | 'mock';
 
