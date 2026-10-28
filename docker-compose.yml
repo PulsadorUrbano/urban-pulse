@@ -5,11 +5,9 @@ services:
   # 1. Base de Datos (PostgreSQL + PostGIS)
   # -----------------------------------------------------------
   database:
-    image: postgis/postgis:16-3.5-alpine
+    image: imresamu/postgis:16-3.5-bookworm
     container_name: urbanpulse_db
     restart: always # 'always' es más robusto en producción que 'unless-stopped'
-    ports:
-      - "5432:5432" # Solo para desarrollo local; en producción no se expone
     # Forzamos que las variables vengan del sistema o de un archivo .env, sin valores por defecto inseguros
     environment:
       POSTGRES_DB: ${DB_NAME:?Falta la variable DB_NAME}
@@ -39,10 +37,10 @@ services:
     env_file:
       - .env # Centralizamos las variables en un archivo
     environment:
-      PORT: 4000
+      PORT: 3000
       DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@database:5432/${DB_NAME}
     ports:
-      - "4000:4000" # Este sí se expone para que el frontend o los usuarios accedan a la API
+      - "3000:3000" # Este sí se expone para que el frontend o los usuarios accedan a la API
     depends_on:
       database:
         condition: service_healthy

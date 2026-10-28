@@ -1,0 +1,14 @@
+.agents
+.vscode
+docs/
+node_modules/
+src/generated/prisma
+generated/prisma
+test/
+uploads/
+.env.example
+.gitignore
+.oxlintrc.json
+.prettierrc
+Dockerfile
+skills-lock.json

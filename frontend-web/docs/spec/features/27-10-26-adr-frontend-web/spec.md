@@ -5,7 +5,7 @@
 - Modelo de IA que creó la especificación: Claude Opus 5.5 (claude-opus-5-5).
 
 - Rama: docs/creacion-adr.
-- Última actualización: 2026-10-27.
+- Última actualización: 2026-10-28.
 - Estado: implementado y verificado (ver [Confirmación de implementación](./plan.md#confirmación-de-implementación)).
 - Plan: [Plan de implementación](./plan.md#confirmación-de-implementación).
 - Referencias: petición del desarrollador de redactar los ADR que corresponden a frontend-web; archivos vacíos creados en el commit 6a7ca60 ("distribución de adr").
@@ -16,6 +16,7 @@ Los ADR del repositorio (`docs/adr/`) existían pero estaban vacíos. Esta tarea
 
 - Alcance confirmado: `docs/adr/0002-two-frontend.md` y `docs/adr/0004-frontend-web-stack.md`. Antes de redactarlos se fusiona `origin/feature/token` en la rama, por ser la que tiene el código más completo.
 - Decisiones confirmadas: la separación se justifica por el tipo de usuario y de dispositivo. La ciudadanía usa el móvil (cámara, GPS, reporte en la calle); el personal municipal y los analistas usan el ordenador (validación, asignación, priorización, analítica). Era la hipótesis del equipo y se ha contrastado con el repositorio.
+- Decisión de ubicación (2026-10-28): todos los ADR del proyecto viven en `docs/adr/` en la raíz, porque afectan a todo el proyecto y no solo al backend. Al integrar `dev`, que los había movido a `backend/docs/adr/`, se reúnen allí del 0001 al 0006.
 - Suposiciones por validar: que los técnicos (`technician`) trabajen desde la web. Si necesitan registrar resoluciones en la calle, habrá que revisar el ADR 0002.
 - Fuera de alcance: los ADR 0001 (base de datos), 0003 (backend) y 0004 del stack móvil, que corresponden a otros equipos. No se modifica código.
 

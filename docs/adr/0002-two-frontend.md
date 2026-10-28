@@ -2,7 +2,7 @@
 
 - Estado: Aceptado.
 - Fecha de registro: 2026-10-27.
-- Relacionados: [ADR 0004 - Stack del frontend web](0004-frontend-web-stack.md), [ADR 0004 - Stack del frontend móvil](0004-frontend-mobile-stack.md).
+- Relacionados: [ADR 0004 - Stack del frontend web](0004-frontend-web-stack.md), [ADR 0005 - Stack del frontend móvil](0005-frontend-mobile-stack.md).
 
 ## Contexto
 

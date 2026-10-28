@@ -23,4 +23,12 @@ npm run build
 
 ## Specs y trazabilidad (`docs/spec/`)
 
-La estructura de carpetas, las plantillas y la diferencia entre `spec.md` y `plan.md` están en `docs/spec/README.md`, que es la única fuente de verdad. Cada feature, bug o refactor se documenta ahí y declara el desarrollador responsable, el asistente de IA y el modelo exacto utilizados.
+- La estructura de carpetas, las plantillas y la diferencia entre `spec.md` y `plan.md` están documentadas en `docs/spec/README.md` — es la única fuente de verdad, no se duplica aquí. Es la misma que `frontend-mobile/docs/spec/`.
+- Cada feature, bug, refactor o cambio de documentación se documenta ahí y declara el desarrollador responsable, el asistente de IA y el modelo exacto utilizados. No existe historial de prompts: no crear `docs/spec/prompts/`.
+- La skill `trazabilidad` (`.claude/skills/trazabilidad/`) aplica este flujo; usarla siempre que se haga una feature, fix, refactor o docs.
+
+## Documentación de sesión y seguimiento de tareas (`docs/`)
+
+- Mantén el progreso de la sesión dentro del directorio `docs/`, en `docs/AAAA-MM-DD-NNN-nombre.md`.
+- Documenta notas de sesión y mantén una lista de tareas estructurada que detalle todas las tareas completadas y sus subtareas (p. ej. usando checkboxes `- [x]` / `- [ ]`).
+- Actualiza este registro al completar cada tarea para que el trabajo en curso y el pasado quede transparente y trazable entre sesiones.

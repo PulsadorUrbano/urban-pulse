@@ -110,7 +110,7 @@ Table status_changes {
   incident_id uuid [ref: > incidents.id, not null]
   user_id uuid [ref: > users.id, not null]
   new_status incident_status [not null]
-  cause varchar // o reason / comment
+  cause varchar [not null] // Motivo obligatorio del cambio de estado
   created_at timestamp [default: `now()`]
 
   indexes {
@@ -147,13 +147,17 @@ Table categories {
 }
 
 Table priority_changes {
-  id uuid
+  id uuid [pk]
   is_manual boolean [not null, default: `true`]
   new_priority incident_priority [not null]
-  cause varchar 
+  cause varchar [not null]
   created_at timestamp [default: `now()`]
   incident_id uuid [ref: > incidents.id, not null]
   user_id uuid [ref: > users.id, not null]
+
+  indexes {
+    incident_id
+  }
 }
 
 // Relacionados con la localización ------------------------------

@@ -1,44 +1,53 @@
-# 2026-10-27 — Refactor: alinear la trazabilidad de frontend-web con frontend-mobile
+# 27-10-26 — Refactor: alinear la trazabilidad de frontend-web con frontend-mobile
 
-- Feature afectada: independiente.
 - Desarrollador responsable: Alejandro.
 - Asistente de IA: Claude Code.
 - Modelo de IA: Claude Opus 5.5 (claude-opus-5-5).
+
+- Feature afectada: independiente.
 - Rama: feature/token-frontend-web (estructura inicial, PR #107) y docs/creacion-adr (alineación).
+- Última actualización: 2026-10-28.
 - Estado: Implementado y verificado.
 
 ## Motivo
 
-Frontend-web no tenía una estructura de trazabilidad común con el resto del equipo; solo existía una especificación suelta en `frontend-web/spec/`. Se creó `frontend-web/docs/spec/` siguiendo `frontend-mobile/docs/spec/`, pero se le añadió una carpeta `prompts/` con un historial diario de prompts que no existe en mobile. El equipo decide mantener exactamente las mismas carpetas que mobile, así que se retira `prompts/`. El uso de IA se registra, como en mobile, con los campos de desarrollador, asistente y modelo de cada documento.
+Frontend-web no tenía una trazabilidad común con el resto del equipo. En la PR #107 se creó `frontend-web/docs/spec/` con una carpeta `prompts/` de historial diario que no existe en `frontend-mobile` ni en `backend`, y con plantillas genéricas. El equipo decide que la web siga exactamente la trazabilidad de `frontend-mobile/` en `dev`: mismas carpetas, mismas plantillas adaptadas a la web, notas de sesión en `docs/` y uso de IA registrado con los campos de cada documento.
 
 ## Alcance
 
-- Alcance confirmado: estructura `features/`, `refactor/`, `bugs/` y `templates/`; nombres de carpetas y archivos con fecha `DD-MM-YY`; plantillas sin referencias a prompts; `README.md` y `frontend-web/CLAUDE.md` actualizados.
-- Fuera de alcance: migrar la documentación de días anteriores. `frontend-web/spec/2026-10-20-003-token-jwt-integration.md` se conserva como referencia histórica.
-- Comportamiento preservado: no se toca código de la aplicación.
+- Alcance confirmado:
+  - 2026-10-27: se retira `prompts/` y `prompts-template.md`; fechas de carpetas y archivos en `DD-MM-YY`.
+  - 2026-10-28: `docs/spec/README.md`, las cuatro plantillas y `bugs/todo.md` se calcan de `frontend-mobile/docs/spec/`, adaptados al stack de la web (React + Vite, Tailwind, Vitest, `src/mocks/`, comandos `npm`). Se añaden las notas de sesión (`docs/AAAA-MM-DD-NNN-nombre.md`), los campos de IA en spec, bug, refactor y nota de sesión, las secciones de trazabilidad y de documentación de sesión en `frontend-web/CLAUDE.md` y la skill `trazabilidad`.
+- Fuera de alcance: migrar la documentación de días anteriores; `frontend-web/spec/2026-10-20-003-token-jwt-integration.md` se conserva como referencia histórica. No se toca `frontend-mobile/` ni `backend/`.
+- Comportamiento preservado: no se modifica código de la aplicación.
 
-| Acción | Archivo |
-| --- | --- |
-| eliminar | frontend-web/docs/spec/prompts/2026-10-27.md |
-| eliminar | frontend-web/docs/spec/templates/prompts-template.md |
-| modificar | frontend-web/docs/spec/README.md |
-| modificar | frontend-web/docs/spec/templates/spec-template.md |
-| modificar | frontend-web/docs/spec/templates/plan-template.md |
-| modificar | frontend-web/docs/spec/templates/bug-template.md |
-| modificar | frontend-web/docs/spec/templates/refactor-template.md |
-| modificar | frontend-web/docs/spec/bugs/todo.md |
-| modificar | frontend-web/CLAUDE.md |
+## Archivos tocados
+
+| Acción | Archivo | Responsabilidad |
+| --- | --- | --- |
+| Eliminar | frontend-web/docs/spec/prompts/2026-10-27.md | Historial de prompts retirado. |
+| Eliminar | frontend-web/docs/spec/templates/prompts-template.md | Plantilla de prompts retirada. |
+| Modificar | frontend-web/docs/spec/README.md | Estructura y flujos del móvil, campos de IA y notas de sesión. |
+| Modificar | frontend-web/docs/spec/templates/spec-template.md | Plantilla del móvil adaptada a la web. |
+| Modificar | frontend-web/docs/spec/templates/plan-template.md | Plantilla del móvil adaptada a la web. |
+| Modificar | frontend-web/docs/spec/templates/bug-template.md | Plantilla del móvil adaptada a la web, con campos de IA. |
+| Modificar | frontend-web/docs/spec/templates/refactor-template.md | Plantilla del móvil adaptada a la web, con campos de IA. |
+| Modificar | frontend-web/docs/spec/bugs/todo.md | Formato del `todo.md` del móvil. |
+| Modificar | frontend-web/CLAUDE.md | Trazabilidad y documentación de sesión, como en el móvil. |
+| Crear | frontend-web/.claude/skills/trazabilidad/SKILL.md | Skill que aplica este flujo en cada feature, fix, refactor o docs. |
 
 ## Verificación
 
-- [x] Estructura antes del cambio: `features/`, `refactor/`, `bugs/`, `prompts/` y `templates/` (con `prompts-template.md`).
-- [x] Estructura después del cambio: mismas carpetas que `frontend-mobile/docs/spec/`; `grep -i prompt` sobre `frontend-web/docs` y `frontend-web/CLAUDE.md` sin resultados.
-- [x] `npm run lint`, `npm run test` y `npm run build`: no aplica, cambio documental.
+- [x] Registrar el comportamiento observado antes del cambio: `docs/spec/` con `prompts/`, plantillas sin el formato del móvil y sin notas de sesión.
+- [x] Aplicar el refactor.
+- [x] Confirmar el resultado: `find frontend-web/docs -ipath '*prompt*'` sin resultados; mismas carpetas que `frontend-mobile/docs/spec/`; ninguna plantilla con referencias a prompts.
+- [x] `npm run lint` y `npx tsc --noEmit`: no aplica, cambio documental.
+- [x] Tests: no aplica, no se toca código.
 
 ## Confirmación
 
 - Estado final: Implementado y verificado.
-- Fecha de revisión: 2026-10-27.
-- Resultado entregado: `frontend-web/docs/spec/` con las mismas carpetas y flujo que frontend-mobile.
-- Decisiones y desviaciones: se adopta el formato de fecha `DD-MM-YY` de mobile en lugar de `AAAA-MM-DD`.
-- Limitaciones y pendientes: el historial de prompts del 2026-10-27 ya se publicó en `feature/token` con la PR #107; desaparecerá al integrar este cambio.
+- Fecha de revisión: 2026-10-28.
+- Resultado entregado: `frontend-web/docs/` con la misma trazabilidad que `frontend-mobile/docs/` y la skill `trazabilidad` para mantenerla.
+- Decisiones y desviaciones: los campos de IA aparecen también en bugs, refactors y notas de sesión (en el móvil solo están en la spec), para que un fix sin spec también registre el uso de IA.
+- Limitaciones y pendientes: ninguno.

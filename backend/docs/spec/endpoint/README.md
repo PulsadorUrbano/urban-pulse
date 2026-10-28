@@ -1,16 +1,64 @@
 # Catálogo de endpoints del backend
 
-Este directorio contiene la documentación de los contratos HTTP. No contiene controladores ni crea rutas.
+Este directorio permite descubrir los contratos de la API mediante el listado de sus carpetas. Es documentación; no contiene controladores ni crea rutas HTTP.
 
-## Endpoints de autenticación
+## Consultar el catálogo
 
-| Carpeta | Método y ruta | Estado |
-| --- | --- | --- |
-| [post-auth-register](post-auth-register/README.md) | `POST /auth/register` | Implementado, verificación pendiente |
-| [post-auth-login](post-auth-login/README.md) | `POST /auth/login` | Implementado, verificación pendiente |
-| [get-auth-me](get-auth-me/README.md) | `GET /auth/me` | Implementado, verificación pendiente |
-| [post-auth-token](post-auth-token/README.md) | `POST /auth/token` | Retirado |
+Desde la raíz del repositorio:
+
+~~~sh
+ls backend/docs/spec/endpoint
+~~~
+
+Desde backend/:
+
+~~~sh
+ls docs/spec/endpoint
+~~~
+
+En PowerShell también puede usarse Get-ChildItem con esas mismas rutas. Después de listar las carpetas, leer el README.md de la carpeta del endpoint buscado.
 
 ## Organización
 
-Una carpeta por método y ruta, en minúsculas y kebab-case: método seguido de la ruta sin la barra inicial, con las barras sustituidas por guiones y los parámetros por nombres legibles. Cada carpeta contiene un `README.md` con estado, entrada, respuesta, errores, almacenamiento y referencias.
+Una carpeta por método y ruta, con nombre en minúsculas y kebab-case: método seguido de la ruta sin la barra inicial; sustituir las demás barras por guiones y los parámetros por nombres legibles. Por ejemplo, POST /incidents se documenta en post-incidents/ y GET /incidents/:id en get-incidents-id/. Son ejemplos de nombres, no una declaración de endpoints comprobados en este catálogo.
+
+~~~text
+endpoint/
+  README.md
+  <metodo>-<ruta-normalizada>/
+    README.md
+~~~
+
+Cada README.md debe indicar:
+
+- Estado del contrato y fecha de última revisión; distinguir propuesta e implementación.
+- Método, ruta y finalidad.
+- Autenticación y permisos realmente aplicados, o su ausencia.
+- Parámetros de ruta/consulta, formato del cuerpo, tipos y validaciones.
+- Ejemplos válidos de entrada y respuesta, códigos, cabeceras y errores.
+- Almacenamiento y limitaciones que afecten al consumidor.
+- Enlaces relativos a la especificación, plan, controlador, DTO/pipe y servicio existentes.
+
+Al añadir, modificar o retirar un endpoint, actualizar su carpeta en el mismo cambio. Verificar también la compatibilidad con los consumidores sin conectarlos salvo petición explícita. No hacer solicitudes HTTP en vivo únicamente para consultar esta documentación.
+
+## Endpoints documentados
+
+- [Asignar prioridad manual con motivo](patch-incidents-id-priority/README.md): PATCH /incidents/:id/priority, solo incidencias validadas; deuda de actor declarado.
+
+- [Validar o rechazar una incidencia con motivo](patch-incidents-id-status/README.md): PATCH /incidents/:id/status; actor declarado y DEUDA-47-01 abierta.
+
+- [Consultar el listado de incidencias por ciudadano](get-incidents/README.md): GET /incidents?civicId=<UUID>, sin historial y con deuda de identidad documentada.
+
+- [Registrar incidencias](post-incidents/README.md): POST /incidents.
+- [Consultar una incidencia](get-incidents-id/README.md): GET /incidents/:id.
+- [Consultar categorías](get-categories/README.md): GET /categories.
+
+Contratos revisados estáticamente; consultar cada ficha para los límites y la fecha de revisión.
+
+## Autenticación incorporada desde token-backend
+
+
+- [Registrar ciudadano](post-auth-register/README.md): POST /auth/register.
+- [Iniciar sesión](post-auth-login/README.md): POST /auth/login.
+- [Validar sesión](get-auth-me/README.md): GET /auth/me.
+- [Emisión anterior retirada](post-auth-token/README.md): POST /auth/token, sin ruta activa.

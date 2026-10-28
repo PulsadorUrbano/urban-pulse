@@ -2,7 +2,7 @@
 
 - Estado: Aceptado.
 - Fecha de registro: 2026-10-27.
-- Relacionados: [ADR 0002 - Dos frontends separados](0002-two-frontend.md), [ADR 0004 - Stack del frontend móvil](0004-frontend-mobile-stack.md).
+- Relacionados: [ADR 0002 - Dos frontends separados](0002-two-frontend.md), [ADR 0005 - Stack del frontend móvil](0005-frontend-mobile-stack.md).
 
 ## Contexto
 
