@@ -1,15 +1,15 @@
-# Especificación: {{nombre de la funcionalidad}}
+# {{fecha}} — Especificación: {{descripción de la acción o cambio}}
 
 - Desarrollador responsable: {{nombre del desarrollador humano que crea y asume la especificación}}.
 - Asistente de IA: {{herramienta utilizada o No utilizada}}.
 - Modelo de IA que creó la especificación: {{identificador y versión exactos o No utilizada; si no están disponibles, declararlo sin inventarlos}}.
 
-> Crear únicamente esta especificación y su plan. Copiar a backend/docs/spec/specs/{{fecha}}-{{funcionalidad}}.md. Sustituir los marcadores y usar rutas relativas desde el documento. No copiar como vigentes decisiones o resultados de la referencia histórica de incidencias.
+> Crear únicamente esta especificación y su plan. Copiar a backend/docs/spec/features/specs/{{fecha}}-{{descripcion-del-cambio}}-spec.md. Usar una descripción concreta de la acción en el nombre y la fecha AAAA-MM-DD en el nombre y el título. Sustituir los marcadores y usar rutas relativas desde el documento. No copiar como vigentes decisiones o resultados de la referencia histórica de incidencias.
 
 - Rama: {{rama de trabajo}}.
 - Última actualización: {{AAAA-MM-DD}}.
 - Estado: borrador; implementación y verificación pendientes.
-- Plan: [Plan de implementación](../plans/{{fecha}}-{{funcionalidad}}-plan.md).
+- Plan: [Plan de implementación](../plans/{{fecha}}-{{descripcion-del-cambio}}-plan.md).
 - Referencias: {{petición, especificación previa o decisión aplicable}}.
 
 ## Objetivo y decisiones vigentes
@@ -75,7 +75,7 @@ Si no se crean ni modifican endpoints, indicarlo expresamente y justificarlo.
 
 ## Documentación de endpoints
 
-- Carpeta por endpoint: [{{método y ruta}}](../endpoint/{{metodo}}-{{ruta-normalizada}}/README.md).
+- Carpeta por endpoint: [{{método y ruta}}](../../endpoint/{{metodo}}-{{ruta-normalizada}}/README.md).
 - Mantener método, ruta, validación, respuestas, errores y enlaces al código sincronizados con esta especificación.
 - Documentar contratos sin realizar solicitudes en vivo ni conectar consumidores salvo que estén dentro del alcance solicitado.
 
@@ -85,4 +85,4 @@ Si no se crean ni modifican endpoints, indicarlo expresamente y justificarlo.
 
 Solo pruebas unitarias por defecto, bajo backend/test/<funcionalidad>/<rol>/. No crear ni ejecutar e2e o integración salvo petición explícita. Un contrato HTTP documentado no equivale a una comprobación HTTP ejecutada.
 
-Los resultados reales, decisiones de ejecución, pendientes y confirmación de implementación se registran únicamente en [el mismo plan](../plans/{{fecha}}-{{funcionalidad}}-plan.md#confirmación-de-implementación). No crear informes, archivos de tareas o documentos de cierre separados.
+Los resultados reales, decisiones de ejecución, pendientes y confirmación de implementación se registran únicamente en [el mismo plan](../plans/{{fecha}}-{{descripcion-del-cambio}}-plan.md#confirmación-de-implementación). No crear informes, archivos de tareas o documentos de cierre separados.

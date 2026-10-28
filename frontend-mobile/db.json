@@ -1,0 +1,103 @@
+{
+  "incidents": [
+    {
+      "title": "Farola rota Trinidad",
+      "description": "En frente del Mercadona, no sé ve bien la población y se están empezando a chocar las personas",
+      "latitude": 36.722086749842845,
+      "longitude": -4.432827987470363,
+      "accuracy": 5,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "categoryId": "2",
+      "category": null,
+      "id": "RLfTcvEVqlc"
+    },
+    {
+      "title": "Farola Rota Trinidad",
+      "description": "No deja ver a la gente, esto es un caos",
+      "latitude": 36.722086749842845,
+      "longitude": -4.432827987470363,
+      "accuracy": 5,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "categoryId": "2",
+      "category": null,
+      "id": "bALCrQcm_gw"
+    },
+    {
+      "title": "Prueba integración",
+      "description": "Prueba prueba pruebaaaaa",
+      "latitude": 36.714919870438415,
+      "longitude": -4.477916511492881,
+      "accuracy": 20.116194739706316,
+      "civicId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "categoryId": "1",
+      "category": null,
+      "id": "5zbBHCMzWNo"
+    }
+  ],
+  "categories": [
+    {
+      "id": "1",
+      "name": "Transporte"
+    },
+    {
+      "id": "2",
+      "name": "Alumbrado público"
+    },
+    {
+      "id": "3",
+      "name": "Objetos urbanos"
+    }
+  ],
+  "locations": [],
+  "images": [
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/5CE26BC2-97CB-42E8-A42E-CA617FEE421F.jpg",
+      "incidentId": "RLfTcvEVqlc",
+      "id": "J3YiO1gVQpU"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/F23CDE60-9C75-4860-920F-95958B647E58.jpg",
+      "incidentId": "RLfTcvEVqlc",
+      "id": "YCG7UA8EIdc"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/662B63B0-33D2-4DC5-B614-730C97C88FE4.jpg",
+      "incidentId": "bALCrQcm_gw",
+      "id": "m9x06zMh3r8"
+    },
+    {
+      "url": "file:///var/mobile/Containers/Data/Application/9FCDA91B-7B4D-4042-A7B9-96B32D5B1CD0/Library/Caches/ImagePicker/2C53BC47-DA5C-465A-B26C-022D86D30654.jpg",
+      "incidentId": "5zbBHCMzWNo",
+      "id": "vv5L8SaTNbQ"
+    }
+  ],
+  "users": [
+    {
+      "username": "sofia13",
+      "email": "sofia@email.com",
+      "password": "sofia13",
+      "role": "civic",
+      "id": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5"
+    },
+    {
+      "username": "mayte",
+      "email": "mayte@email.com",
+      "password": "mayte",
+      "role": "civic",
+      "id": "a62218e7563"
+    }
+  ],
+  "civics": [
+    {
+      "userId": "20ac442e-0f00-4fe4-bad3-61c8e8e0bff5",
+      "phone": "600388787",
+      "id": "J3_knLzOgNI"
+    },
+    {
+      "userId": "a62218e7563",
+      "phone": "123456234",
+      "id": "PjXQ-etx_j4"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}

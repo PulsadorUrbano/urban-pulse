@@ -22,6 +22,8 @@ backend/pnpm-debug.log*
 # Cobertura y Tests
 backend/coverage/
 backend/.nyc_output/
+.superpowers/
+backend/uploads/
 
 # Bases de datos locales de SQLite (si usas Prisma/TypeORM para testing)
 backend/prisma/*.db
@@ -30,7 +32,6 @@ backend/prisma/*.db-journal
 # ==============================================================================
 # FRONTEND (React Native / Expo / TypeScript)
 # ==============================================================================
-
 
 # ==============================================================================
 # CONFIGURACIONES DE IDEs (VSCode, IntelliJ, etc.)

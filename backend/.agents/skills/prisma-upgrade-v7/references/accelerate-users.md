@@ -54,7 +54,7 @@ export const prisma = new PrismaClient({
 ## What NOT to Do
 
 ```typescript
-// ❌ WRONG - Don't use adapter with Accelerate URL
+//  WRONG - Don't use adapter with Accelerate URL
 import { PrismaPg } from '@prisma/adapter-pg'
 
 const adapter = new PrismaPg({

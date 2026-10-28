@@ -12,3 +12,111 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// Temporary incident aggregate. No database or migrations are activated.
+enum IncidentStatus {
+  reported
+  validated
+  rejected
+}
+
+enum IncidentPriority {
+  low
+  medium
+  high
+}
+
+model Incident {
+  id           String            @id @default(uuid()) @db.Uuid
+  title        String
+  description  String?
+  civicId      String            @db.Uuid
+  categoryId   String?           @db.Uuid
+  category     String?
+  urbanAssetId String?           @db.Uuid
+  status       IncidentStatus    @default(reported)
+  priority     IncidentPriority  @default(low)
+  createdAt    DateTime          @default(now())
+  location     IncidentLocation?
+  images       IncidentImage[]
+  cambiosEstado CambioEstado[]
+  cambiosPrioridad CambioPrioridad[]
+}
+
+model IncidentLocation {
+  incidentId String   @id @db.Uuid
+  incident   Incident @relation(fields: [incidentId], references: [id])
+  latitude   Float?
+  longitude  Float?
+  accuracy   Float?
+  createdAt  DateTime @default(now())
+}
+
+model IncidentImage {
+  id         String   @id @default(uuid()) @db.Uuid
+  incidentId String   @db.Uuid
+  incident   Incident @relation(fields: [incidentId], references: [id])
+  url        String
+  mimeType   String
+  createdAt  DateTime @default(now())
+
+  @@index([incidentId])
+}
+
+// Historial temporal: actor declarado por el cliente, sin identidad verificada.
+model CambioEstado {
+  id            String         @id @default(uuid()) @db.Uuid
+  incidenciaId  String         @map("incident_id") @db.Uuid
+  incidencia    Incident       @relation(fields: [incidenciaId], references: [id])
+  actorId       String         @map("user_id") @db.Uuid
+  nuevoEstado   IncidentStatus @map("new_status")
+  motivo        String         @map("cause")
+  fechaCreacion DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([incidenciaId])
+  @@index([fechaCreacion])
+  @@map("status_changes")
+}
+
+// Decisiones manuales en memoria; actor declarado, sin identidad verificada.
+model CambioPrioridad {
+  id            String           @id @default(uuid()) @db.Uuid
+  esManual      Boolean          @default(true) @map("is_manual")
+  nuevaPrioridad IncidentPriority @map("new_priority")
+  motivo        String           @map("cause")
+  fechaCreacion DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  incidenciaId  String           @map("incident_id") @db.Uuid
+  incidencia    Incident         @relation(fields: [incidenciaId], references: [id])
+  actorId       String           @map("user_id") @db.Uuid
+
+  @@index([incidenciaId])
+  @@map("priority_changes")
+}
+
+// Identidad de token-backend; las incidencias siguen almacenándose en memoria.
+enum profile_role {
+  administrative
+  department
+  team
+  technician
+  civic
+  admin
+  analyst
+}
+
+model users {
+  id         String       @id @default(uuid()) @db.Uuid
+  username   String       @unique
+  email      String       @unique
+  password   String
+  created_at DateTime     @default(now())
+  role       profile_role
+  citizen    citizens?
+}
+
+model citizens {
+  user_id    String   @id @db.Uuid
+  phone      String?  @unique
+  created_at DateTime @default(now())
+  user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
