@@ -47,8 +47,6 @@ Esta es una aplicación móvil Expo/React Native. Prioriza patrones mobile-first
 
 Nota: `backend/` y `database/` (fuera de `frontend-mobile/`) son de solo lectura — ver *Qué NO hacer*.
 
-Nota: `backend/` y `database/` (fuera de `frontend-mobile/`) son de solo lectura — ver *Qué NO hacer*.
-
 ---
 
 ## Expo ha cambiado — no te fíes de tu memoria de entrenamiento
@@ -102,6 +100,7 @@ Levanta esto solo para pruebas y únicamente cuando el usuario lo pida explícit
 ```bash
 docker compose up --build
 ```
+
 
 - Requiere Node.js 22+ y npm 10+ (ver `backend/package.json`).
 - La API escucha por defecto en `http://localhost:3000` (configurable con la variable `PORT`; copia `backend/.env.example` a `backend/.env` si hace falta cambiarla).
@@ -203,13 +202,7 @@ Reglas:
 - **Verificación de calidad obligatoria:** ejecuta siempre `pnpm expo lint` y `pnpm tsc --noEmit` para asegurar que no hay errores de lint ni de tipos antes de dar por terminada cualquier tarea.
 - **Nada de commits de git autónomos:** no crees commits ni hagas push a ramas remotas salvo que se pida explícitamente.
 - **Backend y datos mock:** ver [Integración con backend y datos mock](#integración-con-backend-y-datos-mock) para la política de real-first/fallback, el flujo de datos en `db.json` y la estrategia de medios locales.
-- **Sincronización del roadmap y ciclo de vida de specs (`spec/`):**
-  - **Andamiaje de features:** siempre que se solicite una feature nueva, el `planner` debe inicializar automáticamente su directorio dedicado en `spec/features/NNN-<feature-name>/` (p. ej. `001-registro-incidencia/`).
-  - **Adherencia a las plantillas:** dentro de la carpeta de la feature, el `planner` debe crear `spec.md`, `plan.md` y `tasks.md`, siguiendo estrictamente los blueprints definidos en `spec/templates/` antes de empezar cualquier implementación.
-  - **Sobrescritura del roadmap en vivo:** el `planner` debe mantener y sobrescribir activamente `spec/constitution/roadmap.md` para reflejar el progreso real del proyecto:
-    - Mueve la feature activa a `## Siguiente ` cuando empiece el trabajo.
-    - Mueve la feature a `## Hecho ` una vez que pasen todas las comprobaciones de calidad, tests y tareas.
-    - Mantén las features futuras listadas bajo `## Backlog / ideas `.
+- **Specs y trazabilidad (`docs/spec/`):** la estructura de carpetas, las plantillas y la diferencia entre `spec.md` y `plan.md` están documentadas en `docs/spec/README.md` — es la única fuente de verdad, no se duplica aquí. El agente `organizador` es responsable de mantenerlo.
 - **Documentación de sesión y seguimiento de tareas (`docs/`):**
   - Mantén el progreso de la sesión dentro del directorio `docs/`.
   - Documenta notas de sesión y mantén una lista de tareas estructurada que detalle todas las tareas completadas y sus subtareas (p. ej. usando checkboxes `- [x]` / `- [ ]`).
