@@ -1,3 +1,4 @@
+import { CloudinaryModule } from './cloudinary/cloudinary.module.js';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { createObserveModule } from '@nestjs/observe';
@@ -25,6 +26,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     AuthModule,
     HealthModule,
     IncidentsModule,
+    CloudinaryModule,
   ],
   providers: [DevSeedService],
 })

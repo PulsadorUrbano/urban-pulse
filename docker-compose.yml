@@ -13,7 +13,9 @@ services:
       POSTGRES_DB: ${DB_NAME:?Falta la variable DB_NAME}
       POSTGRES_USER: ${DB_USER:?Falta la variable DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?Falta la variable DB_PASSWORD}
-    # ELIMINADO: ports: - "5432:5432" -> Ahora solo el backend puede ver la base de datos
+    # Acceso local desde el backend ejecutado en Windows.
+    ports:
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       # ELIMINADO: - ./db:/docker-entrypoint-initdb.d:ro -> Delegamos las tablas al sistema de migraciones del backend
