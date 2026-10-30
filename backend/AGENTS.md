@@ -90,16 +90,17 @@ backend/
 - Usar Vitest, no Jest; vi para dobles de prueba y Test.createTestingModule cuando sea necesario comprobar inyección de NestJS.
 - Probar comportamiento observable y errores relevantes. Sustituir acceso a base de datos, red, archivos y telemetría por dobles cuando corresponda; una prueba unitaria no debe necesitar servicios externos.
 - Cerrar los módulos y recursos abiertos, y restaurar los dobles y variables de entorno modificados.
-- Estado heredado: actualmente hay unitarias en src/**/*.spec.ts y dos archivos e2e en test/. No moverlos ni ampliarlos en un cambio ajeno a su reorganización. Si los archivos e2e se encuentran en test/test-e2e/ en otra rama, conservar esa ubicación acordada.
+- Estado actual: la suite del servicio de incidencias está en test/incidents/services/incidents.service.spec.ts; otras unitarias siguen en src/**/*.spec.ts y hay dos archivos e2e heredados en test/. No moverlos ni ampliarlos en un cambio ajeno a su reorganización. Si los archivos e2e se encuentran en test/test-e2e/ en otra rama, conservar esa ubicación acordada.
 - vitest.config.ts descubre **/*.spec.ts. Las e2e usan **/*.e2e-spec.ts mediante vitest.config.e2e.ts y no deben entrar en la ejecución unitaria. Revisar ambas configuraciones si se reorganizan las pruebas.
 
 ## Documentación
 
 Guardar la documentación en backend/docs/. Las rutas siguientes parten de la raíz del repositorio.
 
-- Crear la especificación en backend/docs/spec/specs/ usando backend/docs/spec/templates/spec-template.md.
-- Crear el plan en backend/docs/spec/plans/ usando backend/docs/spec/templates/plan-template.md.
+- Crear la especificación en backend/docs/spec/features/specs/ usando backend/docs/spec/templates/spec-template.md.
+- Crear el plan en backend/docs/spec/features/plans/ usando backend/docs/spec/templates/plan-template.md.
 - Registrar el progreso, las comprobaciones y la confirmación de implementación en ese mismo plan, sin archivos adicionales de tareas o informes.
+- Usar nombres y títulos con fecha y descripción de la acción: AAAA-MM-DD-descripcion-del-cambio-spec.md y AAAA-MM-DD-descripcion-del-cambio-plan.md; encabezados como «AAAA-MM-DD — Plan para describir la acción». Evitar títulos genéricos como spec.md o plan.md.
 - Escribir en español y mantener los documentos alineados con el comportamiento real.
 
 ## Catálogo de endpoints
@@ -130,7 +131,7 @@ En PowerShell puede usarse Get-ChildItem con las mismas rutas.
 
 - Para ejecución local, usar backend/.env a partir de backend/.env.example. Para Compose, usar el .env de la raíz a partir de su ejemplo. No versionar credenciales reales.
 - Documentar variables nuevas en el ejemplo correspondiente y en la documentación afectada. No registrar contraseñas, cabeceras de autorización ni datos personales de incidencias o ubicaciones.
-- DATABASE_URL llega desde Compose, pero el módulo raíz actual no la consume mediante Prisma. Levantar PostgreSQL no aplica automáticamente tablas o migraciones.
+- AppModule incorpora AuthModule y PrismaModule: autenticación requiere PostgreSQL, DATABASE_URL, JWT_SECRET y JWT_EXPIRES_IN al arrancar. Incidencias conserva almacenamiento en memoria y no queda protegida por importar auth. DB_SYNC está vacío en el ejemplo; no activar dbpush/deploy ni ejecutar semillas fuera del alcance solicitado.
 - Observe se configura en app.module.ts y main.ts. Las credenciales vacías no garantizan un modo sin conexión; aislar la telemetría en las pruebas unitarias.
 - Si se solicitan contraseñas, almacenar hashes y excluirlos de respuestas y registros. Si se solicitan cambios con auditoría, guardar el cambio y su historial de forma atómica.
 - No borrar volúmenes de base de datos para verificar un cambio.

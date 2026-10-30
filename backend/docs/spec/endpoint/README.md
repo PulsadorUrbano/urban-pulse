@@ -41,4 +41,24 @@ Cada README.md debe indicar:
 
 Al añadir, modificar o retirar un endpoint, actualizar su carpeta en el mismo cambio. Verificar también la compatibilidad con los consumidores sin conectarlos salvo petición explícita. No hacer solicitudes HTTP en vivo únicamente para consultar esta documentación.
 
-El catálogo se inicia con esta guía de organización; todavía no contiene fichas individuales de endpoints.
+## Endpoints documentados
+
+- [Asignar prioridad manual con motivo](patch-incidents-id-priority/README.md): PATCH /incidents/:id/priority, solo incidencias validadas; deuda de actor declarado.
+
+- [Validar o rechazar una incidencia con motivo](patch-incidents-id-status/README.md): PATCH /incidents/:id/status; actor declarado y DEUDA-47-01 abierta.
+
+- [Consultar el listado de incidencias por ciudadano](get-incidents/README.md): GET /incidents?civicId=<UUID>, sin historial y con deuda de identidad documentada.
+
+- [Registrar incidencias](post-incidents/README.md): POST /incidents.
+- [Consultar una incidencia](get-incidents-id/README.md): GET /incidents/:id.
+- [Consultar categorías](get-categories/README.md): GET /categories.
+
+Contratos revisados estáticamente; consultar cada ficha para los límites y la fecha de revisión.
+
+## Autenticación incorporada desde token-backend
+
+
+- [Registrar ciudadano](post-auth-register/README.md): POST /auth/register.
+- [Iniciar sesión](post-auth-login/README.md): POST /auth/login.
+- [Validar sesión](get-auth-me/README.md): GET /auth/me.
+- [Emisión anterior retirada](post-auth-token/README.md): POST /auth/token, sin ruta activa.

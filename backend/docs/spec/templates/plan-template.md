@@ -1,11 +1,11 @@
-# Plan de implementación: {{nombre de la funcionalidad}}
+# {{fecha}} — Plan de implementación: {{descripción de la acción o cambio}}
 
-> Crear únicamente este plan y su especificación. Copiar a backend/docs/spec/plans/{{fecha}}-{{funcionalidad}}-plan.md. Sustituir los marcadores antes de implementar. Los pasos empiezan pendientes; marcar únicamente trabajo realizado.
+> Crear únicamente este plan y su especificación. Copiar a backend/docs/spec/features/plans/{{fecha}}-{{descripcion-del-cambio}}-plan.md. Usar una descripción concreta de la acción en el nombre y la fecha AAAA-MM-DD en el nombre y el título. Sustituir los marcadores antes de implementar. Los pasos empiezan pendientes; marcar únicamente trabajo realizado.
 
 - Objetivo: {{resultado observable definido por la especificación}}.
 - Arquitectura: {{diseño mínimo y componentes existentes reutilizados}}.
 - Herramientas: {{versiones y dependencias ya disponibles}}.
-- Especificación: [Contrato y criterios](../specs/{{fecha}}-{{funcionalidad}}.md).
+- Especificación: [Contrato y criterios](../specs/{{fecha}}-{{descripcion-del-cambio}}-spec.md).
 - Rama: {{rama de trabajo}}.
 - Estado: pendiente de implementación y verificación.
 

@@ -1,122 +1,63 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useState } from 'react';
+import { IncidentValidationView } from './components/IncidentValidationView';
+import { LoginView } from './components/LoginView';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [currentView, setCurrentView] = useState('login'); // 'login' | 'incidents'
+  const [logoutNotification, setLogoutNotification] = useState(null);
+
+  const handleLogout = () => {
+    // Revocar sesión y cookie
+    localStorage.removeItem('urban_pulse_session_meta');
+    setLogoutNotification('Se ha revocado el token JWT y se ha cerrado la cookie HttpOnly (Max-Age=0).');
+    setCurrentView('login');
+  };
+
+  const handleLoginSuccess = () => {
+    setLogoutNotification(null);
+    setCurrentView('incidents');
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
+    <main className="min-h-screen w-screen bg-zinc-50 dark:bg-zinc-950 font-sans">
+      {/* Selector flotante para alternar entre pantallas en modo desarrollo/evaluación */}
+      <aside className="fixed bottom-4 right-4 z-50 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 rounded-full shadow-xl px-3 py-1.5 flex items-center gap-1.5 text-xs font-semibold">
+        <span className="text-zinc-400 text-[10px] uppercase tracking-wider pl-1.5 pr-1">Módulos:</span>
         <button
           type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+          onClick={() => setCurrentView('login')}
+          className={`px-3 py-1 rounded-full transition-all text-xs ${
+            currentView === 'login'
+              ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+          }`}
         >
-          Count is {count}
+          Acceso (Login)
         </button>
-      </section>
+        <button
+          type="button"
+          onClick={() => setCurrentView('incidents')}
+          className={`px-3 py-1 rounded-full transition-all text-xs ${
+            currentView === 'incidents'
+              ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+          }`}
+        >
+          Validación de Incidencias
+        </button>
+      </aside>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      {currentView === 'login' ? (
+        <LoginView 
+          onSuccessNavigate={handleLoginSuccess}
+          logoutNotification={logoutNotification}
+          onClearLogoutNotification={() => setLogoutNotification(null)}
+        />
+      ) : (
+        <IncidentValidationView onNavigateToLogin={handleLogout} />
+      )}
+    </main>
+  );
 }
 
-export default App
+export default App;

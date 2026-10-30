@@ -1,32 +1,22 @@
-# -------------------------------------------------------------
-# Etapa 1: Construcción (Build)
-# -------------------------------------------------------------
-FROM node:20-alpine AS builder
+# Usa una imagen oficial de Node.js ligera como base
+FROM node:22-alpine
+
+# Define el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Copiar configuración de dependencias
+# Copia los archivos de dependencias (package.json y package-lock.json)
 COPY package*.json ./
+
+# Instala las dependencias del proyecto
+RUN npm install -g @nestjs/cli
+
 RUN npm install
 
-# Copiar el código fuente y compilar TypeScript a JavaScript (carpeta /dist)
+# Copia el resto del código fuente del proyecto
 COPY . .
-RUN npm run build
 
-# -------------------------------------------------------------
-# Etapa 2: Producción
-# -------------------------------------------------------------
-FROM node:22-alpine
-WORKDIR /app
+# Expone el puerto que utiliza tu aplicación (cambia 3000 por el tuyo si es necesario)
+EXPOSE 3000
 
-# Instalar solo dependencias de producción para reducir el tamaño de la imagen
-COPY package*.json ./
-RUN npm install --only=production
-
-# Copiar la compilación generada en la etapa anterior
-COPY --from=builder /app/dist ./dist
-
-# Exponer el puerto configurado en main.ts (asegúrate de que NestJS escuche en el 4000)
-EXPOSE 4000
-
-# Levantar el servidor compilado
-CMD ["npm", "run", "start:prod"]
+# Comando por defecto para ejecutar la aplicación
+CMD ["npm", "run", "deploy"]
