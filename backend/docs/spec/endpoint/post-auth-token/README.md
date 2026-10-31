@@ -1,7 +1,7 @@
 # POST /auth/token (retirado)
 
 - Estado: retirado en esta entrega. La ruta ya no existe y responde `404`.
-- Última revisión: 2026-10-25.
+- Última revisión: 2026-10-31.
 - Método y ruta anterior: `POST /auth/token`, con cuerpo `{ "userId": "<uuid>" }`.
 - Finalidad anterior: emitir un JWT para un usuario existente sin contraseña.
 
@@ -16,7 +16,7 @@ Cualquiera que conociera un `userId` obtenía un token de ese usuario, incluido 
 
 ## Consumidores afectados
 
-- `frontend-web` (`src/services/authService.ts`) y `frontend-mobile` (`src/services/token.service.ts`) llaman a esta ruta. Al recibir `404` usan su token simulado hasta que se migren a `POST /auth/login`.
+- La petición web de `src/services/authService.ts` usa ahora `POST /auth/login` con `usernameOrEmail` y `password`. El móvil también utiliza ese endpoint desde `src/services/auth.service.ts`. Se mantienen los mecanismos mock existentes de ambos clientes.
 
 ## Referencias
 
