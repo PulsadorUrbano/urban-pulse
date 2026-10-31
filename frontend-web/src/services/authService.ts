@@ -166,19 +166,19 @@ export const authService = {
   },
 
   /**
-   * Requests a JWT token from NestJS backend via POST /auth/token.
+   * Requests a JWT token from NestJS backend via POST /auth/login.
    * If backend responds, verifies the token against protected GET /auth/me with Bearer token.
    * If backend is unreachable, generates a compliant JWT with HMAC-SHA256 signature for resilience.
    */
-  async requestToken(user: User): Promise<{ token: string; source: TokenSource; verifiedClaims?: any }> {
+  async requestToken(user: User, credentials: LoginCredentials): Promise<{ token: string; source: TokenSource; verifiedClaims?: any }> {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 2500);
 
-      const response = await fetch(`${API_BASE_URL}/auth/token`, {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
+        body: JSON.stringify({ usernameOrEmail: credentials.usernameOrEmail, password: credentials.password }),
         signal: controller.signal
       });
 
@@ -280,7 +280,7 @@ export const authService = {
     }
 
     // 1. Obtain JWT access token (Real backend or cryptographic fallback)
-    const { token, source, verifiedClaims } = await this.requestToken(found);
+    const { token, source, verifiedClaims } = await this.requestToken(found, credentials);
 
     // 2. Session cookie setup (Set-Cookie simulation matching NestJS)
     const maxAge = credentials.rememberMe ? 86400 : 28800;
