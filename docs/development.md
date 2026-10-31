@@ -61,3 +61,23 @@ Para combinar una aplicación local con un servicio en contenedor, utiliza una d
 - Ejecuta las comprobaciones de calidad del componente según [contribución](../CONTRIBUTING.md).
 
 Los procedimientos se han contrastado por lectura de manifiestos, scripts y configuración. No se han ejecutado instalaciones, servicios ni suites de aplicación durante esta revisión documental.
+
+## Arranque conjunto con puertos automáticos
+
+Desde la raíz del repositorio:
+
+```sh
+node scripts/desarrollo.mjs
+node scripts/desarrollo.mjs --mock
+node scripts/desarrollo.mjs --host 192.168.1.20
+```
+
+El primer comando inicia backend, web y Expo. El segundo añade json-server. El tercero indica la dirección LAN del ordenador cuando hay varias interfaces de red; sustituye el ejemplo por tu dirección. Se pueden combinar --mock y --host.
+
+Las dependencias de cada componente deben estar instaladas previamente y PostgreSQL debe estar preparado para la autenticación. El lanzador no instala paquetes, inicia la base de datos ni cambia archivos .env. Compila el backend antes de arrancarlo y elige puertos disponibles; al terminar muestra las direcciones de los servicios. Las URLs generadas para el proxy web y el backend móvil prevalecen durante esa ejecución. Con --mock también se proporciona al móvil la dirección del servidor simulado.
+
+Sin --mock no se inicia json-server. Se conserva el fallback móvil existente y cualquier URL mock configurada previamente: puede fallar si no hay un servidor externo disponible.
+
+El backend coordinado no usa watch. Para aplicar cambios del backend, detén y vuelve a ejecutar el comando. Si termina uno de los procesos, se cierra toda la sesión para evitar consumidores con direcciones obsoletas. Ctrl+C detiene los procesos creados por el lanzador.
+
+El teléfono debe poder acceder al ordenador por LAN. El túnel de Expo no publica automáticamente backend ni mock. Que un servicio escuche en un puerto no demuestra que el login funcione ni que el teléfono pueda acceder a él; esas comprobaciones requieren el entorno y dispositivo correspondientes. Los comandos individuales de cada componente siguen disponibles.
