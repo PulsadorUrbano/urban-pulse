@@ -48,7 +48,7 @@ CambioPrioridad es un objeto tipado desde Prisma y mapeado a priority_changes: i
 
 Prioridad e historial se publican juntos mediante una única sustitución síncrona, tras construir el agregado y la respuesta. Fallos previos no dejan cambios parciales. Dos peticiones en la misma instancia conservan las dos decisiones y dejan vigente la última prioridad.
 
-Historial solo consultable por método interno del servicio, mediante copias defensivas, sin endpoint HTTP. Incidencias e historial están en memoria y se pierden al reiniciar; imágenes locales sin cambios. No hay DB activa ni auditoría duradera. La futura persistencia requiere una transacción.
+Historial consultable por método interno del servicio, sin endpoint HTTP. Incidencia e historial se conservan en PostgreSQL y se actualizan en una transacción; las imágenes de Cloudinary no cambian en esta operación. Requiere el esquema local preparado.
 
 POST sigue creando Baja (low) con historial vacío: es el valor del sistema, no una asignación manual ni de IA.
 

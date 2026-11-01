@@ -25,13 +25,13 @@ Ausencia, vacío, UUID mal formado, valores repetidos, valores anidados u otros 
 ]
 ~~~
 
-Los valores son ilustrativos, no datos semilla ni identificadores garantizados. Las respuestas son objetos nuevos y no permiten modificar los registros del Map.
+Los valores son ilustrativos, no datos semilla ni identificadores garantizados. Las respuestas son objetos nuevos y no permiten modificar los registros persistidos.
 
 ## Identidad y almacenamiento
 
 DEUDA-27-01 sigue abierta: no hay autenticación ni autorización. civicId es un filtro del cliente, no una identidad verificada; introducir el identificador de otra persona permite consultar su listado. Este prototipo no garantiza una consulta privada de incidencias propias. La resolución pendiente está en la especificación.
 
-Se conserva el Map privado del proceso y el almacenamiento local de imágenes. El listado no lee ni escribe esos archivos. Las incidencias se pierden al reiniciar; no hay base de datos activa, paginación ni consultas de auditoría.
+El listado consulta incidencias en PostgreSQL; no lee bytes de Cloudinary. Los registros sobreviven al reinicio. No hay paginación ni consultas de auditoría.
 
 El estado actual puede ser reported, validated o rejected; no devuelve historial, motivos ni actor de auditoría. Los cambios se describen en [validar o rechazar incidencias](../patch-incidents-id-status/README.md).
 
