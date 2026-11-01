@@ -61,7 +61,7 @@ const backendCreateResult: CreateIncidentResult = {
 // Resultado del servicio cuando el backend no respondió y se usó el mock.
 const mockCreateResult: CreateIncidentResult = {
   incident: { ...createdIncident, id: '99' },
-  source: 'mock',
+  source: 'backend',
 };
 
 // Promesa controlada desde fuera para observar el estado mientras la petición vuela.
@@ -94,7 +94,7 @@ describe('useCreateIncident', () => {
     expect(result.current.errorMessage).toBeNull();
   });
 
-  it('en éxito con origen mock devuelve { incident, source: "mock" } sin tratarlo como error', async () => {
+  it('en éxito con origen backend devuelve la incidencia sin tratarla como error', async () => {
     mockedCreateIncident.mockResolvedValueOnce(mockCreateResult);
     const { result } = await renderHook(() => useCreateIncident(TEST_CIVIC_ID));
 
@@ -104,7 +104,7 @@ describe('useCreateIncident', () => {
     });
 
     expect(returned).toEqual(mockCreateResult);
-    expect(returned).toMatchObject({ source: 'mock' });
+    expect(returned).toMatchObject({ source: 'backend' });
     expect(result.current.isSubmitting).toBe(false);
     expect(result.current.errorMessage).toBeNull();
   });

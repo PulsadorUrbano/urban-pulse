@@ -15,7 +15,7 @@ export default function MyIncidentsScreen() {
   // Los hooks se llaman siempre antes de cualquier return condicional, igual
   // que en HomeScreen: el guard de sesión de abajo no puede saltarse esto.
   const { user, isRestoringSession } = useSession();
-  const { incidents, isLoading, errorMessage, backendFallbackNotice, reload } = useMyIncidents(
+  const { incidents, isLoading, errorMessage, reload } = useMyIncidents(
     user?.civicId ?? null,
   );
 
@@ -58,13 +58,7 @@ export default function MyIncidentsScreen() {
         <ThemedView className="flex-1 gap-4 px-6 pt-6">
           <ThemedText type="subtitle">Mis incidencias</ThemedText>
 
-          {backendFallbackNotice ? (
-            <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
-              <Text className="text-center text-sm font-medium text-[#d92d20]">
-                {backendFallbackNotice}
-              </Text>
-            </ThemedView>
-          ) : null}
+
 
           {isLoading && incidents.length === 0 ? (
             <ThemedView className="flex-1 items-center justify-center">

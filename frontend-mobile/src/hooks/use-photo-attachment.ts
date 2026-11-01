@@ -1,26 +1,23 @@
 import { useCallback, useRef, useState } from 'react';
 
 import { pickPhotoFromCamera, pickPhotoFromLibrary } from '@/services/photo-picker';
-import { storePhoto } from '@/services/storage.service';
 
 // Límite máximo de imágenes adjuntables por incidencia.
 export const MAX_SELECTED_PHOTOS = 8;
 
 export interface UsePhotoAttachmentResult {
-  // URIs locales (`file://...`) de las fotos ya adjuntadas a la incidencia.
+  // URIs temporales de las fotos seleccionadas para el envío al backend.
   selectedPhotoUris: string[];
-  // `true` mientras se captura y "guarda" una foto (deshabilita nuevos adjuntos).
+  // `true` mientras se selecciona una foto (deshabilita nuevos adjuntos).
   isProcessingPhoto: boolean;
-  // Último error amigable en español, ya sea del picker o del almacenamiento.
+  // Error del selector de fotos.
   errorMessage: string | null;
   attachPhotoFromCamera: () => Promise<void>;
   attachPhotoFromLibrary: () => Promise<void>;
   removePhoto: (uri: string) => void;
 }
 
-// Encapsula el ciclo completo de adjuntar fotos a una incidencia: captura con
-// el picker del dispositivo, "guardado" simulado vía `storePhoto` y gestión de
-// la lista de URIs seleccionadas. La UI solo consume el estado derivado y las
+// Gestiona las fotos elegidas hasta el envío de la incidencia. La UI solo consume el estado derivado y las
 // acciones expuestas, sin conocer los servicios subyacentes.
 export function usePhotoAttachment(): UsePhotoAttachmentResult {
   const [selectedPhotoUris, setSelectedPhotoUris] = useState<string[]>([]);
@@ -56,8 +53,6 @@ export function usePhotoAttachment(): UsePhotoAttachmentResult {
       // Cancelación del usuario: acción legítima, sin error y sin cambios.
       if (pickedPhotoUri === null) return;
 
-      // Simula el guardado externo (con retardo) y añade la URI al final.
-      await storePhoto(pickedPhotoUri);
       selectedPhotoUrisRef.current = [...selectedPhotoUrisRef.current, pickedPhotoUri];
       setSelectedPhotoUris((currentUris) => [...currentUris, pickedPhotoUri]);
     } catch (error) {

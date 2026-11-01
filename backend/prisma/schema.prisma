@@ -53,12 +53,13 @@ model IncidentLocation {
 }
 
 model IncidentImage {
-  id         String   @id @default(uuid()) @db.Uuid
-  incidentId String   @db.Uuid
-  incident   Incident @relation(fields: [incidentId], references: [id])
-  url        String
-  mimeType   String
-  createdAt  DateTime @default(now())
+  id          String   @id @default(uuid()) @db.Uuid
+  cloudinaryId String   @unique @map("cloudinary_id")
+  incidentId  String   @db.Uuid
+  incident    Incident @relation(fields: [incidentId], references: [id])
+  url         String
+  mimeType    String
+  createdAt   DateTime @default(now())
 
   @@index([incidentId])
 }

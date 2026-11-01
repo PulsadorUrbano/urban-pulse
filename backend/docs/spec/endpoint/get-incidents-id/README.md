@@ -14,7 +14,7 @@ Errores: 400 para UUID mal formado; 404 para un UUID válido no almacenado en es
 
 ## Almacenamiento y límites
 
-Incidencias y metadatos en un Map local tipado por modelos Prisma; se pierden al reiniciar y no se comparten entre procesos. Las imágenes son archivos locales; su existencia no conserva el registro de la incidencia tras un reinicio. No hay base de datos activa ni garantía de persistencia duradera.
+Incidencias, ubicaciones, historial y referencias de imágenes se guardan en PostgreSQL. Las imágenes nuevas se guardan en Cloudinary y su `public_id` se conserva internamente. Requiere el esquema local preparado; no se aplican migraciones automáticamente.
 
 El estado actual puede ser reported, validated o rejected; no devuelve historial, motivos ni actor de auditoría. Los cambios se describen en [validar o rechazar incidencias](../patch-incidents-id-status/README.md).
 

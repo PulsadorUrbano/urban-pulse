@@ -10,13 +10,13 @@ Entrada multipart/form-data. Campos obligatorios: title (texto con trim, 4-35 pu
 
 Admite hasta ocho archivos images JPEG/PNG/WebP, cada uno de 5 MB. Ejemplo mínimo de campos: title=Farola apagada y civicId=20ac442e-0f00-4fe4-bad3-61c8e8e0bff5.
 
-Respuesta 201 con cabecera Location: /incidents/{id}. Devuelve id, title, description, civicId, categoryId, category, urbanAssetId, location (latitude, longitude, accuracy y createdAt), images (id, url, mimeType y createdAt), status=reported, priority=low y createdAt ISO. Las URLs de imágenes son relativas a /uploads/. Los incidentId internos no se exponen en location o images.
+Respuesta 201 con cabecera Location: /incidents/{id}. Devuelve id, title, description, civicId, categoryId, category, urbanAssetId, location (latitude, longitude, accuracy y createdAt), images (id, url, mimeType y createdAt), status=reported, priority=low y createdAt ISO. Las nuevas URLs de imágenes son HTTPS de Cloudinary. Los incidentId internos no se exponen en location o images.
 
 Errores 400: campos o formatos inválidos, demasiados archivos, tamaño excesivo o MIME no admitido. No autentica al ciudadano ni comprueba la existencia de UUID referenciados. El nombre de categoría y categoryId se almacenan tal como se reciben tras validar la entrada; no se resuelve el nombre desde el ID.
 
 ## Almacenamiento y límites
 
-Incidencias y metadatos en un Map local tipado por modelos Prisma; se pierden al reiniciar y no se comparten entre procesos. Las imágenes son archivos locales; su existencia no conserva el registro de la incidencia tras un reinicio. No hay base de datos activa ni garantía de persistencia duradera.
+Incidencias, ubicaciones, historial y referencias de imágenes se guardan en PostgreSQL. Las imágenes nuevas se guardan en Cloudinary y su `public_id` se conserva internamente. Requiere el esquema local preparado; no se aplican migraciones automáticamente.
 
 El registro sigue creando status=reported; no devuelve el historial interno. Los cambios se describen en [validar o rechazar incidencias](../patch-incidents-id-status/README.md).
 
