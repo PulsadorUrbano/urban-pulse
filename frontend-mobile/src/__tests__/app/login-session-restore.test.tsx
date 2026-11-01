@@ -81,11 +81,13 @@ jest.mock('@/services/session-user-storage.service', () => ({
   clearSessionUser: jest.fn(),
 }));
 
-// Defensivo: los fixtures de este archivo usan token source "mock", así que
-// use-session.ts no debería llamar a esto, pero se mockea para blindar el
-// test contra una llamada de red real si algún fixture cambiara a "backend".
+// Los fixtures de este archivo usan token source "mock": use-session.ts
+// comprueba con esto si el backend real está disponible antes de confiar en
+// esa sesión simulada. Se resuelve "unknown" (backend inalcanzable) para que
+// estos tests sigan probando solo el gate de restauración de la pantalla, sin
+// activar el descarte de sesión mock que prueba use-session.test.ts.
 jest.mock('@/services/auth.service', () => ({
-  validateBackendSession: jest.fn().mockResolvedValue('valid'),
+  validateBackendSession: jest.fn().mockResolvedValue('unknown'),
 }));
 
 const mockedUseLogin = useLogin as jest.MockedFunction<typeof useLogin>;

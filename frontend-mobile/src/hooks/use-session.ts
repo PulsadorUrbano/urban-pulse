@@ -47,7 +47,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   // soportado por signIn(user, null)). Si el token restaurado es de origen
   // backend, se valida contra /auth/me antes de confiar en él: sin conexión
   // se sigue confiando en lo local (igual que hoy); si el backend dice que es
-  // inválido/expirado de forma definitiva, se cierra la sesión.
+  // inválido/expirado de forma definitiva, se cierra la sesión. Si la sesión
+  // restaurada es del mock, se comprueba lo contrario: si el backend real
+  // responde (aunque sea con un 401, porque el token del mock no es un JWT
+  // válido), esa identidad simulada queda obsoleta y se descarta; solo se
+  // conserva la sesión del mock cuando el backend real sigue sin alcanzarse.
   useEffect(() => {
     let isActive = true;
 
@@ -62,6 +66,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           if (!isActive) return;
 
           if (validation === 'invalid') {
+            await Promise.allSettled([clearToken(), clearSessionUser()]);
+            return;
+          }
+        }
+
+        if (restoredToken?.source === 'mock') {
+          const backendReachability = await validateBackendSession(restoredToken.accessToken);
+          if (!isActive) return;
+
+          if (backendReachability !== 'unknown') {
             await Promise.allSettled([clearToken(), clearSessionUser()]);
             return;
           }

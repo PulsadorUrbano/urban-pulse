@@ -223,16 +223,17 @@ describe('useSession / SessionProvider', () => {
   });
 
   describe('restauración de sesión al montar', () => {
-    it('restaura user y token cuando ambos storages resuelven valores válidos (token mock)', async () => {
+    it('restaura user y token cuando ambos storages resuelven valores válidos (token mock, backend inalcanzable)', async () => {
       mockedLoadSessionUser.mockResolvedValueOnce(expectedSessionUserFixture);
       mockedLoadToken.mockResolvedValueOnce(mockTokenFixture);
+      mockedValidateBackendSession.mockResolvedValueOnce('unknown');
 
       const { result } = await renderSessionHook();
 
       expect(result.current.user).toEqual(expectedSessionUserFixture);
       expect(result.current.token).toEqual(mockTokenFixture);
       expect(result.current.isRestoringSession).toBe(false);
-      expect(mockedValidateBackendSession).not.toHaveBeenCalled();
+      expect(mockedValidateBackendSession).toHaveBeenCalledWith(mockTokenFixture.accessToken);
     });
 
     it('restaura user y deja token en null cuando loadToken resuelve null', async () => {
@@ -373,6 +374,48 @@ describe('useSession / SessionProvider', () => {
       expect(mockedClearSessionUser).not.toHaveBeenCalled();
       expect(result.current.user).toEqual(expectedSessionUserFixture);
       expect(result.current.token).toEqual(backendTokenFixture);
+    });
+  });
+
+  describe('validación de sesión mock al montar (evita identidades fantasma)', () => {
+    it('el backend real responde (válido): la sesión del mock queda obsoleta y se limpia', async () => {
+      mockedLoadSessionUser.mockResolvedValueOnce(expectedSessionUserFixture);
+      mockedLoadToken.mockResolvedValueOnce(mockTokenFixture);
+      mockedValidateBackendSession.mockResolvedValueOnce('valid');
+
+      const { result } = await renderSessionHook();
+
+      expect(mockedValidateBackendSession).toHaveBeenCalledWith(mockTokenFixture.accessToken);
+      expect(mockedClearToken).toHaveBeenCalledTimes(1);
+      expect(mockedClearSessionUser).toHaveBeenCalledTimes(1);
+      expect(result.current.user).toBeNull();
+      expect(result.current.token).toBeNull();
+    });
+
+    it('el backend real responde (401/"invalid" porque el token del mock no es un JWT real): la sesión del mock se limpia igualmente', async () => {
+      mockedLoadSessionUser.mockResolvedValueOnce(expectedSessionUserFixture);
+      mockedLoadToken.mockResolvedValueOnce(mockTokenFixture);
+      mockedValidateBackendSession.mockResolvedValueOnce('invalid');
+
+      const { result } = await renderSessionHook();
+
+      expect(mockedClearToken).toHaveBeenCalledTimes(1);
+      expect(mockedClearSessionUser).toHaveBeenCalledTimes(1);
+      expect(result.current.user).toBeNull();
+      expect(result.current.token).toBeNull();
+    });
+
+    it('el backend real no responde (unknown): se confía en la sesión del mock, sin limpiar nada', async () => {
+      mockedLoadSessionUser.mockResolvedValueOnce(expectedSessionUserFixture);
+      mockedLoadToken.mockResolvedValueOnce(mockTokenFixture);
+      mockedValidateBackendSession.mockResolvedValueOnce('unknown');
+
+      const { result } = await renderSessionHook();
+
+      expect(mockedClearToken).not.toHaveBeenCalled();
+      expect(mockedClearSessionUser).not.toHaveBeenCalled();
+      expect(result.current.user).toEqual(expectedSessionUserFixture);
+      expect(result.current.token).toEqual(mockTokenFixture);
     });
   });
 });
