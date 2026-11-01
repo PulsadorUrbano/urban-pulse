@@ -74,8 +74,6 @@ const mockedUseSession = jest.mocked(useSession);
 const mockedUseMyIncidents = jest.mocked(useMyIncidents);
 const mockedUseFocusEffect = jest.mocked(useFocusEffect);
 
-const BACKEND_FALLBACK_NOTICE =
-  'No se ha podido conectar al backend, mostrando los datos del mock.';
 const EMPTY_STATE_TEXT = 'Todavía no has registrado ninguna incidencia.';
 const RETRY_BUTTON_LABEL = 'Reintentar';
 
@@ -133,7 +131,6 @@ function buildMyIncidentsResult(
     incidents: [],
     isLoading: false,
     errorMessage: null,
-    backendFallbackNotice: null,
     reload: jest.fn(),
     ...overrides,
   };
@@ -265,34 +262,7 @@ describe('MyIncidentsScreen (tab Mis incidencias)', () => {
     expect(reloadSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('con backendFallbackNotice muestra el aviso junto a la lista de incidencias', async () => {
-    mockedUseMyIncidents.mockReturnValue(
-      buildMyIncidentsResult({
-        incidents: incidentsInReceivedOrder,
-        backendFallbackNotice: BACKEND_FALLBACK_NOTICE,
-      }),
-    );
 
-    await renderMyIncidentsScreen();
-
-    expect(screen.getByText(BACKEND_FALLBACK_NOTICE)).toBeOnTheScreen();
-    expect(screen.getByText('Farola fundida')).toBeOnTheScreen();
-  });
-
-  it('con backendFallbackNotice y errorMessage a la vez muestra ambos', async () => {
-    mockedUseMyIncidents.mockReturnValue(
-      buildMyIncidentsResult({
-        errorMessage: 'Fallo de red al cargar',
-        backendFallbackNotice: BACKEND_FALLBACK_NOTICE,
-      }),
-    );
-
-    await renderMyIncidentsScreen();
-
-    expect(screen.getByText(BACKEND_FALLBACK_NOTICE)).toBeOnTheScreen();
-    expect(screen.getByText('Fallo de red al cargar')).toBeOnTheScreen();
-    expect(screen.getByLabelText(RETRY_BUTTON_LABEL)).toBeOnTheScreen();
-  });
 
   it('recarga en curso con incidencias ya cargadas no muestra el indicador de pantalla completa y mantiene la lista', async () => {
     mockedUseMyIncidents.mockReturnValue(
