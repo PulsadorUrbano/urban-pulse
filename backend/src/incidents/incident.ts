@@ -1,10 +1,4 @@
-import type {
-  CambioEstadoModel,
-  CambioPrioridadModel,
-  IncidentModel as PrismaIncident,
-  IncidentLocationModel as PrismaIncidentLocation,
-  IncidentImageModel as PrismaIncidentImage,
-} from '../generated/prisma/models.js';
+import type { IncidentModel as PrismaIncident } from '../generated/prisma/models.js';
 
 export interface UploadedImageFile {
   buffer: Buffer;
@@ -13,9 +7,23 @@ export interface UploadedImageFile {
 
 export interface IncidentImage {
   id: string;
+  cloudinaryId: string;
   url: string;
   mimeType: UploadedImageFile['mimetype'];
   createdAt: string;
+}
+
+export type PublicIncidentImage = Omit<IncidentImage, 'cloudinaryId'>;
+
+export function serializarImagenPublica(
+  image: IncidentImage,
+): PublicIncidentImage {
+  return {
+    id: image.id,
+    url: image.url,
+    mimeType: image.mimeType,
+    createdAt: image.createdAt,
+  };
 }
 
 export interface CreateIncidentInput {
@@ -44,19 +52,11 @@ export interface Incident {
     accuracy: number | null;
     createdAt: string;
   };
-  images: IncidentImage[];
+  images: PublicIncidentImage[];
   status: PrismaIncident['status'];
   priority: PrismaIncident['priority'];
   createdAt: string;
 }
-
-// Generated Prisma records only; this aggregate is kept in memory, not in a database.
-export type StoredIncident = PrismaIncident & {
-  cambiosEstado: CambioEstadoModel[];
-  cambiosPrioridad: CambioPrioridadModel[];
-  location: PrismaIncidentLocation;
-  images: (PrismaIncidentImage & { mimeType: UploadedImageFile['mimetype'] })[];
-};
 
 export type ResumenIncidencia = Pick<
   Incident,
