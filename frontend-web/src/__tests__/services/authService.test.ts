@@ -154,7 +154,7 @@ describe('authService - Frontend Web JWT & Authentication Unit Tests', () => {
   });
 
   describe('requestToken', () => {
-    it('returns backend token when POST /auth/token succeeds with 200 OK', async () => {
+    it('returns backend token when POST /auth/login succeeds with 200 OK', async () => {
       const mockBackendToken = 'eyJhbGciOiJIUzI1NiJ9.backend_payload.signature';
       const mockVerifiedClaims = {
         userId: testAdminUser.id,
@@ -164,7 +164,7 @@ describe('authService - Frontend Web JWT & Authentication Unit Tests', () => {
 
       const fetchMock = vi.fn()
         .mockImplementationOnce(async (url: string) => {
-          if (url.includes('/auth/token')) {
+          if (url.includes('/auth/login')) {
             return {
               ok: true,
               json: async () => ({ accessToken: mockBackendToken })
@@ -184,19 +184,22 @@ describe('authService - Frontend Web JWT & Authentication Unit Tests', () => {
 
       vi.stubGlobal('fetch', fetchMock);
 
-      const result = await authService.requestToken(testAdminUser);
+      const result = await authService.requestToken(testAdminUser, { usernameOrEmail: 'admin', password: 'admin' });
 
       expect(result.token).toBe(mockBackendToken);
       expect(result.source).toBe('backend');
       expect(result.verifiedClaims).toEqual(mockVerifiedClaims);
-      expect(fetchMock).toHaveBeenCalled();
+      expect(fetchMock).toHaveBeenNthCalledWith(1, expect.stringContaining('/auth/login'), expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ usernameOrEmail: 'admin', password: 'admin' })
+      }));
     });
 
     it('falls back gracefully to local JWT when backend is unreachable or throws error', async () => {
       const fetchMock = vi.fn().mockRejectedValue(new Error('Connection refused'));
       vi.stubGlobal('fetch', fetchMock);
 
-      const result = await authService.requestToken(testAdminUser);
+      const result = await authService.requestToken(testAdminUser, { usernameOrEmail: 'admin', password: 'admin' });
 
       expect(result.token).toBeDefined();
       expect(result.source).toBe('mock');
