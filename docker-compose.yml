@@ -37,10 +37,10 @@ services:
     env_file:
       - .env # Centralizamos las variables en un archivo
     environment:
-      PORT: 3000
+      PORT: ${API_PORT}
       DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@database:5432/${DB_NAME}
     ports:
-      - "3000:3000" # Este sí se expone para que el frontend o los usuarios accedan a la API
+      - "${API_PORT}:${API_PORT}" # Este sí se expone para que el frontend o los usuarios accedan a la API
     depends_on:
       database:
         condition: service_healthy
