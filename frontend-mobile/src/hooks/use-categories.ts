@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { fetchCategories } from '@/services/category.service';
-import type { Category } from '@/types/category';
+import type { Category, FetchCategoriesResult } from '@/types/category';
 
 export interface UseCategoriesResult {
   categories: Category[];
   isLoading: boolean;
   errorMessage: string | null;
+  fallbackNotice: string | null;
   reload: () => void;
 }
 
@@ -17,6 +18,7 @@ export function useCategories(): UseCategoriesResult {
   // La primera carga arranca al montar, por eso el estado inicial es cargando.
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [fallbackNotice, setFallbackNotice] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
   // Evita actualizar el estado si el componente se desmontó durante la carga.
@@ -28,10 +30,17 @@ export function useCategories(): UseCategoriesResult {
     isMountedRef.current = true;
 
     fetchCategories()
-      .then((loadedCategories) => {
+      .then((result: FetchCategoriesResult) => {
         if (!isMountedRef.current) return;
-        setCategories(loadedCategories);
+        setCategories(result.categories);
         setErrorMessage(null);
+        // Si el catálogo vino del mock, se informa del motivo del fallback
+        // junto con el aviso genérico para que la UI lo muestre de forma visible.
+        setFallbackNotice(
+          result.source === 'mock'
+            ? `${result.backendErrorMessage ?? 'No se pudo conectar con el backend.'} Mostrando el catálogo de categorías guardado en el mock.`
+            : null,
+        );
       })
       .catch((error: unknown) => {
         if (!isMountedRef.current) return;
@@ -40,6 +49,7 @@ export function useCategories(): UseCategoriesResult {
             ? error.message
             : 'No se pudieron cargar las categorías. Inténtalo de nuevo.',
         );
+        setFallbackNotice(null);
       })
       .finally(() => {
         if (isMountedRef.current) {
@@ -57,8 +67,9 @@ export function useCategories(): UseCategoriesResult {
   const reload = useCallback(() => {
     setIsLoading(true);
     setErrorMessage(null);
+    setFallbackNotice(null);
     setReloadToken((value) => value + 1);
   }, []);
 
-  return { categories, isLoading, errorMessage, reload };
+  return { categories, isLoading, errorMessage, fallbackNotice, reload };
 }

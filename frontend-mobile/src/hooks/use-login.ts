@@ -10,7 +10,6 @@ import {
   resetLockout,
   saveLockoutState,
 } from '@/services/lockout.service';
-import { requestToken } from '@/services/token.service';
 import { EMPTY_LOCKOUT_STATE, type LockoutState } from '@/types/auth';
 import type { AuthToken } from '@/types/token';
 import type { LoginUserInput, User } from '@/types/user';
@@ -18,6 +17,7 @@ import type { LoginUserInput, User } from '@/types/user';
 export interface LoginSuccess {
   user: User;
   token: AuthToken | null;
+  source: 'backend' | 'mock';
 }
 
 export interface UseLoginResult {
@@ -102,10 +102,8 @@ export function useLogin(): UseLoginResult {
       setErrorMessage(null);
       setIsSubmitting(true);
 
-      let user: User;
-
       try {
-        user = await login(input);
+        const result = await login(input);
 
         // Éxito: limpia el bloqueo persistido, tolerando fallos de SecureStore.
         try {
@@ -114,6 +112,8 @@ export function useLogin(): UseLoginResult {
           // Un fallo al limpiar el almacenamiento no debe romper el login.
         }
         applyLockoutState({ ...EMPTY_LOCKOUT_STATE, recentFailures: [] });
+
+        return { user: result.user, token: result.token, source: result.source };
       } catch (error) {
         if (error instanceof InvalidCredentialsError) {
           const failureTime = Date.now();
@@ -137,15 +137,7 @@ export function useLogin(): UseLoginResult {
             error instanceof Error ? error.message : 'Ocurrió un error inesperado al iniciar sesión.',
           );
         }
-        isSubmittingRef.current = false;
-        setIsSubmitting(false);
         return null;
-      }
-
-      // Fuera del try/catch de credenciales: un fallo de token nunca cuenta como intento fallido.
-      try {
-        const token = await requestToken(user.id);
-        return { user, token };
       } finally {
         isSubmittingRef.current = false;
         setIsSubmitting(false);

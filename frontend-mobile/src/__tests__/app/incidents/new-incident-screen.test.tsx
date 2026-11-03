@@ -1,10 +1,12 @@
 /// <reference types="jest" />
-import { Alert, type AlertButton } from 'react-native';
+import { Alert, type AlertButton, Text } from 'react-native';
 import { act, render, screen, userEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import React from 'react';
 
 import NewIncidentScreen from '@/app/incidents/new';
 import { SHEET_DISMISS_DELAY_MS } from '@/components/photo-picker';
+import { useSession, type SessionContextValue } from '@/hooks/use-session';
 import { fetchCategories } from '@/services/category.service';
 import {
   areLocationServicesEnabled,
@@ -20,6 +22,7 @@ import type {
   CreatedIncident,
 } from '@/types/incident';
 import type { LocationCoordinates } from '@/types/location';
+import type { SessionUser } from '@/types/user';
 
 // ---------------------------------------------------------------------------
 // Test de INTEGRACIÓN de la pantalla de nueva incidencia: se monta el
@@ -39,13 +42,27 @@ jest.mock('@/global.css', () => ({}));
 // que `photo-picker.test.tsx` y `location-toggle.test.tsx`).
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');
 
-// La pantalla solo usa `router.back()` desde la confirmación.
-jest.mock('expo-router', () => ({
-  router: {
-    back: jest.fn(),
-    push: jest.fn(),
-    replace: jest.fn(),
-  },
+// La pantalla usa `router.back()` desde la confirmación y `<Redirect>` cuando
+// no hay sesión. `Redirect` se sustituye por un stub que pinta el `href`, para
+// distinguir "se redirigió a /login" por contenido visible.
+jest.mock('expo-router', () => {
+  const mockReact = jest.requireActual<typeof React>('react');
+  const { Text: MockText } = jest.requireActual<{ Text: typeof Text }>('react-native');
+
+  return {
+    router: {
+      back: jest.fn(),
+      push: jest.fn(),
+      replace: jest.fn(),
+    },
+    Redirect: ({ href }: { href: string }) =>
+      mockReact.createElement(MockText, null, `redirect:${href}`),
+  };
+});
+
+// Sesión controlada por test: la pantalla lee `user.civicId` para el envío.
+jest.mock('@/hooks/use-session', () => ({
+  useSession: jest.fn(),
 }));
 
 // Insets del área segura a cero; el resto del módulo (SafeAreaView nativo)
@@ -110,6 +127,34 @@ const mockedPickPhotoFromLibrary = pickPhotoFromLibrary as jest.MockedFunction<
   typeof pickPhotoFromLibrary
 >;
 const mockedStorePhoto = storePhoto as jest.MockedFunction<typeof storePhoto>;
+const mockedUseSession = jest.mocked(useSession);
+
+// Civic ID de la sesión activa de fixture. Es el valor que la pantalla debe
+// pasar a `createIncident` como segundo argumento (distinto del `id` de usuario).
+const SESSION_CIVIC_ID = '6f1c2a3e-8b4d-4e5f-9a0b-1c2d3e4f5a6b';
+
+const sessionUser: SessionUser = {
+  id: '1',
+  username: 'ciudadano-test',
+  email: 'ciudadano@example.com',
+  role: 'civic',
+  civicId: SESSION_CIVIC_ID,
+  source: 'mock',
+};
+
+// Construye un valor de sesión completo; por defecto hay un ciudadano activo.
+function buildSessionValue(
+  overrides: Partial<SessionContextValue> = {},
+): SessionContextValue {
+  return {
+    user: sessionUser,
+    token: null,
+    isRestoringSession: false,
+    signIn: jest.fn().mockResolvedValue(undefined),
+    signOut: jest.fn().mockResolvedValue(undefined),
+    ...overrides,
+  };
+}
 
 // URI local fija que devuelve el picker de Galería en el test.
 const libraryPhotoUri = 'file:///photos/library-2.jpg';
@@ -273,10 +318,11 @@ describe('NewIncidentScreen', () => {
     mockedPickPhotoFromCamera.mockReset();
     mockedPickPhotoFromLibrary.mockReset();
     mockedStorePhoto.mockReset();
+    mockedUseSession.mockReturnValue(buildSessionValue());
 
     // Defaults felices de todos los límites externos: catálogo vacío,
     // ubicación resuelta y envío correcto.
-    mockedFetchCategories.mockResolvedValue([]);
+    mockedFetchCategories.mockResolvedValue({ categories: [], source: 'backend', backendErrorMessage: null });
     mockedCreateIncident.mockResolvedValue(backendCreateResult);
     mockedAreLocationServicesEnabled.mockResolvedValue(true);
     mockedRequestLocationPermission.mockResolvedValue(true);
@@ -352,7 +398,7 @@ describe('NewIncidentScreen', () => {
     // Una sola llamada: el input de la incidencia y las URIs de las fotos
     // viajan juntos en el mismo envío multipart.
     expect(mockedCreateIncident).toHaveBeenCalledTimes(1);
-    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedDeviceSubmission, [libraryPhotoUri]);
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedDeviceSubmission, SESSION_CIVIC_ID,[libraryPhotoUri]);
 
     // Sin aviso de fotos en la confirmación.
     expect(screen.queryByText(/no pudo guardarse/)).not.toBeOnTheScreen();
@@ -377,7 +423,7 @@ describe('NewIncidentScreen', () => {
     expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
 
     expect(mockedCreateIncident).toHaveBeenCalledTimes(1);
-    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedDeviceSubmission, [
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedDeviceSubmission, SESSION_CIVIC_ID,[
       firstPhotoUri,
       libraryPhotoUri,
     ]);
@@ -394,7 +440,7 @@ describe('NewIncidentScreen', () => {
     expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
 
     expect(mockedCreateIncident).toHaveBeenCalledTimes(1);
-    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedDeviceSubmission, []);
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedDeviceSubmission, SESSION_CIVIC_ID,[]);
     expect(screen.queryByText(/no pudo guardarse/)).not.toBeOnTheScreen();
     expect(screen.queryByText(/no pudieron guardarse/)).not.toBeOnTheScreen();
   });
@@ -442,7 +488,7 @@ describe('NewIncidentScreen', () => {
     expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
 
     expect(mockedGetCurrentCoordinates).toHaveBeenCalledTimes(1);
-    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedDeviceSubmission, []);
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedDeviceSubmission, SESSION_CIVIC_ID,[]);
     expect(screen.getByText('reported')).toBeOnTheScreen();
     expect(alertSpy).not.toHaveBeenCalled();
   });
@@ -465,7 +511,7 @@ describe('NewIncidentScreen', () => {
     // Con el toggle apagado no se consulta al dispositivo y se envían los tres null.
     expect(mockedAreLocationServicesEnabled).not.toHaveBeenCalled();
     expect(mockedGetCurrentCoordinates).not.toHaveBeenCalled();
-    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedNoLocationSubmission, []);
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedNoLocationSubmission, SESSION_CIVIC_ID,[]);
     expect(screen.getByText('reported')).toBeOnTheScreen();
   });
 
@@ -481,7 +527,7 @@ describe('NewIncidentScreen', () => {
 
     expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
 
-    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedNoLocationSubmission, []);
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedNoLocationSubmission, SESSION_CIVIC_ID,[]);
     expect(
       screen.getByText('No se pudo obtener la ubicación; la incidencia se registró sin posición.'),
     ).toBeOnTheScreen();
@@ -503,7 +549,7 @@ describe('NewIncidentScreen', () => {
     expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
 
     expect(mockedGetCurrentCoordinates).not.toHaveBeenCalled();
-    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedNoLocationSubmission, []);
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedNoLocationSubmission, SESSION_CIVIC_ID,[]);
     expect(
       screen.getByText('La incidencia se registró sin ubicación porque no hay permiso de ubicación.'),
     ).toBeOnTheScreen();
@@ -525,7 +571,7 @@ describe('NewIncidentScreen', () => {
     expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
 
     expect(mockedRequestLocationPermission).not.toHaveBeenCalled();
-    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedNoLocationSubmission, []);
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedNoLocationSubmission, SESSION_CIVIC_ID,[]);
   });
 
   it('con source "mock" muestra el aviso de fallback al backend en la confirmación', async () => {
@@ -572,7 +618,7 @@ describe('NewIncidentScreen', () => {
     expect(screen.getByText('reported')).toBeOnTheScreen();
     expect(screen.getByText(MOCK_FALLBACK_NOTICE)).toBeOnTheScreen();
     expect(mockedCreateIncident).toHaveBeenCalledTimes(1);
-    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedDeviceSubmission, [libraryPhotoUri]);
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedDeviceSubmission, SESSION_CIVIC_ID,[libraryPhotoUri]);
   });
 
   it('el aviso de fallback no aparece en el formulario antes de enviar', async () => {
@@ -584,5 +630,49 @@ describe('NewIncidentScreen', () => {
     await fillValidIncidentForm(user);
 
     expect(screen.queryByText(MOCK_FALLBACK_NOTICE)).not.toBeOnTheScreen();
+  });
+
+  describe('control de sesión', () => {
+    it('sin sesión (user null y ya resuelta) redirige a /login y no muestra el formulario', async () => {
+      mockedUseSession.mockReturnValue(
+        buildSessionValue({ user: null, isRestoringSession: false }),
+      );
+
+      await renderScreen();
+
+      expect(screen.getByText('redirect:/login')).toBeOnTheScreen();
+      expect(screen.queryByLabelText('Enviar incidencia')).not.toBeOnTheScreen();
+      expect(screen.queryByLabelText('Título de la incidencia')).not.toBeOnTheScreen();
+    });
+
+    it('mientras se restaura la sesión muestra el formulario y no redirige a /login', async () => {
+      mockedUseSession.mockReturnValue(
+        buildSessionValue({ user: null, isRestoringSession: true }),
+      );
+
+      await renderScreen();
+
+      expect(screen.queryByText('redirect:/login')).not.toBeOnTheScreen();
+      expect(screen.getByLabelText('Enviar incidencia')).toBeOnTheScreen();
+      expect(screen.getByLabelText('Título de la incidencia')).toBeOnTheScreen();
+    });
+
+    it('con sesión activa envía la incidencia con el civicId de la sesión como segundo argumento', async () => {
+      const user = userEvent.setup();
+      await renderScreen();
+
+      await fillValidIncidentForm(user);
+      await user.press(screen.getByLabelText('Enviar incidencia'));
+
+      expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+      expect(mockedCreateIncident).toHaveBeenCalledTimes(1);
+      // El fixture de usuario tiene `id: '1'` y `civicId` distinto: la aserción
+      // exige el civicId, no el id de usuario.
+      expect(mockedCreateIncident).toHaveBeenCalledWith(
+        expectedDeviceSubmission,
+        SESSION_CIVIC_ID,
+        [],
+      );
+    });
   });
 });

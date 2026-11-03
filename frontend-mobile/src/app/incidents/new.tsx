@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -22,6 +22,7 @@ import { useCategories } from '@/hooks/use-categories';
 import { useCreateIncident } from '@/hooks/use-create-incident';
 import { useLocationPreference } from '@/hooks/use-location-preference';
 import { usePhotoAttachment } from '@/hooks/use-photo-attachment';
+import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import {
   areLocationServicesEnabled,
@@ -46,7 +47,8 @@ import {
 export default function NewIncidentScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { isSubmitting, errorMessage, submitIncident } = useCreateIncident();
+  const { user, isRestoringSession } = useSession();
+  const { isSubmitting, errorMessage, submitIncident } = useCreateIncident(user?.civicId ?? null);
   const { isLocationEnabled, toggleLocation } = useLocationPreference();
   const {
     selectedPhotoUris,
@@ -72,6 +74,13 @@ export default function NewIncidentScreen() {
   const [locationNotice, setLocationNotice] = useState<string | null>(null);
   const [backendFallbackNotice, setBackendFallbackNotice] = useState<string | null>(null);
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
+
+  // Sin sesión activa (y ya resuelta) esta pantalla no es alcanzable: mismo
+  // guard que ya usa HomeScreen/MyIncidentsScreen. Se coloca tras llamar a
+  // todos los hooks de arriba para no romper las reglas de hooks.
+  if (!isRestoringSession && !user) {
+    return <Redirect href="/login" />;
+  }
 
   // No se permite enviar mientras se resuelve la ubicación, se persiste la
   // incidencia o se está guardando una foto adjunta.

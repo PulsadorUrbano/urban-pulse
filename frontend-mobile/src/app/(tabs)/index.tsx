@@ -1,8 +1,9 @@
 import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, Pressable, StyleSheet } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { LogoutButton } from '@/components/logout-button';
 import { TypewriterText } from '@/components/typewriter-text';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -17,7 +18,8 @@ const buildGreetings = (name: string): string[] => [
 ];
 
 export default function HomeScreen() {
-  const { user } = useSession();
+  const { user, signOut } = useSession();
+  const insets = useSafeAreaInsets();
   // Se elige un saludo al montar para que no cambie en cada render
   const [greeting] = useState(() => {
     const greetings = buildGreetings(user?.username ?? '');
@@ -28,6 +30,20 @@ export default function HomeScreen() {
   if (!user) {
     return <Redirect href="/login" />;
   }
+
+  // Cierra la sesión y vuelve al login tras confirmar el aviso destructivo.
+  const handleConfirmLogout = async () => {
+    await signOut();
+    router.replace('/login');
+  };
+
+  // Pide confirmación antes de cerrar sesión para evitar cierres accidentales.
+  const handleLogoutPress = () => {
+    Alert.alert('Cerrar sesión', '¿Seguro que quieres cerrar sesión?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Cerrar sesión', style: 'destructive', onPress: handleConfirmLogout },
+    ]);
+  };
 
   return (
     <ThemedView style={styles.container}>
@@ -49,6 +65,14 @@ export default function HomeScreen() {
           </ThemedView>
         </Pressable>
       </SafeAreaView>
+
+      <LogoutButton
+        onPress={handleLogoutPress}
+        style={[
+          styles.logoutButton,
+          { top: insets.top + Spacing.two, left: insets.left + Spacing.three },
+        ]}
+      />
     </ThemedView>
   );
 }
@@ -90,5 +114,10 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.7,
+  },
+  logoutButton: {
+    position: 'absolute',
+    zIndex: 10,
+    elevation: 10,
   },
 });

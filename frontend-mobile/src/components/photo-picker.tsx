@@ -200,7 +200,7 @@ export function PhotoPicker({
             keyExtractor={(uri) => uri}
             renderItem={({ item }) => renderPhotoTile(item)}
             ListFooterComponent={
-              selectedPhotoUris.length < MAX_SELECTED_PHOTOS ? renderAddTile : null
+              selectedPhotoUris.length < MAX_SELECTED_PHOTOS ? renderAddTile : undefined
             }
             showsHorizontalScrollIndicator={false}
             contentContainerClassName="gap-2"

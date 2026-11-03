@@ -43,7 +43,7 @@ Esta es una aplicación móvil Expo/React Native. Prioriza patrones mobile-first
 - `src/constants/` — Configuración global, design tokens y paletas de tema.
 - `src/utils/` — Funciones puras de ayuda, parseadores de fechas y validadores de entrada.
 - `db.json` — Archivo fixture de la base de datos local para los endpoints mock de `json-server`.
-- `docs/` — Notas de sesión y listas de tareas (con subtareas).
+- `docs/` — Notas de sesión y listas de tareas (con subtareas); incluye `docs/spec/` con la trazabilidad de specs, planes, bugs y refactors (ver `docs/spec/README.md`).
 
 Nota: `backend/` y `database/` (fuera de `frontend-mobile/`) son de solo lectura — ver *Qué NO hacer*.
 
@@ -70,47 +70,37 @@ Expo lanza cambios incompatibles en cada versión de SDK. Las APIs que recuerdas
 
 Ejecuta todos los comandos desde `urbanPulse/frontend-mobile/`.
 
-Usa `bunx` en lugar de `npx` si el proyecto usa bun (presencia de `bun.lock`).
+**Gestor de paquetes: `pnpm` exclusivamente.** El proyecto usa `pnpm-lock.yaml` como única fuente de verdad; no uses `npm`, `yarn` ni `bun` para instalar o ejecutar nada en `frontend-mobile/`.
 
 ```bash
 # Gestión de paquetes (SIEMPRE usa expo install para compatibilidad nativa)
 
-npx expo install <package>  # SIEMPRE en lugar de npm/yarn/pnpm/bun add — resuelve versiones compatibles con el SDK. Usa bunx si existe bun.lock
-npm run start               # arranca el servidor de desarrollo
-npx expo lint               # lint
-npx tsc --noEmit            # typecheck
-npx expo-doctor             # diagnostica problemas de dependencias y configuración
-npx expo install --fix      # corrige versiones de paquetes incompatibles
+pnpm expo install <package>  # SIEMPRE en lugar de npm/yarn/bun add — resuelve versiones compatibles con el SDK
+pnpm run start                # arranca el servidor de desarrollo
+pnpm expo lint                # lint
+pnpm tsc --noEmit             # typecheck
+pnpm expo-doctor              # diagnostica problemas de dependencias y configuración
+pnpm expo install --fix       # corrige versiones de paquetes incompatibles
 ```
+
+**Revisión de seguridad antes de instalar cualquier paquete nuevo:** antes de ejecutar `pnpm expo install <package>` (o añadir cualquier dependencia nueva, directa o transitiva relevante), revisa que el paquete no sea peligroso: comprueba el nombre exacto (cuidado con typosquatting), el mantenedor, la fecha de publicación/descargas en npm, y busca scripts de instalación (`postinstall`) sospechosos o reportes de vulnerabilidades/malware recientes. Si tienes dudas razonables sobre un paquete, repórtalo al usuario y pide confirmación explícita antes de instalarlo en lugar de proceder. Esto aplica sobre la restricción ya existente de *Nada de dependencias sin aprobar* (ver *Qué NO hacer*).
 
 Ejecuta lint y typecheck antes de dar por terminada cualquier tarea.
 
 ### Servidor mock
 
 ```bash
-npm run mock
+pnpm run mock
 ```
 
 ### Backend + BD
 
 Levanta esto solo para pruebas y únicamente cuando el usuario lo pida explícitamente (ver también *Integración con backend y datos mock*).
 
-**Opción 1 — Docker Compose (backend + PostgreSQL/PostGIS):**
-
 ```bash
-docker compose -f ../docker-compose.yml up -d
+docker compose up --build
 ```
 
-**Opción 2 — Backend standalone sin Docker (para probar solo la conexión del front):**
-
-En la fase actual de registro de incidencias, el backend arranca sin necesidad de base de datos (`AppModule` todavía no activa Prisma), por lo que basta con levantarlo de forma standalone:
-
-```bash
-# Desde la raíz del repositorio (fuera de frontend-mobile/)
-cd ../backend
-npm ci
-npm PORT=4000 npm run start:dev
-```
 
 - Requiere Node.js 22+ y npm 10+ (ver `backend/package.json`).
 - La API escucha por defecto en `http://localhost:3000` (configurable con la variable `PORT`; copia `backend/.env.example` a `backend/.env` si hace falta cambiarla).
@@ -151,7 +141,7 @@ npm PORT=4000 npm run start:dev
 - **Manejo de errores:** los fallos a nivel de ruta se gestionan con los límites `+error.tsx` de Expo Router. Los errores de la API se capturan y transforman en `src/services/`, exponiendo feedback amigable al usuario mediante estado de UI o notificaciones toast.
 - **Patrones y buenas prácticas:** valida las entradas de formularios y la forma de los payloads (p. ej. con Zod) antes de despachar a la API; impón props tipadas con TypeScript; muestra estados de carga explícitos durante acciones asíncronas para evitar envíos duplicados.
 - **Nombres intuitivos y autodescriptivos:** usa nombres claros que revelen la intención sin necesidad de comentarios. Evita abreviaturas genéricas o crípticas (p. ej. usa `incidentList` en vez de `data`/`arr`, `isSubmittingReport` en vez de `flag`, `fetchIncidentsByStatus` en vez de `getData`).
-- **Expo Go solo incluye sus módulos nativos empaquetados.** Tras añadir una librería con código nativo, la app necesita un development build: `npx expo run:ios|android` en local, o `eas build --profile development`.
+- **Expo Go solo incluye sus módulos nativos empaquetados.** Tras añadir una librería con código nativo, la app necesita un development build: `pnpm expo run:ios|android` en local, o `eas build --profile development`.
 - **Prefiere los módulos recomendados de Expo** sobre librerías de terceros, y revisa tus skills disponibles antes de añadir dependencias. Docs: `https://docs.expo.dev/versions/latest/index.md`
 - **Investigación autónoma de errores:** ante errores poco familiares de build, Metro o runtime nativo durante la ejecución de una tarea, consulta Fetcher (o Context7) con los logs exactos del error y las issues recientes de GitHub antes de adivinar o intentar arreglos a ciegas.
 - **Idioma de nombres y comentarios:** todos los identificadores (variables, funciones, tipos y nombres de componentes) deben escribirse en inglés. Sin embargo, todos los comentarios en el código que expliquen lógica y detalles de implementación deben escribirse en español.
@@ -191,7 +181,7 @@ Reglas:
 
 ## Qué NO hacer
 
-- **Nada de dependencias sin aprobar:** no instales paquetes de terceros ni librerías nativas nuevas sin aprobación previa explícita; prioriza siempre los módulos integrados del SDK de Expo.
+- **Nada de dependencias sin aprobar ni sin revisar:** no instales paquetes de terceros ni librerías nativas nuevas sin aprobación previa explícita; prioriza siempre los módulos integrados del SDK de Expo. Además, revisa siempre que el paquete no sea peligroso antes de instalarlo (ver *Gestión de paquetes* en *Comandos*) e instala siempre con `pnpm` (nunca `npm`/`yarn`/`bun`).
 - **No subas archivos secretos:** nunca subas al control de versiones `.env` ni archivos con credenciales/tokens privados.
 - **Nada de código sin tipar:** evita `any` en TypeScript; define interfaces explícitas o usa `unknown` con estrechamiento de tipos en runtime.
 - **No mezcles lógica de negocio con el enrutado:** nunca pongas componentes de UI, hooks personalizados o peticiones a la API dentro de `src/app/` salvo que sean pantallas o navegadores `_layout.tsx`.
@@ -209,16 +199,10 @@ Reglas:
 - **Una tarea a la vez:** céntrate en una sola tarea; al terminarla, resume los archivos y líneas exactos modificados para revisión.
 - **Pregunta ante la duda:** si no tienes al menos un 80 % de confianza en un detalle de implementación, pide aclaración en lugar de adivinar o alucinar.
 - **Cambios mínimos y específicos:** toca solo el código estrictamente relacionado con la tarea actual. No reformatees ni refactorices archivos no relacionados.
-- **Verificación de calidad obligatoria:** ejecuta siempre `npx expo lint` y `npx tsc --noEmit` para asegurar que no hay errores de lint ni de tipos antes de dar por terminada cualquier tarea.
+- **Verificación de calidad obligatoria:** ejecuta siempre `pnpm expo lint` y `pnpm tsc --noEmit` para asegurar que no hay errores de lint ni de tipos antes de dar por terminada cualquier tarea.
 - **Nada de commits de git autónomos:** no crees commits ni hagas push a ramas remotas salvo que se pida explícitamente.
 - **Backend y datos mock:** ver [Integración con backend y datos mock](#integración-con-backend-y-datos-mock) para la política de real-first/fallback, el flujo de datos en `db.json` y la estrategia de medios locales.
-- **Sincronización del roadmap y ciclo de vida de specs (`spec/`):**
-  - **Andamiaje de features:** siempre que se solicite una feature nueva, el `planner` debe inicializar automáticamente su directorio dedicado en `spec/features/NNN-<feature-name>/` (p. ej. `001-registro-incidencia/`).
-  - **Adherencia a las plantillas:** dentro de la carpeta de la feature, el `planner` debe crear `spec.md`, `plan.md` y `tasks.md`, siguiendo estrictamente los blueprints definidos en `spec/templates/` antes de empezar cualquier implementación.
-  - **Sobrescritura del roadmap en vivo:** el `planner` debe mantener y sobrescribir activamente `spec/constitution/roadmap.md` para reflejar el progreso real del proyecto:
-    - Mueve la feature activa a `## Siguiente ` cuando empiece el trabajo.
-    - Mueve la feature a `## Hecho ` una vez que pasen todas las comprobaciones de calidad, tests y tareas.
-    - Mantén las features futuras listadas bajo `## Backlog / ideas `.
+- **Specs y trazabilidad (`docs/spec/`):** la estructura de carpetas, las plantillas y la diferencia entre `spec.md` y `plan.md` están documentadas en `docs/spec/README.md` — es la única fuente de verdad, no se duplica aquí. El agente `organizador` es responsable de mantenerlo.
 - **Documentación de sesión y seguimiento de tareas (`docs/`):**
   - Mantén el progreso de la sesión dentro del directorio `docs/`.
   - Documenta notas de sesión y mantén una lista de tareas estructurada que detalle todas las tareas completadas y sus subtareas (p. ej. usando checkboxes `- [x]` / `- [ ]`).
