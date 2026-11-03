@@ -11,6 +11,8 @@ jest.mock('@/services/incident.service', () => ({
 
 const mockedFetchMyIncidents = fetchMyIncidents as jest.MockedFunction<typeof fetchMyIncidents>;
 
+const BACKEND_FALLBACK_NOTICE =
+  'No se ha podido conectar al backend, mostrando los datos del mock.';
 
 const incidentsFixture: IncidentSummary[] = [
   { id: 'inc-1', title: 'Bache en calle Mayor', status: 'reported', createdAt: '2026-10-20T10:00:00.000Z' },
@@ -51,6 +53,7 @@ describe('useMyIncidents', () => {
     expect(result.current.isLoading).toBe(false);
     expect(result.current.incidents).toEqual([]);
     expect(result.current.errorMessage).toBeNull();
+    expect(result.current.backendFallbackNotice).toBeNull();
   });
 
   it('en carga correcta rellena incidents, limpia errorMessage y pone isLoading en false', async () => {
@@ -68,7 +71,30 @@ describe('useMyIncidents', () => {
     expect(result.current.errorMessage).toBeNull();
   });
 
+  it('con source "mock" expone backendFallbackNotice con el mensaje exacto', async () => {
+    mockedFetchMyIncidents.mockResolvedValueOnce({ incidents: incidentsFixture, source: 'mock' });
 
+    const { result } = await renderHook(() => useMyIncidents('civic-1'));
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.backendFallbackNotice).toBe(BACKEND_FALLBACK_NOTICE);
+    expect(result.current.incidents).toEqual(incidentsFixture);
+  });
+
+  it('con source "backend" deja backendFallbackNotice en null', async () => {
+    mockedFetchMyIncidents.mockResolvedValueOnce({ incidents: incidentsFixture, source: 'backend' });
+
+    const { result } = await renderHook(() => useMyIncidents('civic-1'));
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.backendFallbackNotice).toBeNull();
+  });
 
   it('en error de recarga rellena errorMessage y conserva las incidencias de la carga exitosa anterior', async () => {
     mockedFetchMyIncidents.mockResolvedValueOnce({ incidents: incidentsFixture, source: 'backend' });

@@ -15,6 +15,7 @@ import {
 } from '@/services/device-location';
 import { createIncident } from '@/services/incident.service';
 import { pickPhotoFromCamera, pickPhotoFromLibrary } from '@/services/photo-picker';
+import { storePhoto } from '@/services/storage.service';
 import type {
   CreateIncidentInput,
   CreateIncidentResult,
@@ -97,6 +98,10 @@ jest.mock('@/services/photo-picker', () => ({
   pickPhotoFromLibrary: jest.fn(),
 }));
 
+// Almacenamiento simulado: resuelve de inmediato, sin el retardo real.
+jest.mock('@/services/storage.service', () => ({
+  storePhoto: jest.fn(),
+}));
 
 // Catálogo de categorías: vacío para que el test sea hermético (sin red).
 jest.mock('@/services/category.service', () => ({
@@ -121,6 +126,7 @@ const mockedPickPhotoFromCamera = pickPhotoFromCamera as jest.MockedFunction<
 const mockedPickPhotoFromLibrary = pickPhotoFromLibrary as jest.MockedFunction<
   typeof pickPhotoFromLibrary
 >;
+const mockedStorePhoto = storePhoto as jest.MockedFunction<typeof storePhoto>;
 const mockedUseSession = jest.mocked(useSession);
 
 // Civic ID de la sesión activa de fixture. Es el valor que la pantalla debe
@@ -190,6 +196,15 @@ const backendCreateResult: CreateIncidentResult = {
   incident: createdIncident,
   source: 'backend',
 };
+
+// Resultado de `createIncident` cuando el backend no respondió y se simuló en el mock.
+const mockCreateResult: CreateIncidentResult = {
+  incident: createdIncident,
+  source: 'mock',
+};
+
+// Aviso que muestra la confirmación cuando la incidencia se guardó en el mock.
+const MOCK_FALLBACK_NOTICE = 'No se ha podido conectar al backend, realizando en el mock';
 
 // Input esperado en `createIncident` con los datos del formulario relleno por
 // `fillValidIncidentForm`, sin categoría y con la ubicación del dispositivo.
@@ -302,6 +317,7 @@ describe('NewIncidentScreen', () => {
     mockedGetCurrentCoordinates.mockReset();
     mockedPickPhotoFromCamera.mockReset();
     mockedPickPhotoFromLibrary.mockReset();
+    mockedStorePhoto.mockReset();
     mockedUseSession.mockReturnValue(buildSessionValue());
 
     // Defaults felices de todos los límites externos: catálogo vacío,
@@ -314,6 +330,7 @@ describe('NewIncidentScreen', () => {
     mockedPickPhotoFromCamera.mockResolvedValue(libraryPhotoUri);
     mockedPickPhotoFromLibrary.mockResolvedValue(libraryPhotoUri);
     // Sin retardo real: el "guardado" de la foto se resuelve de inmediato.
+    mockedStorePhoto.mockResolvedValue(libraryPhotoUri);
   });
 
   afterEach(() => {
@@ -557,9 +574,63 @@ describe('NewIncidentScreen', () => {
     expect(mockedCreateIncident).toHaveBeenCalledWith(expectedNoLocationSubmission, SESSION_CIVIC_ID,[]);
   });
 
+  it('con source "mock" muestra el aviso de fallback al backend en la confirmación', async () => {
+    mockedCreateIncident.mockResolvedValue(mockCreateResult);
 
+    const user = userEvent.setup();
+    await renderScreen();
 
+    await fillValidIncidentForm(user);
 
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+    expect(screen.getByText(MOCK_FALLBACK_NOTICE)).toBeOnTheScreen();
+  });
+
+  it('con source "backend" NO muestra el aviso de fallback al backend', async () => {
+    mockedCreateIncident.mockResolvedValue(backendCreateResult);
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+    expect(screen.queryByText(MOCK_FALLBACK_NOTICE)).not.toBeOnTheScreen();
+    expect(screen.queryByText(/realizando en el mock/)).not.toBeOnTheScreen();
+  });
+
+  it('con source "mock" mantiene el estado "reported", el envío con fotos y el resto de la confirmación', async () => {
+    mockedCreateIncident.mockResolvedValue(mockCreateResult);
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+    await attachPhotoFromLibrary(user);
+
+    await user.press(screen.getByLabelText('Enviar incidencia'));
+
+    expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+    expect(screen.getByText('reported')).toBeOnTheScreen();
+    expect(screen.getByText(MOCK_FALLBACK_NOTICE)).toBeOnTheScreen();
+    expect(mockedCreateIncident).toHaveBeenCalledTimes(1);
+    expect(mockedCreateIncident).toHaveBeenCalledWith(expectedDeviceSubmission, SESSION_CIVIC_ID,[libraryPhotoUri]);
+  });
+
+  it('el aviso de fallback no aparece en el formulario antes de enviar', async () => {
+    mockedCreateIncident.mockResolvedValue(mockCreateResult);
+
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await fillValidIncidentForm(user);
+
+    expect(screen.queryByText(MOCK_FALLBACK_NOTICE)).not.toBeOnTheScreen();
+  });
 
   describe('control de sesión', () => {
     it('sin sesión (user null y ya resuelta) redirige a /login y no muestra el formulario', async () => {

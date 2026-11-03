@@ -14,6 +14,12 @@ Respuesta 201 con cabecera Location: /incidents/{id}. Devuelve id, title, descri
 
 Errores 400: campos o formatos inválidos, demasiados archivos, tamaño excesivo o MIME no admitido. No autentica al ciudadano ni comprueba la existencia de UUID referenciados. El nombre de categoría y categoryId se almacenan tal como se reciben tras validar la entrada; no se resuelve el nombre desde el ID.
 
+## Integración para frontend
+
+El cliente envía una petición `multipart/form-data` a `POST /incidents`. Incluye `title` y `civicId` como campos de texto y agrega cada foto al campo repetido `images`; los demás campos son opcionales según el contrato anterior. El backend recibe los bytes y los sube a Cloudinary sin escribirlos en su disco. El frontend no necesita claves de Cloudinary ni enviar un `public_id`.
+
+Tras el 201, el cliente puede usar `images[].url` como URL HTTPS de cada foto. En GET /incidents/:id se devuelven esas mismas referencias. Si la subida o la persistencia fallan, no se devuelve 201; el cliente debe tratar la petición como fallida. El equipo de frontend decidirá cómo integrar este flujo y cuándo retirar su mock local.
+
 ## Almacenamiento y límites
 
 Incidencias, ubicaciones, historial y referencias de imágenes se guardan en PostgreSQL. Las imágenes nuevas se guardan en Cloudinary y su `public_id` se conserva internamente. Requiere el esquema local preparado; no se aplican migraciones automáticamente.

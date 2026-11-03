@@ -79,6 +79,8 @@ const INCIDENT_IMAGE_ACCESSIBILITY_LABEL = 'Foto de la incidencia';
 const INCIDENT_ID = 'iB09J7Gfu1k';
 const NOT_FOUND_MESSAGE = 'Esta incidencia no existe o ya no está disponible.';
 const GENERIC_ERROR_MESSAGE = 'No se pudo obtener la incidencia. Inténtalo de nuevo más tarde.';
+// Mismo texto que `BACKEND_FALLBACK_NOTICE` del hook (no exportado).
+const BACKEND_FALLBACK_NOTICE = 'No se ha podido conectar al backend, mostrando los datos del mock.';
 const EMPTY_CATEGORY_TEXT = 'Sin categoría';
 const EMPTY_DESCRIPTION_TEXT = 'Sin descripción';
 const NO_PHOTOS_TEXT = 'Sin fotos adjuntas';
@@ -134,6 +136,7 @@ function buildHookState(
     isLoading: false,
     errorMessage: null,
     isNotFound: false,
+    backendFallbackNotice: null,
     reload: jest.fn(),
     ...overrides,
   };
@@ -240,8 +243,36 @@ describe('IncidentDetailScreen', () => {
     expect(router.back).not.toHaveBeenCalled();
   });
 
+  it('con backendFallbackNotice no nulo muestra el aviso en pantalla junto al contenido completo', async () => {
+    await renderDetailScreenWithHookState(
+      buildHookState({
+        incident: fullIncident,
+        backendFallbackNotice: BACKEND_FALLBACK_NOTICE,
+      }),
+    );
 
+    expect(screen.getByText(BACKEND_FALLBACK_NOTICE)).toBeOnTheScreen();
+    // El aviso no sustituye al contenido: la incidencia sigue mostrándose.
+    expect(screen.getByText(fullIncident.title)).toBeOnTheScreen();
+  });
 
+  it('con backendFallbackNotice no nulo el aviso sigue visible aunque la carga haya fallado con isNotFound', async () => {
+    await renderDetailScreenWithHookState(
+      buildHookState({
+        isNotFound: true,
+        backendFallbackNotice: BACKEND_FALLBACK_NOTICE,
+      }),
+    );
+
+    expect(screen.getByText(BACKEND_FALLBACK_NOTICE)).toBeOnTheScreen();
+    expect(screen.getByText(NOT_FOUND_MESSAGE)).toBeOnTheScreen();
+  });
+
+  it('sin backendFallbackNotice no muestra ningún aviso de fallback', async () => {
+    await renderDetailScreenWithHookState(buildHookState({ incident: fullIncident }));
+
+    expect(screen.queryByText(BACKEND_FALLBACK_NOTICE)).not.toBeOnTheScreen();
+  });
 
   it('con isLoading y sin incidencia muestra solo el ActivityIndicator, sin error, isNotFound ni contenido', async () => {
     await renderDetailScreenWithHookState(buildHookState({ isLoading: true, incident: null }));

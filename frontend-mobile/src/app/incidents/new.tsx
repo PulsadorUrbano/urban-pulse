@@ -72,6 +72,7 @@ export default function NewIncidentScreen() {
   const [validationErrors, setValidationErrors] = useState<IncidentValidationErrors>({});
   const [createdIncident, setCreatedIncident] = useState<CreatedIncident | null>(null);
   const [locationNotice, setLocationNotice] = useState<string | null>(null);
+  const [backendFallbackNotice, setBackendFallbackNotice] = useState<string | null>(null);
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
 
   // Sin sesión activa (y ya resuelta) esta pantalla no es alcanzable: mismo
@@ -137,6 +138,12 @@ export default function NewIncidentScreen() {
     }
 
     setLocationNotice(notice);
+    setBackendFallbackNotice(
+      result.source === 'mock'
+        ? 'No se ha podido conectar al backend, realizando en el mock'
+        : null,
+    );
+
     setCreatedIncident(result.incident);
   };
 
@@ -260,6 +267,14 @@ export default function NewIncidentScreen() {
               <ThemedText type="small" themeColor="textSecondary" className="text-center">
                 {locationNotice}
               </ThemedText>
+            ) : null}
+
+            {backendFallbackNotice ? (
+              <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
+                <Text className="text-center text-sm font-medium text-[#d92d20]">
+                  {backendFallbackNotice}
+                </Text>
+              </ThemedView>
             ) : null}
 
             <Pressable

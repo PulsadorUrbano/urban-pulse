@@ -8,9 +8,12 @@ export interface UseIncidentDetailResult {
   isLoading: boolean;
   errorMessage: string | null;
   isNotFound: boolean;
+  backendFallbackNotice: string | null;
   reload: () => void;
 }
 
+// Aviso exacto a mostrar cuando la respuesta viene del mock en lugar del backend real.
+const BACKEND_FALLBACK_NOTICE = 'No se ha podido conectar al backend, mostrando los datos del mock.';
 
 // Carga el detalle de una incidencia por `id` al montar (y cuando `id` cambie o
 // se llame a `reload`), siguiendo el mismo patrón que `useCategories`/
@@ -21,6 +24,7 @@ export function useIncidentDetail(id: string): UseIncidentDetailResult {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isNotFound, setIsNotFound] = useState(false);
+  const [backendFallbackNotice, setBackendFallbackNotice] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
   // Evita actualizar el estado si el componente se desmontó durante la carga.
@@ -37,6 +41,7 @@ export function useIncidentDetail(id: string): UseIncidentDetailResult {
         setIncident(result.incident);
         setIsNotFound(false);
         setErrorMessage(null);
+        setBackendFallbackNotice(result.source === 'mock' ? BACKEND_FALLBACK_NOTICE : null);
       })
       .catch((error: unknown) => {
         if (!isMountedRef.current) return;
@@ -75,5 +80,5 @@ export function useIncidentDetail(id: string): UseIncidentDetailResult {
     setReloadToken((value) => value + 1);
   }, []);
 
-  return { incident, isLoading, errorMessage, isNotFound, reload };
+  return { incident, isLoading, errorMessage, isNotFound, backendFallbackNotice, reload };
 }

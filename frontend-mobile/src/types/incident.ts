@@ -39,7 +39,21 @@ export interface CreateIncidentInput {
   accuracy?: number | null;
 }
 
-// Imagen asociada a una incidencia en la respuesta del backend.
+// Payload que el front envía al mock (json-server) al crear una incidencia
+export interface IncidentPayload {
+  title: string;
+  description: string;
+  latitude: number | null;
+  longitude: number | null;
+  accuracy: number | null;
+  civicId: string;
+  categoryId: string | null;
+  category: string | null;
+  status: IncidentStatus;
+  createdAt: string;
+}
+
+// Imagen asociada a una incidencia tal como la devuelve el backend
 export interface CreatedIncidentImage {
   id: string;
   url: string;
@@ -68,8 +82,8 @@ export interface CreatedIncident {
   createdAt: string;
 }
 
-// Origen de los datos de incidencias.
-export type IncidentSource = 'backend';
+// Origen de la incidencia creada: backend real o simulación en el mock
+export type IncidentSource = 'backend' | 'mock';
 
 export interface CreateIncidentResult {
   incident: CreatedIncident;
@@ -107,13 +121,14 @@ export interface IncidentDetail {
   createdAt: string;
 }
 
-// Resultado de fetchMyIncidents.
+// Resultado de fetchMyIncidents: incluye el origen de los datos (backend real o mock)
+// para que la UI pueda mostrar el aviso de fallback cuando corresponda
 export interface FetchMyIncidentsResult {
   incidents: IncidentSummary[];
   source: IncidentSource;
 }
 
-// Resultado de fetchIncidentById.
+// Resultado de fetchIncidentById: incluye el origen de los datos, mismo motivo que arriba
 export interface FetchIncidentDetailResult {
   incident: IncidentDetail;
   source: IncidentSource;

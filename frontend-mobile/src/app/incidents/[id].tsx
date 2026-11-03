@@ -10,13 +10,22 @@ import { useIncidentDetail } from '@/hooks/use-incident-detail';
 
 export default function IncidentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { incident, isLoading, errorMessage, isNotFound, reload } =
+  const { incident, isLoading, errorMessage, isNotFound, backendFallbackNotice, reload } =
     useIncidentDetail(id);
 
   return (
     <ThemedView className="flex-1 flex-row justify-center">
       <SafeAreaView className="flex-1 w-full" edges={['bottom', 'left', 'right']}>
         <ScrollView contentContainerClassName="gap-6 px-6 pt-6">
+          {/* Aviso de fallback a mock: siempre visible cuando aplica, sin
+              importar el resto del estado (carga, error, contenido). */}
+          {backendFallbackNotice ? (
+            <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
+              <Text className="text-center text-sm font-medium text-[#d92d20]">
+                {backendFallbackNotice}
+              </Text>
+            </ThemedView>
+          ) : null}
 
           {/* Cargando: solo mientras todavía no hay ninguna incidencia resuelta. */}
           {isLoading && !incident ? (
@@ -25,7 +34,7 @@ export default function IncidentDetailScreen() {
             </ThemedView>
           ) : null}
 
-          {/* No encontrado (404 del backend): estado explícito, sin reintento,
+          {/* No encontrado (404 real o del mock): estado explícito, sin reintento,
               solo ofrece volver a la pantalla anterior. */}
           {isNotFound ? (
             <ThemedView className="items-center gap-4 py-10">

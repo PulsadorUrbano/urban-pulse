@@ -7,9 +7,12 @@ export interface UseMyIncidentsResult {
   incidents: IncidentSummary[];
   isLoading: boolean;
   errorMessage: string | null;
+  backendFallbackNotice: string | null;
   reload: () => void;
 }
 
+const BACKEND_FALLBACK_NOTICE =
+  'No se ha podido conectar al backend, mostrando los datos del mock.';
 
 // Carga las incidencias del ciudadano de la sesión activa. Si `civicId` es
 // `null` (sesión aún no resuelta) no dispara ninguna petición y deja el
@@ -20,6 +23,7 @@ export function useMyIncidents(civicId: string | null): UseMyIncidentsResult {
   // el efecto de abajo lo corrige a `false` de inmediato.
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [backendFallbackNotice, setBackendFallbackNotice] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
   // Evita actualizar el estado si el componente se desmontó durante la carga.
@@ -47,6 +51,7 @@ export function useMyIncidents(civicId: string | null): UseMyIncidentsResult {
         if (!isMountedRef.current) return;
         setIncidents(result.incidents);
         setErrorMessage(null);
+        setBackendFallbackNotice(result.source === 'mock' ? BACKEND_FALLBACK_NOTICE : null);
       })
       .catch((error: unknown) => {
         if (!isMountedRef.current) return;
@@ -77,5 +82,5 @@ export function useMyIncidents(civicId: string | null): UseMyIncidentsResult {
     setReloadToken((value) => value + 1);
   }, []);
 
-  return { incidents, isLoading, errorMessage, reload };
+  return { incidents, isLoading, errorMessage, backendFallbackNotice, reload };
 }

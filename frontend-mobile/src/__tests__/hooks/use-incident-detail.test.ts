@@ -46,6 +46,12 @@ const backendResultFixture: FetchIncidentDetailResult = {
   source: 'backend',
 };
 
+const mockResultFixture: FetchIncidentDetailResult = {
+  incident: incidentFixture,
+  source: 'mock',
+};
+
+const MOCK_FALLBACK_NOTICE = 'No se ha podido conectar al backend, mostrando los datos del mock.';
 const GENERIC_ERROR_MESSAGE = 'No se pudo obtener la incidencia. Inténtalo de nuevo más tarde.';
 
 // Promesa controlable desde el test para observar estados intermedios de carga.
@@ -81,8 +87,23 @@ describe('useIncidentDetail', () => {
     expect(result.current.incident).toEqual(incidentFixture);
     expect(result.current.isNotFound).toBe(false);
     expect(result.current.errorMessage).toBeNull();
+    expect(result.current.backendFallbackNotice).toBeNull();
   });
 
+  it('en carga desde mock rellena incident y expone el aviso de fallback exacto', async () => {
+    mockedFetchIncidentById.mockResolvedValueOnce(mockResultFixture);
+
+    const { result } = await renderHook(() => useIncidentDetail('42'));
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.incident).toEqual(incidentFixture);
+    expect(result.current.isNotFound).toBe(false);
+    expect(result.current.errorMessage).toBeNull();
+    expect(result.current.backendFallbackNotice).toBe(MOCK_FALLBACK_NOTICE);
+  });
 
   it('con IncidentNotFoundError marca isNotFound, no muestra errorMessage y deja incident en null', async () => {
     mockedFetchIncidentById.mockRejectedValueOnce(
@@ -184,7 +205,7 @@ describe('useIncidentDetail', () => {
     expect(result.current.errorMessage).toBeNull();
 
     await act(async () => {
-      pendingReload.resolve(backendResultFixture);
+      pendingReload.resolve(mockResultFixture);
       await pendingReload.promise;
     });
 
@@ -193,6 +214,7 @@ describe('useIncidentDetail', () => {
     });
 
     expect(result.current.incident).toEqual(incidentFixture);
+    expect(result.current.backendFallbackNotice).toBe(MOCK_FALLBACK_NOTICE);
     expect(result.current.errorMessage).toBeNull();
   });
 
