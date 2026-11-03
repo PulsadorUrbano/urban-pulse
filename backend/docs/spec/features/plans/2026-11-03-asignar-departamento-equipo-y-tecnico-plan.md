@@ -15,6 +15,7 @@
 - Mantener TypeScript estricto, imports ESM `.js`, dependencias y pnpm-lock.yaml actuales.
 - Solo pruebas unitarias en `backend/test/incidents/`; no e2e salvo petición expresa.
 - Reutilizar `JwtAuthGuard`, `AccesoIncidenciasGuard` y la comprobación de rol actual en DB.
+- PATCH admite un subconjunto no vacío de los tres campos; aplicar cambios en orden departamento, equipo, técnico y limpiar descendientes solo cuando cambia su superior.
 - Esta publicación de rama y documentos está solicitada; futuros commits de implementación y conexiones frontend quedan fuera de este plan hasta la ejecución acordada.
 
 ## Focos de revisión
@@ -22,6 +23,8 @@
 | Riesgo | Tarea y prueba unitaria |
 | --- | --- |
 | Cambiar departamento deja equipo/técnico anteriores | Tarea 2: `cambiarDepartamentoLimpiaDependencias` |
+| Cambiar equipo deja técnico anterior o cambiar técnico borra superiores | Tarea 2: `cambiarEquipoLimpiaTecnico` y `cambiarTecnicoConservaSuperiores` |
+| Asignar solo técnico sin cadena superior | Tarea 2: `rechazaTecnicoSinEquipoSinCambios` |
 | Equipo o técnico de otra rama | Tarea 2: `rechazaJerarquiaCruzadaSinCambios` |
 | UUID válido ausente del catálogo | Tarea 2: `rechazaIdDesconocidoSinCambios` |
 | Cuerpo incompleto, extra o mal tipado | Tarea 3: `rechazaCuerpoDeAsignacionInvalido` |
@@ -37,7 +40,7 @@ Rutas relativas a la raíz del repositorio.
 | Crear | `backend/src/incidents/assignment-catalog.ts` | Opciones UUID de prueba y relaciones. |
 | Modificar | `backend/src/incidents/incident.ts` | Tipo `AsignacionIncidencia` y respuesta pública. |
 | Modificar | `backend/src/incidents/incidents.service.ts` | Creación, copia y guardado atómico. |
-| Crear | `backend/src/incidents/asignar-incidencia.pipe.ts` | Validar cuerpo completo y UUID. |
+| Crear | `backend/src/incidents/asignar-incidencia.pipe.ts` | Validar parche no vacío, campos permitidos, tipos y UUID. |
 | Modificar | `backend/src/incidents/incidents.controller.ts` | GET opciones, PATCH y Swagger. |
 | Crear | `backend/test/incidents/services/asignar-incidencia.service.spec.ts` | Reglas de jerarquía y atomicidad. |
 | Crear | `backend/test/incidents/pipes/asignar-incidencia.pipe.spec.ts` | Forma exacta de entrada. |
@@ -55,7 +58,7 @@ Rutas relativas a la raíz del repositorio.
 
 **Archivos:** `backend/prisma/schema.prisma`, `backend/src/incidents/incident.ts`, `backend/src/incidents/assignment-catalog.ts`, `backend/src/incidents/incidents.service.ts`, `backend/test/incidents/services/asignar-incidencia.service.spec.ts`.
 
-**Interfaces:** `AsignacionIncidencia = {departmentId: string|null; teamId: string|null; technicianId: string|null}`; catálogo `{departments,teams,technicians}` con IDs UUID y relaciones; `Incident` público añade los tres campos.
+**Interfaces:** `AsignacionIncidencia = {departmentId: string|null; teamId: string|null; technicianId: string|null}` representa el estado completo; `CambioAsignacionIncidencia = Partial<AsignacionIncidencia>` representa el PATCH no vacío validado; catálogo `{departments,teams,technicians}` con IDs UUID y relaciones; `Incident` público añade los tres campos.
 
 **Criterios cubiertos:** 1, 3, 4.
 
@@ -69,13 +72,13 @@ Rutas relativas a la raíz del repositorio.
 
 **Archivos:** `backend/src/incidents/incidents.service.ts`, `backend/test/incidents/services/asignar-incidencia.service.spec.ts`.
 
-**Interfaces:** `IncidentsService.asignar(idIncidencia: string, asignacion: AsignacionIncidencia): Incident` usa el catálogo de tarea 1.
+**Interfaces:** `IncidentsService.asignar(idIncidencia: string, cambio: CambioAsignacionIncidencia): Incident` usa el catálogo de tarea 1 y devuelve la asignación completa en `Incident`.
 
 **Criterios cubiertos:** 1, 2, 4.
 
-- [ ] Escribir pruebas `cambiarDepartamentoLimpiaDependencias`, `rechazaJerarquiaCruzadaSinCambios`, `rechazaIdDesconocidoSinCambios`, asignación intermedia, sustitución de técnico, repetición idéntica y estados no editables; comparar el registro completo antes/después de cada rechazo.
+- [ ] Escribir pruebas `cambiarDepartamentoLimpiaDependencias`, `cambiarEquipoLimpiaTecnico`, `cambiarTecnicoConservaSuperiores`, `rechazaTecnicoSinEquipoSinCambios`, `rechazaJerarquiaCruzadaSinCambios`, `rechazaIdDesconocidoSinCambios`, asignación solo de departamento, sustitución completa en un PATCH, repetición idéntica y estados no editables; comparar el registro completo antes/después de cada rechazo.
 - [ ] Ejecutar `pnpm test -- asignar-incidencia.service.spec.ts` y registrar el fallo previo.
-- [ ] Implementar validación de estado y cadena completa; construir respuesta antes de publicar una sola copia en el `Map`; conservar estado, prioridad e historiales.
+- [ ] Implementar validación de estado, aplicación de los campos presentes en orden jerárquico y limpieza de descendientes cuando cambie su superior; validar la cadena resultante completa y construir respuesta antes de publicar una sola copia en el `Map`; conservar estado, prioridad e historiales.
 - [ ] Repetir prueba focalizada y registrar resultado real.
 - [ ] Revisar diff y actualizar seguimiento en este plan.
 
@@ -83,11 +86,11 @@ Rutas relativas a la raíz del repositorio.
 
 **Archivos:** `backend/src/incidents/asignar-incidencia.pipe.ts`, `backend/src/incidents/incidents.controller.ts`, `backend/test/incidents/pipes/asignar-incidencia.pipe.spec.ts`, `backend/test/incidents/controllers/incidents.controller.spec.ts`, fichas nuevas de `backend/docs/spec/endpoint/`.
 
-**Interfaces:** `GET /incidents/assignment-options`; `PATCH /incidents/:id/assignment` recibe `AsignacionIncidencia` y devuelve `Incident`. Metadata `rolesIncidencias` de ambos métodos: `['admin','administrative']`.
+**Interfaces:** `GET /incidents/assignment-options`; `PATCH /incidents/:id/assignment` recibe `CambioAsignacionIncidencia` no vacío y devuelve `Incident` con `AsignacionIncidencia` completa. Metadata `rolesIncidencias` de ambos métodos: `['admin','administrative']`.
 
 **Criterios cubiertos:** 1, 2, 3, 5.
 
-- [ ] Escribir `rechazaCuerpoDeAsignacionInvalido` para omisión, extras, null incoherente, tipos y UUID; probar controller con guards/metadata existentes y DB simulada para rol actual, incluidos token antiguo y usuario eliminado.
+- [ ] Escribir `rechazaCuerpoDeAsignacionInvalido` para `{}`, extras, tipos y UUID; los null incompatibles se prueban en el servicio. Probar controller con guards/metadata existentes y DB simulada para rol actual, incluidos token antiguo y usuario eliminado.
 - [ ] Ejecutar `pnpm test -- asignar-incidencia.pipe.spec.ts incidents.controller.spec.ts` y registrar el fallo previo.
 - [ ] Añadir pipe, GET estático y PATCH con `ParseUUIDPipe`; reutilizar guards de clase, metadata de método y Swagger; no añadir guard nuevo.
 - [ ] Repetir pruebas focalizadas y registrar resultado real.
@@ -120,5 +123,5 @@ Al implementar código, ejecutar desde `backend/`. En esta publicación solo doc
 | 1–5 del spec | Tareas y comprobaciones definidas arriba | Pendiente |
 
 - Comprobaciones: enlaces locales verificados y `git diff --cached --check` correcto; pruebas de código no aplican aún.
-- Decisiones y desviaciones: el plan inicial se adaptó a `feature-login`, a las plantillas del repositorio, a pnpm y a pruebas unitarias.
+- Decisiones y desviaciones: el plan inicial se adaptó a `feature-login`, a las plantillas del repositorio, a pnpm y a pruebas unitarias. El 2026-11-03 se precisó que PATCH acepta uno o más campos y limpia solo las asignaciones descendientes del campo modificado.
 - Limitaciones y pendientes: validar las dos suposiciones del spec antes de implementar; sustituir mock web en una fase separada.
