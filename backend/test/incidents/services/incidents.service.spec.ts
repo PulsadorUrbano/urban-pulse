@@ -1,3 +1,8 @@
+const operadorPrueba = {
+  id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  role: 'admin',
+  ciudadanoId: null,
+} as const;
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { randomUUID } from 'node:crypto';
@@ -52,7 +57,9 @@ describe('IncidentsService', () => {
     );
 
     created.location.latitude = 0;
-    expect(service.findOne(created.id).location.latitude).toBe(input.latitude);
+    expect(service.findOne(created.id, operadorPrueba).location.latitude).toBe(
+      input.latitude,
+    );
   });
 
   it('returns isolated public image metadata with ISO dates and no internal relation keys', async () => {
@@ -81,11 +88,13 @@ describe('IncidentsService', () => {
     expect(created.images[0]).not.toHaveProperty('incidentId');
     created.images[0].url = 'changed';
     created.location.latitude = 0;
-    const fetched = imageService.findOne(created.id);
+    const fetched = imageService.findOne(created.id, operadorPrueba);
     expect(fetched.images).toEqual([image]);
     expect(fetched.location.latitude).toBe(input.latitude);
     fetched.images.length = 0;
-    expect(imageService.findOne(created.id).images).toEqual([image]);
+    expect(imageService.findOne(created.id, operadorPrueba).images).toEqual([
+      image,
+    ]);
   });
 
   it('keeps identical locations as independent incidents', async () => {
@@ -122,7 +131,7 @@ describe('IncidentsService', () => {
       location: { latitude: null, longitude: null, accuracy: null },
       images: [],
     });
-    expect(service.findOne(created.id)).toEqual(created);
+    expect(service.findOne(created.id, operadorPrueba)).toEqual(created);
   });
 
   it('starts each service instance empty and rejects missing incidents', async () => {
@@ -131,7 +140,9 @@ describe('IncidentsService', () => {
     }).compile();
     const freshService = freshModule.get(IncidentsService);
 
-    expect(() => freshService.findOne(randomUUID())).toThrow(NotFoundException);
+    expect(() => freshService.findOne(randomUUID(), operadorPrueba)).toThrow(
+      NotFoundException,
+    );
   });
 
   it('removes a failed upload and does not store a partial incident', async () => {
@@ -149,7 +160,7 @@ describe('IncidentsService', () => {
       'disk unavailable',
     );
     expect(remove).toHaveBeenCalledWith(expect.any(String));
-    expect(() => failingService.findOne(randomUUID())).toThrow(
+    expect(() => failingService.findOne(randomUUID(), operadorPrueba)).toThrow(
       NotFoundException,
     );
   });

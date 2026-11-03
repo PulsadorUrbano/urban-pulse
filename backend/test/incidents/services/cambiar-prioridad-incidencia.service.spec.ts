@@ -1,3 +1,8 @@
+const operadorPrueba = {
+  id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  role: 'admin',
+  ciudadanoId: null,
+} as const;
 import {
   BadRequestException,
   ConflictException,
@@ -42,11 +47,14 @@ describe('Asignación manual de prioridad', () => {
       { title: 'Farola apagada', civicId: propietario, latitude: 36.7 },
       [],
     );
-    return servicio.cambiarEstado(creada.id, {
-      status: 'validated',
-      cause: 'Reporte confirmado',
-      civicId: actor,
-    });
+    return servicio.cambiarEstado(
+      creada.id,
+      {
+        status: 'validated',
+        cause: 'Reporte confirmado',
+      },
+      actor,
+    );
   }
   it('inicia low sin decisiones manuales ni atribución a IA', async () => {
     const creada = await servicio.create(
@@ -63,13 +71,18 @@ describe('Asignación manual de prioridad', () => {
       const validada = await crearValidada();
       const historialEstado = servicio.consultarCambiosEstado(validada.id);
       const inicio = Date.now();
-      const actualizada = servicio.cambiarPrioridad(validada.id.toUpperCase(), {
-        priority,
-        cause: '  Riesgo revisado  ',
-        civicId: actor.toUpperCase(),
-      });
+      const actualizada = servicio.cambiarPrioridad(
+        validada.id.toUpperCase(),
+        {
+          priority,
+          cause: '  Riesgo revisado  ',
+        },
+        actor.toUpperCase(),
+      );
       expect(actualizada).toEqual({ ...validada, priority });
-      expect(servicio.findOne(validada.id)).toEqual(actualizada);
+      expect(servicio.findOne(validada.id, operadorPrueba)).toEqual(
+        actualizada,
+      );
       expect(servicio.consultarCambiosEstado(validada.id)).toEqual(
         historialEstado,
       );
@@ -109,20 +122,26 @@ describe('Asignación manual de prioridad', () => {
         [],
       );
       if (status === 'rejected')
-        creada = servicio.cambiarEstado(creada.id, {
-          status,
-          cause: 'Duplicada',
-          civicId: actor,
-        });
+        creada = servicio.cambiarEstado(
+          creada.id,
+          {
+            status,
+            cause: 'Duplicada',
+          },
+          actor,
+        );
       const historialEstado = servicio.consultarCambiosEstado(creada.id);
       expect(() =>
-        servicio.cambiarPrioridad(creada.id, {
-          priority: 'high',
-          cause: 'Revisada',
-          civicId: actor,
-        }),
+        servicio.cambiarPrioridad(
+          creada.id,
+          {
+            priority: 'high',
+            cause: 'Revisada',
+          },
+          actor,
+        ),
       ).toThrow(ConflictException);
-      expect(servicio.findOne(creada.id)).toEqual(creada);
+      expect(servicio.findOne(creada.id, operadorPrueba)).toEqual(creada);
       expect(servicio.consultarCambiosPrioridad(creada.id)).toEqual([]);
       expect(servicio.consultarCambiosEstado(creada.id)).toEqual(
         historialEstado,
@@ -131,11 +150,14 @@ describe('Asignación manual de prioridad', () => {
   );
   it('devuelve 404 si la incidencia o su historial no existen', () => {
     expect(() =>
-      servicio.cambiarPrioridad(propietario, {
-        priority: 'high',
-        cause: 'Revisada',
-        civicId: actor,
-      }),
+      servicio.cambiarPrioridad(
+        propietario,
+        {
+          priority: 'high',
+          cause: 'Revisada',
+        },
+        actor,
+      ),
     ).toThrow(NotFoundException);
     expect(() => servicio.consultarCambiosPrioridad(propietario)).toThrow(
       NotFoundException,
@@ -144,13 +166,16 @@ describe('Asignación manual de prioridad', () => {
   it('un motivo vacío no modifica prioridad ni historial', async () => {
     const creada = await crearValidada();
     expect(() =>
-      servicio.cambiarPrioridad(creada.id, {
-        priority: 'high',
-        cause: '   ',
-        civicId: actor,
-      }),
+      servicio.cambiarPrioridad(
+        creada.id,
+        {
+          priority: 'high',
+          cause: '   ',
+        },
+        actor,
+      ),
     ).toThrow(BadRequestException);
-    expect(servicio.findOne(creada.id)).toEqual(creada);
+    expect(servicio.findOne(creada.id, operadorPrueba)).toEqual(creada);
     expect(servicio.consultarCambiosPrioridad(creada.id)).toEqual([]);
   });
   it('un fallo de serialización no publica modificaciones parciales', async () => {
@@ -161,29 +186,38 @@ describe('Asignación manual de prioridad', () => {
         throw new Error('Fallo de serialización');
       });
     expect(() =>
-      servicio.cambiarPrioridad(creada.id, {
-        priority: 'high',
-        cause: 'Revisada',
-        civicId: actor,
-      }),
+      servicio.cambiarPrioridad(
+        creada.id,
+        {
+          priority: 'high',
+          cause: 'Revisada',
+        },
+        actor,
+      ),
     ).toThrow('Fallo de serialización');
     fallo.mockRestore();
-    expect(servicio.findOne(creada.id)).toEqual(creada);
+    expect(servicio.findOne(creada.id, operadorPrueba)).toEqual(creada);
     expect(servicio.consultarCambiosPrioridad(creada.id)).toEqual([]);
   });
   it('permite reevaluar la misma prioridad y conserva cada decisión y su actor', async () => {
     const creada = await crearValidada();
-    servicio.cambiarPrioridad(creada.id, {
-      priority: 'high',
-      cause: 'Primer análisis',
-      civicId: actor,
-    });
+    servicio.cambiarPrioridad(
+      creada.id,
+      {
+        priority: 'high',
+        cause: 'Primer análisis',
+      },
+      actor,
+    );
     const primero = servicio.consultarCambiosPrioridad(creada.id)[0];
-    servicio.cambiarPrioridad(creada.id, {
-      priority: 'high',
-      cause: 'Segundo análisis',
-      civicId: propietario,
-    });
+    servicio.cambiarPrioridad(
+      creada.id,
+      {
+        priority: 'high',
+        cause: 'Segundo análisis',
+      },
+      propietario,
+    );
     const cambios = servicio.consultarCambiosPrioridad(creada.id);
     expect(cambios).toHaveLength(2);
     expect(cambios[0]).toEqual(primero);
@@ -200,11 +234,14 @@ describe('Asignación manual de prioridad', () => {
     const resultados = await Promise.all(
       (['medium', 'high'] as const).map((priority) =>
         Promise.resolve().then(() =>
-          servicio.cambiarPrioridad(creada.id, {
-            priority,
-            cause: 'Revisada',
-            civicId: actor,
-          }),
+          servicio.cambiarPrioridad(
+            creada.id,
+            {
+              priority,
+              cause: 'Revisada',
+            },
+            actor,
+          ),
         ),
       ),
     );
@@ -217,15 +254,18 @@ describe('Asignación manual de prioridad', () => {
         .consultarCambiosPrioridad(creada.id)
         .map((cambio) => cambio.nuevaPrioridad),
     ).toEqual(['medium', 'high']);
-    expect(servicio.findOne(creada.id).priority).toBe('high');
+    expect(servicio.findOne(creada.id, operadorPrueba).priority).toBe('high');
   });
   it('aísla las copias del historial y sus fechas', async () => {
     const creada = await crearValidada();
-    servicio.cambiarPrioridad(creada.id, {
-      priority: 'high',
-      cause: 'Revisada',
-      civicId: actor,
-    });
+    servicio.cambiarPrioridad(
+      creada.id,
+      {
+        priority: 'high',
+        cause: 'Revisada',
+      },
+      actor,
+    );
     const original = servicio.consultarCambiosPrioridad(creada.id);
     const copia = servicio.consultarCambiosPrioridad(creada.id.toUpperCase());
     copia[0].motivo = 'Manipulado';
@@ -237,20 +277,26 @@ describe('Asignación manual de prioridad', () => {
   });
   it('un intento de cambiar estado posterior no altera prioridad ni su historial', async () => {
     const creada = await crearValidada();
-    const actualizada = servicio.cambiarPrioridad(creada.id, {
-      priority: 'high',
-      cause: 'Revisada',
-      civicId: actor,
-    });
+    const actualizada = servicio.cambiarPrioridad(
+      creada.id,
+      {
+        priority: 'high',
+        cause: 'Revisada',
+      },
+      actor,
+    );
     const historial = servicio.consultarCambiosPrioridad(creada.id);
     expect(() =>
-      servicio.cambiarEstado(creada.id, {
-        status: 'rejected',
-        cause: 'Revisión',
-        civicId: actor,
-      }),
+      servicio.cambiarEstado(
+        creada.id,
+        {
+          status: 'rejected',
+          cause: 'Revisión',
+        },
+        actor,
+      ),
     ).toThrow(ConflictException);
-    expect(servicio.findOne(creada.id)).toEqual(actualizada);
+    expect(servicio.findOne(creada.id, operadorPrueba)).toEqual(actualizada);
     expect(servicio.consultarCambiosPrioridad(creada.id)).toEqual(historial);
   });
 });

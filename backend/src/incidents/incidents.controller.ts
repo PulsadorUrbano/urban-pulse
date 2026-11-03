@@ -1,5 +1,8 @@
 import {
   Body,
+  ForbiddenException,
+  SetMetadata,
+  UseGuards,
   BadRequestException,
   Catch,
   Controller,
@@ -20,6 +23,9 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiUnauthorizedResponse,
+  ApiForbiddenResponse,
   ApiBody,
   ApiConsumes,
   ApiConflictResponse,
@@ -27,12 +33,14 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { AccesoIncidenciasGuard } from './guards/acceso-incidencias.guard.js';
+import { UsuarioIncidenciasActual } from './decorators/usuario-incidencias-actual.decorator.js';
+import type { UsuarioIncidencias } from './types/usuario-incidencias.js';
 import type { Response } from 'express';
 import { CreateIncidentPipe } from './create-incident.pipe.js';
-import { CreateIncidentDto } from './create-incident.dto.js';
 import { IncidentPriority, IncidentStatus } from '../generated/prisma/enums.js';
 import { CambiarPrioridadIncidenciaPipe } from './cambiar-prioridad-incidencia.pipe.js';
 import { CambiarEstadoIncidenciaPipe } from './cambiar-estado-incidencia.pipe.js';
@@ -40,6 +48,8 @@ import type {
   CambiarEstadoIncidenciaInput,
   CambiarPrioridadIncidenciaInput,
   Incident,
+  CreateIncidentInput,
+  CrearIncidenciaBody,
   ResumenIncidencia,
 } from './incident.js';
 import { ListarIncidenciasPipe } from './listar-incidencias.pipe.js';
@@ -122,17 +132,24 @@ class UploadLimitFilter implements ExceptionFilter {
 const acceptedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 @ApiTags('incidents')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'JWT inválido o usuario inexistente.' })
+@ApiForbiddenResponse({
+  description:
+    'El rol actual o la vinculación ciudadana no permite la operación.',
+})
+@UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
 @Controller('incidents')
 export class IncidentsController {
   constructor(private readonly incidentsService: IncidentsService) {}
 
   @Get()
+  @SetMetadata('rolesIncidencias', ['civic'])
   @ApiOperation({
     summary: 'Consultar el listado de incidencias por ciudadano',
     description:
-      'Prototipo sin autenticación: civicId es un filtro del cliente, no acredita identidad ni propiedad (DEUDA-27-01). No devuelve trazabilidad.',
+      'Consulta solo las incidencias del ciudadano autenticado y vinculado en DB. Sin parámetros ni trazabilidad.',
   })
-  @ApiQuery({ name: 'civicId', required: true, type: String, format: 'uuid' })
   @ApiOkResponse({
     description:
       'Resúmenes ordenados del más reciente al más antiguo; array vacío si no hay coincidencias.',
@@ -152,16 +169,19 @@ export class IncidentsController {
     },
   })
   @ApiBadRequestResponse({
-    description:
-      'civicId es obligatorio y debe ser un único UUID; no se admiten otros parámetros.',
+    description: 'No se admiten parámetros de consulta, incluido civicId.',
   })
   listar(
-    @Query(new ListarIncidenciasPipe()) idCiudadano: string,
+    @Query(new ListarIncidenciasPipe()) _consulta: void,
+    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
   ): ResumenIncidencia[] {
-    return this.incidentsService.listarPorCiudadano(idCiudadano);
+    if (!usuario.ciudadanoId)
+      throw new ForbiddenException('Se requiere un ciudadano vinculado');
+    return this.incidentsService.listarPorCiudadano(usuario.ciudadanoId);
   }
 
   @Post()
+  @SetMetadata('rolesIncidencias', ['civic'])
   @UseFilters(UploadLimitFilter)
   @UseInterceptors(
     FilesInterceptor('images', 8, {
@@ -180,11 +200,10 @@ export class IncidentsController {
   @ApiBody({
     schema: {
       type: 'object',
-      required: ['title', 'civicId'],
+      required: ['title'],
       properties: {
         title: { type: 'string', minLength: 4, maxLength: 35 },
         description: { type: 'string' },
-        civicId: { type: 'string', format: 'uuid' },
         categoryId: { type: 'string', format: 'uuid' },
         category: { type: 'string' },
         latitude: { type: 'number', minimum: -90, maximum: 90 },
@@ -212,15 +231,22 @@ export class IncidentsController {
   })
   @ApiBadRequestResponse({ description: 'The request body is invalid.' })
   create(
-    @Body(new CreateIncidentPipe()) input: CreateIncidentDto,
+    @Body(new CreateIncidentPipe()) input: CrearIncidenciaBody,
     @UploadedFiles() files: UploadedImageFile[] = [],
     @Res({ passthrough: true }) response: Response,
+    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
   ): Promise<Incident> {
-    return this.createAndSetLocation(input, files, response);
+    if (!usuario.ciudadanoId)
+      throw new ForbiddenException('Se requiere un ciudadano vinculado');
+    return this.createAndSetLocation(
+      { ...input, civicId: usuario.ciudadanoId },
+      files,
+      response,
+    );
   }
 
   private async createAndSetLocation(
-    input: CreateIncidentDto,
+    input: CreateIncidentInput,
     files: UploadedImageFile[],
     response: Response,
   ): Promise<Incident> {
@@ -230,28 +256,23 @@ export class IncidentsController {
   }
 
   @Patch(':id/status')
+  @SetMetadata('rolesIncidencias', ['admin', 'administrative'])
   @ApiOperation({
     summary: 'Validar o rechazar una incidencia con motivo',
     description:
-      'Prototipo sin autenticación ni autorización de operador (DEUDA-47-01). civicId declara al actor; no acredita identidad. Estado e historial solo se conservan en memoria.',
+      'Solo admin/administrative actuales en DB; el actor proviene de la identidad verificada. Estado e historial permanecen en memoria.',
   })
   @ApiBody({
     schema: {
       type: 'object',
       additionalProperties: false,
-      required: ['status', 'cause', 'civicId'],
+      required: ['status', 'cause'],
       properties: {
         status: { type: 'string', enum: ['validated', 'rejected'] },
         cause: {
           type: 'string',
           minLength: 1,
           description: 'Motivo obligatorio; no vacío después de trim.',
-        },
-        civicId: {
-          type: 'string',
-          format: 'uuid',
-          description:
-            'Actor declarado, sin verificar identidad ni rol; no modifica al propietario.',
         },
       },
     },
@@ -273,33 +294,33 @@ export class IncidentsController {
     @Param('id', new ParseUUIDPipe()) idIncidencia: string,
     @Body(new CambiarEstadoIncidenciaPipe())
     entrada: CambiarEstadoIncidenciaInput,
+    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
   ): Incident {
-    return this.incidentsService.cambiarEstado(idIncidencia, entrada);
+    return this.incidentsService.cambiarEstado(
+      idIncidencia,
+      entrada,
+      usuario.id,
+    );
   }
 
   @Patch(':id/priority')
+  @SetMetadata('rolesIncidencias', ['admin', 'administrative'])
   @ApiOperation({
     summary: 'Asignar prioridad manual con motivo',
     description:
-      'Solo incidencias validadas. Prioridades: Baja, Media y Alta. Cada asignación conserva su motivo y actor declarado. Prototipo sin autenticación ni autorización (DEUDA-28-01); civicId no acredita identidad. Historial en memoria.',
+      'Solo incidencias validadas y admin/administrative actuales. Prioridades: Baja, Media y Alta. Actor de auditoría derivado del usuario autenticado; historial en memoria.',
   })
   @ApiBody({
     schema: {
       type: 'object',
       additionalProperties: false,
-      required: ['priority', 'cause', 'civicId'],
+      required: ['priority', 'cause'],
       properties: {
         priority: esquemaPrioridad,
         cause: {
           type: 'string',
           minLength: 1,
           description: 'Motivo obligatorio; no vacío después de trim.',
-        },
-        civicId: {
-          type: 'string',
-          format: 'uuid',
-          description:
-            'Actor declarado sin verificar; no cambia al propietario.',
         },
       },
     },
@@ -322,15 +343,24 @@ export class IncidentsController {
     @Param('id', new ParseUUIDPipe()) idIncidencia: string,
     @Body(new CambiarPrioridadIncidenciaPipe())
     entrada: CambiarPrioridadIncidenciaInput,
+    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
   ): Incident {
-    return this.incidentsService.cambiarPrioridad(idIncidencia, entrada);
+    return this.incidentsService.cambiarPrioridad(
+      idIncidencia,
+      entrada,
+      usuario.id,
+    );
   }
 
   @Get(':id')
+  @SetMetadata('rolesIncidencias', ['civic', 'admin', 'administrative'])
   @ApiOkResponse({ schema: incidentSchema })
   @ApiBadRequestResponse({ description: 'The incident id is not a UUID.' })
   @ApiNotFoundResponse({ description: 'The incident does not exist.' })
-  findOne(@Param('id', new ParseUUIDPipe()) id: string): Incident {
-    return this.incidentsService.findOne(id);
+  findOne(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
+  ): Incident {
+    return this.incidentsService.findOne(id, usuario);
   }
 }

@@ -26,6 +26,7 @@ async function bootstrap() {
     instrument: ObserveInstrument,
   });
   app.useStaticAssets(uploadsRoot(), { prefix: '/uploads/' });
+  app.useBodyParser('json', { limit: '8mb' });
 
   const config = new DocumentBuilder()
     .setTitle('Urban Pulse Backend API')

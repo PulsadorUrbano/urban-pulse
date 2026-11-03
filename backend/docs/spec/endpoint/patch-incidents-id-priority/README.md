@@ -1,64 +1,29 @@
-# 2026-10-23 - Asignar prioridad manual con motivo y actor
+# 2026-10-27 - Asignar prioridad con actor autenticado
 
 - Método y ruta: PATCH /incidents/:id/priority.
-- Estado: implementado; verificado con pruebas unitarias, compilación y lint. Sin peticiones HTTP de integración.
-- Última revisión: 2026-10-23.
+- Estado: implementado; unitarias, compilación y lint correctos.
+- Acceso: Bearer y rol actual admin o administrative; ningún otro rol puede operar.
 
-## Acceso y deuda técnica
+## Entrada y respuesta
 
-DEUDA-28-01 abierta: sin autenticación ni autorización efectiva. civicId es el actor declarado por el cliente; formato UUID no acredita identidad, existencia ni permisos. No es una autoría verificada y puede suplantarse. No cambia al ciudadano propietario.
+id UUID. Cuerpo JSON solo priority y cause. Prioridad: Baja=low, Media=medium, Alta=high. cause obligatorio, cadena con trim y contenido. No se admite civicId, actorId, userId, esManual/is_manual o campos de servidor. Omisión, null, tipo incorrecto y desconocidos: 400; recurso ausente: 404; estado distinto de validated: 409.
 
-Resolución pendiente: identidad verificada en servidor, usuario real y comprobación de rol y permisos; el cliente deja de elegir al actor. No existen respuestas 401/403 en este prototipo.
+Ejemplo: {"priority":"high","cause":"Riesgo en zona de paso"}.
 
-## Entrada y validación
+200 con recurso completo y prioridad actualizada; conserva dueño, estado, datos de creación e historial de estado. No expone motivo ni actor/historial internos. Cada asignación aceptada, incluso del mismo valor, genera CambioPrioridad con esManual=true, motivo normalizado y actorId igual a users.id actual del operador autenticado. Prioridad e historial se publican juntos. No se deduplican reintentos.
 
-id UUID en ruta, sin distinguir mayúsculas para localizar el recurso. Cuerpo JSON obligatorio con solo priority, cause y civicId:
+El registro inicial sigue Baja (low) con historial vacío: no es una asignación manual ni IA. DEUDA-28-01 de identidad/permisos cerrada; persistencia en memoria pendiente.
 
-~~~json
-{
-  "priority": "high",
-  "cause": "Riesgo de caída en zona de paso.",
-  "civicId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
-}
-~~~
+## Identidad, errores y almacenamiento
 
-| Etiqueta española | Valor de priority |
-| --- | --- |
-| Baja | low |
-| Media | medium |
-| Alta | high |
+Se ejecutan JwtAuthGuard y después la comprobación del usuario y rol actuales en PostgreSQL, antes de interceptores y pipes. Un usuario eliminado o JWT inválido/ausente devuelve 401. Rol actual insuficiente o civic sin vinculación citizens devuelve 403. Un fallo de DB es error de servidor; no se acepta identidad de respaldo del cliente. El rol firmado antiguo no conserva privilegios tras cambiar el usuario en DB.
 
-El contrato mantiene los valores técnicos; las etiquetas y descripciones de Swagger están en español. No admite Alta/Baja/Media como valores JSON alternativos.
-
-cause debe ser cadena no vacía después de trim, sin máximo añadido. civicId UUID obligatorio se normaliza a minúsculas. No se admiten null, omisión de campos obligatorios, arrays, tipos incorrectos ni campos desconocidos. is_manual/esManual, UUID de auditoría y fecha los asigna el servidor.
-
-Solo admite incidencias validated. Cada asignación aceptada crea una decisión manual, incluso con el mismo valor de prioridad; no se deduplican reintentos. No modifica el estado de la incidencia.
-
-## Respuesta, cabeceras y errores
-
-200 con Incident completo y priority actualizado; mismo contrato público de [registro](../post-incidents/README.md), sin cabeceras propias nuevas. Conserva todos los campos salvo priority: id, title, description, civicId del propietario, categoryId, category, urbanAssetId, location, images, status y createdAt. No incluye historial, motivo ni actor interno. GET individual refleja priority; listado #27 sigue limitado a id/title/status/createdAt.
-
-- 400: UUID o cuerpo inválido, prioridad no admitida, motivo vacío o campos desconocidos.
-- 404: UUID válido de incidencia ausente en esta instancia.
-- 409: estado distinto de validated, incluidos reported y rejected.
-
-## Almacenamiento y límites
-
-CambioPrioridad es un objeto tipado desde Prisma y mapeado a priority_changes: id, esManual=true (is_manual), nuevaPrioridad, motivo normalizado, fechaCreacion de servidor, incidenciaId y actorId declarado. Actor escalar temporal sin relación de usuario inventada.
-
-Prioridad e historial se publican juntos mediante una única sustitución síncrona, tras construir el agregado y la respuesta. Fallos previos no dejan cambios parciales. Dos peticiones en la misma instancia conservan las dos decisiones y dejan vigente la última prioridad.
-
-Historial solo consultable por método interno del servicio, mediante copias defensivas, sin endpoint HTTP. Incidencias e historial están en memoria y se pierden al reiniciar; imágenes locales sin cambios. No hay DB activa ni auditoría duradera. La futura persistencia requiere una transacción.
-
-POST sigue creando Baja (low) con historial vacío: es el valor del sistema, no una asignación manual ni de IA.
+Metadatos e historial siguen en el Map de esta instancia y se pierden al reiniciar; imágenes locales. Las imágenes de /uploads requieren ahora JWT y permiso de propietario u operador; no existe el montaje estático público. Véase [descarga protegida](../get-uploads-incidents-id-archivo/README.md). No se han ejecutado pruebas HTTP, DB o frontend.
 
 ## Referencias
 
-- [Especificación](../../features/specs/2026-10-23-asignar-prioridad-manual-con-motivo-y-actor-spec.md).
-- [Plan y confirmación](../../features/plans/2026-10-23-asignar-prioridad-manual-con-motivo-y-actor-plan.md).
+- [Identidad y permisos vigentes](../../features/specs/2026-10-27-autenticar-incidencias-y-verificar-permisos-spec.md).
+- [Plan y evidencia de cierre](../../features/plans/2026-10-27-autenticar-incidencias-y-verificar-permisos-plan.md).
 - [Controlador](../../../../src/incidents/incidents.controller.ts).
-- [Validación](../../../../src/incidents/cambiar-prioridad-incidencia.pipe.ts).
 - [Servicio](../../../../src/incidents/incidents.service.ts).
-- [Esquema Prisma](../../../../prisma/schema.prisma).
-- [Unitarias del servicio](../../../../test/incidents/services/cambiar-prioridad-incidencia.service.spec.ts).
-- [Unitarias del pipe](../../../../test/incidents/pipes/cambiar-prioridad-incidencia.pipe.spec.ts).
+- [Autorización actual](../../../../src/incidents/guards/acceso-incidencias.guard.ts).

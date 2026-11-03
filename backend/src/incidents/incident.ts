@@ -66,11 +66,11 @@ export type ResumenIncidencia = Pick<
 export interface CambiarEstadoIncidenciaInput {
   status: Exclude<Incident['status'], 'reported'>;
   cause: string;
-  civicId: string;
 }
 
 export interface CambiarPrioridadIncidenciaInput {
   priority: Incident['priority'];
   cause: string;
-  civicId: string;
 }
+
+export type CrearIncidenciaBody = Omit<CreateIncidentInput, 'civicId'>;

@@ -1,31 +1,27 @@
-# 2026-10-21 — Registrar incidencias
+# 2026-10-27 - Registrar una incidencia a nombre del ciudadano autenticado
 
 - Método y ruta: POST /incidents.
-- Estado: contrato comprobado por lectura del código; conectividad no probada en esta adaptación documental.
-- Última revisión: 2026-10-21.
+- Estado: implementado; unitarias, compilación y lint correctos.
+- Acceso: Bearer JWT y rol actual civic, con registro citizens vinculado.
 
-## Entrada, respuesta y errores
+## Entrada y respuesta
 
-Entrada multipart/form-data. Campos obligatorios: title (texto con trim, 4-35 puntos de código) y civicId (UUID). Opcionales: description, categoryId (UUID), category, urbanAssetId (UUID), latitude [-90,90], longitude [-180,180] y accuracy >=0. Las coordenadas y precisión se reciben como cadenas numéricas finitas. Rechaza campos desconocidos. Las omisiones de metadatos opcionales se devuelven como null.
+Multipart/form-data: title obligatorio (trim, 4-35 puntos de código). Opcionales: description, categoryId UUID, category, urbanAssetId UUID, latitude [-90,90], longitude [-180,180], accuracy >=0 e images. Coordenadas/precisión como cadenas numéricas finitas. Hasta 8 imágenes JPEG/PNG/WebP de 5 MiB cada una.
 
-Admite hasta ocho archivos images JPEG/PNG/WebP, cada uno de 5 MB. Ejemplo mínimo de campos: title=Farola apagada y civicId=20ac442e-0f00-4fe4-bad3-61c8e8e0bff5.
+No se admite civicId, actorId ni userId en el cuerpo. El propietario se obtiene de citizens.user_id vinculado al usuario autenticado; el cliente no puede crear a nombre de otra persona. Campos desconocidos, formatos o archivos inválidos: 400. Guardas anteriores a la subida: un rechazo de acceso no almacena archivos ni incidencias.
 
-Respuesta 201 con cabecera Location: /incidents/{id}. Devuelve id, title, description, civicId, categoryId, category, urbanAssetId, location (latitude, longitude, accuracy y createdAt), images (id, url, mimeType y createdAt), status=reported, priority=low y createdAt ISO. Las URLs de imágenes son relativas a /uploads/. Los incidentId internos no se exponen en location o images.
+201 con Location: /incidents/{id} y recurso público: id, title, description, civicId real del dueño, categoryId, category, urbanAssetId, location, images, status=reported, priority=low y createdAt ISO. Omitidos opcionales según contrato existente (null). No expone historial ni relaciones internas. Las referencias de categoría/activo se validan por formato; no se verifican en DB en esta fase.
 
-Errores 400: campos o formatos inválidos, demasiados archivos, tamaño excesivo o MIME no admitido. No autentica al ciudadano ni comprueba la existencia de UUID referenciados. El nombre de categoría y categoryId se almacenan tal como se reciben tras validar la entrada; no se resuelve el nombre desde el ID.
+## Identidad, errores y almacenamiento
 
-## Almacenamiento y límites
+Se ejecutan JwtAuthGuard y después la comprobación del usuario y rol actuales en PostgreSQL, antes de interceptores y pipes. Un usuario eliminado o JWT inválido/ausente devuelve 401. Rol actual insuficiente o civic sin vinculación citizens devuelve 403. Un fallo de DB es error de servidor; no se acepta identidad de respaldo del cliente. El rol firmado antiguo no conserva privilegios tras cambiar el usuario en DB.
 
-Incidencias y metadatos en un Map local tipado por modelos Prisma; se pierden al reiniciar y no se comparten entre procesos. Las imágenes son archivos locales; su existencia no conserva el registro de la incidencia tras un reinicio. No hay base de datos activa ni garantía de persistencia duradera.
-
-El registro sigue creando status=reported; no devuelve el historial interno. Los cambios se describen en [validar o rechazar incidencias](../patch-incidents-id-status/README.md).
-
-Las prioridades se etiquetan Baja (low), Media (medium) y Alta (high). El registro inicia Baja (low); las lecturas y respuestas completas pueden reflejar cualquier prioridad vigente. Véase [asignación manual](../patch-incidents-id-priority/README.md).
+Metadatos e historial siguen en el Map de esta instancia y se pierden al reiniciar; imágenes locales. Las imágenes de /uploads requieren ahora JWT y permiso de propietario u operador; no existe el montaje estático público. Véase [descarga protegida](../get-uploads-incidents-id-archivo/README.md). No se han ejecutado pruebas HTTP, DB o frontend.
 
 ## Referencias
 
-- [Especificación vigente](../../features/specs/2026-10-21-adaptar-documentacion-registro-incidencias-spec.md).
-- [Plan y confirmación](../../features/plans/2026-10-21-adaptar-documentacion-registro-incidencias-plan.md).
+- [Identidad y permisos vigentes](../../features/specs/2026-10-27-autenticar-incidencias-y-verificar-permisos-spec.md).
+- [Plan y evidencia de cierre](../../features/plans/2026-10-27-autenticar-incidencias-y-verificar-permisos-plan.md).
 - [Controlador](../../../../src/incidents/incidents.controller.ts).
-- [Validación](../../../../src/incidents/create-incident.pipe.ts).
 - [Servicio](../../../../src/incidents/incidents.service.ts).
+- [Autorización actual](../../../../src/incidents/guards/acceso-incidencias.guard.ts).

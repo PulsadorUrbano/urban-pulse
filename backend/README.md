@@ -4,7 +4,7 @@ API NestJS con TypeScript para autenticación y gestión de incidencias urbanas.
 
 ## Requisitos y configuración
 
-El componente usa npm y `package-lock.json`. `package.json` declara Node.js ≥22 y npm ≥10. Necesita PostgreSQL accesible y las tablas de usuarios y ciudadanía para las operaciones de autenticación.
+El componente usa pnpm 10.34.8 y `pnpm-lock.yaml`. `package.json` declara Node.js ≥22. Necesita PostgreSQL accesible y las tablas de usuarios y ciudadanía para las operaciones de autenticación.
 
 Desde `backend/`, copia el ejemplo solo si todavía no tienes `.env`:
 
@@ -31,17 +31,17 @@ Desde la raíz:
 
 ```bash
 cd backend
-npm ci
-npm run start:dev
+pnpm install --frozen-lockfile
+pnpm run start:dev
 ```
 
 Configura el entorno y prepara la base de datos antes del arranque. El ejemplo deja `DB_SYNC` vacío. La configuración CLI de Prisma está en `prisma7.config.ts`; para utilizarla explícitamente:
 
 ```bash
-npm exec -- prisma generate --config prisma7.config.ts
+pnpm exec prisma generate --config prisma7.config.ts
 ```
 
-El `postinstall` ejecuta `prisma skills sync || exit 0`. Los scripts `start:dev` y `build` incluyen su propia llamada a `prisma generate`.
+Los scripts `start`, `start:dev` y `build` generan el cliente Prisma con `prisma7.config.ts`. La imagen Docker lo genera durante el build y arranca con `pnpm run start:prod`.
 
 Swagger se publica en `http://localhost:3000/`. `GET /health` devuelve `{ "status": "ok" }`; no consulta PostgreSQL. Ajusta la dirección si defines otro `PORT`.
 
@@ -51,21 +51,20 @@ Desde `backend/`:
 
 | Comando | Función |
 | --- | --- |
-| `npm run start` | Arrancar con Nest CLI. |
-| `npm run start:dev` | Generar el cliente Prisma y arrancar con recarga. |
-| `npm run start:debug` | Arrancar con depurador y recarga. |
-| `npm run build` | Generar el cliente Prisma y compilar con Nest. |
-| `npm run deploy` | Generar el cliente, compilar y arrancar con Nest CLI; comando usado por el contenedor. |
-| `npm run start:prod` | Ejecutar `node dist/main` después de compilar. |
-| `npm run lint` | Oxlint con comprobación de tipos sobre `src/` y `test/`. |
-| `npm test` | Pruebas unitarias con Vitest. |
-| `npm run test:watch` | Vitest en modo observación. |
-| `npm run test:cov` | Cobertura unitaria. |
-| `npm run test:debug` | Depuración de pruebas sin paralelismo entre archivos. |
-| `npm run test:e2e` | Suite e2e con configuración separada; según `AGENTS.md`, requiere petición explícita. |
-| `npm run format` | Reescribir el formato de los archivos TypeScript de `src/` y `test/`. |
+| `pnpm run start` | Arrancar con Nest CLI. |
+| `pnpm run start:dev` | Generar el cliente Prisma y arrancar con recarga. |
+| `pnpm run start:debug` | Arrancar con depurador y recarga. |
+| `pnpm run build` | Generar el cliente Prisma y compilar con Nest. |
+| `pnpm run start:prod` | Ejecutar `node dist/main` después de compilar. |
+| `pnpm run lint` | Oxlint con comprobación de tipos sobre `src/` y `test/`. |
+| `pnpm test` | Pruebas unitarias con Vitest. |
+| `pnpm run test:watch` | Vitest en modo observación. |
+| `pnpm run test:cov` | Cobertura unitaria. |
+| `pnpm run test:debug` | Depuración de pruebas sin paralelismo entre archivos. |
+| `pnpm run test:e2e` | Suite e2e con configuración separada; según `AGENTS.md`, requiere petición explícita. |
+| `pnpm run format` | Reescribir el formato de los archivos TypeScript de `src/` y `test/`. |
 
-La configuración unitaria descubre `**/*.spec.ts` y la e2e `**/*.e2e-spec.ts`. Los procedimientos de esta guía se han contrastado por lectura; no se han ejecutado instalaciones, servicios ni suites para esta revisión documental.
+La configuración unitaria descubre `**/*.spec.ts` y la e2e `**/*.e2e-spec.ts`. 
 
 ## API
 

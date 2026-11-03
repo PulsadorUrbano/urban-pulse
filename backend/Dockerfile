@@ -1,22 +1,31 @@
-# Usa una imagen oficial de Node.js ligera como base
-FROM node:22-alpine
-
-# Define el directorio de trabajo dentro del contenedor
+# -------------------------------------------------------------
+# Etapa 1: Construcción (Build)
+# -------------------------------------------------------------
+FROM node:22-alpine AS builder
 WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@10.34.8 --activate
 
-# Copia los archivos de dependencias (package.json y package-lock.json)
-COPY package*.json ./
+# Copiar configuración de dependencias
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
 
-# Instala las dependencias del proyecto
-RUN npm install -g @nestjs/cli
-
-RUN npm install
-
-# Copia el resto del código fuente del proyecto
+# Copiar el código fuente y compilar TypeScript a JavaScript (carpeta /dist)
 COPY . .
+RUN pnpm run build
 
-# Expone el puerto que utiliza tu aplicación (cambia 3000 por el tuyo si es necesario)
-EXPOSE 3000
+# -------------------------------------------------------------
+# Etapa 2: Producción
+# -------------------------------------------------------------
+FROM node:22-alpine
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@10.34.8 --activate
 
-# Comando por defecto para ejecutar la aplicación
-CMD ["npm", "run", "deploy"]
+# Instalar solo dependencias de producción para reducir el tamaño de la imagen
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --prod --frozen-lockfile
+
+# Copiar la compilación generada en la etapa anterior
+COPY --from=builder /app/dist ./dist
+
+# Levantar el servidor compilado
+CMD ["pnpm", "run", "start:prod"]

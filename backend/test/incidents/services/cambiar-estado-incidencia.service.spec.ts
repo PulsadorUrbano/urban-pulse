@@ -1,3 +1,8 @@
+const operadorPrueba = {
+  id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  role: 'admin',
+  ciudadanoId: null,
+} as const;
 import {
   BadRequestException,
   ConflictException,
@@ -49,13 +54,18 @@ describe('Cambio de estado de incidencias', () => {
       );
       expect(servicio.consultarCambiosEstado(original.id)).toEqual([]);
       const inicio = Date.now();
-      const actualizada = servicio.cambiarEstado(original.id.toUpperCase(), {
-        status,
-        cause: '  Revisada por el equipo  ',
-        civicId: actor.toUpperCase(),
-      });
+      const actualizada = servicio.cambiarEstado(
+        original.id.toUpperCase(),
+        {
+          status,
+          cause: '  Revisada por el equipo  ',
+        },
+        actor.toUpperCase(),
+      );
       expect(actualizada).toEqual({ ...original, status });
-      expect(servicio.findOne(original.id)).toEqual(actualizada);
+      expect(servicio.findOne(original.id, operadorPrueba)).toEqual(
+        actualizada,
+      );
       expect(servicio.listarPorCiudadano(propietario)).toEqual([
         {
           id: original.id,
@@ -98,25 +108,32 @@ describe('Cambio de estado de incidencias', () => {
         cause: 'Motivo original',
         civicId: actor,
       };
-      const actualizada = servicio.cambiarEstado(creada.id, entrada);
+      const actualizada = servicio.cambiarEstado(
+        creada.id,
+        entrada,
+        entrada.civicId,
+      );
       const historial = servicio.consultarCambiosEstado(creada.id);
       for (const status of ['validated', 'rejected'] as const) {
         expect(() =>
-          servicio.cambiarEstado(creada.id, { ...entrada, status }),
+          servicio.cambiarEstado(creada.id, { ...entrada, status }, actor),
         ).toThrow(ConflictException);
       }
-      expect(servicio.findOne(creada.id)).toEqual(actualizada);
+      expect(servicio.findOne(creada.id, operadorPrueba)).toEqual(actualizada);
       expect(servicio.consultarCambiosEstado(creada.id)).toEqual(historial);
     },
   );
 
   it('devuelve 404 para una incidencia ausente y para su historial', () => {
     expect(() =>
-      servicio.cambiarEstado(propietario, {
-        status: 'validated',
-        cause: 'Revisada',
-        civicId: actor,
-      }),
+      servicio.cambiarEstado(
+        propietario,
+        {
+          status: 'validated',
+          cause: 'Revisada',
+        },
+        actor,
+      ),
     ).toThrow(NotFoundException);
     expect(() => servicio.consultarCambiosEstado(propietario)).toThrow(
       NotFoundException,
@@ -129,13 +146,16 @@ describe('Cambio de estado de incidencias', () => {
       [],
     );
     expect(() =>
-      servicio.cambiarEstado(creada.id, {
-        status: 'rejected',
-        cause: '   ',
-        civicId: actor,
-      }),
+      servicio.cambiarEstado(
+        creada.id,
+        {
+          status: 'rejected',
+          cause: '   ',
+        },
+        actor,
+      ),
     ).toThrow(BadRequestException);
-    expect(servicio.findOne(creada.id)).toEqual(creada);
+    expect(servicio.findOne(creada.id, operadorPrueba)).toEqual(creada);
     expect(servicio.consultarCambiosEstado(creada.id)).toEqual([]);
   });
 
@@ -150,14 +170,17 @@ describe('Cambio de estado de incidencias', () => {
         throw new Error('Fallo de serialización');
       });
     expect(() =>
-      servicio.cambiarEstado(creada.id, {
-        status: 'validated',
-        cause: 'Revisada',
-        civicId: actor,
-      }),
+      servicio.cambiarEstado(
+        creada.id,
+        {
+          status: 'validated',
+          cause: 'Revisada',
+        },
+        actor,
+      ),
     ).toThrow('Fallo de serialización');
     fallo.mockRestore();
-    expect(servicio.findOne(creada.id)).toEqual(creada);
+    expect(servicio.findOne(creada.id, operadorPrueba)).toEqual(creada);
     expect(servicio.consultarCambiosEstado(creada.id)).toEqual([]);
   });
 
@@ -166,11 +189,14 @@ describe('Cambio de estado de incidencias', () => {
       { title: 'Banco roto', civicId: propietario },
       [],
     );
-    servicio.cambiarEstado(creada.id, {
-      status: 'validated',
-      cause: 'Revisada',
-      civicId: actor,
-    });
+    servicio.cambiarEstado(
+      creada.id,
+      {
+        status: 'validated',
+        cause: 'Revisada',
+      },
+      actor,
+    );
     const original = servicio.consultarCambiosEstado(creada.id);
     const copia = servicio.consultarCambiosEstado(creada.id.toUpperCase());
     copia[0].motivo = 'Manipulado';
@@ -188,11 +214,14 @@ describe('Cambio de estado de incidencias', () => {
     const resultados = await Promise.allSettled(
       (['validated', 'rejected'] as const).map((status) =>
         Promise.resolve().then(() =>
-          servicio.cambiarEstado(creada.id, {
-            status,
-            cause: 'Revisada',
-            civicId: actor,
-          }),
+          servicio.cambiarEstado(
+            creada.id,
+            {
+              status,
+              cause: 'Revisada',
+            },
+            actor,
+          ),
         ),
       ),
     );
