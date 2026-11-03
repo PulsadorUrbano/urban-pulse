@@ -18,22 +18,22 @@ El stack del backend es NestJS con TypeScript estricto, Prisma para modelos y ti
 
 ## Herramientas y comandos
 
-Usar npm y package-lock.json. package.json declara Node.js >=22 y npm >=10. El Dockerfile actual usa Node 20 en la etapa de construcción; comprobar esa discrepancia si se modifica el despliegue.
+Usar pnpm 10.34.8 y pnpm-lock.yaml. package.json declara Node.js >=22 y pnpm >=10.34.8. El Dockerfile usa Node 22 en ambas etapas.
 
 | Comando | Uso |
 | --- | --- |
-| npm ci | Restaurar las dependencias del lockfile cuando sea necesario y esté dentro del alcance. |
-| npm run start:dev | Iniciar el backend en desarrollo. |
-| npm run build | Compilar el código de producción en dist/. |
-| npm run start:prod | Iniciar dist/main después de compilar. |
-| npm run lint | Analizar src/ y test/ con Oxlint y comprobación de tipos. |
-| npm test | Ejecutar las pruebas unitarias con Vitest. |
-| npm run test:cov | Obtener cobertura de las pruebas unitarias. |
-| npm exec -- prisma generate --config prisma7.config.ts | Regenerar los tipos después de modificar modelos Prisma. |
+| pnpm install --frozen-lockfile | Restaurar las dependencias del lockfile cuando sea necesario y esté dentro del alcance. |
+| pnpm run start:dev | Iniciar el backend en desarrollo. |
+| pnpm run build | Generar Prisma y compilar el código de producción en dist/. |
+| pnpm run start:prod | Iniciar dist/main después de compilar. |
+| pnpm run lint | Analizar src/ y test/ con Oxlint y comprobación de tipos. |
+| pnpm test | Ejecutar las pruebas unitarias con Vitest. |
+| pnpm run test:cov | Obtener cobertura de las pruebas unitarias. |
+| pnpm exec prisma generate --config prisma7.config.ts | Regenerar los tipos después de modificar modelos Prisma. |
 
-No ejecutar npm install ni npm i, con o sin argumentos; tampoco pnpm install. No cambiar dependencias o el lockfile para resolver un problema ajeno al trabajo. npm run format reescribe todos los archivos de código y pruebas; limitar el formato a los archivos modificados cuando sea posible.
+No cambiar dependencias o el lockfile para resolver un problema ajeno al trabajo. pnpm run format reescribe todos los archivos de código y pruebas; limitar el formato a los archivos modificados cuando sea posible.
 
-No hay un workspace npm ni un comando de pruebas en la raíz. No ejecutar herramientas del frontend como si pertenecieran al backend.
+No hay un comando de pruebas en la raíz. No ejecutar herramientas del frontend como si pertenecieran al backend.
 
 ## Consultar documentación actual
 
@@ -138,7 +138,7 @@ En PowerShell puede usarse Get-ChildItem con las mismas rutas.
 
 ## Verificación y entrega
 
-- Para cambios de código o dependencias, ejecutar npm run build, npm run lint y npm test. Añadir solo las pruebas unitarias pertinentes; no debilitar validaciones para conseguir un resultado correcto.
+- Para cambios de código o dependencias, ejecutar pnpm run build, pnpm run lint y pnpm test. Añadir solo las pruebas unitarias pertinentes; no debilitar validaciones para conseguir un resultado correcto.
 - Para cambios únicamente documentales, comprobar rutas, comandos, coherencia con la rama y git diff --check. No añadir pruebas ni ejecutar servicios para verificar texto.
 - Si una comprobación está bloqueada por el entorno, informar del comando y la causa; no presentarla como correcta ni cambiar políticas del sistema para sortear el bloqueo.
 - Entregar un resumen en español con lo modificado, las comprobaciones reales y las limitaciones. Confirmar el resultado y las comprobaciones en el mismo plan.

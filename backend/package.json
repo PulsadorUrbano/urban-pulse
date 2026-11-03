@@ -7,14 +7,15 @@
   "license": "UNLICENSED",
   "engines": {
     "node": ">=22",
-    "npm": ">=10"
+    "pnpm": ">=10.34.8"
   },
+  "packageManager": "pnpm@10.34.8",
   "type": "module",
   "scripts": {
-    "build": "nest build",
+    "build": "prisma generate --config prisma7.config.ts && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start",
-    "start:dev": "nest start --watch",
+    "start": "prisma generate --config prisma7.config.ts && nest start",
+    "start:dev": "prisma generate --config prisma7.config.ts && nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "oxlint --type-aware src/ test/",
@@ -22,8 +23,7 @@
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
-    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
-    "postinstall": "prisma skills sync || exit 0"
+    "test:e2e": "vitest run --config ./vitest.config.e2e.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
@@ -31,6 +31,7 @@
     "@nestjs/core": "^12.0.1",
     "@nestjs/observe": "^0.3.0",
     "@nestjs/platform-express": "^12.0.1",
+    "@nestjs/swagger": "^12.0.2",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
     "dotenv": "^18.0.7",
@@ -42,7 +43,6 @@
   "devDependencies": {
     "@nestjs/cli": "^12.0.0",
     "@nestjs/schematics": "^12.0.0",
-    "@nestjs/swagger": "^12.0.2",
     "@nestjs/testing": "^12.0.1",
     "@types/express": "^5.0.0",
     "@types/node": "^24.0.0",
