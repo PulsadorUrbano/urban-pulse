@@ -27,8 +27,5 @@ RUN pnpm install --prod --frozen-lockfile
 # Copiar la compilación generada en la etapa anterior
 COPY --from=builder /app/dist ./dist
 
-# Puerto configurado por docker-compose.yml y main.ts
-EXPOSE 3000
-
 # Levantar el servidor compilado
 CMD ["pnpm", "run", "start:prod"]
