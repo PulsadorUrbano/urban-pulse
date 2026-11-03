@@ -5,7 +5,7 @@
 - Herramientas: NestJS 12, Prisma 7.10.1, TypeScript 6, Vitest 4 y npm con package-lock.json.
 - Especificación: [Contrato y criterios](../specs/2026-11-03-asignar-departamento-equipo-y-tecnico-spec.md).
 - Rama: feature/asignaciones-backend, basada en feat-imagenes-cloudinary.
-- Estado: pendiente de implementación y verificación.
+- Estado: implementado en la rama; verificación unitaria y compilación correctas. Migración no aplicada a una base de datos.
 
 ## Restricciones generales
 
@@ -57,7 +57,7 @@ Rutas relativas a la raíz del repositorio.
 - [x] Leer AGENTS.md, backend/AGENTS.md, las plantillas, el código afectado y el estado de Git para redactar este plan.
 - [x] Listar `backend/docs/spec/endpoint/` y leer las fichas de GET detalle y PATCH estado.
 - [x] Comprobar versiones en `backend/package.json`; consultar Context7 para NestJS y Prisma. Volver a consultar el concepto concreto antes de escribir código.
-- [ ] Al iniciar implementación, registrar resultado inicial de `npm test`, `npm run build` y `npm run lint` desde `backend/`.
+- [x] Al iniciar implementación, registrar resultado inicial de `npm test`, `npm run build` y `npm run lint` desde `backend/`: los tres fallaron por dependencias ausentes; `npm ci` restauró el lockfile sin modificarlo. La primera ejecución de Vitest en sandbox falló por EPERM al renombrar temporales; con acceso normal pasó.
 
 ## Tarea 1: modelar la asignación y sus opciones
 
@@ -67,11 +67,9 @@ Rutas relativas a la raíz del repositorio.
 
 **Criterios cubiertos:** 1, 3, 4.
 
-- [ ] Escribir `creaIncidenciaSinAsignacion`: `create` y `findOne` devuelven los tres `null`; comprobar que el detalle conserva imágenes sin exponer `cloudinaryId`.
-- [ ] Ejecutar `npm test -- asignar-incidencia.service.spec.ts` y registrar el fallo previo.
-- [ ] Añadir Department, Team y TeamMember con relaciones hacia users e Incident; añadir tres FK anulables y `assigned`; crear migración SQL versionada, generar cliente y ampliar `serializar()`.
-- [ ] Repetir la prueba focalizada y registrar resultado real.
-- [ ] Revisar diff y mantener spec y fichas existentes de POST/GET alineadas al implementarlo.
+- [x] Comprobar en la prueba de creación que los tres IDs comienzan en null; `findOne` devuelve el mismo recurso y no expone `cloudinaryId`.
+- [x] Añadir Department, Team, TeamMember, tres FK anulables y `assigned`; crear migración versionada, validar esquema, generar cliente y ampliar la serialización.
+- [x] Ejecutar pruebas focalizadas y actualizar fichas POST/GET. No se conservó una ejecución fallida previa a estos cambios.
 
 ## Tarea 2: validar y guardar la jerarquía como una operación
 
@@ -81,11 +79,9 @@ Rutas relativas a la raíz del repositorio.
 
 **Criterios cubiertos:** 1, 2, 4.
 
-- [ ] Escribir pruebas `cambiarDepartamentoLimpiaDependencias`, `cambiarEquipoLimpiaTecnico`, `cambiarTecnicoConservaSuperiores`, `rechazaTecnicoSinEquipoSinCambios`, `rechazaJerarquiaCruzadaSinCambios`, `rechazaIdDesconocidoSinCambios`, `rechazaCambioConcurrenteSinPerderDatos`, `revierteAsignacionSiFallaLaTransaccion`, asignación solo de departamento, sustitución completa en un PATCH, repetición idéntica y estados no editables; comparar el registro completo antes/después de cada rechazo.
-- [ ] Ejecutar `npm test -- asignar-incidencia.service.spec.ts` y registrar el fallo previo.
-- [ ] Consultar opciones desde Prisma; en `$transaction`, leer incidencia y relaciones, aplicar campos presentes en orden jerárquico y limpiar descendientes, validar resultado y actualizar por `updateMany` con comparación de estado y terna anteriores para evitar sobrescrituras concurrentes. Leer el agregado actualizado y serializar; conservar estado, prioridad, historiales e imágenes.
-- [ ] Repetir prueba focalizada y registrar resultado real.
-- [ ] Revisar diff y actualizar seguimiento en este plan.
+- [x] Probar cambio o retirada de superiores, asignación parcial y completa, repetición, IDs ausentes o cruzados, estados no editables, cambio concurrente y fallo transaccional con dobles.
+- [x] Consultar el catálogo con Prisma y guardar en `$transaction` con comparación de la terna y el estado anteriores; serializar la incidencia actualizada.
+- [x] Ejecutar pruebas focalizadas y revisar el diff. No se conservó una ejecución fallida previa a estos cambios.
 
 ## Tarea 3: exponer y proteger el contrato
 
@@ -95,38 +91,36 @@ Rutas relativas a la raíz del repositorio.
 
 **Criterios cubiertos:** 1, 2, 3, 5.
 
-- [ ] Escribir `rechazaCuerpoDeAsignacionInvalido` para `{}`, extras, tipos y UUID; los null incompatibles se prueban en el servicio. Escribir `consultaRolActualParaAsignar` con DB simulada para rol actual, token antiguo y usuario eliminado; probar controller con guards y respuesta del servicio simulada.
-- [ ] Ejecutar `npm test -- asignar-incidencia.pipe.spec.ts acceso-asignaciones.guard.spec.ts incidents.controller.spec.ts` y registrar el fallo previo.
-- [ ] Añadir pipe, guard de rol actual, GET estático y PATCH con `ParseUUIDPipe`; importar `AuthModule` en `IncidentsModule`, registrar guard y actualizar Swagger. No proteger ni cambiar otras rutas en este task.
-- [ ] Repetir pruebas focalizadas y registrar resultado real.
-- [ ] Crear fichas de endpoints propuestos ya implementados; actualizar POST/GET; marcar estado real y enlaces a código/spec/plan.
+- [x] Probar cuerpo vacío, extras, tipos y UUID; rol vigente, token antiguo, usuario eliminado y delegación del controlador.
+- [x] Añadir pipe, guard, GET estático, PATCH con `ParseUUIDPipe`, import de `AuthModule` y Swagger. Las rutas anteriores mantienen sus guards actuales.
+- [x] Ejecutar pruebas focalizadas y crear las fichas de los dos endpoints nuevos. No se conservó una ejecución fallida previa a estos cambios.
 
 ## Comprobaciones finales
 
-Al implementar código, ejecutar desde `backend/`. En esta publicación solo documental, no se ejecutan pruebas ni servicios.
+Las comprobaciones de código se ejecutan desde `backend/`. No se arrancó el servidor ni se aplicó la migración.
 
 | Comprobación | Comando | Resultado real |
 | --- | --- | --- |
-| Unitarias | `npm test` | Pendiente de implementación |
-| Compilación | `npm run build` | Pendiente de implementación |
-| Lint | `npm run lint` | Pendiente de implementación |
-| Diff, desde raíz | `git diff --check` | Correcto tras adaptar el plan a la nueva base |
+| Unitarias | `npm test` | 23 archivos, 208 pruebas correctas; Vitest ejecutado con acceso normal por EPERM del sandbox |
+| Compilación | `npm run build` | Correcta; Prisma Client 7.10.1 regenerado |
+| Lint | `npm run lint` | Código 0; cuatro avisos preexistentes fuera de los archivos nuevos |
+| Diff, desde raíz | `git diff --check` | Correcto |
 
-- [ ] Mantener catálogo de endpoints y Swagger coherentes con contratos realmente implementados.
-- [ ] Revisar evidencia de los cinco criterios y consistencia de nombres, firmas y tipos.
-- [ ] Registrar decisiones, desviaciones y resultados en este plan.
-- [ ] Confirmar que no se tocaron consumidores, credenciales ni servicios ajenos.
+- [x] Mantener catálogo de endpoints y Swagger coherentes con los contratos implementados.
+- [x] Revisar evidencia de los cinco criterios, firmas y tipos.
+- [x] Registrar decisiones, desviaciones y resultados en este plan.
+- [x] Confirmar que no se tocaron consumidores, credenciales ni servicios ajenos.
 
 ## Confirmación de implementación
 
-- Estado final: pendiente.
+- Estado final: backend implementado y probado con dobles; pendiente aplicar la migración en el entorno de destino y cargar el catálogo municipal.
 - Fecha de revisión: 2026-11-03.
-- Resultado entregado: especificación y plan; código aún no implementado.
+- Resultado entregado: modelos y migración Prisma, consulta de opciones, PATCH transaccional, validación y permisos de rol actual, Swagger, fichas y pruebas unitarias.
 
 | Criterio de aceptación | Evidencia concreta | Resultado |
 | --- | --- | --- |
-| 1–5 del spec | Tareas y comprobaciones definidas arriba | Pendiente |
+| 1–5 del spec | Servicio, pipe, guard y respuestas cubiertos por pruebas unitarias; esquema y migración revisados estáticamente | Correcto a nivel unitario; sin base PostgreSQL conectada |
 
-- Comprobaciones: enlaces locales y `git diff --check` correctos; pruebas de código no aplican aún.
+- Comprobaciones: `prisma validate`, `npm run build`, `npm run lint`, `npm test` y `git diff --check` correctos. No se ejecutaron pruebas de integración ni se aplicó la migración.
 - Decisiones y desviaciones: el 2026-11-03 se rebasó la rama sobre `feat-imagenes-cloudinary`. El plan usa PostgreSQL y npm, conserva la semántica parcial del PATCH y no presupone el guard de `feature-login`.
 - Limitaciones y pendientes: provisionar catálogos municipales para uso real y sustituir mock web en una fase separada.

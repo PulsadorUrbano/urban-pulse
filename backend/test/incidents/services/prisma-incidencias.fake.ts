@@ -46,6 +46,9 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
         ...data,
         status: 'reported',
         priority: 'low',
+        departmentId: null,
+        teamId: null,
+        technicianId: null,
         location: null,
         images: [],
       };

@@ -62,6 +62,9 @@ describe('IncidentsService', () => {
       categoryId: input.categoryId.toLowerCase(),
       category: input.category,
       urbanAssetId: null,
+      departmentId: null,
+      teamId: null,
+      technicianId: null,
       location: {
         latitude: input.latitude,
         longitude: input.longitude,

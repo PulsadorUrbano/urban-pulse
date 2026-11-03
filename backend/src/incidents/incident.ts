@@ -46,6 +46,9 @@ export interface Incident {
   categoryId: string | null;
   category: string | null;
   urbanAssetId: string | null;
+  departmentId: string | null;
+  teamId: string | null;
+  technicianId: string | null;
   location: {
     latitude: number | null;
     longitude: number | null;
@@ -56,6 +59,17 @@ export interface Incident {
   status: PrismaIncident['status'];
   priority: PrismaIncident['priority'];
   createdAt: string;
+}
+
+export type AsignacionIncidencia = Pick<
+  Incident,
+  'departmentId' | 'teamId' | 'technicianId'
+>;
+export type CambioAsignacionIncidencia = Partial<AsignacionIncidencia>;
+export interface OpcionesAsignacion {
+  departments: { id: string; name: string }[];
+  teams: { id: string; name: string; departmentId: string }[];
+  technicians: { id: string; name: string; teamId: string }[];
 }
 
 export type ResumenIncidencia = Pick<

@@ -16,6 +16,7 @@ import {
   UploadedFiles,
   UseFilters,
   UseInterceptors,
+  UseGuards,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
@@ -32,6 +33,7 @@ import {
   ApiQuery,
   ApiTags,
   ApiServiceUnavailableResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { CreateIncidentPipe } from './create-incident.pipe.js';
@@ -48,6 +50,13 @@ import type {
 import { ListarIncidenciasPipe } from './listar-incidencias.pipe.js';
 import type { UploadedImageFile } from './incident.js';
 import { IncidentsService } from './incidents.service.js';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { AccesoAsignacionesGuard } from './guards/acceso-asignaciones.guard.js';
+import { AsignarIncidenciaPipe } from './asignar-incidencia.pipe.js';
+import type {
+  CambioAsignacionIncidencia,
+  OpcionesAsignacion,
+} from './incident.js';
 
 const esquemaPrioridad = {
   type: 'string',
@@ -66,6 +75,9 @@ const incidentSchema = {
     'categoryId',
     'category',
     'urbanAssetId',
+    'departmentId',
+    'teamId',
+    'technicianId',
     'location',
     'images',
     'status',
@@ -80,6 +92,9 @@ const incidentSchema = {
     categoryId: { type: 'string', format: 'uuid', nullable: true },
     category: { type: 'string', nullable: true },
     urbanAssetId: { type: 'string', format: 'uuid', nullable: true },
+    departmentId: { type: 'string', format: 'uuid', nullable: true },
+    teamId: { type: 'string', format: 'uuid', nullable: true },
+    technicianId: { type: 'string', format: 'uuid', nullable: true },
     location: {
       type: 'object',
       properties: {
@@ -128,6 +143,93 @@ const acceptedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 @Controller('incidents')
 export class IncidentsController {
   constructor(private readonly incidentsService: IncidentsService) {}
+
+  @Get('assignment-options')
+  @UseGuards(JwtAuthGuard, AccesoAsignacionesGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Consultar departamentos, equipos y técnicos asignables',
+  })
+  @ApiOkResponse({
+    description: 'Catálogo actual de asignación.',
+    schema: {
+      type: 'object',
+      required: ['departments', 'teams', 'technicians'],
+      properties: {
+        departments: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', format: 'uuid' },
+              name: { type: 'string' },
+            },
+          },
+        },
+        teams: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', format: 'uuid' },
+              name: { type: 'string' },
+              departmentId: { type: 'string', format: 'uuid' },
+            },
+          },
+        },
+        technicians: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', format: 'uuid' },
+              name: { type: 'string' },
+              teamId: { type: 'string', format: 'uuid' },
+            },
+          },
+        },
+      },
+    },
+  })
+  opcionesAsignacion(): Promise<OpcionesAsignacion> {
+    return this.incidentsService.opcionesAsignacion();
+  }
+
+  @Patch(':id/assignment')
+  @UseGuards(JwtAuthGuard, AccesoAsignacionesGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Asignar departamento, equipo y técnico a una incidencia',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      minProperties: 1,
+      additionalProperties: false,
+      properties: {
+        departmentId: { type: 'string', format: 'uuid', nullable: true },
+        teamId: { type: 'string', format: 'uuid', nullable: true },
+        technicianId: { type: 'string', format: 'uuid', nullable: true },
+      },
+    },
+  })
+  @ApiOkResponse({ schema: incidentSchema })
+  @ApiBadRequestResponse({
+    description: 'Cuerpo, UUID o identificador de catálogo inválido.',
+  })
+  @ApiNotFoundResponse({ description: 'La incidencia no existe.' })
+  @ApiConflictResponse({
+    description: 'Estado o jerarquía incompatibles, o cambio concurrente.',
+  })
+  @ApiServiceUnavailableResponse({
+    description: 'PostgreSQL no está disponible.',
+  })
+  asignar(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new AsignarIncidenciaPipe()) cambio: CambioAsignacionIncidencia,
+  ): Promise<Incident> {
+    return this.incidentsService.asignar(id, cambio);
+  }
 
   @Get()
   @ApiOperation({
