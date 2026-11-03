@@ -1,6 +1,6 @@
 # 2026-11-03 — Especificación: asignar departamento, equipo y técnico
 
-- Desarrollador responsable: pendiente de indicar por el equipo.
+- Desarrollador responsable: Jose.
 - Asistente de IA: Codex, con Ponytail y TokenX.
 - Modelo de IA que creó la especificación: GPT-6; identificador de compilación exacto no expuesto.
 
