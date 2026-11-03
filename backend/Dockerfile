@@ -27,8 +27,8 @@ RUN pnpm install --prod --frozen-lockfile
 # Copiar la compilación generada en la etapa anterior
 COPY --from=builder /app/dist ./dist
 
-# Exponer el puerto configurado en main.ts (asegúrate de que NestJS escuche en el 4000)
-EXPOSE 4000
+# Puerto configurado por docker-compose.yml y main.ts
+EXPOSE 3000
 
 # Levantar el servidor compilado
 CMD ["pnpm", "run", "start:prod"]
