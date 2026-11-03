@@ -69,36 +69,36 @@ describe('config', () => {
       expect(config.BACKEND_API_URL).toBe('https://backend.example.com:9000/api');
     });
 
-    it('sin EXPO_PUBLIC_BACKEND_URL usa el host de Metro con el puerto 4000 cuando hay hostUri', () => {
+    it('sin EXPO_PUBLIC_BACKEND_URL usa el host de Metro con el puerto 3000 cuando hay hostUri', () => {
       mockExpoConfig = { hostUri: '192.168.1.5:8081' };
 
       const config = loadConfigModule();
 
-      expect(config.BACKEND_API_URL).toBe('http://192.168.1.5:4000');
+      expect(config.BACKEND_API_URL).toBe('http://192.168.1.5:3000');
     });
 
-    it('sin variable ni hostUri devuelve http://localhost:4000', () => {
+    it('sin variable ni hostUri devuelve http://localhost:3000', () => {
       mockExpoConfig = undefined;
 
       const config = loadConfigModule();
 
-      expect(config.BACKEND_API_URL).toBe('http://localhost:4000');
+      expect(config.BACKEND_API_URL).toBe('http://localhost:3000');
     });
 
-    it('con expoConfig presente pero sin hostUri devuelve http://localhost:4000', () => {
+    it('con expoConfig presente pero sin hostUri devuelve http://localhost:3000', () => {
       mockExpoConfig = {};
 
       const config = loadConfigModule();
 
-      expect(config.BACKEND_API_URL).toBe('http://localhost:4000');
+      expect(config.BACKEND_API_URL).toBe('http://localhost:3000');
     });
 
-    it('con expoConfig a null devuelve http://localhost:4000', () => {
+    it('con expoConfig a null devuelve http://localhost:3000', () => {
       mockExpoConfig = null;
 
       const config = loadConfigModule();
 
-      expect(config.BACKEND_API_URL).toBe('http://localhost:4000');
+      expect(config.BACKEND_API_URL).toBe('http://localhost:3000');
     });
 
     it('con hostUri vacío (cadena vacía) cae en localhost en lugar de construir una URL vacía', () => {
@@ -106,7 +106,7 @@ describe('config', () => {
 
       const config = loadConfigModule();
 
-      expect(config.BACKEND_API_URL).toBe('http://localhost:4000');
+      expect(config.BACKEND_API_URL).toBe('http://localhost:3000');
     });
 
     it('extrae solo el host de hostUri, descartando el puerto de Metro', () => {
@@ -114,7 +114,7 @@ describe('config', () => {
 
       const config = loadConfigModule();
 
-      expect(config.BACKEND_API_URL).toBe('http://10.0.0.7:4000');
+      expect(config.BACKEND_API_URL).toBe('http://10.0.0.7:3000');
       expect(config.BACKEND_API_URL).not.toContain('19000');
     });
 
@@ -124,7 +124,7 @@ describe('config', () => {
 
       const config = loadConfigModule();
 
-      expect(config.BACKEND_API_URL).toBe('http://localhost:4000');
+      expect(config.BACKEND_API_URL).toBe('http://localhost:3000');
     });
   });
 
@@ -169,7 +169,7 @@ describe('config', () => {
       const config = loadConfigModule();
 
       expect(config.API_BASE_URL).toBe('http://192.168.1.5:3001');
-      expect(config.BACKEND_API_URL).toBe('http://192.168.1.5:4000');
+      expect(config.BACKEND_API_URL).toBe('http://192.168.1.5:3000');
     });
   });
 });
