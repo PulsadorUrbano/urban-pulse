@@ -28,7 +28,6 @@ Llamamos **rama punta** a aquella rama cuyo historial de commits **no** está co
 
 Las siguientes ramas son ancestro de al menos una de las ramas punta de arriba, es decir, todo su contenido ya está incluido en ellas. No aportan nada adicional:
 
-- `dev`
 - `docs/creacion-adr`
 - `docs/modularizar-documentacion`
 - `feature/logout`
