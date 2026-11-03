@@ -25,12 +25,12 @@ El proyecto dispone de autenticación ciudadana, registro y consulta de incidenc
 
 | Ruta | Contenido |
 | --- | --- |
-| `npm run start:dev` | Arrancar con recarga durante el desarrollo. |
-| `npm run build` | Compilar el backend. |
-| `npm run lint` | Comprobar el código. |
-| `npm run test` | Ejecutar pruebas unitarias del backend. |
-| `npm run test:e2e` | Ejecutar pruebas de extremo a extremo del backend. |
-| `npm run start:prod` | Arrancar el resultado compilado. |
+| `pnpm run start:dev` | Arrancar con recarga durante el desarrollo. |
+| `pnpm run build` | Compilar el backend. |
+| `pnpm run lint` | Comprobar el código. |
+| `pnpm test` | Ejecutar pruebas unitarias del backend. |
+| `ppnpm test:e2e` | Ejecutar pruebas de extremo a extremo del backend. |
+| `pnpm run start:prod` | Arrancar el resultado compilado. |
 
 Las variables `OBSERVE_APP_KEY` y `OBSERVE_APP_SECRET` se reservan para Nest Observe. Los archivos `.env` son locales y no deben subirse al repositorio.
 
@@ -49,8 +49,7 @@ cp .env.example .env
 docker compose up -d database
 ```
 
-El Compose también define el backend y lo expone en el puerto 4000. La base de datos no publica el puerto 5432 al ordenador anfitrión; un backend ejecutado
-fuera de Docker necesita una conexión accesible configurada para ese entorno. El Compose no carga automáticamente el archivo SQL de documentación.
+El Compose también define el backend y lo expone en `API_PORT` (3001 en `.env.example`). PostgreSQL se publica solo en `127.0.0.1:5432` para el backend ejecutado fuera de Docker. El Compose no carga automáticamente el archivo SQL de documentación.
 
 ---
 

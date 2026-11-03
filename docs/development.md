@@ -6,11 +6,11 @@ Cada aplicación tiene su propio manifiesto y lockfile. No hay instalación ni s
 
 | Componente | Gestor | Lockfile | Instalación |
 | --- | --- | --- | --- |
-| Backend | npm | `package-lock.json` | `npm ci` |
+| Backend | pnpm | `pnpm-lock.yaml` | `pnpm install --frozen-lockfile` |
 | Web | npm | `package-lock.json` | `npm ci` |
 | Móvil | pnpm | `pnpm-lock.yaml` | `pnpm install --frozen-lockfile` |
 
-Se necesita Git, Node.js y el gestor de cada componente. El backend declara Node.js ≥22 y npm ≥10. Las restricciones de Node de las dependencias se encuentran en los lockfiles; conserva el gestor y el lockfile de cada aplicación al instalar.
+Se necesita Git, Node.js y el gestor de cada componente. El backend declara Node.js ≥22 y pnpm ≥10.34.8. Las restricciones de Node de las dependencias se encuentran en los lockfiles; conserva el gestor y el lockfile de cada aplicación al instalar.
 
 Docker con el complemento Compose es necesario para ejecutar la infraestructura en contenedores. Los requisitos de dispositivos, emuladores y Expo están en el [README móvil](../frontend-mobile/README.md).
 
@@ -60,7 +60,7 @@ Para combinar una aplicación local con un servicio en contenedor, utiliza una d
 - Para probar en un teléfono, sigue la preparación de red y dispositivo del [README móvil](../frontend-mobile/README.md).
 - Ejecuta las comprobaciones de calidad del componente según [contribución](../CONTRIBUTING.md).
 
-Los procedimientos se han contrastado por lectura de manifiestos, scripts y configuración. No se han ejecutado instalaciones, servicios ni suites de aplicación durante esta revisión documental.
+
 
 ## Arranque conjunto con puertos automáticos
 
