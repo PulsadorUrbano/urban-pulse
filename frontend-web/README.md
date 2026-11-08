@@ -57,8 +57,8 @@ La estructura y los nombres siguen a `frontend-mobile/src` para que los dos clie
 | Ruta | Contenido |
 | --- | --- |
 | `src/main.tsx` y `src/App.tsx` | Entrada de React, sesión compartida y selección de pantallas. |
-| `src/components/` | Vistas de acceso (`login-view.tsx`) y validación (`incident-validation-view.tsx`). |
-| `src/hooks/` | `use-auth.ts` y `use-incident-validation.ts`. |
+| `src/components/` | Vistas (`login-view.tsx`, `incident-validation-view.tsx`) y sus piezas: formulario de login, cuentas de prueba, consola técnica, cabecera, galería, resolución y modal de cierre de sesión. |
+| `src/hooks/` | `use-auth.ts`, `use-incident-validation.ts` y `use-theme.ts`. |
 | `src/services/` | `http.ts`, `auth.service.ts`, `token.service.ts`, `session-storage.service.ts` e `incident.service.ts`. |
 | `src/types/` | Contratos de usuario, token, sesión e incidencias, alineados con el backend y el móvil. |
 | `src/constants/config.ts` | URL del backend y de sus archivos. |

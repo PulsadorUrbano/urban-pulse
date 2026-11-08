@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { IncidentValidationView } from './components/incident-validation-view';
 import { LoginView } from './components/login-view';
 import { useAuth } from './hooks/use-auth';
+import { useTheme } from './hooks/use-theme';
 
 type AppView = 'login' | 'incidents';
 
@@ -15,6 +16,7 @@ function readIncidentIdFromUrl(): string | null {
 
 function App() {
   const auth = useAuth();
+  const { isDarkMode, toggleTheme } = useTheme();
   // Con una sesión guardada se entra directamente al panel, como al reabrir la app móvil.
   const [currentView, setCurrentView] = useState<AppView>(() => (auth.session ? 'incidents' : 'login'));
   const [logoutNotification, setLogoutNotification] = useState<string | null>(null);
@@ -76,12 +78,20 @@ function App() {
       {view === 'login' || !auth.user ? (
         <LoginView
           auth={auth}
+          isDarkMode={isDarkMode}
+          onToggleTheme={toggleTheme}
           onSuccessNavigate={handleLoginSuccess}
           logoutNotification={logoutNotification}
           onClearLogoutNotification={() => setLogoutNotification(null)}
         />
       ) : (
-        <IncidentValidationView incidentId={incidentId} user={auth.user} onLogout={handleLogout} />
+        <IncidentValidationView
+          incidentId={incidentId}
+          user={auth.user}
+          isDarkMode={isDarkMode}
+          onToggleTheme={toggleTheme}
+          onLogout={handleLogout}
+        />
       )}
     </main>
   );
