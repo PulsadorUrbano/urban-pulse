@@ -13,7 +13,7 @@ El proyecto dispone de autenticación ciudadana, registro y consulta de incidenc
 | Tecnología | Uso |
 | --- | --- |
 | NestJS y TypeScript | API backend. |
-| React y Vite | Interfaz municipal en JavaScript/JSX y TypeScript. |
+| React y Vite | Interfaz municipal en TypeScript. |
 | React Native, Expo y TypeScript | Base de la aplicación ciudadana para Android, iOS y web. |
 | Expo Router | Navegación móvil basada en archivos. |
 | PostgreSQL y PostGIS | Base de datos relacional y geográfica definida en Compose. |

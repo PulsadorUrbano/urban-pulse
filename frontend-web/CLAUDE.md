@@ -1,6 +1,6 @@
 # UrbanPulse (frontend-web)
 
-Panel web de UrbanPulse para el personal municipal: React 19 + Vite, TypeScript/JSX, Tailwind CSS 3 y Vitest. La aplicación móvil (ciudadanía) vive en `frontend-mobile/` y el backend NestJS en `backend/`.
+Panel web de UrbanPulse para el personal municipal: React 19 + Vite, TypeScript estricto, Tailwind CSS 3 y Vitest. La aplicación móvil (ciudadanía) vive en `frontend-mobile/` y el backend NestJS en `backend/`.
 
 ## Comandos
 
@@ -8,6 +8,7 @@ Ejecutar desde `frontend-web/`:
 
 ```bash
 npm run dev     # servidor de desarrollo (proxy /api -> http://localhost:3000)
+npm run typecheck
 npm run lint
 npm run test
 npm run build
@@ -17,6 +18,9 @@ npm run build
 
 - Confinar los cambios a `frontend-web/`. `backend/`, `frontend-mobile/` y `database/` son de solo lectura.
 - Consumir el backend real primero y caer a un fallback local con aviso claro si no hay conexión. No depurar el backend desde aquí.
+- El código es TypeScript estricto (`.ts`/`.tsx`); solo `eslint.config.js` y `postcss.config.js` siguen en JavaScript porque esas herramientas lo exigen. Comprobar con `npm run typecheck`.
+- Las respuestas del backend se validan con type guards (`readJson` en `src/services/http.ts`); no usar `as` sobre datos externos.
+- Estructura y nombres alineados con `frontend-mobile/src`: `constants/`, `types/`, `services/*.service.ts`, `hooks/use-*.ts`, `mocks/`, `utils/`. Los datos simulados (`src/mocks/auth-mock.ts`) solo se usan como respaldo del login sin conexión.
 - Tests en `src/__tests__/` reflejando la ruta de `src/`.
 - No instalar dependencias, crear commits ni hacer push sin petición explícita.
 - Para ramas, commits y PR, seguir el `README.md` de la raíz.
