@@ -20,7 +20,7 @@ npm run build
 - Consumir el backend real primero y caer a un fallback local con aviso claro si no hay conexión. No depurar el backend desde aquí.
 - El código es TypeScript estricto (`.ts`/`.tsx`); solo `eslint.config.js` y `postcss.config.js` siguen en JavaScript porque esas herramientas lo exigen. Comprobar con `npm run typecheck`.
 - Las respuestas del backend se validan con type guards (`readJson` en `src/services/http.ts`); no usar `as` sobre datos externos.
-- Estructura y nombres alineados con `frontend-mobile/src`: `constants/`, `types/`, `services/*.service.ts`, `hooks/use-*.ts`, `mocks/`, `utils/`. Los datos simulados (`src/mocks/auth-mock.ts`) solo se usan como respaldo del login sin conexión.
+- Estructura y nombres alineados con `frontend-mobile/src`: `constants/`, `types/`, `services/*.service.ts`, `hooks/use-*.ts`, `mocks/`, `utils/`. Los datos simulados (`src/mocks/auth-mock.ts`) solo se usan en desarrollo, como respaldo del login sin conexión; deben quedar tras `import.meta.env.DEV` para que no lleguen al build de producción.
 - Tests en `src/__tests__/` reflejando la ruta de `src/`.
 - No instalar dependencias, crear commits ni hacer push sin petición explícita.
 - Para ramas, commits y PR, seguir el `README.md` de la raíz.

@@ -13,7 +13,8 @@ import type { CurrentSession, TokenVerification } from '../types/auth';
 import type { LoginUserInput } from '../types/user';
 
 // Cuentas de prueba del personal municipal (la de ciudadanía no tiene acceso a la web).
-export const DEMO_USERS = MOCK_USERS.filter((user) => canUseWebPanel(user.role));
+// Solo en desarrollo: el build de producción no incluye los usuarios simulados.
+export const DEMO_USERS = import.meta.env.DEV ? MOCK_USERS.filter((user) => canUseWebPanel(user.role)) : [];
 
 export interface LoginAttempt {
   ok: boolean;

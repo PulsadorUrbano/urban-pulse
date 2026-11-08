@@ -240,6 +240,15 @@ describe('auth.service (frontend-web)', () => {
       expect(result.user).not.toHaveProperty('password');
     });
 
+    it('fuera de desarrollo, sin conexión muestra un error y no usa datos simulados', async () => {
+      vi.stubEnv('DEV', false);
+      vi.stubGlobal('fetch', offline());
+
+      await expect(login({ usernameOrEmail: 'admin', password: 'admin' })).rejects.toThrow('No se ha podido conectar');
+      expect(local.setItem).not.toHaveBeenCalled();
+      expect(session.setItem).not.toHaveBeenCalled();
+    });
+
     it('un 502 del proxy (backend apagado) cuenta como falta de conexión', async () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(new Response('', { status: 502 })));
 
@@ -317,15 +326,32 @@ describe('auth.service (frontend-web)', () => {
       expect(getCurrentSession()?.user.email).toBe('nuevo@urbanpulse.dev');
     });
 
-    it('restoreSession no llama al backend con un token simulado', async () => {
+    function saveMockSession(): void {
       const user = toMockSessionUser(MOCK_USERS[0]);
       saveSession({ user, token: createMockToken(user), session: { storage: 'localStorage', expiresAt: null } });
-      const fetchMock = vi.fn();
-      vi.stubGlobal('fetch', fetchMock);
+    }
 
-      await restoreSession();
+    it('restoreSession descarta una sesión simulada en cuanto el backend responde', async () => {
+      saveMockSession();
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(401)));
 
-      expect(fetchMock).not.toHaveBeenCalled();
+      expect(await restoreSession()).toBeNull();
+      expect(getCurrentSession()).toBeNull();
+    });
+
+    it('restoreSession conserva la sesión simulada mientras el backend no responde', async () => {
+      saveMockSession();
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(new Response('', { status: 502 })));
+
+      expect((await restoreSession())?.token.source).toBe('mock');
+    });
+
+    it('fuera de desarrollo descarta una sesión simulada guardada', () => {
+      saveMockSession();
+      vi.stubEnv('DEV', false);
+
+      expect(getCurrentSession()).toBeNull();
+      expect(local.removeItem).toHaveBeenCalledWith(SESSION_STORAGE_KEY);
     });
 
     it('validateBackendSession distingue válido, inválido y sin conexión', async () => {

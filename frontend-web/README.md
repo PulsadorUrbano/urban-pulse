@@ -28,8 +28,8 @@ Si la API se sirve desde otro origen, define `VITE_BACKEND_URL` con esa direcci�
 
 | Funcionalidad | Endpoints | Sin conexión con el backend |
 | --- | --- | --- |
-| Inicio de sesión | `POST /auth/login`, `GET /auth/me` | Usa los usuarios simulados de `src/mocks/auth-mock.ts` y muestra un aviso, igual que la app móvil. Un `401` nunca cae al mock. |
-| Restaurar sesión al recargar | `GET /auth/me` | Conserva la sesión guardada; un `401` la cierra. |
+| Inicio de sesión | `POST /auth/login`, `GET /auth/me` | En desarrollo, usa los usuarios simulados de `src/mocks/auth-mock.ts` y muestra un aviso, igual que la app móvil; en producción, muestra un error. Un `401` nunca cae al mock. |
+| Restaurar sesión al recargar | `GET /auth/me` | Conserva la sesión guardada; un `401` la cierra. Una sesión simulada se descarta en cuanto el backend responde y no puede resolver incidencias. |
 | Detalle de incidencia | `GET /incidents/:id` | Muestra el error y permite reintentar; no hay datos simulados. |
 | Validar con prioridad | `PATCH /incidents/:id/status` y `PATCH /incidents/:id/priority` | Muestra el error. |
 | Descartar con motivo | `PATCH /incidents/:id/status` | Muestra el error. |
@@ -62,7 +62,7 @@ La estructura y los nombres siguen a `frontend-mobile/src` para que los dos clie
 | `src/services/` | `http.ts`, `auth.service.ts`, `token.service.ts`, `session-storage.service.ts` e `incident.service.ts`. |
 | `src/types/` | Contratos de usuario, token, sesión e incidencias, alineados con el backend y el móvil. |
 | `src/constants/config.ts` | URL del backend y de sus archivos. |
-| `src/mocks/` | Usuarios simulados para el respaldo del login. |
+| `src/mocks/` | Usuarios simulados para el respaldo del login en desarrollo; no se incluyen en el build de producción. |
 | `src/__tests__/` | Pruebas automatizadas. |
 | `vite.config.ts`, `tailwind.config.ts`, `eslint.config.js`, `postcss.config.js` y `tsconfig.json` | Herramientas de desarrollo. `eslint.config.js` y `postcss.config.js` siguen en JavaScript porque esas herramientas lo exigen. |
 

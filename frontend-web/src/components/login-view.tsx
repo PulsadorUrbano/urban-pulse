@@ -58,8 +58,8 @@ export function LoginView({
   } = auth;
 
   // Institutional form state
-  const [usernameOrEmail, setUsernameOrEmail] = useState('admin');
-  const [password, setPassword] = useState('admin');
+  const [usernameOrEmail, setUsernameOrEmail] = useState(import.meta.env.DEV ? 'admin' : '');
+  const [password, setPassword] = useState(import.meta.env.DEV ? 'admin' : '');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
@@ -353,7 +353,8 @@ export function LoginView({
               </form>
             )}
 
-            {/* Quick access demo accounts */}
+            {/* Quick access demo accounts (solo en desarrollo) */}
+            {DEMO_USERS.length > 0 && (
             <div className="mt-6 pt-5 border-t border-zinc-100 dark:border-zinc-800/80">
               <button
                 type="button"
@@ -395,6 +396,7 @@ export function LoginView({
                 </div>
               )}
             </div>
+            )}
 
           </div>
 
@@ -726,21 +728,25 @@ me(@CurrentUser() user: TokenPayload) {
                         <Database className="w-4 h-4 text-blue-500" />
                         Admin Seed y Roles PostgreSQL
                       </div>
-                      <p className="text-zinc-600 dark:text-zinc-400 mb-2">
-                        Usuario sembrado en `backend/src/dev-seed/dev-seed.service.ts`:
-                      </p>
-                      <ul className="space-y-1 font-mono text-[11px] text-zinc-600 dark:text-zinc-400">
-                        <li>• id: <code>3f9c1b2a-5d4e-4f6a-8b7c-9d0e1f2a3b4c</code></li>
-                        <li>• username: <code>admin</code></li>
-                        <li>• password: <code>admin</code> (bcrypt)</li>
-                        <li>• role: <code>admin</code></li>
-                      </ul>
+                      {import.meta.env.DEV && (
+                        <>
+                          <p className="text-zinc-600 dark:text-zinc-400 mb-2">
+                            Usuario sembrado en `backend/src/dev-seed/dev-seed.service.ts`:
+                          </p>
+                          <ul className="space-y-1 font-mono text-[11px] text-zinc-600 dark:text-zinc-400">
+                            <li>• id: <code>3f9c1b2a-5d4e-4f6a-8b7c-9d0e1f2a3b4c</code></li>
+                            <li>• username: <code>admin</code></li>
+                            <li>• password: <code>admin</code> (bcrypt)</li>
+                            <li>• role: <code>admin</code></li>
+                          </ul>
+                        </>
+                      )}
                       <div className="mt-3 p-2 bg-zinc-100 dark:bg-zinc-800/80 rounded border border-zinc-200 dark:border-zinc-700 text-[11px] space-y-1">
                         <p>
                           <strong>Origen de la sesión:</strong> {!isAuthenticated ? 'sin sesión' : isBackendToken ? 'backend' : 'datos simulados (sin conexión)'}.
                         </p>
                         <p>
-                          Las peticiones van a <code>VITE_BACKEND_URL</code> (por defecto <code>/api</code>, que el proxy de Vite o nginx redirige al backend). Si el backend no responde, el login usa los datos simulados y lo indica con un aviso; las incidencias siempre se leen del backend.
+                          Las peticiones van a <code>VITE_BACKEND_URL</code> (por defecto <code>/api</code>, que el proxy de Vite o nginx redirige al backend). Si el backend no responde, en desarrollo el login usa los datos simulados y lo indica con un aviso; en producción muestra un error. Las incidencias siempre se leen del backend.
                         </p>
                       </div>
                     </div>

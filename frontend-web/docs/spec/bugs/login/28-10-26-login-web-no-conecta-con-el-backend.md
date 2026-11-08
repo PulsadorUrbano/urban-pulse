@@ -37,7 +37,8 @@ Se sigue el patrón de `frontend-mobile/src/services/auth.service.ts` (real-firs
 
 - `POST /auth/login` con `{ usernameOrEmail, password }` y, con el token, `GET /auth/me`. Un `401` es «credenciales incorrectas» y nunca cae al mock; otros rechazos muestran el mensaje del backend. Solo sin conexión (error de red, timeout o `502`/`503`/`504` del proxy) se usan los datos simulados, con un aviso visible que no se salta al entrar al panel.
 - Las respuestas se validan con type guards; una respuesta sin `accessToken` o con otro formato produce `BackendContractError`.
-- Datos simulados en `src/mocks/auth-mock.ts`. Token simulado `mock.<payload>.simulated`, sin firma ni secreto, que nunca se envía al backend.
+- Datos simulados en `src/mocks/auth-mock.ts`, solo en desarrollo: tras `import.meta.env.DEV`, no llegan al build de producción, donde la falta de conexión muestra un error. Token simulado `mock.<payload>.simulated`, sin firma ni secreto, que el backend rechaza.
+- Una sesión simulada se descarta en cuanto el backend responde (como `use-session.ts` del móvil) y nunca puede resolver incidencias: el PATCH exige una sesión real del backend.
 - Se rechaza el rol `civic` (`ForbiddenRoleError`) con un mensaje que remite a la app móvil.
 - La sesión guarda el usuario que devuelve el backend, en `localStorage` («Mantener sesión iniciada») o `sessionStorage`. Al recargar, un token del backend se revalida con `GET /auth/me`: `401` cierra la sesión; sin conexión se conserva.
 - La consola técnica deja de describir cookies HttpOnly (el backend no las usa) y muestra los endpoints reales.

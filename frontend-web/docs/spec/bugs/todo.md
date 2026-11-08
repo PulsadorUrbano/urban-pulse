@@ -24,4 +24,4 @@
 
 ## Validación de incidencias
 
-- [] Sin listado de incidencias pendientes para el personal (07-11-26): `GET /incidents` exige el `civicId` de un ciudadano, así que el panel no puede listar las incidencias `reported`. La web abre la incidencia con `?incidencia=<id>` en la URL hasta que el backend ofrezca ese listado. Lo tiene que resolver el equipo de backend.
+- [] Sin listado de incidencias pendientes para el personal (07-11-26): `GET /incidents` exige el `civicId` de un ciudadano, así que el panel no puede listar las incidencias `reported`. La web abre la incidencia con `?incidencia=<id>` en la URL hasta que el backend ofrezca ese listado. Pedido en el issue #130.

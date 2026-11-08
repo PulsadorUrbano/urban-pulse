@@ -2,8 +2,8 @@ import type { AuthToken, TokenPayload } from '../types/token';
 import type { MockUser, SessionUser } from '../types/user';
 
 /**
- * Datos simulados de autenticación. Solo se usan como respaldo cuando el backend no
- * responde, igual que el mock de frontend-mobile. `admin` y `ciudadano` replican los
+ * Datos simulados de autenticación. Solo se usan en desarrollo, como respaldo cuando el
+ * backend no responde, igual que el mock de frontend-mobile. No llegan al build de producción. `admin` y `ciudadano` replican los
  * usuarios de backend/src/dev-seed/dev-seed.service.ts.
  */
 export const MOCK_USERS: readonly MockUser[] = [

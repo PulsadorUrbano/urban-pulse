@@ -68,7 +68,7 @@ export function IncidentValidationView({ incidentId, user, onLogout }: IncidentV
     submitError,
     outcome,
     reset,
-  } = useIncidentValidation(incidentId, user.id);
+  } = useIncidentValidation(incidentId, user.source === 'backend' ? user.id : null);
 
   // Estado del tema oscuro. Por defecto false (Modo Claro)
   const [isDarkMode, setIsDarkMode] = useState(false);

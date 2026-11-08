@@ -23,7 +23,8 @@ function messageOf(error: unknown, fallback: string): string {
 
 // Carga una incidencia del backend y aplica la decisión del operador:
 // validar (PATCH status + PATCH priority) o descartar (PATCH status con motivo).
-// `actorId` es el usuario de la sesión; el backend lo recibe como `civicId` (actor declarado).
+// `actorId` es el usuario de una sesión real del backend, que este recibe como `civicId`
+// (actor declarado); es null con una sesión simulada, que no puede resolver incidencias.
 export function useIncidentValidation(incidentId: string | null, actorId: string | null) {
   // Resultado de la última carga, etiquetado con la petición que lo produjo: así "cargando"
   // se deriva sin actualizar estado de forma síncrona dentro del efecto.
@@ -94,7 +95,7 @@ export function useIncidentValidation(incidentId: string | null, actorId: string
       return;
     }
     if (!actorId) {
-      setSubmitError('No hay un usuario en la sesión para registrar la resolución.');
+      setSubmitError('La sesión actual es simulada. Cierra sesión e inicia sesión con el backend para resolver incidencias.');
       return;
     }
 

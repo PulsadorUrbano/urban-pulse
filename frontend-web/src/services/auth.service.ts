@@ -26,6 +26,7 @@ const INVALID_CREDENTIALS_MESSAGE = 'Usuario o contraseña incorrectos.';
 const LOGIN_GENERIC_ERROR_MESSAGE = 'No se pudo iniciar sesión. Inténtalo de nuevo más tarde.';
 const CIVIC_ROLE_MESSAGE =
   'Las cuentas de ciudadanía acceden desde la app móvil; este panel es para el personal municipal.';
+const BACKEND_UNAVAILABLE_MESSAGE = 'No se ha podido conectar con el servidor. Inténtalo de nuevo más tarde.';
 export const OFFLINE_FALLBACK_NOTICE =
   'No se ha podido conectar al backend: la sesión se ha iniciado con datos simulados.';
 
@@ -122,6 +123,15 @@ function loginOnMock(input: LoginUserInput): AuthOutcome {
   return { user, token: createMockToken(user), notice: OFFLINE_FALLBACK_NOTICE };
 }
 
+// Sin conexión: los datos simulados solo existen en desarrollo. Con `import.meta.env.DEV`
+// escrito aquí, Vite elimina del build de producción los usuarios y sus contraseñas.
+function loginWithoutBackend(input: LoginUserInput): AuthOutcome {
+  if (import.meta.env.DEV) {
+    return loginOnMock(input);
+  }
+  throw new Error(BACKEND_UNAVAILABLE_MESSAGE);
+}
+
 async function loginOnBackend(input: LoginUserInput): Promise<AuthOutcome> {
   let response: Response;
   try {
@@ -131,10 +141,10 @@ async function loginOnBackend(input: LoginUserInput): Promise<AuthOutcome> {
       body: JSON.stringify({ usernameOrEmail: input.usernameOrEmail, password: input.password }),
     });
   } catch {
-    return loginOnMock(input);
+    return loginWithoutBackend(input);
   }
 
-  if (isBackendUnavailable(response)) return loginOnMock(input);
+  if (isBackendUnavailable(response)) return loginWithoutBackend(input);
   if (response.status === 401) throw new InvalidCredentialsError();
   if (!response.ok) {
     throw new Error(await buildBackendRejectionMessage(response, LOGIN_GENERIC_ERROR_MESSAGE));
@@ -142,7 +152,7 @@ async function loginOnBackend(input: LoginUserInput): Promise<AuthOutcome> {
 
   const { accessToken } = await readJson(response, isLoginResponse, 'POST /auth/login');
   const me = await fetchCurrentUser(accessToken);
-  if (me.status === 'offline') return loginOnMock(input);
+  if (me.status === 'offline') return loginWithoutBackend(input);
   if (me.status !== 'ok') throw new Error(LOGIN_GENERIC_ERROR_MESSAGE);
 
   return {
@@ -182,7 +192,8 @@ export function logout(): void {
 export function getCurrentSession(): CurrentSession | null {
   const stored = loadSession();
   if (!stored) return null;
-  if (isTokenExpired(stored.token.accessToken)) {
+  const isMockOutsideDevelopment = stored.token.source === 'mock' && !import.meta.env.DEV;
+  if (isMockOutsideDevelopment || isTokenExpired(stored.token.accessToken)) {
     clearSession();
     return null;
   }
@@ -200,10 +211,19 @@ export async function validateBackendSession(accessToken: string): Promise<Backe
 
 // Restaura la sesión al cargar la página. Un token del backend se revalida con
 // GET /auth/me y se refrescan los datos del usuario; si el backend lo rechaza,
-// se cierra la sesión; sin conexión se confía en la sesión guardada.
+// se cierra la sesión; sin conexión se confía en la sesión guardada. Una sesión
+// simulada se descarta en cuanto el backend responde, igual que en use-session.ts
+// del móvil: esa identidad ya no sirve.
 export async function restoreSession(): Promise<CurrentSession | null> {
   const current = getCurrentSession();
-  if (!current || current.token.source !== 'backend') return current;
+  if (!current) return null;
+
+  if (current.token.source === 'mock') {
+    const reachability = await validateBackendSession(current.token.accessToken);
+    if (reachability === 'unknown') return current;
+    clearSession();
+    return null;
+  }
 
   const me = await fetchCurrentUser(current.token.accessToken);
   if (me.status === 'invalid') {

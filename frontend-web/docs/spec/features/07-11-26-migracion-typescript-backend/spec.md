@@ -17,7 +17,8 @@ El panel web mezclaba JavaScript y TypeScript, mostraba una incidencia inventada
 - Alcance confirmado: TypeScript estricto en todo `src`; capa de API tipada; login, sesión e incidencias contra el backend real; comprobar que no queda nada de Cloudinary.
 - Decisiones confirmadas:
   - Estructura, nombres y tipos alineados con `frontend-mobile/src` (`constants/config.ts`, `types/*.ts`, `services/*.service.ts`, `hooks/use-*.ts`, `mocks/`, `utils/`).
-  - Real-first como el móvil: el login cae a los datos simulados solo sin conexión y lo avisa; las incidencias no tienen datos simulados.
+  - Real-first como el móvil: en desarrollo, el login cae a los datos simulados solo sin conexión y lo avisa; en producción muestra un error y los usuarios simulados no se incluyen en el build. Las incidencias no tienen datos simulados.
+  - Una sesión simulada se descarta en cuanto el backend responde y no puede resolver incidencias.
   - Se retira el interruptor `VITE_AUTH_SOURCE` del bug del 28-10, que nunca llegó a `dev`.
   - Las respuestas del backend se validan con type guards (`readJson`); un cambio de contrato produce `BackendContractError` en lugar de datos erróneos.
   - El motivo de descarte elegido y la justificación se envían juntos en `cause` (`"Duplicado: <justificación>"`).
@@ -47,7 +48,7 @@ El panel web mezclaba JavaScript y TypeScript, mostraba una incidencia inventada
 | `GET /uploads/incidents/<id>/<archivo>` | estático | imagen | `backend/src/main.ts` (`useStaticAssets`) |
 
 - Identidad y permisos: rol `civic` rechazado en la web; los endpoints de incidencias no exigen token en `dev`.
-- Si el backend no responde (red, timeout o `502`/`503`/`504` del proxy): el login usa los datos simulados con aviso; las incidencias muestran el error con opción de reintentar.
+- Si el backend no responde (red, timeout o `502`/`503`/`504` del proxy): en desarrollo, el login usa los datos simulados con aviso; en producción muestra un error. Las incidencias muestran el error con opción de reintentar.
 
 ### Mock (`src/mocks/`)
 
@@ -88,7 +89,7 @@ Diferencia con el móvil: el móvil declara estados (`assigned`, `in_progress`, 
 ## Criterios de aceptación
 
 1. Ningún `.js`/`.jsx` de código fuente; `strict: true`; `typecheck`, `lint`, `test` y `build` sin errores ni reglas desactivadas.
-2. Login real con `admin`/`admin`; `401` muestra error y no cae al mock; `civic` se rechaza; sin conexión entra con datos simulados y aviso.
+2. Login real con `admin`/`admin`; `401` muestra error y no cae al mock; `civic` se rechaza; sin conexión entra con datos simulados y aviso en desarrollo, y muestra un error en producción, cuyo build no contiene los usuarios simulados.
 3. La incidencia se carga de `GET /incidents/:id` con título, categoría, coordenadas, descripción, estado e imágenes de `/uploads`.
 4. Validar guarda `validated` y la prioridad elegida; descartar guarda `rejected` con motivo; una incidencia ya resuelta no ofrece el formulario.
 5. `404`, `400`, `409`, backend apagado y token caducado muestran un mensaje claro.

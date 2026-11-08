@@ -110,5 +110,5 @@
 | 6. Sin Cloudinary | `grep -ri cloudinary frontend-web` (sin `node_modules`) sin resultados | Cumplido |
 
 - Comprobaciones: las de la tabla anterior; prueba manual con Docker Compose (PostgreSQL + backend de `dev` + web compilada con nginx).
-- Decisiones y desviaciones: se retira el bloque "Análisis Automático" (sin origen en el backend); el motivo de descarte va dentro de `cause`; al restaurar una sesión válida se entra al panel directamente, como en el móvil.
-- Limitaciones y pendientes: no hay listado de incidencias pendientes en el backend; la web abre la incidencia con `?incidencia=<id>` hasta que se decida otra cosa. El backend no activa CORS (anotado en `bugs/todo.md`).
+- Decisiones y desviaciones: el respaldo simulado del login queda solo en desarrollo y una sesión simulada no puede resolver incidencias (revisión del 2026-11-08); se retira el bloque "Análisis Automático" (sin origen en el backend); el motivo de descarte va dentro de `cause`; al restaurar una sesión válida se entra al panel directamente, como en el móvil.
+- Limitaciones y pendientes: no hay listado de incidencias pendientes en el backend (pedido en el issue #130); la web abre la incidencia con `?incidencia=<id>` hasta que exista. El backend no activa CORS (anotado en `bugs/todo.md`).
