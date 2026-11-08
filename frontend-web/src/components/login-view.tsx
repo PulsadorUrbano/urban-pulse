@@ -1,59 +1,61 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import { parseJwt } from '../services/authService';
-import { 
-  Lock, 
-  User as UserIcon, 
-  Eye, 
-  EyeOff, 
-  Sun, 
-  Moon, 
-  ArrowRight, 
-  CheckCircle2, 
-  AlertCircle, 
-  Server, 
+import { useEffect, useState, type FormEvent } from 'react';
+import {
+  Lock,
+  User as UserIcon,
+  Eye,
+  EyeOff,
+  Sun,
+  Moon,
+  ArrowRight,
+  CheckCircle2,
+  AlertCircle,
+  Server,
   Database,
   Code2,
   RefreshCw,
   LogOut,
   Key,
-  Cookie,
+  HardDrive,
   SlidersHorizontal,
   X,
   ShieldCheck,
   ChevronRight,
   CheckCircle,
-  ExternalLink
 } from 'lucide-react';
 
+import { DEMO_USERS, type useAuth } from '../hooks/use-auth';
+import { OFFLINE_FALLBACK_NOTICE } from '../services/auth.service';
+import { decodeToken } from '../services/token.service';
+import { displayName } from '../utils/display-name';
+
 interface LoginViewProps {
+  auth: ReturnType<typeof useAuth>;
   onSuccessNavigate?: () => void;
   logoutNotification?: string | null;
   onClearLogoutNotification?: () => void;
 }
 
-export const LoginView: React.FC<LoginViewProps> = ({ 
-  onSuccessNavigate, 
+export function LoginView({
+  auth,
+  onSuccessNavigate,
   logoutNotification,
-  onClearLogoutNotification 
-}) => {
+  onClearLogoutNotification,
+}: LoginViewProps) {
   const {
     user,
     token,
-    tokenSource,
-    verifiedClaims,
-    cookieInfo,
+    session,
     isAuthenticated,
     loading,
     validatingToken,
     validationResult,
     error,
+    notice,
     login,
     logout,
     validateTokenWithBackend,
     resetError,
-    demoUsers
-  } = useAuth();
+  } = auth;
 
   // Institutional form state
   const [usernameOrEmail, setUsernameOrEmail] = useState('admin');
@@ -66,43 +68,42 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
   // Technical inspection modal state for architecture demonstration
   const [showTechModal, setShowTechModal] = useState(false);
-  const [techTab, setTechTab] = useState<'jwt' | 'cookie' | 'nest'>('jwt');
+  const [techTab, setTechTab] = useState<'jwt' | 'session' | 'nest'>('jwt');
 
   // Dropdown selector for institutional demo accounts
   const [showDemoAccounts, setShowDemoAccounts] = useState(false);
 
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.classList.toggle('dark', isDarkMode);
   }, [isDarkMode]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     if (!usernameOrEmail.trim() || !password.trim()) return;
 
-    const ok = await login({
-      usernameOrEmail,
-      password,
-      rememberMe
-    });
+    const result = await login({ usernameOrEmail, password, rememberMe });
 
-    if (ok && onSuccessNavigate) {
+    // Si hubo aviso (backend sin conexión), se queda en esta pantalla para que se lea.
+    if (result.ok && !result.notice && onSuccessNavigate) {
       onSuccessNavigate();
     }
   };
 
+  const tokenSource = token?.source ?? null;
+  const isBackendToken = tokenSource === 'backend';
+  const accessToken = token?.accessToken ?? null;
+  const visibleNotice = notice ?? (isAuthenticated && tokenSource === 'mock' ? OFFLINE_FALLBACK_NOTICE : null);
+
   const handleSelectDemoUser = (username: string) => {
     setUsernameOrEmail(username);
-    const selected = demoUsers.find(u => u.username === username);
-    setPassword(selected ? (selected as any).passwordHash : 'malaga2026');
+    const selected = DEMO_USERS.find((demoUser) => demoUser.username === username);
+    setPassword(selected ? selected.password : '');
     resetError();
     setShowDemoAccounts(false);
   };
 
-  const parsedToken = token ? parseJwt(token) : null;
+  const parsedToken = accessToken ? decodeToken(accessToken) : null;
+  const sessionInfo = session?.session ?? null;
 
   return (
     <div className="min-h-screen w-screen flex flex-col justify-between bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 font-sans">
@@ -165,6 +166,16 @@ export const LoginView: React.FC<LoginViewProps> = ({
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5">
                 Acceso corporativo a la plataforma de gestión municipal
               </p>
+              <span
+                className={`inline-block mt-2 px-2 py-0.5 rounded text-[10px] font-semibold ${
+                  isBackendToken || !isAuthenticated
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                    : 'bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                }`}
+                title="La URL del backend se configura con VITE_BACKEND_URL"
+              >
+                {!isAuthenticated ? 'Backend real' : isBackendToken ? 'Conectado al backend' : 'Datos simulados (sin conexión)'}
+              </span>
             </div>
 
             {/* Logout notification */}
@@ -197,6 +208,14 @@ export const LoginView: React.FC<LoginViewProps> = ({
               </div>
             )}
 
+            {/* Aviso de respaldo: el backend no respondió y se usan datos simulados */}
+            {visibleNotice && (
+              <div className="mb-5 p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 rounded-xl flex items-start gap-2.5 text-amber-800 dark:text-amber-300 text-xs">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                <p className="font-semibold">{visibleNotice}</p>
+              </div>
+            )}
+
             {/* Authenticated user welcome card */}
             {isAuthenticated && user ? (
               <div className="space-y-4">
@@ -208,18 +227,18 @@ export const LoginView: React.FC<LoginViewProps> = ({
                     Sesión iniciada
                   </h3>
                   <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-                    Conectado como <strong className="text-zinc-900 dark:text-zinc-100">{user.fullName}</strong>
+                    Conectado como <strong className="text-zinc-900 dark:text-zinc-100">{displayName(user)}</strong>
                   </p>
                   <div className="mt-2 flex items-center justify-center gap-2">
                     <span className="px-2.5 py-0.5 bg-zinc-200/80 dark:bg-zinc-800 text-[11px] font-semibold rounded text-zinc-700 dark:text-zinc-300">
-                      {user.departmentName || `Rol: ${user.role}`}
+                      {(user.source === 'mock' ? user.departmentName : undefined) ?? `Rol: ${user.role}`}
                     </span>
                     <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${
-                      tokenSource === 'backend'
+                      isBackendToken
                         ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
                         : 'bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
                     }`}>
-                      {tokenSource === 'backend' ? 'JWT NestJS Real' : 'JWT Emulado'}
+                      {isBackendToken ? 'JWT del backend' : 'Token simulado'}
                     </span>
                   </div>
                 </div>
@@ -324,7 +343,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                     {loading ? (
                       <>
                         <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Validating credentials...</span>
+                        <span>Validando credenciales...</span>
                       </>
                     ) : (
                       <span>Iniciar sesión</span>
@@ -347,7 +366,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
               {showDemoAccounts && (
                 <div className="mt-3 space-y-1.5">
-                  {demoUsers.map((u) => (
+                  {DEMO_USERS.map((u) => (
                     <button
                       key={u.id}
                       type="button"
@@ -358,7 +377,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
                         <div className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                           {u.fullName}
                           {u.role === 'admin' && (
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-bold uppercase">
+                            <span
+                              className="text-[9px] px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-bold uppercase"
+                              title="También existe en el backend (dev-seed)"
+                            >
                               Seed NestJS
                             </span>
                           )}
@@ -412,7 +434,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                     </span>
                   </h3>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    Inspección del token JWT único, validación contra NestJS y ciclo de cookies HttpOnly
+                    Inspección del token, validación contra NestJS y almacenamiento de la sesión
                   </p>
                 </div>
               </div>
@@ -443,15 +465,15 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
               <button
                 type="button"
-                onClick={() => setTechTab('cookie')}
+                onClick={() => setTechTab('session')}
                 className={`pb-3 px-3 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
-                  techTab === 'cookie'
+                  techTab === 'session'
                     ? 'border-zinc-900 dark:border-zinc-100 text-zinc-900 dark:text-zinc-100'
                     : 'border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
                 }`}
               >
-                <Cookie className="w-3.5 h-3.5" />
-                Apertura y Cierre de Cookies
+                <HardDrive className="w-3.5 h-3.5" />
+                Sesión en el navegador
               </button>
 
               <button
@@ -476,38 +498,38 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                      Token JWT emitido (RFC 7519)
+                      {isBackendToken ? 'Token JWT emitido por el backend' : 'Token simulado (no es un JWT firmado)'}
                     </span>
                     <div className="flex items-center gap-2">
                       <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                        tokenSource === 'backend'
+                        isBackendToken
                           ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
                           : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800'
                       }`}>
-                        {tokenSource === 'backend' ? '● Origen: Backend NestJS (Real)' : '○ Origen: Simulación Mock Fallback'}
+                        {isBackendToken ? '● Origen: Backend NestJS (Real)' : '○ Origen: Datos simulados (mock)'}
                       </span>
                     </div>
                   </div>
 
-                  {token ? (
+                  {accessToken ? (
                     <>
                       <div className="p-3 bg-zinc-900 dark:bg-black rounded-xl border border-zinc-800 text-xs font-mono break-all leading-relaxed">
-                        <span className="text-rose-400 font-semibold">{token.split('.')[0]}</span>
+                        <span className="text-rose-400 font-semibold">{accessToken.split('.')[0]}</span>
                         <span className="text-white">.</span>
-                        <span className="text-indigo-400 font-semibold">{token.split('.')[1]}</span>
+                        <span className="text-indigo-400 font-semibold">{accessToken.split('.')[1]}</span>
                         <span className="text-white">.</span>
-                        <span className="text-emerald-400 font-semibold">{token.split('.')[2]}</span>
+                        <span className="text-emerald-400 font-semibold">{accessToken.split('.')[2]}</span>
                       </div>
 
                       <div className="flex items-center gap-4 text-[11px]">
                         <span className="flex items-center gap-1 text-rose-500 font-bold">
-                          <span className="w-2 h-2 rounded-full bg-rose-500"></span> Header (Algoritmo)
+                          <span className="w-2 h-2 rounded-full bg-rose-500"></span> {isBackendToken ? 'Header (Algoritmo)' : 'Prefijo mock'}
                         </span>
                         <span className="flex items-center gap-1 text-indigo-500 font-bold">
                           <span className="w-2 h-2 rounded-full bg-indigo-500"></span> Payload (Claims & Rol)
                         </span>
                         <span className="flex items-center gap-1 text-emerald-500 font-bold">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Firma HMAC-SHA256
+                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span> {isBackendToken ? 'Firma HMAC-SHA256 del backend' : 'Sin firma'}
                         </span>
                       </div>
 
@@ -579,13 +601,15 @@ export const LoginView: React.FC<LoginViewProps> = ({
                             Detalles de la integración
                           </div>
                           <p className="text-zinc-600 dark:text-zinc-400">
-                            • <strong>Único Token:</strong> Se emite un único JWT que centraliza autenticación y autorización.
+                            • <strong>Único Token:</strong> {isBackendToken
+                              ? 'JWT emitido por POST /auth/login; se envía como Bearer al backend.'
+                              : 'Token generado en el navegador para trabajar sin backend; el backend lo rechazaría.'}
                           </p>
                           <p className="text-zinc-600 dark:text-zinc-400">
                             • <strong>User ID:</strong> {parsedToken?.payload?.userId || parsedToken?.payload?.sub}
                           </p>
                           <p className="text-zinc-600 dark:text-zinc-400">
-                            • <strong>Rol del usuario:</strong> {parsedToken?.payload?.role} (evaluado por NestJS Guards).
+                            • <strong>Rol del usuario:</strong> {parsedToken?.payload?.role} (solo el personal municipal accede a la web).
                           </p>
                           <p className="text-zinc-600 dark:text-zinc-400">
                             • <strong>Expiración:</strong> {parsedToken?.payload?.exp ? new Date(parsedToken.payload.exp * 1000).toLocaleString() : 'N/A'}.
@@ -601,56 +625,58 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 </div>
               )}
 
-              {/* TAB 2: COOKIES */}
-              {techTab === 'cookie' && (
+              {/* TAB 2: SESIÓN EN EL NAVEGADOR */}
+              {techTab === 'session' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                      Ciclo de Cookies de Sesión (NestJS + Navegador)
+                      Sesión guardada en el navegador
                     </span>
                     <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                      cookieInfo?.isOpen
+                      isAuthenticated
                         ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
                         : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
                     }`}>
-                      {cookieInfo?.isOpen ? '● Cookie ABIERTA (Activa)' : '○ Cookie CERRADA (Revocada)'}
+                      {isAuthenticated ? '● Sesión ACTIVA' : '○ Sin sesión'}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-3.5 bg-zinc-50 dark:bg-zinc-950/60 rounded-xl border border-zinc-200 dark:border-zinc-800">
                       <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mb-2 flex items-center gap-1.5">
-                        <Cookie className="w-4 h-4 text-amber-500" />
-                        Directivas de Seguridad
+                        <HardDrive className="w-4 h-4 text-amber-500" />
+                        Almacenamiento
                       </h4>
                       <div className="space-y-1.5 font-mono text-xs">
                         <div className="flex justify-between py-1 border-b border-zinc-200 dark:border-zinc-800">
-                          <span className="text-zinc-500">Cookie:</span>
-                          <span className="font-bold">access_token</span>
+                          <span className="text-zinc-500">Clave:</span>
+                          <span className="font-bold">urban_pulse_session_meta</span>
                         </div>
                         <div className="flex justify-between py-1 border-b border-zinc-200 dark:border-zinc-800">
-                          <span className="text-zinc-500">HttpOnly:</span>
-                          <span className="text-emerald-600 font-bold">true (Inaccesible vía JS)</span>
+                          <span className="text-zinc-500">Dónde:</span>
+                          <span className="font-bold">{sessionInfo?.storage ?? '—'}</span>
                         </div>
                         <div className="flex justify-between py-1 border-b border-zinc-200 dark:border-zinc-800">
-                          <span className="text-zinc-500">Secure:</span>
-                          <span className="text-emerald-600 font-bold">true (Solo HTTPS)</span>
+                          <span className="text-zinc-500">Caduca:</span>
+                          <span className="font-bold">
+                            {sessionInfo?.expiresAt ? new Date(sessionInfo.expiresAt).toLocaleString() : '—'}
+                          </span>
                         </div>
                         <div className="flex justify-between py-1 border-b border-zinc-200 dark:border-zinc-800">
-                          <span className="text-zinc-500">SameSite:</span>
-                          <span className="text-emerald-600 font-bold">Strict (Anti-CSRF)</span>
+                          <span className="text-zinc-500">Envío al backend:</span>
+                          <span className="font-bold">Authorization: Bearer</span>
                         </div>
                       </div>
                     </div>
 
                     <div className="p-3.5 bg-zinc-50 dark:bg-zinc-950/60 rounded-xl border border-zinc-200 dark:border-zinc-800 text-xs flex flex-col justify-between">
                       <div>
-                        <h4 className="font-bold text-zinc-900 dark:text-zinc-100 mb-1.5">Explicación del Ciclo</h4>
+                        <h4 className="font-bold text-zinc-900 dark:text-zinc-100 mb-1.5">Ciclo de la sesión</h4>
                         <p className="text-zinc-600 dark:text-zinc-400 mb-2">
-                          <strong>Apertura:</strong> Al hacer login, NestJS devuelve la cabecera <code className="font-mono text-[11px] bg-zinc-200 dark:bg-zinc-800 px-1 rounded">Set-Cookie: access_token=...</code>.
+                          <strong>Apertura:</strong> el token se guarda en <code className="font-mono text-[11px] bg-zinc-200 dark:bg-zinc-800 px-1 rounded">localStorage</code> con «Mantener sesión iniciada» o en <code className="font-mono text-[11px] bg-zinc-200 dark:bg-zinc-800 px-1 rounded">sessionStorage</code> si no, y se envía en la cabecera <code className="font-mono text-[11px] bg-zinc-200 dark:bg-zinc-800 px-1 rounded">Authorization</code>. El backend no usa cookies.
                         </p>
                         <p className="text-zinc-600 dark:text-zinc-400">
-                          <strong>Cierre:</strong> Al pulsar cerrar sesión, NestJS envía <code className="font-mono text-[11px] bg-zinc-200 dark:bg-zinc-800 px-1 rounded">Max-Age=0</code> para ordenar al navegador su destrucción inmediata.
+                          <strong>Cierre:</strong> al cerrar sesión se borra del navegador. Al recargar, un token del backend se revalida con <code className="font-mono text-[11px] bg-zinc-200 dark:bg-zinc-800 px-1 rounded">GET /auth/me</code>.
                         </p>
                       </div>
 
@@ -660,8 +686,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
                           onClick={logout}
                           className="mt-3 w-full py-2 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5"
                         >
-                          <RefreshCw className="w-3.5 h-3.5" />
-                          Simular Cierre de Cookie Ahora
+                          <LogOut className="w-3.5 h-3.5" />
+                          Cerrar sesión ahora
                         </button>
                       )}
                     </div>
@@ -679,19 +705,18 @@ export const LoginView: React.FC<LoginViewProps> = ({
                         Endpoints en NestJS (`AuthController.ts`)
                       </div>
                       <pre className="text-[11px] font-mono text-zinc-700 dark:text-zinc-300 overflow-x-auto p-2 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-{`// 1. Emisión de Token JWT
-@Post('token')
-async createToken(@Body() { userId }: CreateTokenDto) {
-  return {
-    accessToken: await this.auth.createToken(userId),
-  };
+{`// 1. Inicio de sesión: devuelve el JWT
+@Post('login')
+@HttpCode(200)
+login(@Body(new LoginPipe()) input: LoginDto) {
+  // { usernameOrEmail, password } -> { accessToken }
 }
 
-// 2. Validación de Token con Guard
+// 2. Sesión actual con Guard
 @Get('me')
 @UseGuards(JwtAuthGuard)
-me(@CurrentUser() user: TokenPayload): TokenPayload {
-  return user; // Retorna { userId, username, role }
+me(@CurrentUser() user: TokenPayload) {
+  // -> { userId, username, email, role, phone }
 }`}
                       </pre>
                     </div>
@@ -710,8 +735,13 @@ me(@CurrentUser() user: TokenPayload): TokenPayload {
                         <li>• password: <code>admin</code> (bcrypt)</li>
                         <li>• role: <code>admin</code></li>
                       </ul>
-                      <div className="mt-3 p-2 bg-zinc-100 dark:bg-zinc-800/80 rounded border border-zinc-200 dark:border-zinc-700 text-[11px]">
-                        <strong>Real-first:</strong> El frontend solicita el token a NestJS en el puerto 3000/4000 a través del proxy `/api`. Si el backend está activo, entrega el JWT oficial firmado.
+                      <div className="mt-3 p-2 bg-zinc-100 dark:bg-zinc-800/80 rounded border border-zinc-200 dark:border-zinc-700 text-[11px] space-y-1">
+                        <p>
+                          <strong>Origen de la sesión:</strong> {!isAuthenticated ? 'sin sesión' : isBackendToken ? 'backend' : 'datos simulados (sin conexión)'}.
+                        </p>
+                        <p>
+                          Las peticiones van a <code>VITE_BACKEND_URL</code> (por defecto <code>/api</code>, que el proxy de Vite o nginx redirige al backend). Si el backend no responde, el login usa los datos simulados y lo indica con un aviso; las incidencias siempre se leen del backend.
+                        </p>
                       </div>
                     </div>
                   </div>
