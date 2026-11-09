@@ -12,12 +12,15 @@ describe('Validación de la consulta de incidencias', () => {
     ).resolves.toBe(idCiudadano);
   });
 
+  it('acepta una consulta vacía para listar todas las incidencias', async () => {
+    await expect(pipe.transform({})).resolves.toBeUndefined();
+  });
+
   it.each([
     ['sin consulta', undefined],
     ['consulta nula', null],
     ['consulta primitiva', idCiudadano],
     ['consulta como array', []],
-    ['filtro omitido', {}],
     ['filtro vacío', { civicId: '' }],
     ['filtro nulo', { civicId: null }],
     ['filtro numérico', { civicId: 27 }],

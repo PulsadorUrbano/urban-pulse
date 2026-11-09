@@ -111,3 +111,72 @@ describe('Listado de incidencias por ciudadano', () => {
     expect(nuevaInstancia.listarPorCiudadano(idCiudadano)).toEqual([]);
   });
 });
+
+describe('Listado de todas las incidencias', () => {
+  let modulo: TestingModule;
+  let servicio: IncidentsService;
+
+  beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    modulo = await Test.createTestingModule({
+      providers: [
+        IncidentsService,
+        {
+          provide: UploadStorageService,
+          useValue: { save: vi.fn().mockResolvedValue([]), remove: vi.fn() },
+        },
+      ],
+    }).compile();
+    servicio = modulo.get(IncidentsService);
+  });
+
+  afterEach(async () => {
+    await modulo.close();
+    vi.useRealTimers();
+  });
+
+  it('devuelve resúmenes de todos los ciudadanos, ordenados del más reciente', async () => {
+    vi.setSystemTime(new Date('2026-11-08T08:00:00Z'));
+    const antigua = await servicio.create(
+      { title: 'Farola apagada', civicId: idCiudadano },
+      [],
+    );
+    vi.setSystemTime(new Date('2026-11-08T09:00:00Z'));
+    const reciente = await servicio.create(
+      { title: 'Banco roto', civicId: otroCiudadano },
+      [],
+    );
+
+    expect(servicio.listarTodas()).toEqual(
+      [reciente, antigua].map(({ id, title, status, createdAt }) => ({
+        id,
+        title,
+        status,
+        createdAt,
+      })),
+    );
+  });
+
+  it('devuelve un array vacío si no hay incidencias', () => {
+    expect(servicio.listarTodas()).toEqual([]);
+  });
+
+  it('devuelve resúmenes aislados que no permiten alterar el almacenamiento', async () => {
+    const creada = await servicio.create(
+      { title: 'Farola apagada', civicId: idCiudadano },
+      [],
+    );
+    const listado = servicio.listarTodas();
+    listado[0].title = 'Título modificado';
+    listado.length = 0;
+
+    expect(servicio.listarTodas()).toEqual([
+      {
+        id: creada.id,
+        title: creada.title,
+        status: creada.status,
+        createdAt: creada.createdAt,
+      },
+    ]);
+  });
+});
