@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -6,6 +6,7 @@ import {
   Platform,
   Pressable,
   StyleSheet,
+  Text,
   TextInput,
   View,
 } from 'react-native';
@@ -15,7 +16,7 @@ import { PasswordInput } from '@/components/password-input';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useLogin } from '@/hooks/use-login';
+import { type LoginSuccess, useLogin } from '@/hooks/use-login';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import type { LoginUserInput } from '@/types/user';
@@ -25,10 +26,27 @@ const ERROR_COLOR = '#d92d20';
 export default function LoginScreen() {
   const theme = useTheme();
   const { isSubmitting, errorMessage, isLocked, lockMessage, submitLogin } = useLogin();
-  const { signIn } = useSession();
+  const { signIn, user, isRestoringSession } = useSession();
 
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
+  // Mientras haya un aviso de fallback pendiente de confirmar, se retiene el
+  // resultado del login sin llamar a signIn todavía: si se llamara ya, el
+  // guard `if (user) return <Redirect .../>` de abajo navegaría de inmediato
+  // y el aviso nunca llegaría a verse.
+  const [pendingFallbackLogin, setPendingFallbackLogin] = useState<LoginSuccess | null>(null);
+
+  if (isRestoringSession) {
+    return (
+      <ThemedView style={styles.container}>
+        <ActivityIndicator testID="session-restoring-indicator" />
+      </ThemedView>
+    );
+  }
+
+  if (user) {
+    return <Redirect href="/" />;
+  }
 
   // Validación manual: ambos campos con contenido (tras trim)
   const hasEmptyField = usernameOrEmail.trim().length === 0 || password.trim().length === 0;
@@ -46,11 +64,53 @@ export default function LoginScreen() {
       password,
     };
     const loginResult = await submitLogin(input);
-    if (loginResult) {
-      await signIn(loginResult.user, loginResult.token);
-      router.replace('/');
+    if (!loginResult) {
+      return;
     }
+
+    if (loginResult.source === 'mock') {
+      setPendingFallbackLogin(loginResult);
+      return;
+    }
+
+    await signIn(loginResult.user, loginResult.token);
+    router.replace('/');
   };
+
+  const handleContinueAfterFallback = async () => {
+    if (!pendingFallbackLogin) return;
+    await signIn(pendingFallbackLogin.user, pendingFallbackLogin.token);
+    router.replace('/');
+  };
+
+  // Aviso de fallback: se muestra en vez del formulario hasta que el usuario
+  // confirme, momento en el que se llama a signIn y se navega.
+  if (pendingFallbackLogin) {
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <ThemedView className="flex-1 items-center justify-center gap-4 px-6">
+            <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
+              <Text className="text-center text-sm font-medium" style={{ color: ERROR_COLOR }}>
+                No se ha podido conectar al backend, realizando en el mock
+              </Text>
+            </ThemedView>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Continuar"
+              onPress={handleContinueAfterFallback}
+              className="active:opacity-70 rounded-3xl">
+              <View className="items-center justify-center rounded-3xl px-6 py-4" style={{ backgroundColor: '#ffffff' }}>
+                <ThemedText type="smallBold" style={{ color: '#000000' }}>
+                  Continuar
+                </ThemedText>
+              </View>
+            </Pressable>
+          </ThemedView>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView style={styles.container}>
@@ -100,6 +160,14 @@ export default function LoginScreen() {
               onPress={() => {}}
               className="self-start active:opacity-70">
               <ThemedText type="link">¿Has olvidado tu contraseña?</ThemedText>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="No tienes cuenta, créate una"
+              onPress={() => router.push('/register')}
+              className="self-start active:opacity-70">
+              <ThemedText type="link">¿No tienes cuenta? Créate una</ThemedText>
             </Pressable>
 
             {visibleErrorMessage ? (

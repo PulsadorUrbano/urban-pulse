@@ -1,7 +1,12 @@
-// Contrato de datos para las los ciudadanos que reportan incidencias, asociados a un usuario.
-// El teléfono no es obligatorio. Dos ciudadanos no pueden tener el mismo teléfono
+// Contrato de datos para los ciudadanos que reportan incidencias, asociados a un usuario.
+// El teléfono no es obligatorio. Dos ciudadanos no pueden tener el mismo teléfono.
 
-export interface User {
-  user_id: string;
+export interface Civic {
+  userId: string;
+  phone: string;
+}
+
+export interface CreateCivicInput {
+  userId: string;
   phone: string;
 }
