@@ -1,19 +1,19 @@
-# 2026-11-09 — Consultar todas las incidencias o filtrar por ciudadano
+# 2026-11-09 — Consultar incidencias con cursor
 
 - Método y ruta: GET /incidents.
 - Última revisión: 2026-11-09.
 - Estado: implementado; verificado mediante pruebas unitarias, compilación y lint. No se han ejecutado peticiones HTTP de integración.
-- Finalidad: consultar los resúmenes de todas las incidencias o limitar el resultado a un ciudadano.
+- Finalidad: consultar resúmenes paginados, opcionalmente filtrados por ciudadano.
 
 ## Entrada y validación
 
-Sin parámetros devuelve todas las incidencias. Ejemplo de filtro opcional: GET /incidents?civicId=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa. Sin cuerpo.
+La primera solicitud comienza en la página 0: GET /incidents. `limit` es opcional, por defecto 10 y admite valores de 1 a 100. Para continuar, enviar el `nextCursor` recibido como `cursor`; no se aceptan números de página como desplazamiento. `civicId` es opcional y, si se usa, debe repetirse en las solicitudes siguientes. No hay cuerpo.
 
-Si se proporciona civicId, debe ser un único UUID no vacío. UUID mal formado, valores repetidos, valores anidados u otros parámetros devuelven 400. Se compara el UUID sin distinguir mayúsculas/minúsculas.
+Si se proporciona civicId, debe ser un único UUID no vacío. UUID mal formado, valores repetidos, valores anidados, límites inválidos, cursor inválido u otros parámetros devuelven 400. Se compara el UUID sin distinguir mayúsculas/minúsculas.
 
 ## Respuesta
 
-200 con array sin envoltorio. Cada resumen contiene únicamente id (UUID), title (texto), status (estado actual) y createdAt (ISO). Sin coincidencias devuelve []. Orden: createdAt descendente; id ascendente para empates. No incluye civicId, ubicación, imágenes, historial ni motivos de cambios.
+200 con el array de resúmenes existente, para conservar compatibilidad. Cada resumen contiene id (UUID), title, status y createdAt (ISO). Las cabeceras `X-Page` y `X-Limit` indican la página y su tamaño; la primera página es 0. Si hay más resultados, `X-Next-Cursor` y `Link: rel="next"` permiten continuar. Orden: fecha de creación descendente; id ascendente para empates. No incluye civicId, ubicación, imágenes, historial ni motivos de cambios.
 
 ~~~json
 [
@@ -32,14 +32,14 @@ Los valores son ilustrativos, no datos semilla ni identificadores garantizados. 
 
 DEUDA-27-01 sigue abierta: no hay autenticación ni autorización. El listado global y el filtrado por civicId están disponibles sin identidad verificada. civicId es un filtro del cliente; introducir el identificador de otra persona permite consultar su listado. Este prototipo no garantiza privacidad de los listados. La resolución pendiente está en la especificación.
 
-Se conserva el Map privado del proceso y el almacenamiento local de imágenes. El listado no lee ni escribe esos archivos. Las incidencias se pierden al reiniciar; no hay base de datos activa, paginación ni consultas de auditoría.
+Se conserva el Map privado del proceso y el almacenamiento local de imágenes. El listado no lee ni escribe esos archivos. Las incidencias y los cursores se pierden al reiniciar; no hay base de datos activa ni consultas de auditoría. La continuación usa cursor keyset (createdAt e id), no OFFSET; no se calcula un total global. El formato del cuerpo permanece como array para compatibilidad con los consumidores existentes.
 
 El estado actual puede ser reported, validated o rejected; no devuelve historial, motivos ni actor de auditoría. Los cambios se describen en [validar o rechazar incidencias](../patch-incidents-id-status/README.md).
 
 ## Referencias
 
-- [Especificación y deuda técnica](../../features/specs/2026-11-09-consultar-todas-las-incidencias-spec.md).
-- [Plan y confirmación](../../features/plans/2026-11-09-consultar-todas-las-incidencias-plan.md).
+- [Especificación de paginación](../../features/specs/2026-11-09-paginar-incidencias-con-cursor-spec.md).
+- [Plan y confirmación](../../features/plans/2026-11-09-paginar-incidencias-con-cursor-plan.md).
 - [Controlador](../../../../src/incidents/incidents.controller.ts).
 - [Validación de consulta](../../../../src/incidents/listar-incidencias.pipe.ts).
 - [Servicio](../../../../src/incidents/incidents.service.ts).

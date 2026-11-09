@@ -179,4 +179,32 @@ describe('Listado de todas las incidencias', () => {
       },
     ]);
   });
+
+  it('pagina con cursor keyset sin repetir registros y considera la primera página la 0', async () => {
+    vi.setSystemTime(new Date('2026-11-08T08:00:00Z'));
+    const primera = await servicio.create({ title: 'Primera incidencia', civicId: idCiudadano }, []);
+    vi.setSystemTime(new Date('2026-11-08T09:00:00Z'));
+    const segunda = await servicio.create({ title: 'Segunda incidencia', civicId: otroCiudadano }, []);
+    vi.setSystemTime(new Date('2026-11-08T10:00:00Z'));
+    const tercera = await servicio.create({ title: 'Tercera incidencia', civicId: idCiudadano }, []);
+
+    const paginaCero = servicio.listarPagina(2);
+    expect(paginaCero.pagina).toBe(0);
+    expect(paginaCero.items.map(({ id }) => id)).toEqual([tercera.id, segunda.id]);
+    expect(paginaCero.nextCursor).toBeTypeOf('string');
+
+    const cursor = JSON.parse(Buffer.from(paginaCero.nextCursor!, 'base64url').toString('utf8')) as {
+      id: string; createdAt: string; pagina: number; civicId: string | null;
+    };
+    const paginaUno = servicio.listarPagina(2, cursor);
+    expect(paginaUno.pagina).toBe(1);
+    expect(paginaUno.items.map(({ id }) => id)).toEqual([primera.id]);
+    expect(paginaUno.nextCursor).toBeNull();
+  });
+
+  it('mantiene el filtro por ciudadano al paginar', async () => {
+    await servicio.create({ title: 'Ciudadano A', civicId: idCiudadano }, []);
+    await servicio.create({ title: 'Ciudadano B', civicId: otroCiudadano }, []);
+    expect(servicio.listarPagina(10, undefined, idCiudadano).items).toHaveLength(1);
+  });
 });

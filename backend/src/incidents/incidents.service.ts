@@ -10,6 +10,8 @@ import type {
   CambiarPrioridadIncidenciaInput,
   CreateIncidentInput,
   Incident,
+  CursorIncidencias,
+  PaginaIncidencias,
   ResumenIncidencia,
   StoredIncident,
   UploadedImageFile,
@@ -84,6 +86,52 @@ export class IncidentsService {
 
   listarTodas(): ResumenIncidencia[] {
     return this.resumirIncidencias(this.incidents.values());
+  }
+
+  listarPagina(
+    limit: number,
+    cursor?: CursorIncidencias,
+    idCiudadano?: string,
+  ): PaginaIncidencias {
+    const filtroCursor = cursor?.civicId ?? undefined;
+    if (
+      cursor && idCiudadano !== undefined &&
+      cursor.civicId !== idCiudadano.toLowerCase()
+    ) {
+      throw new BadRequestException('civicId no coincide con el cursor');
+    }
+    const ciudadanoNormalizado = filtroCursor ?? idCiudadano?.toLowerCase();
+    const fechaCursor = cursor ? new Date(cursor.createdAt).getTime() : null;
+    const ordenadas = Array.from(this.incidents.values())
+      .filter((incidencia) => {
+        if (
+          ciudadanoNormalizado &&
+          incidencia.civicId.toLowerCase() !== ciudadanoNormalizado
+        ) return false;
+        if (!cursor || fechaCursor === null) return true;
+        const fecha = incidencia.createdAt.getTime();
+        return fecha < fechaCursor || (fecha === fechaCursor && incidencia.id > cursor.id);
+      })
+      .sort(
+        (primera, segunda) =>
+          segunda.createdAt.getTime() - primera.createdAt.getTime() ||
+          primera.id.localeCompare(segunda.id),
+      );
+    const seleccionadas = ordenadas.slice(0, limit + 1);
+    const hayMas = seleccionadas.length > limit;
+    const pagina = cursor?.pagina ?? 0;
+    const items = this.resumirIncidencias(seleccionadas.slice(0, limit));
+    const ultima = seleccionadas[limit - 1];
+    const nextCursor = hayMas && ultima
+      ? Buffer.from(JSON.stringify({
+          id: ultima.id,
+          createdAt: ultima.createdAt.toISOString(),
+          pagina: pagina + 1,
+          civicId: ciudadanoNormalizado ?? null,
+        })).toString('base64url')
+      : null;
+
+    return { items, limit, pagina, nextCursor };
   }
 
   private resumirIncidencias(
