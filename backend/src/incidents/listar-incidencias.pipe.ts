@@ -8,24 +8,29 @@ import {
 @Injectable()
 export class ListarIncidenciasPipe implements PipeTransform<
   unknown,
-  Promise<string>
+  Promise<string | undefined>
 > {
   private readonly validadorUuid = new ParseUUIDPipe({
     exceptionFactory: () =>
       new BadRequestException('civicId debe ser un UUID válido'),
   });
 
-  async transform(consulta: unknown): Promise<string> {
+  async transform(consulta: unknown): Promise<string | undefined> {
     if (
       typeof consulta !== 'object' ||
       consulta === null ||
       Array.isArray(consulta) ||
-      Object.keys(consulta).some((campo) => campo !== 'civicId') ||
-      !('civicId' in consulta) ||
-      typeof consulta.civicId !== 'string'
+      Object.keys(consulta).some((campo) => campo !== 'civicId')
     ) {
       throw new BadRequestException(
-        'La consulta debe contener únicamente un civicId de tipo texto',
+        'La consulta debe estar vacía o contener únicamente un civicId de tipo texto',
+      );
+    }
+
+    if (!('civicId' in consulta)) return undefined;
+    if (typeof consulta.civicId !== 'string') {
+      throw new BadRequestException(
+        'La consulta debe estar vacía o contener únicamente un civicId de tipo texto',
       );
     }
 

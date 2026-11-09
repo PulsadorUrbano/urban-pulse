@@ -128,11 +128,11 @@ export class IncidentsController {
 
   @Get()
   @ApiOperation({
-    summary: 'Consultar el listado de incidencias por ciudadano',
+    summary: 'Consultar todas las incidencias o filtrarlas por ciudadano',
     description:
-      'Prototipo sin autenticación: civicId es un filtro del cliente, no acredita identidad ni propiedad (DEUDA-27-01). No devuelve trazabilidad.',
+      'Sin civicId devuelve todas las incidencias. Con civicId devuelve solo las de ese ciudadano. Prototipo sin autenticación: civicId es un filtro del cliente, no acredita identidad ni propiedad (DEUDA-27-01). No devuelve trazabilidad.',
   })
-  @ApiQuery({ name: 'civicId', required: true, type: String, format: 'uuid' })
+  @ApiQuery({ name: 'civicId', required: false, type: String, format: 'uuid' })
   @ApiOkResponse({
     description:
       'Resúmenes ordenados del más reciente al más antiguo; array vacío si no hay coincidencias.',
@@ -153,12 +153,14 @@ export class IncidentsController {
   })
   @ApiBadRequestResponse({
     description:
-      'civicId es obligatorio y debe ser un único UUID; no se admiten otros parámetros.',
+      'Si se proporciona civicId debe ser un único UUID; no se admiten otros parámetros.',
   })
   listar(
-    @Query(new ListarIncidenciasPipe()) idCiudadano: string,
+    @Query(new ListarIncidenciasPipe()) idCiudadano: string | undefined,
   ): ResumenIncidencia[] {
-    return this.incidentsService.listarPorCiudadano(idCiudadano);
+    return idCiudadano === undefined
+      ? this.incidentsService.listarTodas()
+      : this.incidentsService.listarPorCiudadano(idCiudadano);
   }
 
   @Post()

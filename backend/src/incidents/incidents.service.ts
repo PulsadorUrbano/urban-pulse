@@ -74,11 +74,22 @@ export class IncidentsService {
 
   listarPorCiudadano(idCiudadano: string): ResumenIncidencia[] {
     const ciudadanoNormalizado = idCiudadano.toLowerCase();
-    return Array.from(this.incidents.values())
-      .filter(
+    return this.resumirIncidencias(
+      Array.from(this.incidents.values()).filter(
         (incidencia) =>
           incidencia.civicId.toLowerCase() === ciudadanoNormalizado,
-      )
+      ),
+    );
+  }
+
+  listarTodas(): ResumenIncidencia[] {
+    return this.resumirIncidencias(this.incidents.values());
+  }
+
+  private resumirIncidencias(
+    incidencias: Iterable<StoredIncident>,
+  ): ResumenIncidencia[] {
+    return Array.from(incidencias)
       .sort(
         (primera, segunda) =>
           segunda.createdAt.getTime() - primera.createdAt.getTime() ||
