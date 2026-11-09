@@ -25,6 +25,10 @@ npm run build
 - No instalar dependencias, crear commits ni hacer push sin petición explícita.
 - Para ramas, commits y PR, seguir el `README.md` de la raíz.
 
+## Guías de diseño y de código
+
+Antes de crear o cambiar pantallas, leer `.claude/skills/diseno-web/SKILL.md` (colores, tipografía y recetas de Tailwind). Antes de escribir o revisar código, leer `.claude/skills/estilo-codigo-web/SKILL.md` (capas, nombres, TypeScript y llamadas al backend).
+
 ## Specs y trazabilidad (`docs/spec/`)
 
 - La estructura de carpetas, las plantillas y la diferencia entre `spec.md` y `plan.md` están documentadas en `docs/spec/README.md` — es la única fuente de verdad, no se duplica aquí. Es la misma que `frontend-mobile/docs/spec/`.
