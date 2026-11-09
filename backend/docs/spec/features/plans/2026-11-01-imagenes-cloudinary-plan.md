@@ -1,5 +1,7 @@
 # 2026-11-01 — Plan de implementación: imágenes Cloudinary y referencias PostgreSQL
 
+> Retirado el 2026-11-09. Este plan se conserva solo como registro histórico y no describe la API activa. La retirada está definida en el [diseño vigente](../../../../../docs/superpowers/specs/2026-11-09-integrar-incidencias-jwt-prisma-sin-imagenes-design.md).
+
 Estado: implementación de código completada y verificada con pruebas unitarias; preparación de persistencia bloqueada por la migración pendiente.
 Rama local: feat-imagenes-cloudinary.
 Especificación: [Contrato](../specs/2026-11-01-imagenes-cloudinary-spec.md).

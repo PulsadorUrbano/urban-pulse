@@ -21,7 +21,6 @@ Copy-Item .env.example .env
 | `NODE_ENV` | Con `development`, activa la creación de usuarios de desarrollo al arrancar. |
 | `DB_SYNC` | Vacío: no sincroniza tablas. `dbpush`: ejecuta `prisma db push`. `deploy`: ejecuta `prisma migrate deploy`. |
 | `OBSERVE_APP_KEY` y `OBSERVE_APP_SECRET` | Credenciales de Nest Observe. |
-| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Configuración privada de Cloudinary para nuevas imágenes. |
 
 No versiones los archivos `.env` ni credenciales reales. La configuración de contenedores se explica en [despliegue](../docs/deployment.md).
 
@@ -70,36 +69,38 @@ La configuración unitaria descubre `**/*.spec.ts` y la e2e `**/*.e2e-spec.ts`.
 
 Los contratos detallados, validaciones y respuestas tienen su ubicación principal en el [catálogo de endpoints](docs/spec/endpoint/README.md).
 
+El frontend móvil aún usa el contrato anterior de multipart y `civicId`; la incompatibilidad y la migración pendiente están registradas como [deuda técnica](../docs/deuda-tecnica-contrato-incidencias-frontend.md).
+
 | Método y ruta | Función |
 | --- | --- |
 | `POST /auth/register` | Registrar un ciudadano. |
 | `POST /auth/login` | Iniciar sesión y obtener un JWT. |
 | `GET /auth/me` | Consultar el usuario autenticado mediante un token Bearer. |
 | `GET /categories` | Consultar el catálogo temporal de categorías. |
-| `POST /incidents` | Crear una incidencia con `multipart/form-data`. |
-| `GET /incidents?civicId=<UUID>` | Listar incidencias por identificador ciudadano. |
-| `GET /incidents/:id` | Consultar una incidencia. |
-| `PATCH /incidents/:id/status` | Validar o rechazar una incidencia reportada, con motivo y actor declarado. |
-| `PATCH /incidents/:id/priority` | Cambiar la prioridad de una incidencia validada, con motivo y actor declarado. |
+| `POST /incidents` | Crear una incidencia propia con JSON y JWT. |
+| `GET /incidents` | Listar las incidencias del ciudadano autenticado. |
+| `GET /incidents/:id` | Consultar una incidencia propia o, para operadores, cualquiera. |
+| `PATCH /incidents/:id/status` | Validar o rechazar una incidencia reportada; solo operadores. |
+| `PATCH /incidents/:id/priority` | Cambiar la prioridad de una incidencia validada; solo operadores. |
 
-El alta recibe `title` y `civicId` obligatorios. El título recortado admite entre 4 y 35 puntos de código. Descripción, categoría, activo y ubicación son opcionales. Admite hasta ocho archivos `images` JPEG, PNG o WebP de hasta 5 MB cada uno. Devuelve `201`, el recurso y la cabecera `Location`. El formato completo y los errores se mantienen en la ficha de registro del catálogo.
+El alta recibe JSON con `title` obligatorio. El título recortado admite entre 4 y 35 puntos de código; descripción, categoría, activo y ubicación son opcionales. `civicId` procede de la sesión y no se admite en el cuerpo. Tampoco se admiten `images`, archivos ni multipart. Devuelve `201`, el recurso y la cabecera `Location`. El campo de respuesta `images` se conserva temporalmente como `[]` para compatibilidad y no implica almacenamiento disponible.
 
-`GET /auth/me` utiliza `JwtAuthGuard`. Las rutas de incidencias reciben `civicId` como dato del cliente y no aplican ese guard. El arranque no configura CORS explícitamente.
+`GET /auth/me` y todas las rutas de incidencias utilizan JWT Bearer. El acceso a incidencias revalida en PostgreSQL el usuario, su rol actual y, para ciudadanía, su vínculo `citizens`. El arranque no configura CORS explícitamente.
 
 ## Persistencia y estructura
 
-Los usuarios y ciudadanos se almacenan en PostgreSQL mediante Prisma. Las contraseñas se guardan con hash bcrypt. El esquema `prisma/schema.prisma` también define incidencias, ubicaciones, imágenes y cambios de estado y prioridad; su existencia no determina el almacenamiento utilizado por cada servicio.
+Los usuarios y ciudadanos se almacenan en PostgreSQL mediante Prisma. Las contraseñas se guardan con hash bcrypt. El esquema `prisma/schema.prisma` también define incidencias, ubicaciones y cambios de estado y prioridad.
 
-`IncidentsService` usa PostgreSQL para incidencias, ubicaciones, imágenes e historiales. Las nuevas imágenes se suben a Cloudinary y PostgreSQL conserva su `public_id` y URL HTTPS. El catálogo de categorías sigue siendo temporal. Esta función requiere que el esquema local esté preparado; no se aplican migraciones automáticamente.
+`IncidentsService` usa operaciones asíncronas de Prisma para incidencias, ubicaciones e historiales. La creación y los cambios auditados usan transacciones. No existe almacenamiento local ni remoto de imágenes, ni ruta de descarga; la migración `20261109000000_retirar_imagenes` elimina la tabla anterior. El catálogo de categorías sigue siendo temporal. El esquema local debe estar preparado; no se aplican migraciones automáticamente salvo que `DB_SYNC=deploy` se configure expresamente.
 
 | Ruta | Contenido |
 | --- | --- |
 | `src/auth/` | Registro, login, tokens y validación de sesión. |
-| `src/incidents/` | Incidencias, categorías, validaciones y almacenamiento de imágenes. |
+| `src/incidents/` | Incidencias, categorías, autorización, validaciones y persistencia Prisma. |
 | `src/prisma/` | Conexión y sincronización de esquema según `DB_SYNC`. |
 | `src/dev-seed/` | Usuarios de desarrollo cuando `NODE_ENV=development`. |
 | `src/health/` | Comprobación de salud. |
-| `src/main.ts` y `src/app.module.ts` | Arranque, Swagger, archivos estáticos y composición de módulos. |
+| `src/main.ts` y `src/app.module.ts` | Arranque, Swagger y composición de módulos. |
 
 El [DBML](../database/diagram.dbml) y el [SQL de referencia](docs/migrations/001_base_diagram.sql) describen el modelo de datos del proyecto.
 

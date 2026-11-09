@@ -128,19 +128,6 @@ Table urban_assets {
   }
 }
 
-Table incident_images {
-  id uuid [pk]
-  cloudinary_id varchar [unique, not null]
-  incident_id uuid [ref: > incidents.id, not null]
-  url varchar [not null]
-  mime_type varchar [not null]
-  created_at timestamp [not null, default: `now()`]
-
-  indexes {
-    incident_id
-  }
-}
-
 Table categories {
   id uuid
   name varchar [unique, not null]
