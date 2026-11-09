@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 
 const MOCK_SERVER_PORT = 3001;
-const BACKEND_SERVER_PORT = 4000;
+const BACKEND_SERVER_PORT = 3000;
 
 /**
  * Host del dev server de Metro (`Constants.expoConfig.hostUri`), sin puerto.
