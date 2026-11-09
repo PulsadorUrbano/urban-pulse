@@ -9,11 +9,25 @@ describe('Validación de la consulta de incidencias', () => {
   it('acepta un único UUID y normaliza sus mayúsculas', async () => {
     await expect(
       pipe.transform({ civicId: idCiudadano.toUpperCase() }),
-    ).resolves.toBe(idCiudadano);
+    ).resolves.toMatchObject({ civicId: idCiudadano, limit: 10 });
   });
 
-  it('acepta una consulta vacía para listar todas las incidencias', async () => {
-    await expect(pipe.transform({})).resolves.toBeUndefined();
+  it('aplica el límite predeterminado de 10 en la primera página', async () => {
+    await expect(pipe.transform({})).resolves.toEqual({ limit: 10 });
+  });
+
+  it.each([
+    ['límite mínimo', '1', 1],
+    ['límite máximo', '100', 100],
+  ])('acepta el %s', async (_caso, limit, esperado) => {
+    await expect(pipe.transform({ limit })).resolves.toMatchObject({ limit: esperado });
+  });
+
+  it('rechaza límites inválidos y cursores mal formados', async () => {
+    await expect(pipe.transform({ limit: '0' })).rejects.toThrow(BadRequestException);
+    await expect(pipe.transform({ limit: '101' })).rejects.toThrow(BadRequestException);
+    await expect(pipe.transform({ limit: '1.5' })).rejects.toThrow(BadRequestException);
+    await expect(pipe.transform({ cursor: 'invalido' })).rejects.toThrow(BadRequestException);
   });
 
   it.each([
