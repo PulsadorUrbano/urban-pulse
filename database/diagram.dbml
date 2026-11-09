@@ -129,11 +129,15 @@ Table urban_assets {
 }
 
 Table incident_images {
-  cloudinary_id varchar 
-  incident_id uuid [ref: > incidents.id , not null]
+  id uuid [pk]
+  cloudinary_id varchar [unique, not null]
+  incident_id uuid [ref: > incidents.id, not null]
+  url varchar [not null]
+  mime_type varchar [not null]
+  created_at timestamp [not null, default: `now()`]
 
   indexes {
-    cloudinary_id [pk]
+    incident_id
   }
 }
 

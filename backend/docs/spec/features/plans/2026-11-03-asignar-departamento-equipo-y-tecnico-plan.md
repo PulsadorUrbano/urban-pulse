@@ -1,0 +1,126 @@
+# 2026-11-03 — Plan de implementación: asignar departamento, equipo y técnico
+
+- Objetivo: permitir asignación conjunta, coherente y protegida de departamento, equipo y técnico en una incidencia validada.
+- Arquitectura: ampliar los modelos y la migración PostgreSQL existentes; consultar el catálogo en Prisma; guardar la asignación mediante una transacción; proteger las dos rutas nuevas con JWT y comprobación del rol actual.
+- Herramientas: NestJS 12, Prisma 7.10.1, TypeScript 6, Vitest 4 y npm con package-lock.json.
+- Especificación: [Contrato y criterios](../specs/2026-11-03-asignar-departamento-equipo-y-tecnico-spec.md).
+- Rama: feature/asignaciones-backend, basada en feat-imagenes-cloudinary.
+- Estado: implementado en la rama; verificación unitaria y compilación correctas. Migración no aplicada a una base de datos.
+
+## Restricciones generales
+
+- Respetar valores y alcance de la especificación; no conectar frontends ni cambiar el flujo Cloudinary. PostgreSQL ya persiste incidencias en esta rama.
+- Código y documentación en español; conservar nombres de contratos públicos.
+- Usar tipos Prisma generados; crear migración versionada y ejecutar `npm exec -- prisma generate --config prisma7.config.ts` después de cambiar el modelo. No aplicar la migración en una base externa sin autorización de ejecución.
+- Mantener TypeScript estricto, imports ESM `.js`, dependencias y package-lock.json actuales.
+- Solo pruebas unitarias en `backend/test/incidents/`; no e2e salvo petición expresa.
+- Reutilizar `JwtAuthGuard`; esta base no contiene `AccesoIncidenciasGuard`, así que crear una comprobación mínima de rol actual para los dos endpoints nuevos.
+- PATCH admite un subconjunto no vacío de los tres campos; aplicar cambios en orden departamento, equipo, técnico y limpiar descendientes solo cuando cambia su superior.
+- Esta publicación de rama y documentos está solicitada; futuros commits de implementación y conexiones frontend quedan fuera de este plan hasta la ejecución acordada.
+
+## Focos de revisión
+
+| Riesgo | Tarea y prueba unitaria |
+| --- | --- |
+| Cambiar departamento deja equipo/técnico anteriores | Tarea 2: `cambiarDepartamentoLimpiaDependencias` |
+| Cambiar equipo deja técnico anterior o cambiar técnico borra superiores | Tarea 2: `cambiarEquipoLimpiaTecnico` y `cambiarTecnicoConservaSuperiores` |
+| Asignar solo técnico sin cadena superior | Tarea 2: `rechazaTecnicoSinEquipoSinCambios` |
+| Equipo o técnico de otra rama | Tarea 2: `rechazaJerarquiaCruzadaSinCambios` |
+| UUID válido ausente del catálogo | Tarea 2: `rechazaIdDesconocidoSinCambios` |
+| Cuerpo incompleto, extra o mal tipado | Tarea 3: `rechazaCuerpoDeAsignacionInvalido` |
+| Dos PATCH concurrentes pisan la asignación anterior | Tarea 2: `rechazaCambioConcurrenteSinPerderDatos` |
+| Error de PostgreSQL deja un cambio parcial | Tarea 2: `revierteAsignacionSiFallaLaTransaccion` |
+| Rol de JWT desactualizado o usuario eliminado | Tarea 3: `consultaRolActualParaAsignar` |
+
+## Mapa de archivos
+
+Rutas relativas a la raíz del repositorio.
+
+| Acción | Archivo | Responsabilidad |
+| --- | --- | --- |
+| Modificar | `backend/prisma/schema.prisma` | Modelos Department, Team, TeamMember, claves foráneas de Incident y enum `assigned`. |
+| Crear | `backend/prisma/migrations/20261103000000_asignaciones/migration.sql` | Tablas y columnas, índices y claves foráneas; sin ejecutar despliegue en esta fase. |
+| Modificar | `backend/src/incidents/incident.ts` | Tipo `AsignacionIncidencia` y respuesta pública. |
+| Modificar | `backend/src/incidents/incidents.service.ts` | Consulta de catálogo, transacción y serialización de asignaciones. |
+| Crear | `backend/src/incidents/asignar-incidencia.pipe.ts` | Validar parche no vacío, campos permitidos, tipos y UUID. |
+| Crear | `backend/src/incidents/guards/acceso-asignaciones.guard.ts` | Comprobar usuario y rol actuales en PostgreSQL después del JWT. |
+| Modificar | `backend/src/incidents/incidents.module.ts` | Importar AuthModule y registrar el guard nuevo. |
+| Modificar | `backend/src/incidents/incidents.controller.ts` | GET opciones, PATCH y Swagger. |
+| Crear | `backend/test/incidents/services/asignar-incidencia.service.spec.ts` | Reglas de jerarquía y atomicidad. |
+| Crear | `backend/test/incidents/pipes/asignar-incidencia.pipe.spec.ts` | Forma exacta de entrada. |
+| Crear | `backend/test/incidents/guards/acceso-asignaciones.guard.spec.ts` | Identidad y permisos actuales. |
+| Modificar | `backend/test/incidents/controllers/incidents.controller.spec.ts` | Delegación, metadata de roles y respuesta. |
+| Crear/actualizar al implementar | `backend/docs/spec/endpoint/get-incidents-assignment-options/README.md`, `backend/docs/spec/endpoint/patch-incidents-id-assignment/README.md`, fichas POST/GET existentes | Contrato implementado, estado y referencias. |
+
+## Preparación
+
+- [x] Leer AGENTS.md, backend/AGENTS.md, las plantillas, el código afectado y el estado de Git para redactar este plan.
+- [x] Listar `backend/docs/spec/endpoint/` y leer las fichas de GET detalle y PATCH estado.
+- [x] Comprobar versiones en `backend/package.json`; consultar Context7 para NestJS y Prisma. Volver a consultar el concepto concreto antes de escribir código.
+- [x] Al iniciar implementación, registrar resultado inicial de `npm test`, `npm run build` y `npm run lint` desde `backend/`: los tres fallaron por dependencias ausentes; `npm ci` restauró el lockfile sin modificarlo. La primera ejecución de Vitest en sandbox falló por EPERM al renombrar temporales; con acceso normal pasó.
+
+## Tarea 1: modelar la asignación y sus opciones
+
+**Archivos:** `backend/prisma/schema.prisma`, `backend/prisma/migrations/20261103000000_asignaciones/migration.sql`, `backend/src/incidents/incident.ts`, `backend/src/incidents/incidents.service.ts`, `backend/test/incidents/services/asignar-incidencia.service.spec.ts`.
+
+**Interfaces:** `AsignacionIncidencia = {departmentId: string|null; teamId: string|null; technicianId: string|null}` representa el estado completo; `CambioAsignacionIncidencia = Partial<AsignacionIncidencia>` representa el PATCH no vacío validado; `OpcionesAsignacion = {departments: {id:string;name:string}[]; teams: {id:string;name:string;departmentId:string}[]; technicians: {id:string;name:string;teamId:string}[]}`; `Incident` público añade los tres campos. El catálogo procede de `Department`, `Team`, `TeamMember` y `users`.
+
+**Criterios cubiertos:** 1, 3, 4.
+
+- [x] Comprobar en la prueba de creación que los tres IDs comienzan en null; `findOne` devuelve el mismo recurso y no expone `cloudinaryId`.
+- [x] Añadir Department, Team, TeamMember, tres FK anulables y `assigned`; crear migración versionada, validar esquema, generar cliente y ampliar la serialización.
+- [x] Ejecutar pruebas focalizadas y actualizar fichas POST/GET. No se conservó una ejecución fallida previa a estos cambios.
+
+## Tarea 2: validar y guardar la jerarquía como una operación
+
+**Archivos:** `backend/src/incidents/incidents.service.ts`, `backend/test/incidents/services/asignar-incidencia.service.spec.ts`.
+
+**Interfaces:** `IncidentsService.opcionesAsignacion(): Promise<OpcionesAsignacion>` lee los tres catálogos; `IncidentsService.asignar(idIncidencia: string, cambio: CambioAsignacionIncidencia): Promise<Incident>` devuelve la asignación persistida y completa.
+
+**Criterios cubiertos:** 1, 2, 4.
+
+- [x] Probar cambio o retirada de superiores, asignación parcial y completa, repetición, IDs ausentes o cruzados, estados no editables, cambio concurrente y fallo transaccional con dobles.
+- [x] Consultar el catálogo con Prisma y guardar en `$transaction` con comparación de la terna y el estado anteriores; serializar la incidencia actualizada.
+- [x] Ejecutar pruebas focalizadas y revisar el diff. No se conservó una ejecución fallida previa a estos cambios.
+
+## Tarea 3: exponer y proteger el contrato
+
+**Archivos:** `backend/src/incidents/asignar-incidencia.pipe.ts`, `backend/src/incidents/guards/acceso-asignaciones.guard.ts`, `backend/src/incidents/incidents.module.ts`, `backend/src/incidents/incidents.controller.ts`, `backend/test/incidents/pipes/asignar-incidencia.pipe.spec.ts`, `backend/test/incidents/guards/acceso-asignaciones.guard.spec.ts`, `backend/test/incidents/controllers/incidents.controller.spec.ts`, fichas nuevas de `backend/docs/spec/endpoint/`.
+
+**Interfaces:** `GET /incidents/assignment-options`; `PATCH /incidents/:id/assignment` recibe `CambioAsignacionIncidencia` no vacío y devuelve `Incident` con `AsignacionIncidencia` completa. Ambos métodos usan `@UseGuards(JwtAuthGuard, AccesoAsignacionesGuard)`; el segundo consulta `users` para rol `admin` o `administrative` vigente.
+
+**Criterios cubiertos:** 1, 2, 3, 5.
+
+- [x] Probar cuerpo vacío, extras, tipos y UUID; rol vigente, token antiguo, usuario eliminado y delegación del controlador.
+- [x] Añadir pipe, guard, GET estático, PATCH con `ParseUUIDPipe`, import de `AuthModule` y Swagger. Las rutas anteriores mantienen sus guards actuales.
+- [x] Ejecutar pruebas focalizadas y crear las fichas de los dos endpoints nuevos. No se conservó una ejecución fallida previa a estos cambios.
+
+## Comprobaciones finales
+
+Las comprobaciones de código se ejecutan desde `backend/`. No se arrancó el servidor ni se aplicó la migración.
+
+| Comprobación | Comando | Resultado real |
+| --- | --- | --- |
+| Unitarias | `npm test` | 23 archivos, 208 pruebas correctas; Vitest ejecutado con acceso normal por EPERM del sandbox |
+| Compilación | `npm run build` | Correcta; Prisma Client 7.10.1 regenerado |
+| Lint | `npm run lint` | Código 0; cuatro avisos preexistentes fuera de los archivos nuevos |
+| Diff, desde raíz | `git diff --check` | Correcto |
+
+- [x] Mantener catálogo de endpoints y Swagger coherentes con los contratos implementados.
+- [x] Revisar evidencia de los cinco criterios, firmas y tipos.
+- [x] Registrar decisiones, desviaciones y resultados en este plan.
+- [x] Confirmar que no se tocaron consumidores, credenciales ni servicios ajenos.
+
+## Confirmación de implementación
+
+- Estado final: backend implementado y probado con dobles; pendiente aplicar la migración en el entorno de destino y cargar el catálogo municipal.
+- Fecha de revisión: 2026-11-03.
+- Resultado entregado: modelos y migración Prisma, consulta de opciones, PATCH transaccional, validación y permisos de rol actual, Swagger, fichas y pruebas unitarias.
+
+| Criterio de aceptación | Evidencia concreta | Resultado |
+| --- | --- | --- |
+| 1–5 del spec | Servicio, pipe, guard y respuestas cubiertos por pruebas unitarias; esquema y migración revisados estáticamente | Correcto a nivel unitario; sin base PostgreSQL conectada |
+
+- Comprobaciones: `prisma validate`, `npm run build`, `npm run lint`, `npm test` y `git diff --check` correctos. No se ejecutaron pruebas de integración ni se aplicó la migración.
+- Decisiones y desviaciones: el 2026-11-03 se rebasó la rama sobre `feat-imagenes-cloudinary`. El plan usa PostgreSQL y npm, conserva la semántica parcial del PATCH y no presupone el guard de `feature-login`.
+- Limitaciones y pendientes: provisionar catálogos municipales para uso real y sustituir mock web en una fase separada.
