@@ -12,6 +12,8 @@ export interface CreateIncidentInput {
   urbanAssetId?: string;
 }
 
+export type CrearIncidenciaBody = Omit<CreateIncidentInput, 'civicId'>;
+
 export interface Incident {
   id: string;
   title: string;
@@ -20,9 +22,6 @@ export interface Incident {
   categoryId: string | null;
   category: string | null;
   urbanAssetId: string | null;
-  departmentId: string | null;
-  teamId: string | null;
-  technicianId: string | null;
   location: {
     latitude: number | null;
     longitude: number | null;
@@ -35,17 +34,6 @@ export interface Incident {
   createdAt: string;
 }
 
-export type AsignacionIncidencia = Pick<
-  Incident,
-  'departmentId' | 'teamId' | 'technicianId'
->;
-export type CambioAsignacionIncidencia = Partial<AsignacionIncidencia>;
-export interface OpcionesAsignacion {
-  departments: { id: string; name: string }[];
-  teams: { id: string; name: string; departmentId: string }[];
-  technicians: { id: string; name: string; teamId: string }[];
-}
-
 export type ResumenIncidencia = Pick<
   Incident,
   'id' | 'title' | 'status' | 'createdAt'
@@ -54,11 +42,9 @@ export type ResumenIncidencia = Pick<
 export interface CambiarEstadoIncidenciaInput {
   status: Exclude<Incident['status'], 'reported'>;
   cause: string;
-  civicId: string;
 }
 
 export interface CambiarPrioridadIncidenciaInput {
   priority: Incident['priority'];
   cause: string;
-  civicId: string;
 }

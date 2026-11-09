@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -17,12 +18,11 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import type {
   CambiarEstadoIncidenciaInput,
   CambiarPrioridadIncidenciaInput,
-  CambioAsignacionIncidencia,
   CreateIncidentInput,
   Incident,
-  OpcionesAsignacion,
   ResumenIncidencia,
 } from './incident.js';
+import type { UsuarioIncidencias } from './types/usuario-incidencias.js';
 
 const incluirAgregado = {
   location: true,
@@ -103,7 +103,10 @@ export class IncidentsService {
     }));
   }
 
-  async findOne(id: string): Promise<Incident> {
+  async findOne(id: string, usuario: UsuarioIncidencias): Promise<Incident> {
+    if (usuario.role === 'civic' && !usuario.ciudadanoId) {
+      throw new ForbiddenException('Se requiere un ciudadano vinculado');
+    }
     let incident;
     try {
       incident = await this.prisma.incident.findUnique({
@@ -114,159 +117,19 @@ export class IncidentsService {
       throw this.errorPersistencia('consultar la incidencia');
     }
     if (!incident) throw new NotFoundException('La incidencia no existe');
+    if (
+      usuario.role === 'civic' &&
+      incident.civicId !== usuario.ciudadanoId?.toLowerCase()
+    ) {
+      throw new NotFoundException('La incidencia no existe');
+    }
     return this.serializar(incident);
-  }
-
-  async opcionesAsignacion(): Promise<OpcionesAsignacion> {
-    try {
-      const [departments, teams, members] = await Promise.all([
-        this.prisma.department.findMany({
-          select: { id: true, name: true },
-          orderBy: { name: 'asc' },
-        }),
-        this.prisma.team.findMany({
-          select: { id: true, name: true, departmentId: true },
-          orderBy: { name: 'asc' },
-        }),
-        this.prisma.teamMember.findMany({
-          where: { isTechnician: true },
-          select: {
-            teamId: true,
-            user: { select: { id: true, username: true } },
-          },
-          orderBy: { user: { username: 'asc' } },
-        }),
-      ]);
-      return {
-        departments,
-        teams,
-        technicians: members.map(({ teamId, user }) => ({
-          id: user.id,
-          name: user.username,
-          teamId,
-        })),
-      };
-    } catch {
-      throw this.errorPersistencia('consultar las opciones de asignación');
-    }
-  }
-
-  async asignar(
-    idIncidencia: string,
-    cambio: CambioAsignacionIncidencia,
-  ): Promise<Incident> {
-    const id = idIncidencia.toLowerCase();
-    let resultado: IncidenciaConAgregado | null;
-    try {
-      resultado = await this.prisma.$transaction(async (tx) => {
-        const actual = await tx.incident.findUnique({
-          where: { id },
-          select: {
-            status: true,
-            departmentId: true,
-            teamId: true,
-            technicianId: true,
-          },
-        });
-        if (!actual) throw new NotFoundException('La incidencia no existe');
-        if (actual.status !== 'validated' && actual.status !== 'assigned') {
-          throw new ConflictException(
-            'Solo se puede asignar una incidencia validada o asignada',
-          );
-        }
-
-        const departmentId =
-          cambio.departmentId === undefined
-            ? actual.departmentId
-            : cambio.departmentId;
-        const cambioDepartamento = departmentId !== actual.departmentId;
-        const teamId =
-          cambio.teamId === undefined
-            ? cambioDepartamento
-              ? null
-              : actual.teamId
-            : cambio.teamId;
-        const cambioEquipo = teamId !== actual.teamId || cambioDepartamento;
-        const technicianId =
-          cambio.technicianId === undefined
-            ? cambioEquipo
-              ? null
-              : actual.technicianId
-            : cambio.technicianId;
-
-        if (
-          departmentId &&
-          !(await tx.department.findUnique({
-            where: { id: departmentId },
-            select: { id: true },
-          }))
-        ) {
-          throw new BadRequestException('departmentId no existe');
-        }
-        if (teamId) {
-          const team = await tx.team.findUnique({
-            where: { id: teamId },
-            select: { departmentId: true },
-          });
-          if (!team) throw new BadRequestException('teamId no existe');
-          if (team.departmentId !== departmentId)
-            throw new ConflictException(
-              'El equipo no pertenece al departamento',
-            );
-        }
-        if (technicianId) {
-          const user = await tx.users.findUnique({
-            where: { id: technicianId },
-            select: { id: true },
-          });
-          if (!user) throw new BadRequestException('technicianId no existe');
-          if (!teamId) {
-            throw new ConflictException('El técnico requiere un equipo');
-          }
-          const miembro = await tx.teamMember.findUnique({
-            where: { userId_teamId: { userId: technicianId, teamId } },
-            select: { isTechnician: true },
-          });
-          if (!miembro?.isTechnician) {
-            throw new ConflictException('El técnico no pertenece al equipo');
-          }
-        }
-
-        const actualizadas = await tx.incident.updateMany({
-          where: {
-            id,
-            status: actual.status,
-            departmentId: actual.departmentId,
-            teamId: actual.teamId,
-            technicianId: actual.technicianId,
-          },
-          data: { departmentId, teamId, technicianId },
-        });
-        if (actualizadas.count !== 1)
-          throw new ConflictException(
-            'La asignación cambió durante la operación',
-          );
-        return tx.incident.findUnique({
-          where: { id },
-          include: incluirAgregado,
-        });
-      });
-    } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException ||
-        error instanceof ConflictException
-      )
-        throw error;
-      throw this.errorPersistencia('asignar la incidencia');
-    }
-    if (!resultado) throw new NotFoundException('La incidencia no existe');
-    return this.serializar(resultado);
   }
 
   async cambiarEstado(
     idIncidencia: string,
     entrada: CambiarEstadoIncidenciaInput,
+    idActor: string,
   ): Promise<Incident> {
     if (
       (entrada.status !== 'validated' && entrada.status !== 'rejected') ||
@@ -281,7 +144,7 @@ export class IncidentsService {
     const cambio = {
       id: randomUUID(),
       incidenciaId: id,
-      actorId: entrada.civicId.toLowerCase(),
+      actorId: idActor.toLowerCase(),
       nuevoEstado: entrada.status,
       motivo: entrada.cause.trim(),
       fechaCreacion,
@@ -341,6 +204,7 @@ export class IncidentsService {
   async cambiarPrioridad(
     idIncidencia: string,
     entrada: CambiarPrioridadIncidenciaInput,
+    idActor: string,
   ): Promise<Incident> {
     if (
       !['low', 'medium', 'high'].includes(entrada.priority) ||
@@ -354,7 +218,7 @@ export class IncidentsService {
     const cambio: CambioPrioridadModel = {
       id: randomUUID(),
       incidenciaId: id,
-      actorId: entrada.civicId.toLowerCase(),
+      actorId: idActor.toLowerCase(),
       nuevaPrioridad: entrada.priority,
       motivo: entrada.cause.trim(),
       esManual: true,
@@ -436,9 +300,6 @@ export class IncidentsService {
       categoryId: incident.categoryId,
       category: incident.category,
       urbanAssetId: incident.urbanAssetId,
-      departmentId: incident.departmentId,
-      teamId: incident.teamId,
-      technicianId: incident.technicianId,
       status: incident.status,
       priority: incident.priority,
       createdAt: incident.createdAt.toISOString(),

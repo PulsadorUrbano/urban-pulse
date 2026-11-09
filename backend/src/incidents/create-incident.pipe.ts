@@ -1,10 +1,9 @@
 import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
-import { CreateIncidentInput } from './incident.js';
+import type { CrearIncidenciaBody } from './incident.js';
 
 const allowedKeys = new Set([
   'title',
   'description',
-  'civicId',
   'categoryId',
   'category',
   'latitude',
@@ -18,9 +17,9 @@ const uuidPattern =
 @Injectable()
 export class CreateIncidentPipe implements PipeTransform<
   unknown,
-  CreateIncidentInput
+  CrearIncidenciaBody
 > {
-  transform(value: unknown): CreateIncidentInput {
+  transform(value: unknown): CrearIncidenciaBody {
     if (!this.isRecord(value)) {
       throw new BadRequestException('The request body must be an object');
     }
@@ -41,11 +40,10 @@ export class CreateIncidentPipe implements PipeTransform<
         ? undefined
         : this.text(value.category, 'category');
 
-    if ([...title].length < 4 || [...title].length > 35) {
+    const longitudTitulo = Array.from(title).length;
+    if (longitudTitulo < 4 || longitudTitulo > 35) {
       throw new BadRequestException('title must contain 4 to 35 characters');
     }
-
-    this.uuid(value.civicId, 'civicId');
 
     if (value.categoryId !== undefined) {
       this.uuid(value.categoryId, 'categoryId');
@@ -72,7 +70,6 @@ export class CreateIncidentPipe implements PipeTransform<
     return {
       title,
       ...(description === undefined ? {} : { description }),
-      civicId: value.civicId,
       ...(value.categoryId === undefined
         ? {}
         : { categoryId: value.categoryId }),
@@ -110,16 +107,15 @@ export class CreateIncidentPipe implements PipeTransform<
     maximum = Number.POSITIVE_INFINITY,
   ): number {
     if (
-      typeof value !== 'string' ||
-      value.trim() === '' ||
-      !Number.isFinite(Number(value)) ||
-      Number(value) < minimum ||
-      Number(value) > maximum
+      typeof value !== 'number' ||
+      !Number.isFinite(value) ||
+      value < minimum ||
+      value > maximum
     ) {
       throw new BadRequestException(
         `${field} must be a finite number between ${minimum} and ${maximum}`,
       );
     }
-    return Number(value);
+    return value;
   }
 }
