@@ -11,7 +11,6 @@ import type {
   CambioEstadoModel,
   CambioPrioridadModel,
   IncidentModel as PrismaIncident,
-  IncidentImageModel as PrismaIncidentImage,
   IncidentLocationModel as PrismaIncidentLocation,
 } from '../generated/prisma/models.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -23,36 +22,24 @@ import type {
   Incident,
   OpcionesAsignacion,
   ResumenIncidencia,
-  UploadedImageFile,
 } from './incident.js';
-import { serializarImagenPublica } from './incident.js';
-import { UploadStorageService } from './upload-storage.service.js';
 
 const incluirAgregado = {
   location: true,
-  images: { orderBy: { createdAt: 'asc' as const } },
 };
 
 type IncidenciaConAgregado = PrismaIncident & {
   location: PrismaIncidentLocation | null;
-  images: PrismaIncidentImage[];
 };
 
 @Injectable()
 export class IncidentsService {
   private readonly logger = new Logger(IncidentsService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly uploadStorage: UploadStorageService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async create(
-    input: CreateIncidentInput,
-    files: UploadedImageFile[],
-  ): Promise<Incident> {
+  async create(input: CreateIncidentInput): Promise<Incident> {
     const id = randomUUID();
-    const images = await this.uploadStorage.save(id, files);
     const createdAt = new Date();
     const datos = {
       id,
@@ -71,15 +58,6 @@ export class IncidentsService {
           createdAt,
         },
       },
-      images: {
-        create: images.map((image) => ({
-          id: image.id,
-          cloudinaryId: image.cloudinaryId,
-          url: image.url,
-          mimeType: image.mimeType,
-          createdAt: new Date(image.createdAt),
-        })),
-      },
     };
 
     let creada: IncidenciaConAgregado;
@@ -88,7 +66,7 @@ export class IncidentsService {
         tx.incident.create({ data: datos, include: incluirAgregado }),
       );
     } catch {
-      // Un fallo de commit puede dejar la transacción confirmada. Consultar antes de compensar.
+      // Un fallo de commit puede dejar la transacción confirmada. Consultar antes de informar del error.
       try {
         const existente = await this.prisma.incident.findUnique({
           where: { id },
@@ -97,18 +75,9 @@ export class IncidentsService {
         if (existente) return this.serializar(existente);
       } catch {
         this.logger.error(
-          `No se pudo conciliar el resultado de creación de la incidencia ${id}; se conservan sus imágenes.`,
+          `No se pudo conciliar el resultado de creación de la incidencia ${id}.`,
         );
         throw this.errorPersistencia('crear la incidencia');
-      }
-
-      const pendientes = await this.uploadStorage.eliminarImagenes(
-        images.map((image) => image.cloudinaryId),
-      );
-      if (pendientes.length > 0) {
-        this.logger.warn(
-          `Quedó pendiente la compensación de imágenes para la incidencia ${id}.`,
-        );
       }
       throw this.errorPersistencia('crear la incidencia');
     }
@@ -481,15 +450,7 @@ export class IncidentsService {
           incident.location?.createdAt ?? incident.createdAt
         ).toISOString(),
       },
-      images: incident.images.map((image) =>
-        serializarImagenPublica({
-          id: image.id,
-          cloudinaryId: image.cloudinaryId,
-          url: image.url,
-          mimeType: image.mimeType as UploadedImageFile['mimetype'],
-          createdAt: image.createdAt.toISOString(),
-        }),
-      ),
+      images: [],
     };
   }
 
