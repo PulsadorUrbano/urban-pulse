@@ -8,6 +8,7 @@ describe('CreateIncidentPipe', () => {
   const input = () => ({
     title: '  Farola apagada  ',
     description: '  La farola no ilumina la calle.  ',
+    civicId: randomUUID(),
     categoryId,
     category: '  Iluminación  ',
     latitude: '0',
@@ -19,6 +20,7 @@ describe('CreateIncidentPipe', () => {
     expect(pipe.transform(input())).toEqual({
       title: 'Farola apagada',
       description: 'La farola no ilumina la calle.',
+      civicId: expect.any(String),
       categoryId,
       category: 'Iluminación',
       latitude: 0,

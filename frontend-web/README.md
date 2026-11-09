@@ -20,6 +20,8 @@ Abre la dirección que muestre Vite. Consulta los requisitos de Node y npm en [d
 
 En desarrollo, `vite.config.js` redirige `/api` a `http://localhost:3000` y elimina ese prefijo: `/api/auth/me` se envía como `/auth/me` al backend. El proxy pertenece al servidor de desarrollo de Vite.
 
+En el despliegue con Compose, Nginx sirve la aplicación compilada y aplica el mismo proxy `/api/` al backend de la red interna. Consulta la [guía de despliegue](../docs/deployment.md).
+
 Para una dirección diferente, define `VITE_BACKEND_URL` en el entorno de Vite. El componente no tiene un archivo de ejemplo de entorno. La preparación de la API está en el [README del backend](../backend/README.md).
 
 ## Scripts

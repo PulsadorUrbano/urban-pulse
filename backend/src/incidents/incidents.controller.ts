@@ -1,8 +1,5 @@
 import {
   Body,
-  ForbiddenException,
-  SetMetadata,
-  UseGuards,
   BadRequestException,
   Catch,
   Controller,
@@ -19,28 +16,28 @@ import {
   UploadedFiles,
   UseFilters,
   UseInterceptors,
+  UseGuards,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
-  ApiBearerAuth,
-  ApiUnauthorizedResponse,
-  ApiForbiddenResponse,
+  ApiBadGatewayResponse,
   ApiBody,
   ApiConsumes,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiGatewayTimeoutResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiTags,
+  ApiServiceUnavailableResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
-import { AccesoIncidenciasGuard } from './guards/acceso-incidencias.guard.js';
-import { UsuarioIncidenciasActual } from './decorators/usuario-incidencias-actual.decorator.js';
-import type { UsuarioIncidencias } from './types/usuario-incidencias.js';
 import type { Response } from 'express';
 import { CreateIncidentPipe } from './create-incident.pipe.js';
+import { CreateIncidentDto } from './create-incident.dto.js';
 import { IncidentPriority, IncidentStatus } from '../generated/prisma/enums.js';
 import { CambiarPrioridadIncidenciaPipe } from './cambiar-prioridad-incidencia.pipe.js';
 import { CambiarEstadoIncidenciaPipe } from './cambiar-estado-incidencia.pipe.js';
@@ -48,13 +45,18 @@ import type {
   CambiarEstadoIncidenciaInput,
   CambiarPrioridadIncidenciaInput,
   Incident,
-  CreateIncidentInput,
-  CrearIncidenciaBody,
   ResumenIncidencia,
 } from './incident.js';
 import { ListarIncidenciasPipe } from './listar-incidencias.pipe.js';
 import type { UploadedImageFile } from './incident.js';
 import { IncidentsService } from './incidents.service.js';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { AccesoAsignacionesGuard } from './guards/acceso-asignaciones.guard.js';
+import { AsignarIncidenciaPipe } from './asignar-incidencia.pipe.js';
+import type {
+  CambioAsignacionIncidencia,
+  OpcionesAsignacion,
+} from './incident.js';
 
 const esquemaPrioridad = {
   type: 'string',
@@ -73,6 +75,9 @@ const incidentSchema = {
     'categoryId',
     'category',
     'urbanAssetId',
+    'departmentId',
+    'teamId',
+    'technicianId',
     'location',
     'images',
     'status',
@@ -87,6 +92,9 @@ const incidentSchema = {
     categoryId: { type: 'string', format: 'uuid', nullable: true },
     category: { type: 'string', nullable: true },
     urbanAssetId: { type: 'string', format: 'uuid', nullable: true },
+    departmentId: { type: 'string', format: 'uuid', nullable: true },
+    teamId: { type: 'string', format: 'uuid', nullable: true },
+    technicianId: { type: 'string', format: 'uuid', nullable: true },
     location: {
       type: 'object',
       properties: {
@@ -132,24 +140,104 @@ class UploadLimitFilter implements ExceptionFilter {
 const acceptedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 @ApiTags('incidents')
-@ApiBearerAuth()
-@ApiUnauthorizedResponse({ description: 'JWT inválido o usuario inexistente.' })
-@ApiForbiddenResponse({
-  description:
-    'El rol actual o la vinculación ciudadana no permite la operación.',
-})
-@UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
 @Controller('incidents')
 export class IncidentsController {
   constructor(private readonly incidentsService: IncidentsService) {}
 
+  @Get('assignment-options')
+  @UseGuards(JwtAuthGuard, AccesoAsignacionesGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Consultar departamentos, equipos y técnicos asignables',
+  })
+  @ApiOkResponse({
+    description: 'Catálogo actual de asignación.',
+    schema: {
+      type: 'object',
+      required: ['departments', 'teams', 'technicians'],
+      properties: {
+        departments: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', format: 'uuid' },
+              name: { type: 'string' },
+            },
+          },
+        },
+        teams: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', format: 'uuid' },
+              name: { type: 'string' },
+              departmentId: { type: 'string', format: 'uuid' },
+            },
+          },
+        },
+        technicians: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', format: 'uuid' },
+              name: { type: 'string' },
+              teamId: { type: 'string', format: 'uuid' },
+            },
+          },
+        },
+      },
+    },
+  })
+  opcionesAsignacion(): Promise<OpcionesAsignacion> {
+    return this.incidentsService.opcionesAsignacion();
+  }
+
+  @Patch(':id/assignment')
+  @UseGuards(JwtAuthGuard, AccesoAsignacionesGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Asignar departamento, equipo y técnico a una incidencia',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      minProperties: 1,
+      additionalProperties: false,
+      properties: {
+        departmentId: { type: 'string', format: 'uuid', nullable: true },
+        teamId: { type: 'string', format: 'uuid', nullable: true },
+        technicianId: { type: 'string', format: 'uuid', nullable: true },
+      },
+    },
+  })
+  @ApiOkResponse({ schema: incidentSchema })
+  @ApiBadRequestResponse({
+    description: 'Cuerpo, UUID o identificador de catálogo inválido.',
+  })
+  @ApiNotFoundResponse({ description: 'La incidencia no existe.' })
+  @ApiConflictResponse({
+    description: 'Estado o jerarquía incompatibles, o cambio concurrente.',
+  })
+  @ApiServiceUnavailableResponse({
+    description: 'PostgreSQL no está disponible.',
+  })
+  asignar(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new AsignarIncidenciaPipe()) cambio: CambioAsignacionIncidencia,
+  ): Promise<Incident> {
+    return this.incidentsService.asignar(id, cambio);
+  }
+
   @Get()
-  @SetMetadata('rolesIncidencias', ['civic'])
   @ApiOperation({
     summary: 'Consultar el listado de incidencias por ciudadano',
     description:
-      'Consulta solo las incidencias del ciudadano autenticado y vinculado en DB. Sin parámetros ni trazabilidad.',
+      'Prototipo sin autenticación: civicId es un filtro del cliente, no acredita identidad ni propiedad (DEUDA-27-01). No devuelve trazabilidad.',
   })
+  @ApiQuery({ name: 'civicId', required: true, type: String, format: 'uuid' })
   @ApiOkResponse({
     description:
       'Resúmenes ordenados del más reciente al más antiguo; array vacío si no hay coincidencias.',
@@ -169,19 +257,19 @@ export class IncidentsController {
     },
   })
   @ApiBadRequestResponse({
-    description: 'No se admiten parámetros de consulta, incluido civicId.',
+    description:
+      'civicId es obligatorio y debe ser un único UUID; no se admiten otros parámetros.',
+  })
+  @ApiServiceUnavailableResponse({
+    description: 'PostgreSQL no está disponible.',
   })
   listar(
-    @Query(new ListarIncidenciasPipe()) _consulta: void,
-    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
-  ): ResumenIncidencia[] {
-    if (!usuario.ciudadanoId)
-      throw new ForbiddenException('Se requiere un ciudadano vinculado');
-    return this.incidentsService.listarPorCiudadano(usuario.ciudadanoId);
+    @Query(new ListarIncidenciasPipe()) idCiudadano: string,
+  ): Promise<ResumenIncidencia[]> {
+    return this.incidentsService.listarPorCiudadano(idCiudadano);
   }
 
   @Post()
-  @SetMetadata('rolesIncidencias', ['civic'])
   @UseFilters(UploadLimitFilter)
   @UseInterceptors(
     FilesInterceptor('images', 8, {
@@ -200,10 +288,11 @@ export class IncidentsController {
   @ApiBody({
     schema: {
       type: 'object',
-      required: ['title'],
+      required: ['title', 'civicId'],
       properties: {
         title: { type: 'string', minLength: 4, maxLength: 35 },
         description: { type: 'string' },
+        civicId: { type: 'string', format: 'uuid' },
         categoryId: { type: 'string', format: 'uuid' },
         category: { type: 'string' },
         latitude: { type: 'number', minimum: -90, maximum: 90 },
@@ -220,7 +309,7 @@ export class IncidentsController {
   })
   @ApiCreatedResponse({
     description:
-      'Temporary in-memory incident; referenced UUIDs are format-checked only.',
+      'Incidencia persistida y referencias UUID validadas por PostgreSQL; las imágenes se almacenan en Cloudinary.',
     schema: incidentSchema,
     headers: {
       Location: {
@@ -230,23 +319,28 @@ export class IncidentsController {
     },
   })
   @ApiBadRequestResponse({ description: 'The request body is invalid.' })
+  @ApiServiceUnavailableResponse({
+    description: 'El almacenamiento de imágenes no está configurado.',
+  })
+  @ApiBadGatewayResponse({
+    description: 'Cloudinary rechazó la subida de una imagen.',
+  })
+  @ApiGatewayTimeoutResponse({
+    description: 'Cloudinary agotó el tiempo de espera.',
+  })
+  @ApiServiceUnavailableResponse({
+    description: 'PostgreSQL no está disponible.',
+  })
   create(
-    @Body(new CreateIncidentPipe()) input: CrearIncidenciaBody,
+    @Body(new CreateIncidentPipe()) input: CreateIncidentDto,
     @UploadedFiles() files: UploadedImageFile[] = [],
     @Res({ passthrough: true }) response: Response,
-    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
   ): Promise<Incident> {
-    if (!usuario.ciudadanoId)
-      throw new ForbiddenException('Se requiere un ciudadano vinculado');
-    return this.createAndSetLocation(
-      { ...input, civicId: usuario.ciudadanoId },
-      files,
-      response,
-    );
+    return this.createAndSetLocation(input, files, response);
   }
 
   private async createAndSetLocation(
-    input: CreateIncidentInput,
+    input: CreateIncidentDto,
     files: UploadedImageFile[],
     response: Response,
   ): Promise<Incident> {
@@ -256,17 +350,16 @@ export class IncidentsController {
   }
 
   @Patch(':id/status')
-  @SetMetadata('rolesIncidencias', ['admin', 'administrative'])
   @ApiOperation({
     summary: 'Validar o rechazar una incidencia con motivo',
     description:
-      'Solo admin/administrative actuales en DB; el actor proviene de la identidad verificada. Estado e historial permanecen en memoria.',
+      'Prototipo sin autenticación ni autorización de operador (DEUDA-47-01). civicId declara al actor; no acredita identidad. Estado e historial se persisten en PostgreSQL.',
   })
   @ApiBody({
     schema: {
       type: 'object',
       additionalProperties: false,
-      required: ['status', 'cause'],
+      required: ['status', 'cause', 'civicId'],
       properties: {
         status: { type: 'string', enum: ['validated', 'rejected'] },
         cause: {
@@ -274,18 +367,27 @@ export class IncidentsController {
           minLength: 1,
           description: 'Motivo obligatorio; no vacío después de trim.',
         },
+        civicId: {
+          type: 'string',
+          format: 'uuid',
+          description:
+            'Actor declarado, sin verificar identidad ni rol; no modifica al propietario.',
+        },
       },
     },
   })
   @ApiOkResponse({
     description:
-      'Incidencia actualizada, sin historial ni datos del actor de auditoría.',
+      'Incidencia actualizada; el historial y el actor declarado se persisten, pero no se incluyen en la respuesta.',
     schema: incidentSchema,
   })
   @ApiBadRequestResponse({
     description: 'UUID o cuerpo inválido, motivo vacío o campos desconocidos.',
   })
   @ApiNotFoundResponse({ description: 'La incidencia no existe.' })
+  @ApiServiceUnavailableResponse({
+    description: 'PostgreSQL no está disponible.',
+  })
   @ApiConflictResponse({
     description:
       'La incidencia ya no está en estado reported; no se añade historial.',
@@ -294,27 +396,21 @@ export class IncidentsController {
     @Param('id', new ParseUUIDPipe()) idIncidencia: string,
     @Body(new CambiarEstadoIncidenciaPipe())
     entrada: CambiarEstadoIncidenciaInput,
-    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
-  ): Incident {
-    return this.incidentsService.cambiarEstado(
-      idIncidencia,
-      entrada,
-      usuario.id,
-    );
+  ): Promise<Incident> {
+    return this.incidentsService.cambiarEstado(idIncidencia, entrada);
   }
 
   @Patch(':id/priority')
-  @SetMetadata('rolesIncidencias', ['admin', 'administrative'])
   @ApiOperation({
     summary: 'Asignar prioridad manual con motivo',
     description:
-      'Solo incidencias validadas y admin/administrative actuales. Prioridades: Baja, Media y Alta. Actor de auditoría derivado del usuario autenticado; historial en memoria.',
+      'Solo incidencias validadas. Prioridades: Baja, Media y Alta. Cada asignación conserva su motivo y actor declarado. Prototipo sin autenticación ni autorización (DEUDA-28-01); civicId no acredita identidad. Historial persistido en PostgreSQL.',
   })
   @ApiBody({
     schema: {
       type: 'object',
       additionalProperties: false,
-      required: ['priority', 'cause'],
+      required: ['priority', 'cause', 'civicId'],
       properties: {
         priority: esquemaPrioridad,
         cause: {
@@ -322,12 +418,18 @@ export class IncidentsController {
           minLength: 1,
           description: 'Motivo obligatorio; no vacío después de trim.',
         },
+        civicId: {
+          type: 'string',
+          format: 'uuid',
+          description:
+            'Actor declarado sin verificar; no cambia al propietario.',
+        },
       },
     },
   })
   @ApiOkResponse({
     description:
-      'Incidencia con prioridad actualizada, sin historial ni actor de auditoría.',
+      'Incidencia con prioridad actualizada; historial y actor declarado persistidos, sin incluirse en la respuesta.',
     schema: incidentSchema,
   })
   @ApiBadRequestResponse({
@@ -335,6 +437,9 @@ export class IncidentsController {
       'UUID, prioridad o cuerpo inválidos; motivo vacío o campos desconocidos.',
   })
   @ApiNotFoundResponse({ description: 'La incidencia no existe.' })
+  @ApiServiceUnavailableResponse({
+    description: 'PostgreSQL no está disponible.',
+  })
   @ApiConflictResponse({
     description:
       'Solo se admite asignación de prioridad en incidencias validadas.',
@@ -343,24 +448,18 @@ export class IncidentsController {
     @Param('id', new ParseUUIDPipe()) idIncidencia: string,
     @Body(new CambiarPrioridadIncidenciaPipe())
     entrada: CambiarPrioridadIncidenciaInput,
-    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
-  ): Incident {
-    return this.incidentsService.cambiarPrioridad(
-      idIncidencia,
-      entrada,
-      usuario.id,
-    );
+  ): Promise<Incident> {
+    return this.incidentsService.cambiarPrioridad(idIncidencia, entrada);
   }
 
   @Get(':id')
-  @SetMetadata('rolesIncidencias', ['civic', 'admin', 'administrative'])
   @ApiOkResponse({ schema: incidentSchema })
   @ApiBadRequestResponse({ description: 'The incident id is not a UUID.' })
   @ApiNotFoundResponse({ description: 'The incident does not exist.' })
-  findOne(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
-  ): Incident {
-    return this.incidentsService.findOne(id, usuario);
+  @ApiServiceUnavailableResponse({
+    description: 'PostgreSQL no está disponible.',
+  })
+  findOne(@Param('id', new ParseUUIDPipe()) id: string): Promise<Incident> {
+    return this.incidentsService.findOne(id);
   }
 }

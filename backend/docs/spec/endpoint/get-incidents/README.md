@@ -1,27 +1,46 @@
-# 2026-10-27 - Consultar las incidencias propias
+# 2026-10-23 — Consultar el listado de incidencias por ciudadano
 
 - Método y ruta: GET /incidents.
-- Estado: implementado; unitarias, compilación y lint correctos.
-- Acceso: Bearer JWT, rol actual civic y registro citizens vinculado.
+- Última revisión: 2026-10-23.
+- Estado: implementado; verificado mediante pruebas unitarias, compilación y lint. No se han ejecutado peticiones HTTP de integración.
 
-## Entrada y respuesta
+## Entrada y validación
 
-Sin cuerpo ni parámetros. El servidor deriva el ciudadano del usuario autenticado. Cualquier parámetro, incluido civicId (aunque coincida con el usuario real), devuelve 400. Ya no existe el filtro arbitrario GET /incidents?civicId=...; los consumidores deben dejar de enviarlo.
+Consulta obligatoria civicId=<UUID>. Ejemplo: GET /incidents?civicId=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa. Sin cuerpo ni otros parámetros.
 
-200 con array sin envoltorio de resúmenes propios: exactamente id, title, status y createdAt ISO. Orden por createdAt descendente, id ascendente para empates. Sin coincidencias devuelve []. Sin ubicación, imágenes, causa, actor ni historial. Admin/administrative no tienen un listado global en esta ruta.
+Ausencia, vacío, UUID mal formado, valores repetidos, valores anidados u otros parámetros devuelven 400. Se compara el UUID sin distinguir mayúsculas/minúsculas. Un filtro ausente nunca produce un listado global.
 
-DEUDA-27-01 de identidad cerrada: creación y listado usan el ciudadano real y el GET individual comprueba propiedad. La persistencia sigue pendiente.
+## Respuesta
 
-## Identidad, errores y almacenamiento
+200 con array sin envoltorio. Cada resumen contiene únicamente id (UUID), title (texto), status (estado actual) y createdAt (ISO). Sin coincidencias devuelve []. Orden: createdAt descendente; id ascendente para empates. No incluye ubicación, imágenes, historial ni motivos de cambios.
 
-Se ejecutan JwtAuthGuard y después la comprobación del usuario y rol actuales en PostgreSQL, antes de interceptores y pipes. Un usuario eliminado o JWT inválido/ausente devuelve 401. Rol actual insuficiente o civic sin vinculación citizens devuelve 403. Un fallo de DB es error de servidor; no se acepta identidad de respaldo del cliente. El rol firmado antiguo no conserva privilegios tras cambiar el usuario en DB.
+~~~json
+[
+  {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "title": "Farola apagada",
+    "status": "reported",
+    "createdAt": "2026-10-23T10:00:00.000Z"
+  }
+]
+~~~
 
-Metadatos e historial siguen en el Map de esta instancia y se pierden al reiniciar; imágenes locales. Las imágenes de /uploads requieren ahora JWT y permiso de propietario u operador; no existe el montaje estático público. Véase [descarga protegida](../get-uploads-incidents-id-archivo/README.md). No se han ejecutado pruebas HTTP, DB o frontend.
+Los valores son ilustrativos, no datos semilla ni identificadores garantizados. Las respuestas son objetos nuevos y no permiten modificar los registros persistidos.
+
+## Identidad y almacenamiento
+
+DEUDA-27-01 sigue abierta: no hay autenticación ni autorización. civicId es un filtro del cliente, no una identidad verificada; introducir el identificador de otra persona permite consultar su listado. Este prototipo no garantiza una consulta privada de incidencias propias. La resolución pendiente está en la especificación.
+
+El listado consulta incidencias en PostgreSQL; no lee bytes de Cloudinary. Los registros sobreviven al reinicio. No hay paginación ni consultas de auditoría.
+
+El estado actual puede ser reported, validated o rejected; no devuelve historial, motivos ni actor de auditoría. Los cambios se describen en [validar o rechazar incidencias](../patch-incidents-id-status/README.md).
 
 ## Referencias
 
-- [Identidad y permisos vigentes](../../features/specs/2026-10-27-autenticar-incidencias-y-verificar-permisos-spec.md).
-- [Plan y evidencia de cierre](../../features/plans/2026-10-27-autenticar-incidencias-y-verificar-permisos-plan.md).
+- [Especificación y deuda técnica](../../features/specs/2026-10-23-consultar-incidencias-por-ciudadano-spec.md).
+- [Plan y confirmación](../../features/plans/2026-10-23-consultar-incidencias-por-ciudadano-plan.md).
 - [Controlador](../../../../src/incidents/incidents.controller.ts).
+- [Validación de consulta](../../../../src/incidents/listar-incidencias.pipe.ts).
 - [Servicio](../../../../src/incidents/incidents.service.ts).
-- [Autorización actual](../../../../src/incidents/guards/acceso-incidencias.guard.ts).
+- [Unitarias del servicio](../../../../test/incidents/services/listar-incidencias.service.spec.ts).
+- [Unitarias de validación](../../../../test/incidents/pipes/listar-incidencias.pipe.spec.ts).

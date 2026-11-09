@@ -3,6 +3,7 @@ import { CambiarPrioridadIncidenciaPipe } from '../../../src/incidents/cambiar-p
 const entrada = {
   priority: 'high',
   cause: '  Riesgo para peatones  ',
+  civicId: 'BBBBBBBB-BBBB-4BBB-8BBB-BBBBBBBBBBBB',
 };
 describe('Validación de prioridad manual', () => {
   const pipe = new CambiarPrioridadIncidenciaPipe();
@@ -12,13 +13,12 @@ describe('Validación de prioridad manual', () => {
       expect(await pipe.transform({ ...entrada, priority })).toEqual({
         priority,
         cause: 'Riesgo para peatones',
+        civicId: entrada.civicId.toLowerCase(),
       });
       expect(entrada.cause).toBe('  Riesgo para peatones  ');
     },
   );
   it.each([
-    { ...entrada, civicId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
-    { ...entrada, userId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
     undefined,
     null,
     [],
@@ -37,6 +37,7 @@ describe('Validación de prioridad manual', () => {
     { ...entrada, cause: ' \t\n ' },
     { ...entrada, cause: 1 },
     { ...entrada, cause: {} },
+    { ...entrada, civicId: undefined },
     { ...entrada, civicId: null },
     { ...entrada, civicId: 'inválido' },
     { ...entrada, civicId: [] },

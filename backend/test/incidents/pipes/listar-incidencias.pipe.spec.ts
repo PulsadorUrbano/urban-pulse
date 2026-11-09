@@ -1,26 +1,32 @@
 import { BadRequestException } from '@nestjs/common';
 import { ListarIncidenciasPipe } from '../../../src/incidents/listar-incidencias.pipe.js';
-describe('Listado propio sin identidad de consulta', () => {
+
+const idCiudadano = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+
+describe('Validación de la consulta de incidencias', () => {
   const pipe = new ListarIncidenciasPipe();
-  it('acepta solo consulta vacía', async () => {
+
+  it('acepta un único UUID y normaliza sus mayúsculas', async () => {
     await expect(
-      Promise.resolve().then(() => pipe.transform({})),
-    ).resolves.toBeUndefined();
+      pipe.transform({ civicId: idCiudadano.toUpperCase() }),
+    ).resolves.toBe(idCiudadano);
   });
+
   it.each([
-    undefined,
-    null,
-    [],
-    1,
-    'texto',
-    { civicId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
-    { civicId: ['a', 'b'] },
-    { civicId: { id: 'otro' } },
-    { status: 'reported' },
-    { userId: 'otro' },
-  ])('rechaza suplantación o consulta inválida %#', async (consulta) => {
-    await expect(
-      Promise.resolve().then(() => pipe.transform(consulta)),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ['sin consulta', undefined],
+    ['consulta nula', null],
+    ['consulta primitiva', idCiudadano],
+    ['consulta como array', []],
+    ['filtro omitido', {}],
+    ['filtro vacío', { civicId: '' }],
+    ['filtro nulo', { civicId: null }],
+    ['filtro numérico', { civicId: 27 }],
+    ['UUID incorrecto', { civicId: 'ciudadano' }],
+    ['UUID con espacios', { civicId: ' ' + idCiudadano }],
+    ['filtro repetido', { civicId: [idCiudadano, idCiudadano] }],
+    ['filtro anidado', { civicId: { id: idCiudadano } }],
+    ['parámetro desconocido', { civicId: idCiudadano, status: 'reported' }],
+  ])('rechaza %s', async (_caso, consulta) => {
+    await expect(pipe.transform(consulta)).rejects.toThrow(BadRequestException);
   });
 });

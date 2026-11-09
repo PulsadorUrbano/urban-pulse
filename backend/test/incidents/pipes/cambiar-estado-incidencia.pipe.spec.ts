@@ -4,6 +4,7 @@ import { CambiarEstadoIncidenciaPipe } from '../../../src/incidents/cambiar-esta
 const entrada = {
   status: 'validated',
   cause: '  Revisada  ',
+  civicId: 'AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA',
 };
 describe('Validación del cambio de estado', () => {
   const pipe = new CambiarEstadoIncidenciaPipe();
@@ -13,13 +14,12 @@ describe('Validación del cambio de estado', () => {
       expect(await pipe.transform({ ...entrada, status })).toEqual({
         status,
         cause: 'Revisada',
+        civicId: entrada.civicId.toLowerCase(),
       });
       expect(entrada.cause).toBe('  Revisada  ');
     },
   );
   it.each([
-    { ...entrada, civicId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
-    { ...entrada, userId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
     undefined,
     null,
     [],
@@ -37,12 +37,13 @@ describe('Validación del cambio de estado', () => {
     { ...entrada, cause: ' \t\n ' },
     { ...entrada, cause: 1 },
     { ...entrada, cause: {} },
+    { ...entrada, civicId: undefined },
     { ...entrada, civicId: null },
     { ...entrada, civicId: 'incorrecto' },
     { ...entrada, civicId: [] },
     { ...entrada, civicId: {} },
-    { ...entrada, actorId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
-    { ...entrada, id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
+    { ...entrada, actorId: entrada.civicId },
+    { ...entrada, id: entrada.civicId },
     { ...entrada, fechaCreacion: '2026-10-23' },
     { ...entrada, cambiosEstado: [] },
   ])('rechaza el cuerpo inválido %#', async (cuerpo) => {

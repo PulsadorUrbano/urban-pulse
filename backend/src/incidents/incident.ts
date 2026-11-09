@@ -1,10 +1,4 @@
-import type {
-  CambioEstadoModel,
-  CambioPrioridadModel,
-  IncidentModel as PrismaIncident,
-  IncidentLocationModel as PrismaIncidentLocation,
-  IncidentImageModel as PrismaIncidentImage,
-} from '../generated/prisma/models.js';
+import type { IncidentModel as PrismaIncident } from '../generated/prisma/models.js';
 
 export interface UploadedImageFile {
   buffer: Buffer;
@@ -13,9 +7,23 @@ export interface UploadedImageFile {
 
 export interface IncidentImage {
   id: string;
+  cloudinaryId: string;
   url: string;
   mimeType: UploadedImageFile['mimetype'];
   createdAt: string;
+}
+
+export type PublicIncidentImage = Omit<IncidentImage, 'cloudinaryId'>;
+
+export function serializarImagenPublica(
+  image: IncidentImage,
+): PublicIncidentImage {
+  return {
+    id: image.id,
+    url: image.url,
+    mimeType: image.mimeType,
+    createdAt: image.createdAt,
+  };
 }
 
 export interface CreateIncidentInput {
@@ -38,25 +46,31 @@ export interface Incident {
   categoryId: string | null;
   category: string | null;
   urbanAssetId: string | null;
+  departmentId: string | null;
+  teamId: string | null;
+  technicianId: string | null;
   location: {
     latitude: number | null;
     longitude: number | null;
     accuracy: number | null;
     createdAt: string;
   };
-  images: IncidentImage[];
+  images: PublicIncidentImage[];
   status: PrismaIncident['status'];
   priority: PrismaIncident['priority'];
   createdAt: string;
 }
 
-// Generated Prisma records only; this aggregate is kept in memory, not in a database.
-export type StoredIncident = PrismaIncident & {
-  cambiosEstado: CambioEstadoModel[];
-  cambiosPrioridad: CambioPrioridadModel[];
-  location: PrismaIncidentLocation;
-  images: (PrismaIncidentImage & { mimeType: UploadedImageFile['mimetype'] })[];
-};
+export type AsignacionIncidencia = Pick<
+  Incident,
+  'departmentId' | 'teamId' | 'technicianId'
+>;
+export type CambioAsignacionIncidencia = Partial<AsignacionIncidencia>;
+export interface OpcionesAsignacion {
+  departments: { id: string; name: string }[];
+  teams: { id: string; name: string; departmentId: string }[];
+  technicians: { id: string; name: string; teamId: string }[];
+}
 
 export type ResumenIncidencia = Pick<
   Incident,
@@ -66,11 +80,11 @@ export type ResumenIncidencia = Pick<
 export interface CambiarEstadoIncidenciaInput {
   status: Exclude<Incident['status'], 'reported'>;
   cause: string;
+  civicId: string;
 }
 
 export interface CambiarPrioridadIncidenciaInput {
   priority: Incident['priority'];
   cause: string;
+  civicId: string;
 }
-
-export type CrearIncidenciaBody = Omit<CreateIncidentInput, 'civicId'>;

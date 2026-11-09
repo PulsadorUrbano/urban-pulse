@@ -1,9 +1,10 @@
 import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
-import { CrearIncidenciaBody } from './incident.js';
+import { CreateIncidentInput } from './incident.js';
 
 const allowedKeys = new Set([
   'title',
   'description',
+  'civicId',
   'categoryId',
   'category',
   'latitude',
@@ -17,9 +18,9 @@ const uuidPattern =
 @Injectable()
 export class CreateIncidentPipe implements PipeTransform<
   unknown,
-  CrearIncidenciaBody
+  CreateIncidentInput
 > {
-  transform(value: unknown): CrearIncidenciaBody {
+  transform(value: unknown): CreateIncidentInput {
     if (!this.isRecord(value)) {
       throw new BadRequestException('The request body must be an object');
     }
@@ -43,6 +44,8 @@ export class CreateIncidentPipe implements PipeTransform<
     if ([...title].length < 4 || [...title].length > 35) {
       throw new BadRequestException('title must contain 4 to 35 characters');
     }
+
+    this.uuid(value.civicId, 'civicId');
 
     if (value.categoryId !== undefined) {
       this.uuid(value.categoryId, 'categoryId');
@@ -69,6 +72,7 @@ export class CreateIncidentPipe implements PipeTransform<
     return {
       title,
       ...(description === undefined ? {} : { description }),
+      civicId: value.civicId,
       ...(value.categoryId === undefined
         ? {}
         : { categoryId: value.categoryId }),
