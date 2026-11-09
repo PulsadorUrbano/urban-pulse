@@ -32,7 +32,7 @@ Antes de crear o cambiar pantallas, leer `.claude/skills/diseno-web/SKILL.md` (c
 ## Specs y trazabilidad (`docs/spec/`)
 
 - La estructura de carpetas, las plantillas y la diferencia entre `spec.md` y `plan.md` están documentadas en `docs/spec/README.md` — es la única fuente de verdad, no se duplica aquí. Es la misma que `frontend-mobile/docs/spec/`.
-- Cada feature, bug, refactor o cambio de documentación se documenta ahí y declara el desarrollador responsable, el asistente de IA y el modelo exacto utilizados. No existe historial de prompts: no crear `docs/spec/prompts/`.
+- Cada feature, bug o refactor se documenta ahí y declara el desarrollador responsable, el asistente de IA y el modelo exacto utilizados. Los cambios solo de documentación no llevan `spec.md` ni `plan.md`, solo nota de sesión. No existe historial de prompts: no crear `docs/spec/prompts/`.
 - La skill `trazabilidad` (`.claude/skills/trazabilidad/`) aplica este flujo; usarla siempre que se haga una feature, fix, refactor o docs.
 
 ## Documentación de sesión y seguimiento de tareas (`docs/`)

@@ -8,7 +8,7 @@
 
 La rama `docs/creacion-adr` tenía los ADR redactados el 27-10 (0002 y 0004 web de Alejandro, 0005 móvil de artina09 y 0006 token de Sofía) en `docs/adr/`, pero `dev` había movido los ADR a `backend/docs/adr/`. Además, `dev` traía de la PR #107 la versión antigua de la trazabilidad web, con historial de prompts. Esta sesión integra `dev` en `docs/creacion-adr`, reúne todos los ADR en un único sitio y deja la trazabilidad de la web igual que la de `frontend-mobile`, para subirlo todo a `dev` en una PR. Rama de trabajo: `docs/creacion-adr`.
 
-Trazabilidad completa en `docs/spec/features/27-10-26-adr-frontend-web/` y `docs/spec/refactor/independent/27-10-26-alinear-trazabilidad-con-frontend-mobile.md`.
+Esta sesión fue solo de documentación, así que su trazabilidad es esta nota.
 
 ## Alcance
 
@@ -39,8 +39,6 @@ Trazabilidad completa en `docs/spec/features/27-10-26-adr-frontend-web/` y `docs
 | `frontend-web/docs/spec/README.md`, `templates/*.md`, `bugs/todo.md` | Calcados de `frontend-mobile/docs/spec/`. |
 | `frontend-web/CLAUDE.md` | Trazabilidad y documentación de sesión. |
 | `frontend-web/.claude/skills/trazabilidad/SKILL.md` | Nuevo. |
-| `frontend-web/docs/spec/features/27-10-26-adr-frontend-web/spec.md`, `plan.md` | Decisión de ubicación y tarea 4. |
-| `frontend-web/docs/spec/refactor/independent/27-10-26-alinear-trazabilidad-con-frontend-mobile.md` | Reescrito con la plantilla nueva y ampliado. |
 
 ## Checklist de la sesión
 
@@ -49,12 +47,10 @@ Trazabilidad completa en `docs/spec/features/27-10-26-adr-frontend-web/` y `docs
 - [x] ADR reunidos en `docs/adr/` y enlaces corregidos.
 - [x] Plantillas, README y `todo.md` de `docs/spec/` calcados del móvil.
 - [x] `CLAUDE.md` y skill `trazabilidad`.
-- [x] Documentos de la feature y del refactor actualizados.
 
 ## Documentos actualizados
 
-- [x] `docs/spec/features/27-10-26-adr-frontend-web/spec.md` y `plan.md` — tarea 4 y decisión de ubicación.
-- [x] `docs/spec/refactor/independent/27-10-26-alinear-trazabilidad-con-frontend-mobile.md` — implementado y verificado.
+Ninguno: los cambios solo de documentación llevan únicamente nota de sesión.
 
 ## Estado / Verificación
 

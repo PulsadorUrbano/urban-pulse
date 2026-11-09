@@ -6,7 +6,7 @@
 
 ## Contexto
 
-Hace falta que otra IA, en el ordenador de una compañera, siga el mismo diseño y estilo de código en el panel web. Rama de trabajo: `feature/web-typescript-migration`. Trazabilidad completa en `docs/spec/features/09-11-26-guias-diseno-y-codigo-web/`.
+Hace falta que otra IA, en el ordenador de una compañera, siga el mismo diseño y estilo de código en el panel web. Rama de trabajo: `feature/web-typescript-migration`.
 
 ## Alcance
 
@@ -34,8 +34,7 @@ Crear las skills `diseno-web` y `estilo-codigo-web` y referenciarlas desde `CLAU
 
 ## Documentos actualizados
 
-- [x] `docs/spec/features/09-11-26-guias-diseno-y-codigo-web/spec.md`.
-- [x] `docs/spec/features/09-11-26-guias-diseno-y-codigo-web/plan.md`.
+Ninguno: los cambios solo de documentación no llevan especificación ni plan.
 
 ## Estado / Verificación
 
