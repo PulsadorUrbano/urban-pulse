@@ -14,7 +14,7 @@ npm run dev
 
 Abre la dirección que muestre Vite. Consulta los requisitos de Node y npm en [desarrollo](../docs/development.md).
 
-## Configuración de API
+## API
 
 `src/services/authService.ts` utiliza `VITE_BACKEND_URL` como URL base. Si no se define, usa `/api`.
 
@@ -24,7 +24,7 @@ En el despliegue con Compose, Nginx sirve la aplicación compilada y aplica el m
 
 Para una dirección diferente, define `VITE_BACKEND_URL` en el entorno de Vite. El componente no tiene un archivo de ejemplo de entorno. La preparación de la API está en el [README del backend](../backend/README.md).
 
-## Scripts
+## Scripts y comprobaciones
 
 Desde `frontend-web/`:
 
@@ -39,7 +39,7 @@ Desde `frontend-web/`:
 
 La suite incluye pruebas del servicio de autenticación. Los procedimientos se han contrastado por lectura, sin ejecutar instalación, compilación, lint, pruebas ni servicios durante esta revisión documental.
 
-## Estructura
+## Estructura del subproyecto
 
 | Ruta | Contenido |
 | --- | --- |
@@ -54,4 +54,4 @@ La suite incluye pruebas del servicio de autenticación. Los procedimientos se h
 
 La aplicación combina JavaScript/JSX y TypeScript. Los servidores `dev` y `preview` se utilizan para desarrollo y previsualización; el alcance del despliegue está en la [guía general](../docs/deployment.md).
 
-Guías: [arquitectura](../docs/architecture.md), [desarrollo](../docs/development.md), [despliegue](../docs/deployment.md), [contribución](../CONTRIBUTING.md) y [ADRs](../backend/docs/adr/).
+Guías: [arquitectura](../docs/architecture.md), [desarrollo](../docs/development.md), [despliegue](../docs/deployment.md), [contribución](../CONTRIBUTING.md) y [ADRs](../docs/adr/).

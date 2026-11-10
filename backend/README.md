@@ -2,7 +2,9 @@
 
 API NestJS con TypeScript para autenticación y gestión de incidencias urbanas. Los módulos activos son configuración, Nest Observe, Prisma, autenticación, salud e incidencias.
 
-## Requisitos y configuración
+## Instalación y arranque
+
+### Requisitos y configuración
 
 El componente usa npm y `package-lock.json`. `package.json` declara Node.js ≥22 y npm ≥10. Necesita PostgreSQL accesible y las tablas de usuarios y ciudadanía para las operaciones de autenticación.
 
@@ -25,7 +27,7 @@ Copy-Item .env.example .env
 
 No versiones los archivos `.env` ni credenciales reales. La configuración de contenedores se explica en [despliegue](../docs/deployment.md).
 
-## Instalación y arranque
+### Arranque local
 
 Desde la raíz:
 
@@ -44,28 +46,6 @@ npm exec -- prisma generate --config prisma7.config.ts
 El `postinstall` ejecuta `prisma skills sync || exit 0`. Los scripts `start:dev` y `build` incluyen su propia llamada a `prisma generate`.
 
 Swagger se publica en `http://localhost:3000/`. `GET /health` devuelve `{ "status": "ok" }`; no consulta PostgreSQL. Ajusta la dirección si defines otro `PORT`.
-
-## Scripts
-
-Desde `backend/`:
-
-| Comando | Función |
-| --- | --- |
-| `npm run start` | Arrancar con Nest CLI. |
-| `npm run start:dev` | Generar el cliente Prisma y arrancar con recarga. |
-| `npm run start:debug` | Arrancar con depurador y recarga. |
-| `npm run build` | Generar el cliente Prisma y compilar con Nest. |
-| `npm run deploy` | Generar el cliente, compilar y arrancar con Nest CLI; comando usado por el contenedor. |
-| `npm run start:prod` | Ejecutar `node dist/main` después de compilar. |
-| `npm run lint` | Oxlint con comprobación de tipos sobre `src/` y `test/`. |
-| `npm test` | Pruebas unitarias con Vitest. |
-| `npm run test:watch` | Vitest en modo observación. |
-| `npm run test:cov` | Cobertura unitaria. |
-| `npm run test:debug` | Depuración de pruebas sin paralelismo entre archivos. |
-| `npm run test:e2e` | Suite e2e con configuración separada; según `AGENTS.md`, requiere petición explícita. |
-| `npm run format` | Reescribir el formato de los archivos TypeScript de `src/` y `test/`. |
-
-La configuración unitaria descubre `**/*.spec.ts` y la e2e `**/*.e2e-spec.ts`. Los procedimientos de esta guía se han contrastado por lectura; no se han ejecutado instalaciones, servicios ni suites para esta revisión documental.
 
 ## API
 
@@ -87,11 +67,29 @@ El alta recibe `title` y `civicId` obligatorios. El título recortado admite ent
 
 `GET /auth/me` utiliza `JwtAuthGuard`. Las rutas de incidencias reciben `civicId` como dato del cliente y no aplican ese guard. El arranque no configura CORS explícitamente.
 
-## Persistencia y estructura
+## Scripts y comprobaciones
 
-Los usuarios y ciudadanos se almacenan en PostgreSQL mediante Prisma. Las contraseñas se guardan con hash bcrypt. El esquema `prisma/schema.prisma` también define incidencias, ubicaciones, imágenes y cambios de estado y prioridad; su existencia no determina el almacenamiento utilizado por cada servicio.
+Desde `backend/`:
 
-`IncidentsService` usa PostgreSQL para incidencias, ubicaciones, imágenes e historiales. Las nuevas imágenes se suben a Cloudinary y PostgreSQL conserva su `public_id` y URL HTTPS. El catálogo de categorías sigue siendo temporal. Esta función requiere que el esquema local esté preparado; no se aplican migraciones automáticamente.
+| Comando | Función |
+| --- | --- |
+| `npm run start` | Arrancar con Nest CLI. |
+| `npm run start:dev` | Generar el cliente Prisma y arrancar con recarga. |
+| `npm run start:debug` | Arrancar con depurador y recarga. |
+| `npm run build` | Generar el cliente Prisma y compilar con Nest. |
+| `npm run deploy` | Generar el cliente, compilar y arrancar con Nest CLI; comando usado por el contenedor. |
+| `npm run start:prod` | Ejecutar `node dist/main` después de compilar. |
+| `npm run lint` | Oxlint con comprobación de tipos sobre `src/` y `test/`. |
+| `npm test` | Pruebas unitarias con Vitest. |
+| `npm run test:watch` | Vitest en modo observación. |
+| `npm run test:cov` | Cobertura unitaria. |
+| `npm run test:debug` | Depuración de pruebas sin paralelismo entre archivos. |
+| `npm run test:e2e` | Suite e2e con configuración separada; según `AGENTS.md`, requiere petición explícita. |
+| `npm run format` | Reescribir el formato de los archivos TypeScript de `src/` y `test/`. |
+
+La configuración unitaria descubre `**/*.spec.ts` y la e2e `**/*.e2e-spec.ts`. Los procedimientos de esta guía se han contrastado por lectura; no se han ejecutado instalaciones, servicios ni suites para esta revisión documental.
+
+## Estructura del subproyecto
 
 | Ruta | Contenido |
 | --- | --- |
@@ -102,6 +100,12 @@ Los usuarios y ciudadanos se almacenan en PostgreSQL mediante Prisma. Las contra
 | `src/health/` | Comprobación de salud. |
 | `src/main.ts` y `src/app.module.ts` | Arranque, Swagger, archivos estáticos y composición de módulos. |
 
+### Persistencia
+
+Los usuarios y ciudadanos se almacenan en PostgreSQL mediante Prisma. Las contraseñas se guardan con hash bcrypt. El esquema `prisma/schema.prisma` también define incidencias, ubicaciones, imágenes y cambios de estado y prioridad; su existencia no determina el almacenamiento utilizado por cada servicio.
+
+`IncidentsService` guarda las incidencias, ubicaciones, imágenes e historiales en PostgreSQL. Las imágenes nuevas se suben a Cloudinary y PostgreSQL conserva su `public_id` y su URL HTTPS. El catálogo de categorías sigue siendo temporal. El esquema de la base de datos debe estar preparado, ya que las migraciones no se aplican automáticamente.
+
 El [DBML](../database/diagram.dbml) y el [SQL de referencia](docs/migrations/001_base_diagram.sql) describen el modelo de datos del proyecto.
 
-Guías: [arquitectura](../docs/architecture.md), [desarrollo](../docs/development.md), [despliegue](../docs/deployment.md), [contribución](../CONTRIBUTING.md) y [ADRs](docs/adr/).
+Guías: [arquitectura](../docs/architecture.md), [desarrollo](../docs/development.md), [despliegue](../docs/deployment.md), [contribución](../CONTRIBUTING.md) y [ADRs](../docs/adr/).
