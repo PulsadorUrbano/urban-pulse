@@ -1,21 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
-import { IncidentImage, UploadedImageFile } from './incident.js';
-
-const extensions = {
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-  'image/webp': 'webp',
-} as const;
-
-export function uploadsRoot(): string {
-  return resolve(process.env.UPLOADS_DIRECTORY ?? join(process.cwd(), 'uploads'));
-}
+import { CloudinaryService } from './cloudinary.service.js';
+import type { IncidentImage, UploadedImageFile } from './incident.js';
 
 @Injectable()
 export class UploadStorageService {
+  private readonly logger = new Logger(UploadStorageService.name);
+
+  constructor(private readonly cloudinaryService: CloudinaryService) {}
+
   async save(
     incidentId: string,
     files: UploadedImageFile[],
@@ -24,34 +17,44 @@ export class UploadStorageService {
       return [];
     }
 
-    const directory = this.directory(incidentId);
+    const publicIds: string[] = [];
+    const images: IncidentImage[] = [];
+
     try {
-      await mkdir(directory, { recursive: true });
-      const images: IncidentImage[] = [];
       for (const file of files) {
         const id = randomUUID();
-        const extension = extensions[file.mimetype as keyof typeof extensions];
-        const filename = `${id}.${extension}`;
-        await writeFile(join(directory, filename), file.buffer);
+        const publicId = `urban-pulse/incidents/${incidentId}/${id}`;
+        publicIds.push(publicId);
+        const uploaded = await this.cloudinaryService.subirImagen(publicId, file);
+
         images.push({
           id,
-          url: `/uploads/incidents/${incidentId}/${filename}`,
+          cloudinaryId: uploaded.cloudinaryId,
+          url: uploaded.url,
           mimeType: file.mimetype,
           createdAt: new Date().toISOString(),
         });
       }
+
       return images;
     } catch (error) {
-      await this.remove(incidentId);
+      await this.eliminarImagenes(publicIds);
       throw error;
     }
   }
 
-  async remove(incidentId: string): Promise<void> {
-    await rm(this.directory(incidentId), { recursive: true, force: true });
-  }
+  async eliminarImagenes(publicIds: string[]): Promise<string[]> {
+    const pendientes: string[] = [];
 
-  private directory(incidentId: string): string {
-    return join(uploadsRoot(), 'incidents', incidentId);
+    for (const publicId of publicIds) {
+      try {
+        await this.cloudinaryService.eliminarImagen(publicId);
+      } catch {
+        pendientes.push(publicId);
+        this.logger.warn(`No se pudo limpiar la imagen Cloudinary ${publicId}`);
+      }
+    }
+
+    return pendientes;
   }
 }

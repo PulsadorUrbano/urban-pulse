@@ -41,11 +41,11 @@ Ejemplo parcial ilustrativo del campo modificado: status=validated. Consultar el
 
 ## Almacenamiento y límites
 
-Estado e historial se publican juntos mediante una única sustitución síncrona del agregado en el Map, después de construir y serializar el resultado. Dos intentos en la misma instancia solo aceptan una transición. No constituye una transacción de base de datos ni coordinación entre procesos.
+Estado e historial se actualizan dentro de una transacción PostgreSQL. La transición condicionada al estado reported impide aceptar dos cambios concurrentes, incluso entre procesos.
 
 Cada cambio es un CambioEstado tipado desde Prisma y mapeado a status_changes: id y fecha de servidor, incidenciaId, actorId declarado, nuevoEstado y motivo normalizado. actorId es escalar, sin relación de usuario ficticia. El servicio permite consultar copias del historial para uso interno; no se expone ruta HTTP de historial.
 
-Incidencias e historial se pierden al reiniciar. Las imágenes permanecen en archivos locales y no se modifican en esta operación. Sin base de datos, migraciones ni auditoría duradera; al activar persistencia será necesaria una transacción para estado e historial.
+Incidencia e historial se conservan en PostgreSQL y se actualizan en una transacción. Esta operación no modifica las imágenes de Cloudinary ni sus referencias. Requiere el esquema local preparado.
 
 Las prioridades se etiquetan Baja (low), Media (medium) y Alta (high). El registro inicia Baja (low); las lecturas y respuestas completas pueden reflejar cualquier prioridad vigente. Véase [asignación manual](../patch-incidents-id-priority/README.md).
 

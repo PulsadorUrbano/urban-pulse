@@ -428,36 +428,42 @@ describe('createIncident', () => {
       expect(readSentFormData().has('images')).toBe(false);
     });
 
-    it('con 6 URIs envía solo las 5 primeras como partes images', async () => {
-      const sixImageUris = [
+    it('con 9 URIs envía solo las 8 primeras como partes images', async () => {
+      const nineImageUris = [
         'file:///photos/a.jpg',
         'file:///photos/b.jpg',
         'file:///photos/c.jpg',
         'file:///photos/d.jpg',
         'file:///photos/e.jpg',
         'file:///photos/f.jpg',
+        'file:///photos/g.jpg',
+        'file:///photos/h.jpg',
+        'file:///photos/i.jpg',
       ];
 
-      await createIncident(fullInput, TEST_CIVIC_ID, sixImageUris);
+      await createIncident(fullInput, TEST_CIVIC_ID, nineImageUris);
 
       const imageParts = readSentFormData().getAll('images') as ImageFilePart[];
-      expect(MAX_INCIDENT_IMAGES).toBe(5);
-      expect(imageParts).toHaveLength(5);
-      expect(imageParts.map((part) => part.uri)).toEqual(sixImageUris.slice(0, 5));
+      expect(MAX_INCIDENT_IMAGES).toBe(8);
+      expect(imageParts).toHaveLength(8);
+      expect(imageParts.map((part) => part.uri)).toEqual(nineImageUris.slice(0, 8));
     });
 
-    it('con 5 URIs exactas envía las 5 sin recortar', async () => {
-      const fiveImageUris = [
+    it('con 8 URIs exactas envía las 8 sin recortar', async () => {
+      const eightImageUris = [
         'file:///photos/1.jpg',
         'file:///photos/2.jpg',
         'file:///photos/3.jpg',
         'file:///photos/4.jpg',
         'file:///photos/5.jpg',
+        'file:///photos/6.jpg',
+        'file:///photos/7.jpg',
+        'file:///photos/8.jpg',
       ];
 
-      await createIncident(fullInput, TEST_CIVIC_ID, fiveImageUris);
+      await createIncident(fullInput, TEST_CIVIC_ID, eightImageUris);
 
-      expect(readSentFormData().getAll('images')).toHaveLength(5);
+      expect(readSentFormData().getAll('images')).toHaveLength(8);
     });
 
     it('envía cada parte images como una instancia de File con la URI original', async () => {
@@ -863,27 +869,30 @@ describe('createIncident', () => {
         ]);
       });
 
-      it('recorta a las 5 primeras imágenes: con 6 uris solo llama a createImage 5 veces', async () => {
+      it('recorta a las 8 primeras imágenes: con 9 uris solo llama a createImage 8 veces', async () => {
         routeFetchByEndpoint({
           backend: new RequestTimeoutError(),
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
-        const sixImageUris = [
+        const nineImageUris = [
           'file:///photos/1.jpg',
           'file:///photos/2.jpg',
           'file:///photos/3.jpg',
           'file:///photos/4.jpg',
           'file:///photos/5.jpg',
           'file:///photos/6.jpg',
+          'file:///photos/7.jpg',
+          'file:///photos/8.jpg',
+          'file:///photos/9.jpg',
         ];
 
-        const { incident } = await createIncident(fullInput, TEST_CIVIC_ID, sixImageUris);
+        const { incident } = await createIncident(fullInput, TEST_CIVIC_ID, nineImageUris);
 
         expect(mockedCreateImage).toHaveBeenCalledTimes(MAX_INCIDENT_IMAGES);
         expect(mockedCreateImage.mock.calls.map(([input]) => input.url)).toEqual(
-          sixImageUris.slice(0, 5),
+          nineImageUris.slice(0, 8),
         );
-        expect(incident.images).toHaveLength(5);
+        expect(incident.images).toHaveLength(8);
       });
 
       it('si createImage rechaza una imagen se omite del images sin romper la creación', async () => {

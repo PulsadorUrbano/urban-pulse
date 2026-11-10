@@ -23,7 +23,7 @@ Copy-Item .env.example .env
 | `NODE_ENV` | Con `development`, activa la creación de usuarios de desarrollo al arrancar. |
 | `DB_SYNC` | Vacío: no sincroniza tablas. `dbpush`: ejecuta `prisma db push`. `deploy`: ejecuta `prisma migrate deploy`. |
 | `OBSERVE_APP_KEY` y `OBSERVE_APP_SECRET` | Credenciales de Nest Observe. |
-| `UPLOADS_DIRECTORY` | Directorio de imágenes; por defecto `uploads/` dentro del directorio de ejecución. |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Configuración privada de Cloudinary para nuevas imágenes. |
 
 No versiones los archivos `.env` ni credenciales reales. La configuración de contenedores se explica en [despliegue](../docs/deployment.md).
 
@@ -104,7 +104,7 @@ La configuración unitaria descubre `**/*.spec.ts` y la e2e `**/*.e2e-spec.ts`. 
 
 Los usuarios y ciudadanos se almacenan en PostgreSQL mediante Prisma. Las contraseñas se guardan con hash bcrypt. El esquema `prisma/schema.prisma` también define incidencias, ubicaciones, imágenes y cambios de estado y prioridad; su existencia no determina el almacenamiento utilizado por cada servicio.
 
-`IncidentsService` conserva incidencias e historial en un `Map` del proceso y el catálogo de categorías también es temporal. Se pierden al reiniciar. Las imágenes se escriben en `uploads/incidents/<id>/` y se sirven mediante `/uploads/`; son archivos locales separados del registro en memoria.
+`IncidentsService` guarda las incidencias, ubicaciones, imágenes e historiales en PostgreSQL. Las imágenes nuevas se suben a Cloudinary y PostgreSQL conserva su `public_id` y su URL HTTPS. El catálogo de categorías sigue siendo temporal. El esquema de la base de datos debe estar preparado, ya que las migraciones no se aplican automáticamente.
 
 El [DBML](../database/diagram.dbml) y el [SQL de referencia](docs/migrations/001_base_diagram.sql) describen el modelo de datos del proyecto.
 

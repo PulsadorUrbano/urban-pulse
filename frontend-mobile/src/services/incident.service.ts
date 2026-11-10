@@ -26,8 +26,8 @@ const MOCK_INCIDENTS_ENDPOINT = `${API_BASE_URL}/incidents`;
 // Alias del endpoint del backend para no romper imports existentes.
 export const INCIDENTS_ENDPOINT = BACKEND_INCIDENTS_ENDPOINT;
 
-// El backend limita a 5 los ficheros por incidencia (FilesInterceptor).
-export const MAX_INCIDENT_IMAGES = 5;
+// El backend acepta hasta 8 ficheros por incidencia (FilesInterceptor).
+export const MAX_INCIDENT_IMAGES = 8;
 
 // Subir varias fotos por wifi puede tardar más que una petición JSON normal;
 // se amplía el timeout solo para esta llamada en vez de tocar el valor por
