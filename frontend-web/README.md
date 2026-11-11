@@ -14,7 +14,7 @@ npm run dev
 
 Abre la dirección que muestre Vite. Consulta los requisitos de Node y npm en [desarrollo](../docs/development.md).
 
-## Configuración de API
+## API
 
 `src/constants/config.ts` utiliza `VITE_BACKEND_URL` como URL base. Si no se define, usa `/api`. El archivo `.env.example` documenta las variables; cópialo a `.env.local` si necesitas cambiarlas.
 
@@ -24,7 +24,7 @@ En el despliegue con Compose, Nginx sirve la aplicación compilada y aplica el m
 
 Si la API se sirve desde otro origen, define `VITE_BACKEND_URL` con esa dirección; el backend tendría que permitir CORS, que hoy no activa.
 
-## Comportamiento con el backend
+### Comportamiento con el backend
 
 | Funcionalidad | Endpoints | Sin conexión con el backend |
 | --- | --- | --- |
@@ -36,7 +36,7 @@ Si la API se sirve desde otro origen, define `VITE_BACKEND_URL` con esa direcci�
 
 Solo el personal municipal accede al panel: las cuentas `civic` se rechazan y se remiten a la app móvil (ADR 0002). La incidencia a validar se indica en la URL con `?incidencia=<id>`, porque el backend aún no ofrece un listado de incidencias pendientes para el personal.
 
-## Scripts
+## Scripts y comprobaciones
 
 Desde `frontend-web/`:
 
@@ -50,7 +50,7 @@ Desde `frontend-web/`:
 | `npm test` | Ejecutar las pruebas con Vitest. |
 | `npm run test:watch` | Ejecutar Vitest en modo observación. |
 
-## Estructura
+## Estructura del subproyecto
 
 La estructura y los nombres siguen a `frontend-mobile/src` para que los dos clientes describan los mismos datos de la misma forma.
 

@@ -2,21 +2,21 @@
 
 - Método y ruta: GET /incidents/:id.
 - Estado: contrato comprobado por lectura del código; conectividad no probada en esta adaptación documental.
-- Última revisión: 2026-10-23.
+- Última revisión: 2026-11-03.
 
 ## Entrada, respuesta y errores
 
 Sin cuerpo. id debe tener formato UUID. Ejemplo: GET /incidents/20ac442e-0f00-4fe4-bad3-61c8e8e0bff5.
 
-Respuesta 200 con la misma estructura pública del registro: identidad del recurso, datos enviados, ubicación e imágenes, status actual (reported, validated o rejected), priority vigente (low, medium o high) y fechas ISO. No se devuelven referencias mutables del almacenamiento.
+Respuesta 200 con la misma estructura pública del registro: identidad del recurso, datos enviados, ubicación e imágenes, `departmentId`, `teamId` y `technicianId` siempre presentes y anulables, status actual (reported, validated, rejected o assigned), priority vigente (low, medium o high) y fechas ISO. No se devuelven referencias mutables del almacenamiento.
 
 Errores: 400 para UUID mal formado; 404 para un UUID válido no almacenado en esta instancia. No requiere autenticación ni comprueba propiedad del recurso.
 
 ## Almacenamiento y límites
 
-Incidencias y metadatos en un Map local tipado por modelos Prisma; se pierden al reiniciar y no se comparten entre procesos. Las imágenes son archivos locales; su existencia no conserva el registro de la incidencia tras un reinicio. No hay base de datos activa ni garantía de persistencia duradera.
+Incidencias, ubicaciones, historial y referencias de imágenes se guardan en PostgreSQL. Las imágenes nuevas se guardan en Cloudinary y su `public_id` se conserva internamente. Requiere el esquema local preparado; no se aplican migraciones automáticamente.
 
-El estado actual puede ser reported, validated o rejected; no devuelve historial, motivos ni actor de auditoría. Los cambios se describen en [validar o rechazar incidencias](../patch-incidents-id-status/README.md).
+El estado actual puede ser reported, validated, rejected o assigned; no devuelve historial, motivos ni actor de auditoría. Los cambios se describen en [validar o rechazar incidencias](../patch-incidents-id-status/README.md). La [asignación](../patch-incidents-id-assignment/README.md) no cambia el estado.
 
 Las prioridades se etiquetan Baja (low), Media (medium) y Alta (high). El registro inicia Baja (low); las lecturas y respuestas completas pueden reflejar cualquier prioridad vigente. Véase [asignación manual](../patch-incidents-id-priority/README.md).
 
