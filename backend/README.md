@@ -2,7 +2,9 @@
 
 API NestJS con TypeScript para autenticación y gestión de incidencias urbanas. Los módulos activos son configuración, Nest Observe, Prisma, autenticación, salud e incidencias.
 
-## Requisitos y configuración
+## Instalación y arranque
+
+### Requisitos y configuración
 
 El componente usa pnpm 10.34.8 y `pnpm-lock.yaml`. `package.json` declara Node.js ≥22. Necesita PostgreSQL accesible y las tablas de usuarios y ciudadanía para las operaciones de autenticación.
 
@@ -24,7 +26,7 @@ Copy-Item .env.example .env
 
 No versiones los archivos `.env` ni credenciales reales. La configuración de contenedores se explica en [despliegue](../docs/deployment.md).
 
-## Instalación y arranque
+### Arranque local
 
 Desde la raíz:
 
@@ -43,27 +45,6 @@ pnpm exec prisma generate --config prisma7.config.ts
 Los scripts `start`, `start:dev` y `build` generan el cliente Prisma con `prisma7.config.ts`. La imagen Docker lo genera durante el build y arranca con `pnpm run start:prod`.
 
 Swagger se publica en `http://localhost:3000/`. `GET /health` devuelve `{ "status": "ok" }`; no consulta PostgreSQL. Ajusta la dirección si defines otro `PORT`.
-
-## Scripts
-
-Desde `backend/`:
-
-| Comando | Función |
-| --- | --- |
-| `pnpm run start` | Arrancar con Nest CLI. |
-| `pnpm run start:dev` | Generar el cliente Prisma y arrancar con recarga. |
-| `pnpm run start:debug` | Arrancar con depurador y recarga. |
-| `pnpm run build` | Generar el cliente Prisma y compilar con Nest. |
-| `pnpm run start:prod` | Ejecutar `node dist/main` después de compilar. |
-| `pnpm run lint` | Oxlint con comprobación de tipos sobre `src/` y `test/`. |
-| `pnpm test` | Pruebas unitarias con Vitest. |
-| `pnpm run test:watch` | Vitest en modo observación. |
-| `pnpm run test:cov` | Cobertura unitaria. |
-| `pnpm run test:debug` | Depuración de pruebas sin paralelismo entre archivos. |
-| `pnpm run test:e2e` | Suite e2e con configuración separada; según `AGENTS.md`, requiere petición explícita. |
-| `pnpm run format` | Reescribir el formato de los archivos TypeScript de `src/` y `test/`. |
-
-La configuración unitaria descubre `**/*.spec.ts` y la e2e `**/*.e2e-spec.ts`. 
 
 ## API
 
@@ -87,11 +68,28 @@ El alta recibe JSON con `title` obligatorio. El título recortado admite entre 4
 
 `GET /auth/me` y todas las rutas de incidencias utilizan JWT Bearer. El acceso a incidencias revalida en PostgreSQL el usuario, su rol actual y, para ciudadanía, su vínculo `citizens`. El arranque no configura CORS explícitamente.
 
-## Persistencia y estructura
+## Scripts y comprobaciones
 
-Los usuarios y ciudadanos se almacenan en PostgreSQL mediante Prisma. Las contraseñas se guardan con hash bcrypt. El esquema `prisma/schema.prisma` también define incidencias, ubicaciones y cambios de estado y prioridad.
+Desde `backend/`:
 
-`IncidentsService` usa operaciones asíncronas de Prisma para incidencias, ubicaciones e historiales. La creación y los cambios auditados usan transacciones. No existe almacenamiento local ni remoto de imágenes, ni ruta de descarga; la migración `20261109000000_retirar_imagenes` elimina la tabla anterior. El catálogo de categorías sigue siendo temporal. El esquema local debe estar preparado; no se aplican migraciones automáticamente salvo que `DB_SYNC=deploy` se configure expresamente.
+| Comando | Función |
+| --- | --- |
+| `pnpm run start` | Arrancar con Nest CLI. |
+| `pnpm run start:dev` | Generar el cliente Prisma y arrancar con recarga. |
+| `pnpm run start:debug` | Arrancar con depurador y recarga. |
+| `pnpm run build` | Generar el cliente Prisma y compilar con Nest. |
+| `pnpm run start:prod` | Ejecutar `node dist/main` después de compilar. |
+| `pnpm run lint` | Oxlint con comprobación de tipos sobre `src/` y `test/`. |
+| `pnpm test` | Pruebas unitarias con Vitest. |
+| `pnpm run test:watch` | Vitest en modo observación. |
+| `pnpm run test:cov` | Cobertura unitaria. |
+| `pnpm run test:debug` | Depuración de pruebas sin paralelismo entre archivos. |
+| `pnpm run test:e2e` | Suite e2e con configuración separada; según `AGENTS.md`, requiere petición explícita. |
+| `pnpm run format` | Reescribir el formato de los archivos TypeScript de `src/` y `test/`. |
+
+La configuración unitaria descubre `**/*.spec.ts` y la e2e `**/*.e2e-spec.ts`. 
+
+## Estructura del subproyecto
 
 | Ruta | Contenido |
 | --- | --- |
@@ -102,6 +100,12 @@ Los usuarios y ciudadanos se almacenan en PostgreSQL mediante Prisma. Las contra
 | `src/health/` | Comprobación de salud. |
 | `src/main.ts` y `src/app.module.ts` | Arranque, Swagger y composición de módulos. |
 
+### Persistencia
+
+Los usuarios y ciudadanos se almacenan en PostgreSQL mediante Prisma. Las contraseñas se guardan con hash bcrypt. El esquema `prisma/schema.prisma` también define incidencias, ubicaciones y cambios de estado y prioridad.
+
+`IncidentsService` usa operaciones asíncronas de Prisma para incidencias, ubicaciones e historiales. La creación y los cambios auditados usan transacciones. No existe almacenamiento local ni remoto de imágenes, ni ruta de descarga; la migración `20261109000000_retirar_imagenes` elimina la tabla anterior. El catálogo de categorías sigue siendo temporal. El esquema local debe estar preparado; no se aplican migraciones automáticamente salvo que `DB_SYNC=deploy` se configure expresamente.
+
 El [DBML](../database/diagram.dbml) y el [SQL de referencia](docs/migrations/001_base_diagram.sql) describen el modelo de datos del proyecto.
 
-Guías: [arquitectura](../docs/architecture.md), [desarrollo](../docs/development.md), [despliegue](../docs/deployment.md), [contribución](../CONTRIBUTING.md) y [ADRs](docs/adr/).
+Guías: [arquitectura](../docs/architecture.md), [desarrollo](../docs/development.md), [despliegue](../docs/deployment.md), [contribución](../CONTRIBUTING.md) y [ADRs](../docs/adr/).

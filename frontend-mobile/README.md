@@ -20,7 +20,7 @@ pnpm run web
 
 También puedes pulsar `w` desde el servidor de Expo. Consulta los requisitos comunes en [desarrollo](../docs/development.md).
 
-## API y servidor simulado
+## API
 
 La configuración está en `src/constants/config.ts`:
 
@@ -31,6 +31,8 @@ La configuración está en `src/constants/config.ts`:
 
 Las variables permiten indicar la URL completa del servicio, incluido su puerto. En un dispositivo físico, usa una dirección del ordenador accesible desde el teléfono. Puedes definirlas en el entorno de la terminal antes de iniciar Expo; no hay archivo de ejemplo de entorno propio del componente.
 
+### Servidor simulado
+
 Los servicios de autenticación, categorías e incidencias intentan utilizar el backend y disponen de rutas alternativas hacia datos simulados. El mock usa `db.json` y json-server. Para iniciarlo, abre otra terminal en `frontend-mobile/`:
 
 ```bash
@@ -38,17 +40,6 @@ pnpm run mock
 ```
 
 El script escucha en `0.0.0.0:3001`. El arranque del backend se explica en su [README](../backend/README.md) y la ejecución con contenedores, en [despliegue](../docs/deployment.md).
-
-## Dispositivo físico, emuladores y Expo Go
-
-1. Instala Expo Go compatible con el SDK del proyecto.
-2. Conecta ordenador y teléfono a la misma Wi-Fi para usar el modo LAN.
-3. Ejecuta `pnpm run start` y abre el proyecto con el QR de Expo. El nombre y slug configurados son `frontend`.
-4. Para los flujos que usen API o mock, configura direcciones accesibles desde el dispositivo y arranca los servicios correspondientes.
-
-Expo Go ejecuta los módulos nativos incluidos en su aplicación. Si necesitas módulos o configuración nativa que no incluya, utiliza una compilación de desarrollo. El repositorio no incluye `expo-dev-client`, `eas.json` ni proyectos `android/` o `ios/`. El procedimiento de referencia es la [guía de compilaciones de desarrollo de Expo](https://docs.expo.dev/develop/development-builds/introduction/).
-
-Para Android, configura Android Studio, SDK y un emulador iniciado. Para el simulador iOS se necesita macOS y Xcode. Los scripts `android` e `ios` inician Expo y abren la plataforma; no compilan una aplicación nativa propia.
 
 ## Scripts y comprobaciones
 
@@ -68,7 +59,11 @@ Desde `frontend-mobile/`:
 
 Las pruebas usan el preset `jest-expo` y se encuentran en `src/__tests__/`. No hay script de build. Los procedimientos se han contrastado por lectura; no se han ejecutado instalación, lint, comprobación de tipos, pruebas ni servicios durante esta revisión documental.
 
-## Navegación y estructura
+## Estructura del subproyecto
+
+`src/services/` contiene acceso HTTP, sesión, almacenamiento y capacidades del dispositivo; `src/hooks/` conecta esa lógica con las pantallas. Componentes, tipos y constantes se mantienen fuera de la carpeta de rutas. `app.json` configura iconos, splash y plugins, incluidos ubicación, selección de imágenes y almacenamiento seguro.
+
+### Navegación
 
 `package.json` utiliza `expo-router/entry`. `src/app/_layout.tsx` configura el proveedor de sesión, el tema y el navegador raíz.
 
@@ -81,8 +76,17 @@ Las pruebas usan el preset `jest-expo` y se encuentran en `src/__tests__/`. No h
 | `src/app/incidents/new.tsx` | Nueva incidencia. |
 | `src/app/incidents/[id].tsx` | Detalle de una incidencia. |
 
-`src/services/` contiene acceso HTTP, sesión, almacenamiento y capacidades del dispositivo; `src/hooks/` conecta esa lógica con las pantallas. Componentes, tipos y constantes se mantienen fuera de la carpeta de rutas. `app.json` configura iconos, splash y plugins, incluidos ubicación, selección de imágenes y almacenamiento seguro.
+## Dispositivo físico, emuladores y Expo Go
+
+1. Instala Expo Go compatible con el SDK del proyecto.
+2. Conecta ordenador y teléfono a la misma Wi-Fi para usar el modo LAN.
+3. Ejecuta `pnpm run start` y abre el proyecto con el QR de Expo. El nombre y slug configurados son `frontend`.
+4. Para los flujos que usen API o mock, configura direcciones accesibles desde el dispositivo y arranca los servicios correspondientes.
+
+Expo Go ejecuta los módulos nativos incluidos en su aplicación. Si necesitas módulos o configuración nativa que no incluya, utiliza una compilación de desarrollo. El repositorio no incluye `expo-dev-client`, `eas.json` ni proyectos `android/` o `ios/`. El procedimiento de referencia es la [guía de compilaciones de desarrollo de Expo](https://docs.expo.dev/develop/development-builds/introduction/).
+
+Para Android, configura Android Studio, SDK y un emulador iniciado. Para el simulador iOS se necesita macOS y Xcode. Los scripts `android` e `ios` inician Expo y abren la plataforma; no compilan una aplicación nativa propia.
 
 Referencias: [Expo SDK 58](https://docs.expo.dev/versions/v58.0.0/), [preparación del entorno](https://docs.expo.dev/get-started/set-up-your-environment/) y [Expo Router](https://docs.expo.dev/router/introduction/).
 
-Guías: [arquitectura](../docs/architecture.md), [desarrollo](../docs/development.md), [despliegue](../docs/deployment.md), [contribución](../CONTRIBUTING.md) y [ADRs](../backend/docs/adr/).
+Guías: [arquitectura](../docs/architecture.md), [desarrollo](../docs/development.md), [despliegue](../docs/deployment.md), [contribución](../CONTRIBUTING.md) y [ADRs](../docs/adr/).
