@@ -1,3 +1,4 @@
+import type { ProxyOptions } from 'vite'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const originalProxyUrl = process.env.URBAN_PULSE_PROXY_URL
@@ -11,10 +12,14 @@ afterEach(() => {
   vi.resetModules()
 })
 
-async function loadProxyConfig() {
+async function loadProxyConfig(): Promise<ProxyOptions> {
   vi.resetModules()
-  const { default: config } = await import('../../../vite.config.js')
-  return config.server.proxy['/api']
+  const { default: config } = await import('../../../vite.config')
+  const proxy = config.server?.proxy?.['/api']
+  if (proxy === undefined || typeof proxy === 'string') {
+    throw new Error('vite.config.ts debe definir un proxy /api con opciones')
+  }
+  return proxy
 }
 
 describe('Vite API proxy configuration', () => {
@@ -37,6 +42,6 @@ describe('Vite API proxy configuration', () => {
   it('rewrites the API prefix from login requests', async () => {
     const proxy = await loadProxyConfig()
 
-    expect(proxy.rewrite('/api/auth/login')).toBe('/auth/login')
+    expect(proxy.rewrite?.('/api/auth/login')).toBe('/auth/login')
   })
 })

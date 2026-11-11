@@ -1,86 +1,31 @@
-/**
- * Authentication type definitions for Urban Pulse.
- * Directly maps to PostgreSQL database schema (urbanPulse_diagram.sql)
- * and NestJS DTOs.
- */
+// Tipos de la sesión del panel web.
+import type { AuthToken } from './token';
+import type { BackendPublicUserDto, SessionUser } from './user';
 
-// User roles according to PostgreSQL profile_role ENUM
-export type ProfileRole = 
-  | 'administrative'
-  | 'department'
-  | 'team'
-  | 'technician'
-  | 'civic'
-  | 'admin'
-  | 'analyst';
-
-export interface User {
-  id: string; // UUID
-  username: string;
-  email: string;
-  fullName: string;
-  role: ProfileRole;
-  departmentName?: string;
-  badgeNumber?: string;
+// Dónde se guarda la sesión en el navegador (el móvil usa SecureStore).
+export interface SessionInfo {
+  storage: 'localStorage' | 'sessionStorage';
+  expiresAt: string | null;
 }
 
-export interface JwtHeader {
-  alg: 'HS256';
-  typ: 'JWT';
+export interface LoginResult {
+  user: SessionUser;
+  token: AuthToken;
+  session: SessionInfo;
+  // Aviso para la interfaz cuando el backend no responde y se usan datos simulados.
+  notice: string | null;
 }
 
-export interface JwtPayload {
-  sub?: string;
-  userId?: string;
-  username: string;
-  email?: string;
-  role: ProfileRole;
-  iss?: string;
-  iat?: number;
-  exp?: number;
+export interface CurrentSession {
+  user: SessionUser;
+  token: AuthToken;
+  session: SessionInfo;
 }
 
-export type TokenSource = 'backend' | 'mock';
+export type BackendSessionValidation = 'valid' | 'invalid' | 'unknown';
 
-export interface AuthTokens {
-  accessToken: string; // Signed single JWT access token
-  source: TokenSource;
-}
-
-export interface CookieMetadata {
-  name: string;
-  value: string;
-  httpOnly: boolean;
-  secure: boolean;
-  sameSite: 'strict' | 'lax' | 'none';
-  path: string;
-  maxAgeSeconds: number;
-  expiresAt: string;
-  isOpen: boolean; // Cookie state (open / active vs closed / revoked)
-}
-
-export interface LoginCredentials {
-  usernameOrEmail: string;
-  password: string;
-  rememberMe?: boolean;
-}
-
-export interface LoginResponse {
-  success: boolean;
-  user: User;
-  token: string;
-  tokenSource: TokenSource;
-  verifiedClaims?: {
-    userId: string;
-    username: string;
-    role: ProfileRole;
-  };
-  cookie: CookieMetadata;
-  message?: string;
-}
-
-export interface LogoutResponse {
-  success: boolean;
-  cookieCleared: boolean;
-  message: string;
+export interface TokenVerification {
+  valid: boolean;
+  claims?: BackendPublicUserDto;
+  error?: string;
 }

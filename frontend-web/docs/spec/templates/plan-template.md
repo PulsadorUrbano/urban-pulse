@@ -39,7 +39,7 @@ Rutas relativas a la raíz del repositorio.
 - [ ] Leer `frontend-web/CLAUDE.md`, la especificación, los archivos afectados y el estado de Git.
 - [ ] Si la feature consume un endpoint real, revisar su contrato en `backend/docs/spec/endpoint/` y el código del controlador solo en modo lectura; si no existe o no está estable, trabajar contra el mock sin eliminar lo ya simulado.
 - [ ] Comprobar las versiones instaladas en `package.json`.
-- [ ] Registrar el estado inicial de las comprobaciones (`npm run lint`, `npx tsc --noEmit`, `npm run test`, `npm run build`) y distinguir problemas previos. Para cambios documentales, revisar documentos y rutas sin ejecutar la aplicación.
+- [ ] Registrar el estado inicial de las comprobaciones (`npm run lint`, `npx tsc --noEmit`, `npm run test`, `npm run build`) y distinguir problemas previos.
 
 ## Tarea {{N}}: {{entregable concreto}}
 
@@ -59,7 +59,7 @@ Repetir esta sección por cada entregable necesario, sin duplicar la misma respo
 
 ## Comprobaciones finales
 
-Ejecutar desde frontend-web/ para cambios de código o dependencias; marcar no aplicable con motivo para cambios puramente documentales.
+Ejecutar desde frontend-web/.
 
 | Comprobación | Comando | Resultado real |
 | --- | --- | --- |

@@ -26,7 +26,7 @@ Source of truth: `frontend-web/docs/spec/README.md` and `frontend-web/docs/spec/
 | New feature or behaviour | `docs/spec/features/DD-MM-YY-nombre/spec.md` + `plan.md` | `spec-template.md`, `plan-template.md` |
 | Bug fix | `docs/spec/bugs/<feature>/DD-MM-YY-asunto.md` | `bug-template.md` |
 | Refactor (no observable change) | `docs/spec/refactor/<feature>/DD-MM-YY-asunto.md` or `refactor/independent/` | `refactor-template.md` |
-| Documentation only (ADR, guides) | feature folder with `spec.md` + `plan.md`; checks marked "No aplica: cambio documental" | spec + plan |
+| Documentation only (README, ADR, guides, skills) | Never `spec.md` or `plan.md`; only the session note | None |
 | Bug found but not fixed now | one line in `docs/spec/bugs/todo.md` | format at top of `todo.md` |
 
 Every case also gets a session note (step 4). A bug that affects several features goes to `bugs/general/`; if `bugs/<feature>/` or `refactor/<feature>/` already exists, add the file there.
