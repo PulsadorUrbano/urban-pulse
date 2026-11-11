@@ -40,11 +40,9 @@ import type {
   CambiarEstadoIncidenciaInput,
   CambiarPrioridadIncidenciaInput,
   Incident,
+  ResumenIncidencia,
 } from './incident.js';
-import {
-  ListarIncidenciasPipe,
-  type ConsultaListadoIncidencias,
-} from './listar-incidencias.pipe.js';
+import { ListarIncidenciasPipe } from './listar-incidencias.pipe.js';
 import type { UploadedImageFile } from './incident.js';
 import { IncidentsService } from './incidents.service.js';
 
@@ -130,22 +128,14 @@ export class IncidentsController {
 
   @Get()
   @ApiOperation({
-    summary: 'Consultar todas las incidencias o filtrarlas por ciudadano',
+    summary: 'Consultar el listado de incidencias por ciudadano',
     description:
-      'Sin civicId devuelve todas las incidencias. Con civicId devuelve solo las de ese ciudadano. Prototipo sin autenticación: civicId es un filtro del cliente, no acredita identidad ni propiedad (DEUDA-27-01). No devuelve trazabilidad.',
+      'Prototipo sin autenticación: civicId es un filtro del cliente, no acredita identidad ni propiedad (DEUDA-27-01). No devuelve trazabilidad.',
   })
-  @ApiQuery({ name: 'civicId', required: false, type: String, format: 'uuid' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, minimum: 1, maximum: 100, description: 'Por defecto 10.' })
-  @ApiQuery({ name: 'cursor', required: false, type: String, description: 'Cursor opaco devuelto en nextCursor.' })
+  @ApiQuery({ name: 'civicId', required: true, type: String, format: 'uuid' })
   @ApiOkResponse({
     description:
-      'Array de resúmenes, ordenados del más reciente al más antiguo. La paginación se comunica mediante cabeceras.',
-    headers: {
-      Link: { description: 'Enlace rel=next a la página siguiente, si existe.', schema: { type: 'string' } },
-      'X-Page': { description: 'Índice de página; la primera es 0.', schema: { type: 'integer' } },
-      'X-Limit': { description: 'Tamaño de página aplicado.', schema: { type: 'integer' } },
-      'X-Next-Cursor': { description: 'Cursor opaco para continuar; ausente en la última página.', schema: { type: 'string' } },
-    },
+      'Resúmenes ordenados del más reciente al más antiguo; array vacío si no hay coincidencias.',
     schema: {
       type: 'array',
       items: {
@@ -163,29 +153,12 @@ export class IncidentsController {
   })
   @ApiBadRequestResponse({
     description:
-      'Parámetros inválidos o desconocidos, limit fuera del rango 1–100 o cursor inválido.',
+      'civicId es obligatorio y debe ser un único UUID; no se admiten otros parámetros.',
   })
   listar(
-    @Query(new ListarIncidenciasPipe()) consulta: ConsultaListadoIncidencias,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    const pagina = this.incidentsService.listarPagina(
-      consulta.limit,
-      consulta.cursor,
-      consulta.civicId,
-    );
-    response.setHeader('X-Page', String(pagina.pagina));
-    response.setHeader('X-Limit', String(pagina.limit));
-    if (pagina.nextCursor) {
-      response.setHeader('X-Next-Cursor', pagina.nextCursor);
-      const parametros = new URLSearchParams({
-        limit: String(pagina.limit),
-        cursor: pagina.nextCursor,
-      });
-      if (consulta.civicId) parametros.set('civicId', consulta.civicId);
-      response.setHeader('Link', `</incidents?${parametros.toString()}>; rel="next"`);
-    }
-    return pagina.items;
+    @Query(new ListarIncidenciasPipe()) idCiudadano: string,
+  ): ResumenIncidencia[] {
+    return this.incidentsService.listarPorCiudadano(idCiudadano);
   }
 
   @Post()

@@ -78,14 +78,14 @@ Los contratos detallados, validaciones y respuestas tienen su ubicación princip
 | `GET /auth/me` | Consultar el usuario autenticado mediante un token Bearer. |
 | `GET /categories` | Consultar el catálogo temporal de categorías. |
 | `POST /incidents` | Crear una incidencia con `multipart/form-data`. |
-| `GET /incidents` | Listar incidencias con cursor en cabeceras (`limit` por defecto 10, máximo 100) y filtro opcional `civicId`. |
+| `GET /incidents?civicId=<UUID>` | Listar incidencias por identificador ciudadano. |
 | `GET /incidents/:id` | Consultar una incidencia. |
 | `PATCH /incidents/:id/status` | Validar o rechazar una incidencia reportada, con motivo y actor declarado. |
 | `PATCH /incidents/:id/priority` | Cambiar la prioridad de una incidencia validada, con motivo y actor declarado. |
 
 El alta recibe `title` y `civicId` obligatorios. El título recortado admite entre 4 y 35 puntos de código. Descripción, categoría, activo y ubicación son opcionales. Admite hasta ocho archivos `images` JPEG, PNG o WebP de hasta 5 MB cada uno. Devuelve `201`, el recurso y la cabecera `Location`. El formato completo y los errores se mantienen en la ficha de registro del catálogo.
 
-`GET /auth/me` utiliza `JwtAuthGuard`. Las rutas de incidencias no aplican ese guard; por tanto, el listado y el filtro `civicId` no requieren autenticación. El listado usa cursor keyset, no OFFSET. El arranque no configura CORS explícitamente.
+`GET /auth/me` utiliza `JwtAuthGuard`. Las rutas de incidencias reciben `civicId` como dato del cliente y no aplican ese guard. El arranque no configura CORS explícitamente.
 
 ## Persistencia y estructura
 

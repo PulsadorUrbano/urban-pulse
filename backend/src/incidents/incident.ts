@@ -63,20 +63,6 @@ export type ResumenIncidencia = Pick<
   'id' | 'title' | 'status' | 'createdAt'
 >;
 
-export interface CursorIncidencias {
-  id: string;
-  createdAt: string;
-  pagina: number;
-  civicId: string | null;
-}
-
-export interface PaginaIncidencias {
-  items: ResumenIncidencia[];
-  limit: number;
-  pagina: number;
-  nextCursor: string | null;
-}
-
 export interface CambiarEstadoIncidenciaInput {
   status: Exclude<Incident['status'], 'reported'>;
   cause: string;
