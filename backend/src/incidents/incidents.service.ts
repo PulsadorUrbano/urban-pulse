@@ -19,7 +19,10 @@ import type {
   CambiarEstadoIncidenciaInput,
   CambiarPrioridadIncidenciaInput,
   CreateIncidentInput,
+  CursorIncidencias,
   Incident,
+  OpcionesAsignacion,
+  PaginaIncidencias,
   ResumenIncidencia,
 } from './incident.js';
 import type { UsuarioIncidencias } from './types/usuario-incidencias.js';
@@ -103,10 +106,68 @@ export class IncidentsService {
     }));
   }
 
-  async findOne(id: string, usuario: UsuarioIncidencias): Promise<Incident> {
-    if (usuario.role === 'civic' && !usuario.ciudadanoId) {
-      throw new ForbiddenException('Se requiere un ciudadano vinculado');
+  async listarPagina(
+    limit: number,
+    cursor?: CursorIncidencias,
+    idCiudadano?: string,
+  ): Promise<PaginaIncidencias> {
+    const civicId = idCiudadano?.toLowerCase() ?? null;
+    if (cursor && cursor.civicId !== civicId) {
+      throw new BadRequestException('civicId no coincide con el cursor');
     }
+
+    let incidencias;
+    try {
+      incidencias = await this.prisma.incident.findMany({
+        where: {
+          ...(civicId ? { civicId } : {}),
+          ...(cursor
+            ? {
+                OR: [
+                  { createdAt: { lt: new Date(cursor.createdAt) } },
+                  {
+                    createdAt: new Date(cursor.createdAt),
+                    id: { gt: cursor.id },
+                  },
+                ],
+              }
+            : {}),
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+        take: limit + 1,
+        select: { id: true, title: true, status: true, createdAt: true },
+      });
+    } catch {
+      throw this.errorPersistencia('consultar incidencias');
+    }
+
+    const hayMas = incidencias.length > limit;
+    const pagina = cursor?.pagina ?? 0;
+    const visibles = incidencias.slice(0, limit);
+    const ultima = visibles.at(-1);
+    const nextCursor = hayMas && ultima
+      ? Buffer.from(JSON.stringify({
+          id: ultima.id,
+          createdAt: ultima.createdAt.toISOString(),
+          pagina: pagina + 1,
+          civicId,
+        })).toString('base64url')
+      : null;
+
+    return {
+      items: visibles.map(({ id, title, status, createdAt }) => ({
+        id,
+        title,
+        status,
+        createdAt: createdAt.toISOString(),
+      })),
+      limit,
+      pagina,
+      nextCursor,
+    };
+  }
+
+  async findOne(id: string): Promise<Incident> {
     let incident;
     try {
       incident = await this.prisma.incident.findUnique({

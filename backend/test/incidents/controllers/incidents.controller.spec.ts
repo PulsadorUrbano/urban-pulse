@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../../../src/auth/jwt-auth.guard.js';
 import { IncidentsController } from '../../../src/incidents/incidents.controller.js';
 import { AccesoIncidenciasGuard } from '../../../src/incidents/guards/acceso-incidencias.guard.js';
 import type { IncidentsService } from '../../../src/incidents/incidents.service.js';
+import type { Response } from 'express';
 import type { UsuarioIncidencias } from '../../../src/incidents/types/usuario-incidencias.js';
 
 describe('IncidentsController autenticado', () => {
@@ -97,5 +98,32 @@ describe('IncidentsController autenticado', () => {
     expect(
       Object.getOwnPropertyDescriptor(IncidentsController.prototype, 'asignar'),
     ).toBeUndefined();
+  });
+});
+
+describe('Listado paginado de incidencias', () => {
+  it('publica las cabeceras de continuación y conserva el cuerpo como array', async () => {
+    const items = [{
+      id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      title: 'Farola apagada',
+      status: 'reported' as const,
+      createdAt: '2026-11-12T10:00:00.000Z',
+    }];
+    const servicio = {
+      listarPagina: vi.fn().mockResolvedValue({ items, limit: 1, pagina: 0, nextCursor: 'cursor-opaco' }),
+    };
+    const setHeader = vi.fn();
+    const response = { setHeader } as unknown as Response;
+    const controlador = new IncidentsController(servicio as unknown as IncidentsService);
+
+    await expect(controlador.listar({ civicId: items[0].id, limit: 1 }, response)).resolves.toBe(items);
+    expect(servicio.listarPagina).toHaveBeenCalledWith(1, undefined, items[0].id);
+    expect(setHeader).toHaveBeenCalledWith('X-Page', '0');
+    expect(setHeader).toHaveBeenCalledWith('X-Limit', '1');
+    expect(setHeader).toHaveBeenCalledWith('X-Next-Cursor', 'cursor-opaco');
+    expect(setHeader).toHaveBeenCalledWith(
+      'Link',
+      `</incidents?limit=1&cursor=cursor-opaco&civicId=${items[0].id}>; rel="next"`,
+    );
   });
 });

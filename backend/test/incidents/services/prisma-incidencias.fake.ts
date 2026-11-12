@@ -26,6 +26,7 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
   const ubicaciones: Registro[] = [];
   const cambiosEstado: Registro[] = [];
   const cambiosPrioridad: Registro[] = [];
+  const consultasIncidencias: Registro[] = [];
   let leyendoConciliacion = false;
   let colaTransacciones = Promise.resolve();
 
@@ -65,10 +66,23 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
     },
     findMany: async (argumentos: unknown = {}) => {
       const args = objeto(argumentos);
+      consultasIncidencias.push(clonar(args));
       const where = args.where ? objeto(args.where) : {};
       let rows = incidencias.filter(
         (row) => where.civicId === undefined || row.civicId === where.civicId,
       );
+      if (where.OR !== undefined) {
+        const condiciones = lista(where.OR);
+        rows = rows.filter((row) => condiciones.some((condicion) => {
+          const fecha = new Date(String(row.createdAt)).getTime();
+          const valorFecha = condicion.createdAt;
+          if (valorFecha instanceof Date) {
+            return fecha === valorFecha.getTime() &&
+              String(row.id) > String(objeto(condicion.id).gt);
+          }
+          return fecha < new Date(String(objeto(valorFecha).lt)).getTime();
+        }));
+      }
       if (Array.isArray(args.orderBy)) {
         rows = [...rows].sort((left, right) => {
           const fecha =
@@ -77,6 +91,7 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
           return fecha || String(left.id).localeCompare(String(right.id));
         });
       }
+      if (typeof args.take === 'number') rows = rows.slice(0, args.take);
       return rows.map((row) => ({
         id: row.id,
         title: row.title,
@@ -192,5 +207,6 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
     ubicaciones,
     cambiosEstado,
     cambiosPrioridad,
+    consultasIncidencias,
   };
 }

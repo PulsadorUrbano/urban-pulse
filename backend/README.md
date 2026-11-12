@@ -58,15 +58,15 @@ El frontend móvil aún usa el contrato anterior de multipart y `civicId`; la in
 | `POST /auth/login` | Iniciar sesión y obtener un JWT. |
 | `GET /auth/me` | Consultar el usuario autenticado mediante un token Bearer. |
 | `GET /categories` | Consultar el catálogo temporal de categorías. |
-| `POST /incidents` | Crear una incidencia propia con JSON y JWT. |
-| `GET /incidents` | Listar las incidencias del ciudadano autenticado. |
-| `GET /incidents/:id` | Consultar una incidencia propia o, para operadores, cualquiera. |
-| `PATCH /incidents/:id/status` | Validar o rechazar una incidencia reportada; solo operadores. |
-| `PATCH /incidents/:id/priority` | Cambiar la prioridad de una incidencia validada; solo operadores. |
+| `POST /incidents` | Crear una incidencia con `multipart/form-data`. |
+| `GET /incidents` | Listar incidencias con cursor en cabeceras (`limit` por defecto 10, máximo 100) y filtro opcional `civicId`. |
+| `GET /incidents/:id` | Consultar una incidencia. |
+| `PATCH /incidents/:id/status` | Validar o rechazar una incidencia reportada, con motivo y actor declarado. |
+| `PATCH /incidents/:id/priority` | Cambiar la prioridad de una incidencia validada, con motivo y actor declarado. |
 
 El alta recibe JSON con `title` obligatorio. El título recortado admite entre 4 y 35 puntos de código; descripción, categoría, activo y ubicación son opcionales. `civicId` procede de la sesión y no se admite en el cuerpo. Tampoco se admiten `images`, archivos ni multipart. Devuelve `201`, el recurso y la cabecera `Location`. El campo de respuesta `images` se conserva temporalmente como `[]` para compatibilidad y no implica almacenamiento disponible.
 
-`GET /auth/me` y todas las rutas de incidencias utilizan JWT Bearer. El acceso a incidencias revalida en PostgreSQL el usuario, su rol actual y, para ciudadanía, su vínculo `citizens`. El arranque no configura CORS explícitamente.
+`GET /auth/me` utiliza `JwtAuthGuard`. Las rutas de incidencias no aplican ese guard; por tanto, el listado y el filtro `civicId` no requieren autenticación. El listado usa cursor keyset, no OFFSET. El arranque no configura CORS explícitamente.
 
 ## Scripts y comprobaciones
 
