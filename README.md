@@ -21,6 +21,14 @@ El proyecto dispone de autenticación ciudadana, registro y consulta de incidenc
 | Docker Compose | Orquestación de base de datos y backend. |
 | Vitest y Jest | Pruebas de backend y web con Vitest; móvil con Jest. |
 
+## Cómo ejecutar proyecto
+
+> [!important] 
+> Debes tener las librerías y dependencias instaladas previamente. Además, para móvil, deberás tener una cuenta de Expo Go.
+
+- **Backend + BBDD**: `cd backend` &rarr; `docker compose up --build`
+- **Frontend Móvil**:  `cd frontend-mobile` &rarr; `pnpm run dev`
+- **Frontend Web**: `cd frontend-web` &rarr; `npm run dev`
 ## Repositorio y guías
 
 | Ruta | Contenido |
