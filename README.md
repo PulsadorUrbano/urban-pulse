@@ -29,6 +29,7 @@ El proyecto dispone de autenticación ciudadana, registro y consulta de incidenc
 - **Backend + BBDD**: `cd backend` &rarr; `docker compose up --build`
 - **Frontend Móvil**:  `cd frontend-mobile` &rarr; `pnpm run dev`
 - **Frontend Web**: `cd frontend-web` &rarr; `npm run dev`
+
 ## Repositorio y guías
 
 | Ruta | Contenido |
