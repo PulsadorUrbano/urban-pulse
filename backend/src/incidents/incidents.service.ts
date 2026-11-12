@@ -21,7 +21,6 @@ import type {
   CreateIncidentInput,
   CursorIncidencias,
   Incident,
-  OpcionesAsignacion,
   PaginaIncidencias,
   ResumenIncidencia,
 } from './incident.js';
@@ -145,14 +144,17 @@ export class IncidentsService {
     const pagina = cursor?.pagina ?? 0;
     const visibles = incidencias.slice(0, limit);
     const ultima = visibles.at(-1);
-    const nextCursor = hayMas && ultima
-      ? Buffer.from(JSON.stringify({
-          id: ultima.id,
-          createdAt: ultima.createdAt.toISOString(),
-          pagina: pagina + 1,
-          civicId,
-        })).toString('base64url')
-      : null;
+    const nextCursor =
+      hayMas && ultima
+        ? Buffer.from(
+            JSON.stringify({
+              id: ultima.id,
+              createdAt: ultima.createdAt.toISOString(),
+              pagina: pagina + 1,
+              civicId,
+            }),
+          ).toString('base64url')
+        : null;
 
     return {
       items: visibles.map(({ id, title, status, createdAt }) => ({
@@ -167,7 +169,10 @@ export class IncidentsService {
     };
   }
 
-  async findOne(id: string): Promise<Incident> {
+  async findOne(id: string, usuario: UsuarioIncidencias): Promise<Incident> {
+    if (usuario.role === 'civic' && !usuario.ciudadanoId) {
+      throw new ForbiddenException('Se requiere un ciudadano vinculado');
+    }
     let incident;
     try {
       incident = await this.prisma.incident.findUnique({
