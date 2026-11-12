@@ -4,7 +4,7 @@
 - Asistente de IA: OpenCode.
 - Modelo de IA que creó la especificación: opencode-go/gpt-6-luna.
 - Rama: `feature/web-typescript-migration`.
-- Última actualización: 2026-11-09.
+- Última actualización: 2026-11-12.
 - Estado: implementado y verificado; resultados en el [plan](../plans/2026-11-09-paginar-incidencias-con-cursor-plan.md).
 - Plan: [Plan de implementación](../plans/2026-11-09-paginar-incidencias-con-cursor-plan.md).
 - Referencias: solicitud de limitar y paginar GET /incidents; contrato existente de [GET /incidents](../../endpoint/get-incidents/README.md).
@@ -20,8 +20,8 @@ Limitar el tamaño del listado y permitir continuar páginas sin desplazamiento 
 
 ## Contexto verificado
 
-- Implementación actual: GET /incidents devolvía un array completo en memoria sin límite.
-- Dependencias: NestJS 12, TypeScript 6 y Vitest 4; incidencias en un Map.
+- Implementación base: `dev` consultaba el listado filtrado en PostgreSQL mediante Prisma; la rama original de esta PR había aplicado el cursor sobre un almacenamiento en memoria.
+- Dependencias: NestJS 12, Prisma 7.10.1, TypeScript 6 y Vitest 4; incidencias en PostgreSQL.
 - Cambio: tomar como máximo `limit + 1`, aplicar una clave keyset estable y emitir cursor solo si existe otra página.
 
 ## Contrato HTTP
@@ -46,7 +46,7 @@ Limitar el tamaño del listado y permitir continuar páginas sin desplazamiento 
 
 ## Datos y diseño
 
-No se modifican modelos Prisma. El servicio existente compara las claves de cursor, filtra y ordena en memoria. Una futura consulta a base de datos deberá usar condición lexicográfica y `take`, no OFFSET. El Map se pierde al reiniciar.
+No se modifican modelos Prisma. `findMany` aplica el filtro `civicId`, la condición lexicográfica `(createdAt < fecha) OR (createdAt = fecha AND id > idCursor)`, el orden y `take: limit + 1` en PostgreSQL. El servicio serializa como máximo `limit` resúmenes y usa la fila adicional solo para decidir si hay continuación. Los registros sobreviven al reinicio; el cursor no representa una instantánea de la colección.
 
 ## Criterios de aceptación
 

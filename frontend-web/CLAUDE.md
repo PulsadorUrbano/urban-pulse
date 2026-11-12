@@ -1,6 +1,6 @@
 # UrbanPulse (frontend-web)
 
-Panel web de UrbanPulse para el personal municipal: React 19 + Vite, TypeScript/JSX, Tailwind CSS 3 y Vitest. La aplicación móvil (ciudadanía) vive en `frontend-mobile/` y el backend NestJS en `backend/`.
+Panel web de UrbanPulse para el personal municipal: React 19 + Vite, TypeScript estricto, Tailwind CSS 3 y Vitest. La aplicación móvil (ciudadanía) vive en `frontend-mobile/` y el backend NestJS en `backend/`.
 
 ## Comandos
 
@@ -8,6 +8,7 @@ Ejecutar desde `frontend-web/`:
 
 ```bash
 npm run dev     # servidor de desarrollo (proxy /api -> http://localhost:3000)
+npm run typecheck
 npm run lint
 npm run test
 npm run build
@@ -17,14 +18,21 @@ npm run build
 
 - Confinar los cambios a `frontend-web/`. `backend/`, `frontend-mobile/` y `database/` son de solo lectura.
 - Consumir el backend real primero y caer a un fallback local con aviso claro si no hay conexión. No depurar el backend desde aquí.
+- El código es TypeScript estricto (`.ts`/`.tsx`); solo `eslint.config.js` y `postcss.config.js` siguen en JavaScript porque esas herramientas lo exigen. Comprobar con `npm run typecheck`.
+- Las respuestas del backend se validan con type guards (`readJson` en `src/services/http.ts`); no usar `as` sobre datos externos.
+- Estructura y nombres alineados con `frontend-mobile/src`: `constants/`, `types/`, `services/*.service.ts`, `hooks/use-*.ts`, `mocks/`, `utils/`. Los datos simulados (`src/mocks/auth-mock.ts`) solo se usan en desarrollo, como respaldo del login sin conexión; deben quedar tras `import.meta.env.DEV` para que no lleguen al build de producción.
 - Tests en `src/__tests__/` reflejando la ruta de `src/`.
 - No instalar dependencias, crear commits ni hacer push sin petición explícita.
 - Para ramas, commits y PR, seguir el `README.md` de la raíz.
 
+## Guías de diseño y de código
+
+Antes de crear o cambiar pantallas, leer `.claude/skills/diseno-web/SKILL.md` (colores, tipografía y recetas de Tailwind). Antes de escribir o revisar código, leer `.claude/skills/estilo-codigo-web/SKILL.md` (capas, nombres, TypeScript y llamadas al backend).
+
 ## Specs y trazabilidad (`docs/spec/`)
 
 - La estructura de carpetas, las plantillas y la diferencia entre `spec.md` y `plan.md` están documentadas en `docs/spec/README.md` — es la única fuente de verdad, no se duplica aquí. Es la misma que `frontend-mobile/docs/spec/`.
-- Cada feature, bug, refactor o cambio de documentación se documenta ahí y declara el desarrollador responsable, el asistente de IA y el modelo exacto utilizados. No existe historial de prompts: no crear `docs/spec/prompts/`.
+- Cada feature, bug o refactor se documenta ahí y declara el desarrollador responsable, el asistente de IA y el modelo exacto utilizados. Los cambios solo de documentación no llevan `spec.md` ni `plan.md`, solo nota de sesión. No existe historial de prompts: no crear `docs/spec/prompts/`.
 - La skill `trazabilidad` (`.claude/skills/trazabilidad/`) aplica este flujo; usarla siempre que se haga una feature, fix, refactor o docs.
 
 ## Documentación de sesión y seguimiento de tareas (`docs/`)

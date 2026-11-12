@@ -51,7 +51,7 @@ Son dos documentos complementarios, nunca uno sustituye al otro:
 4. Implementar y verificar (`npm run lint`, `npx tsc --noEmit`, `npm run test`, `npm run build`), marcando el checklist de `plan.md` a medida que se avanza.
 5. Registrar el resultado final en la sección "Confirmación de implementación" del propio `plan.md`. No crear informes ni documentos de cierre aparte.
 
-Los cambios solo de documentación (ADR, guías) siguen el mismo flujo, indicando en el plan que las comprobaciones de código no aplican.
+Los cambios solo de documentación (README, ADR, guías, skills) no llevan `spec.md` ni `plan.md`: basta con la nota de sesión.
 
 ## Flujo para un bug
 

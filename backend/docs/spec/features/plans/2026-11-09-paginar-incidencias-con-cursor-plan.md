@@ -1,7 +1,7 @@
 # 2026-11-09 — Plan de implementación: paginar incidencias con cursor
 
 - Objetivo: limitar el listado a 10 elementos por defecto, máximo 100, y continuar con keyset cursor.
-- Arquitectura: pipe, controlador y servicio existentes; almacenamiento en memoria.
+- Arquitectura: pipe, controlador y servicio existentes; consulta paginada en PostgreSQL mediante Prisma.
 - Herramientas: NestJS 12, TypeScript 6 y Vitest 4 instalados.
 - Especificación: [Contrato y criterios](../specs/2026-11-09-paginar-incidencias-con-cursor-spec.md).
 - Rama: `feature/web-typescript-migration`.
@@ -32,7 +32,7 @@
 
 - [x] Revisar endpoint, cliente actual y pruebas; detectar que el cliente espera array.
 - [x] Mantener el array y añadir metadatos de paginación por cabeceras.
-- [x] Implementar el cursor keyset y límites en el pipe y servicio.
+- [x] Implementar el cursor keyset y límites en el pipe y servicio, con filtro, orden y `take` en PostgreSQL.
 - [x] Añadir pruebas unitarias de paginación y validación.
 - [x] Ejecutar suite completa, build, lint y diff-check.
 - [x] Actualizar resultados y confirmar criterios al finalizar.
@@ -48,7 +48,13 @@
 
 ## Confirmación de implementación
 
-- Estado final: implementado y verificado; pendiente de valoración del usuario antes de crear commit.
+- Estado final: implementado y verificado en la rama de la PR 150, adaptado a PostgreSQL el 2026-11-12.
 - Resultado: listado con default 10, max 100 y cursor keyset; primera página 0. Mantiene la respuesta array y anuncia continuidad por Link/X-*.
 - Evidencia: pruebas del pipe y servicio en `test/incidents/`; build y lint ejecutados correctamente; diff-check sin errores.
-- Limitaciones: incidencias en memoria; cursor no representa autorización ni ofrece total/salto arbitrario a página; el usuario debe aprobar antes del commit.
+- Limitaciones: el cursor no representa autorización ni una instantánea, ni ofrece total o salto arbitrario a una página; los cambios concurrentes pueden alterar páginas posteriores.
+
+## Adaptación a `dev` (2026-11-12)
+
+- Se resolvieron los conflictos con la implementación PostgreSQL de `dev`: `listarPagina` consulta Prisma sin recorrer registros en memoria.
+- Se sustituyeron las pruebas que dependían del almacenamiento anterior por pruebas del doble Prisma, del filtro, del cursor y de errores de persistencia.
+- Verificación de la adaptación: `npm test` (23 archivos, 219 pruebas), `npm run build` y `npm run lint` terminaron con código 0. Lint emitió cuatro avisos preexistentes fuera de los archivos modificados. `git diff --check` no informó errores. No se ejecutaron pruebas e2e ni peticiones HTTP contra una base real.

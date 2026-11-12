@@ -26,13 +26,13 @@ Si se proporciona civicId, debe ser un único UUID no vacío. UUID mal formado, 
 ]
 ~~~
 
-Los valores son ilustrativos, no datos semilla ni identificadores garantizados. Las respuestas son objetos nuevos y no permiten modificar los registros del Map.
+Los valores son ilustrativos, no datos semilla ni identificadores garantizados. Las respuestas son objetos nuevos y no permiten modificar los registros persistidos.
 
 ## Identidad y almacenamiento
 
 DEUDA-27-01 sigue abierta: no hay autenticación ni autorización. El listado global y el filtrado por civicId están disponibles sin identidad verificada. civicId es un filtro del cliente; introducir el identificador de otra persona permite consultar su listado. Este prototipo no garantiza privacidad de los listados. La resolución pendiente está en la especificación.
 
-Se conserva el Map privado del proceso y el almacenamiento local de imágenes. El listado no lee ni escribe esos archivos. Las incidencias y los cursores se pierden al reiniciar; no hay base de datos activa ni consultas de auditoría. La continuación usa cursor keyset (createdAt e id), no OFFSET; no se calcula un total global. El formato del cuerpo permanece como array para compatibilidad con los consumidores existentes.
+El listado consulta incidencias en PostgreSQL y aplica el cursor keyset `(createdAt DESC, id ASC)` en la consulta, con un máximo de `limit + 1` filas. No lee bytes de Cloudinary ni calcula un total global. Los registros sobreviven al reinicio; el cursor solo indica desde qué fila continuar y no acredita identidad. El cuerpo permanece como array y no se exponen consultas de auditoría.
 
 El estado actual puede ser reported, validated o rejected; no devuelve historial, motivos ni actor de auditoría. Los cambios se describen en [validar o rechazar incidencias](../patch-incidents-id-status/README.md).
 

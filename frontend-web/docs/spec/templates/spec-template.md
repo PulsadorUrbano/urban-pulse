@@ -85,7 +85,7 @@ Los datos simulados viven en `src/mocks/` con la misma forma que la respuesta de
 
 ## Estrategia de verificación
 
-{{Casos de prueba y comprobaciones que demostrarán cada criterio de aceptación. Para cambios documentales, revisar rutas, enlaces y diff sin ejecutar la aplicación.}}
+{{Casos de prueba y comprobaciones que demostrarán cada criterio de aceptación.}}
 
 Tests con Vitest bajo `src/__tests__/<ruta-que-refleja-src>/`. No crear ni ejecutar e2e o integración salvo petición explícita. Un contrato de consumo documentado no equivale a una verificación de que el backend responde correctamente: el frontend solo comprueba que la petición se envía bien formada y llega con respuesta; no es responsabilidad del frontend depurar la lógica interna del backend.
 

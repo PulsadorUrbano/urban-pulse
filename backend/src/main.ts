@@ -1,8 +1,6 @@
 import { NestFactory } from '@nestjs/core';
-import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule, ObserveInstrument } from './app.module.js';
-import { uploadsRoot } from './incidents/upload-storage.service.js';
 import { anunciarArranqueCoordinado } from './configuracion/arranque-coordinado.js';
 
 function obtenerPuertoSolicitado(): number {
@@ -22,10 +20,9 @@ function obtenerPuertoSolicitado(): number {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+  const app = await NestFactory.create(AppModule, {
     instrument: ObserveInstrument,
   });
-  app.useStaticAssets(uploadsRoot(), { prefix: '/uploads/' });
 
   const config = new DocumentBuilder()
     .setTitle('Urban Pulse Backend API')

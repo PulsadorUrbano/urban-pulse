@@ -5,7 +5,7 @@
 - Modelo de IA que creó la especificación: opencode-go/gpt-6-luna.
 
 - Rama: `feature/web-typescript-migration`.
-- Última actualización: 2026-11-09.
+- Última actualización: 2026-11-12.
 - Estado: implementado y verificado; ver resultados y comprobaciones en el [plan](../plans/2026-11-09-consultar-todas-las-incidencias-plan.md).
 - Plan: [Plan de implementación](../plans/2026-11-09-consultar-todas-las-incidencias-plan.md).
 - Referencias: solicitud de consultar todas las incidencias y contrato vigente de [GET /incidents](../../endpoint/get-incidents/README.md).
@@ -23,7 +23,7 @@ Permitir que un consumidor del backend consulte los resúmenes de todas las inci
 
 - Implementación actual: `IncidentsController.listar` recibía civicId obligatorio; `ListarIncidenciasPipe` rechazaba consulta vacía y `IncidentsService` solo listaba por ciudadano.
 - Contratos y referencias del dominio: GET /incidents?civicId=<UUID> ya existía; GET /incidents/:id devuelve el detalle individual.
-- Configuración y dependencias disponibles: NestJS 12, TypeScript 6 y Vitest 4; almacenamiento de incidencias en un Map del proceso.
+- Configuración y dependencias disponibles: NestJS 12, Prisma 7.10.1, TypeScript 6 y Vitest 4; el listado consulta PostgreSQL.
 - Diferencia entre estado actual y propuesto: civicId pasa a ser opcional; omitirlo consulta globalmente, manteniendo la validación estricta de los demás parámetros.
 
 ## Contrato HTTP
@@ -46,16 +46,16 @@ Permitir que un consumidor del backend consulte los resúmenes de todas las inci
 
 ## Modelos y objetos Prisma
 
-No se añaden ni modifican modelos Prisma: se reutilizan `StoredIncident` y `ResumenIncidencia` existentes. El servicio crea resúmenes nuevos y serializa createdAt como ISO; no expone los objetos internos.
+No se añaden ni modifican modelos Prisma: se reutiliza `Incident` y la proyección pública `ResumenIncidencia`. El servicio consulta solo los campos necesarios y serializa `createdAt` como ISO; no expone los objetos internos.
 
-- Almacenamiento de esta fase: Map en memoria del proceso.
-- Ciclo de vida: los datos se pierden al reiniciar y no se comparten entre procesos.
+- Almacenamiento de esta fase: PostgreSQL mediante Prisma.
+- Ciclo de vida: los datos persisten tras reiniciar y pueden consultarse desde otros procesos conectados a la misma base.
 - Relaciones: no se consultan ni se validan referencias adicionales.
-- Base de datos y migraciones: no se conecta PostgreSQL ni se ejecutan migraciones.
+- Base de datos y migraciones: se usa el esquema existente de `dev`; esta PR no crea ni aplica migraciones.
 
 ## Diseño mínimo
 
-Ampliar el pipe existente para aceptar una consulta vacía o un único civicId válido. Añadir al servicio el listado global que reutiliza el orden y la proyección del listado filtrado. El controlador decide qué operación invocar sin alterar el resumen HTTP.
+Ampliar el pipe existente para aceptar una consulta vacía o un único civicId válido. El servicio usa `findMany` con filtro opcional y proyección de resumen; el controlador devuelve el mismo array HTTP con las cabeceras de paginación.
 
 ## Criterios de aceptación
 
