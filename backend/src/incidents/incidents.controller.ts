@@ -104,19 +104,11 @@ const incidentSchema = {
 };
 
 @ApiTags('incidents')
-@ApiBearerAuth()
-@ApiUnauthorizedResponse({ description: 'JWT inválido o usuario inexistente.' })
-@ApiForbiddenResponse({
-  description:
-    'El rol actual o la vinculación ciudadana no permite la operación.',
-})
-@UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
 @Controller('incidents')
 export class IncidentsController {
   constructor(private readonly incidentsService: IncidentsService) {}
 
   @Get()
-  @SetMetadata('rolesIncidencias', ['civic'])
   @ApiOperation({
     summary: 'Consultar todas las incidencias o filtrarlas por ciudadano',
     description:
@@ -207,6 +199,15 @@ export class IncidentsController {
   }
 
   @Post()
+  @ApiBearerAuth()
+  @ApiUnauthorizedResponse({
+    description: 'JWT inválido o usuario inexistente.',
+  })
+  @ApiForbiddenResponse({
+    description:
+      'El rol actual o la vinculación ciudadana no permite la operación.',
+  })
+  @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
   @SetMetadata('rolesIncidencias', ['civic'])
   @ApiOperation({
     summary: 'Crear una incidencia del ciudadano autenticado',
@@ -265,6 +266,15 @@ export class IncidentsController {
   }
 
   @Patch(':id/status')
+  @ApiBearerAuth()
+  @ApiUnauthorizedResponse({
+    description: 'JWT inválido o usuario inexistente.',
+  })
+  @ApiForbiddenResponse({
+    description:
+      'El rol actual o la vinculación ciudadana no permite la operación.',
+  })
+  @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
   @SetMetadata('rolesIncidencias', ['admin', 'administrative'])
   @ApiOperation({
     summary: 'Validar o rechazar una incidencia con motivo',
@@ -305,6 +315,15 @@ export class IncidentsController {
   }
 
   @Patch(':id/priority')
+  @ApiBearerAuth()
+  @ApiUnauthorizedResponse({
+    description: 'JWT inválido o usuario inexistente.',
+  })
+  @ApiForbiddenResponse({
+    description:
+      'El rol actual o la vinculación ciudadana no permite la operación.',
+  })
+  @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
   @SetMetadata('rolesIncidencias', ['admin', 'administrative'])
   @ApiOperation({
     summary: 'Asignar prioridad manual con motivo',
@@ -345,6 +364,15 @@ export class IncidentsController {
   }
 
   @Get(':id')
+  @ApiBearerAuth()
+  @ApiUnauthorizedResponse({
+    description: 'JWT inválido o usuario inexistente.',
+  })
+  @ApiForbiddenResponse({
+    description:
+      'El rol actual o la vinculación ciudadana no permite la operación.',
+  })
+  @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
   @SetMetadata('rolesIncidencias', ['civic', 'admin', 'administrative'])
   @ApiOperation({
     summary: 'Consultar una incidencia por identificador',

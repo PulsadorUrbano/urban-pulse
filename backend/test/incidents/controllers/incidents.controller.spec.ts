@@ -78,11 +78,33 @@ describe('IncidentsController autenticado', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
-  it('protege todo el controller y no expone rutas de asignación', () => {
-    expect(Reflect.getMetadata(GUARDS_METADATA, IncidentsController)).toEqual([
-      JwtAuthGuard,
-      AccesoIncidenciasGuard,
-    ]);
+  it('deja público el listado y protege las operaciones autenticadas', () => {
+    expect(
+      Reflect.getMetadata(GUARDS_METADATA, IncidentsController),
+    ).toBeUndefined();
+    const listado = Object.getOwnPropertyDescriptor(
+      IncidentsController.prototype,
+      'listar',
+    )?.value;
+    expect(Reflect.getMetadata(GUARDS_METADATA, listado)).toBeUndefined();
+    expect(Reflect.getMetadata('rolesIncidencias', listado)).toBeUndefined();
+
+    for (const metodo of [
+      'create',
+      'cambiarEstado',
+      'cambiarPrioridad',
+      'findOne',
+    ] as const) {
+      const operacion = Object.getOwnPropertyDescriptor(
+        IncidentsController.prototype,
+        metodo,
+      )?.value;
+      expect(Reflect.getMetadata(GUARDS_METADATA, operacion)).toEqual([
+        JwtAuthGuard,
+        AccesoIncidenciasGuard,
+      ]);
+    }
+
     expect(
       Object.getOwnPropertyDescriptor(
         IncidentsController.prototype,
@@ -106,14 +128,12 @@ describe('Listado paginado de incidencias', () => {
       },
     ];
     const servicio = {
-      listarPagina: vi
-        .fn()
-        .mockResolvedValue({
-          items,
-          limit: 1,
-          pagina: 0,
-          nextCursor: 'cursor-opaco',
-        }),
+      listarPagina: vi.fn().mockResolvedValue({
+        items,
+        limit: 1,
+        pagina: 0,
+        nextCursor: 'cursor-opaco',
+      }),
     };
     const setHeader = vi.fn();
     const response = { setHeader } as unknown as Response;
