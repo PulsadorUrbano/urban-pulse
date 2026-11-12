@@ -22,7 +22,7 @@ import {
 
 const incidentsEndpoint = (): string => `${resolveBackendApiUrl()}/incidents`;
 
-const INCIDENT_STATUSES: readonly IncidentStatus[] = ['reported', 'validated', 'rejected'];
+const INCIDENT_STATUSES: readonly IncidentStatus[] = ['reported', 'validated', 'rejected', 'assigned'];
 const INCIDENT_PRIORITIES: readonly IncidentPriority[] = ['low', 'medium', 'high'];
 const IMAGE_MIME_TYPES: readonly CreatedIncidentImage['mimeType'][] = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -89,6 +89,9 @@ export function isIncidentDetail(value: unknown): value is IncidentDetail {
     isNullableString(value.categoryId) &&
     isNullableString(value.category) &&
     isNullableString(value.urbanAssetId) &&
+    isNullableString(value.departmentId) &&
+    isNullableString(value.teamId) &&
+    isNullableString(value.technicianId) &&
     isIncidentLocation(value.location) &&
     Array.isArray(value.images) &&
     value.images.every(isIncidentImage) &&

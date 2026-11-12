@@ -2,8 +2,8 @@
 // frontend-mobile/src/types/incident.ts (IncidentDetail, CreatedIncidentImage, IncidentSummary).
 
 // Estados que el backend gestiona hoy (enum IncidentStatus de schema.prisma).
-// El móvil declara además assigned, in_progress, resolved, reopened y closed, que el backend no emite.
-export type IncidentStatus = 'reported' | 'validated' | 'rejected';
+// El backend también admite assigned; la asignación no cambia el estado automáticamente.
+export type IncidentStatus = 'reported' | 'validated' | 'rejected' | 'assigned';
 
 // Prioridades del backend (enum IncidentPriority). El móvil declara además `urgent`.
 export type IncidentPriority = 'low' | 'medium' | 'high';
@@ -33,6 +33,9 @@ export interface IncidentDetail {
   categoryId: string | null;
   category: string | null;
   urbanAssetId: string | null;
+  departmentId: string | null;
+  teamId: string | null;
+  technicianId: string | null;
   location: IncidentLocation;
   images: CreatedIncidentImage[];
   status: IncidentStatus;
