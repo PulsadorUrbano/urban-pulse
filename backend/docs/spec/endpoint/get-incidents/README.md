@@ -1,46 +1,32 @@
-# 2026-10-23 — Consultar el listado de incidencias por ciudadano
+# GET /incidents — listar incidencias propias
 
-- Método y ruta: GET /incidents.
-- Última revisión: 2026-10-23.
-- Estado: implementado; verificado mediante pruebas unitarias, compilación y lint. No se han ejecutado peticiones HTTP de integración.
+- Estado: implementado y cubierto por pruebas unitarias.
+- Última revisión: 2026-11-09.
+- Autenticación: `Authorization: Bearer <JWT>` obligatoria.
+- Rol: `civic` con relación `citizens` vigente en PostgreSQL.
 
-## Entrada y validación
+## Contrato
 
-Consulta obligatoria civicId=<UUID>. Ejemplo: GET /incidents?civicId=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa. Sin cuerpo ni otros parámetros.
+No recibe cuerpo ni parámetros de consulta. En particular, `civicId` está prohibido: la identidad se obtiene del JWT, se vuelve a consultar en PostgreSQL y el listado se filtra por el ciudadano vinculado. Cualquier parámetro devuelve 400; un usuario sin token devuelve 401 y un usuario sin rol o vínculo válido, 403.
 
-Ausencia, vacío, UUID mal formado, valores repetidos, valores anidados u otros parámetros devuelven 400. Se compara el UUID sin distinguir mayúsculas/minúsculas. Un filtro ausente nunca produce un listado global.
+Responde 200 con un array de resúmenes ordenado por `createdAt` descendente e `id` ascendente en empates. Sin resultados devuelve `[]`.
 
-## Respuesta
-
-200 con array sin envoltorio. Cada resumen contiene únicamente id (UUID), title (texto), status (estado actual) y createdAt (ISO). Sin coincidencias devuelve []. Orden: createdAt descendente; id ascendente para empates. No incluye ubicación, imágenes, historial ni motivos de cambios.
-
-~~~json
+```json
 [
   {
     "id": "00000000-0000-4000-8000-000000000001",
     "title": "Farola apagada",
     "status": "reported",
-    "createdAt": "2026-10-23T10:00:00.000Z"
+    "createdAt": "2026-11-09T10:00:00.000Z"
   }
 ]
-~~~
+```
 
-Los valores son ilustrativos, no datos semilla ni identificadores garantizados. Las respuestas son objetos nuevos y no permiten modificar los registros persistidos.
-
-## Identidad y almacenamiento
-
-DEUDA-27-01 sigue abierta: no hay autenticación ni autorización. civicId es un filtro del cliente, no una identidad verificada; introducir el identificador de otra persona permite consultar su listado. Este prototipo no garantiza una consulta privada de incidencias propias. La resolución pendiente está en la especificación.
-
-El listado consulta incidencias en PostgreSQL; no lee bytes de Cloudinary. Los registros sobreviven al reinicio. No hay paginación ni consultas de auditoría.
-
-El estado actual puede ser reported, validated o rejected; no devuelve historial, motivos ni actor de auditoría. Los cambios se describen en [validar o rechazar incidencias](../patch-incidents-id-status/README.md).
+PostgreSQL no disponible devuelve 503. No hay paginación ni historial en esta respuesta.
 
 ## Referencias
 
-- [Especificación y deuda técnica](../../features/specs/2026-10-23-consultar-incidencias-por-ciudadano-spec.md).
-- [Plan y confirmación](../../features/plans/2026-10-23-consultar-incidencias-por-ciudadano-plan.md).
-- [Controlador](../../../../src/incidents/incidents.controller.ts).
-- [Validación de consulta](../../../../src/incidents/listar-incidencias.pipe.ts).
-- [Servicio](../../../../src/incidents/incidents.service.ts).
-- [Unitarias del servicio](../../../../test/incidents/services/listar-incidencias.service.spec.ts).
-- [Unitarias de validación](../../../../test/incidents/pipes/listar-incidencias.pipe.spec.ts).
+- [Controlador](../../../../src/incidents/incidents.controller.ts)
+- [Validación de consulta](../../../../src/incidents/listar-incidencias.pipe.ts)
+- [Servicio](../../../../src/incidents/incidents.service.ts)
+- [Diseño integrado](../../../../../docs/superpowers/specs/2026-11-09-integrar-incidencias-jwt-prisma-sin-imagenes-design.md)

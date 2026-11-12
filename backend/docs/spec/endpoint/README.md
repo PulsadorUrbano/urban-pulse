@@ -43,17 +43,19 @@ Al añadir, modificar o retirar un endpoint, actualizar su carpeta en el mismo c
 
 ## Endpoints documentados
 
-- [Asignar prioridad manual con motivo](patch-incidents-id-priority/README.md): PATCH /incidents/:id/priority, solo incidencias validadas; deuda de actor declarado.
+- [Asignar prioridad manual con motivo](patch-incidents-id-priority/README.md): PATCH /incidents/:id/priority, solo incidencias validadas y operadores autenticados.
 
-- [Validar o rechazar una incidencia con motivo](patch-incidents-id-status/README.md): PATCH /incidents/:id/status; actor declarado y DEUDA-47-01 abierta.
+- [Validar o rechazar una incidencia con motivo](patch-incidents-id-status/README.md): PATCH /incidents/:id/status; solo admin/administrative actuales, con actor autenticado.
 
-- [Consultar el listado de incidencias por ciudadano](get-incidents/README.md): GET /incidents?civicId=<UUID>, sin historial y con deuda de identidad documentada.
+- [Consultar el listado de incidencias por ciudadano](get-incidents/README.md): GET /incidents sin parámetros, solo incidencias del ciudadano autenticado.
 
 - [Registrar incidencias](post-incidents/README.md): POST /incidents.
 - [Consultar una incidencia](get-incidents-id/README.md): GET /incidents/:id.
 - [Consultar categorías](get-categories/README.md): GET /categories.
 
 Contratos revisados estáticamente; consultar cada ficha para los límites y la fecha de revisión.
+
+Las antiguas rutas de descarga de imágenes y asignación no forman parte de la API activa. Las incidencias requieren JWT, usan PostgreSQL mediante Prisma y no aceptan ni almacenan imágenes. El campo de respuesta `images` se conserva temporalmente como `[]` por compatibilidad.
 
 ## Autenticación incorporada desde token-backend
 

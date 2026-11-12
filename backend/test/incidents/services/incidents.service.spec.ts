@@ -1,8 +1,11 @@
-import { NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { randomUUID } from 'node:crypto';
 import { IncidentsService } from '../../../src/incidents/incidents.service.js';
-import { UploadStorageService } from '../../../src/incidents/upload-storage.service.js';
 import { PrismaService } from '../../../src/prisma/prisma.service.js';
 import { crearPrismaIncidenciasFake } from './prisma-incidencias.fake.js';
 
@@ -17,43 +20,35 @@ describe('IncidentsService', () => {
     longitude: -4.4214,
     accuracy: 8.5,
   };
-  const imagen = {
+  const operador = {
     id: randomUUID(),
-    cloudinaryId: 'urban-pulse/incidents/example/image',
-    url: 'https://res.cloudinary.com/demo/image/upload/image.png',
-    mimeType: 'image/png' as const,
-    createdAt: '2026-10-21T08:00:00.000Z',
-  };
+    role: 'admin',
+    ciudadanoId: null,
+  } as const;
+  const propietario = {
+    id: input.civicId,
+    role: 'civic',
+    ciudadanoId: input.civicId,
+  } as const;
 
   let service: IncidentsService;
   let prisma: ReturnType<typeof crearPrismaIncidenciasFake>;
-  let eliminarImagenes: ReturnType<typeof vi.fn>;
-  let storage: {
-    save: ReturnType<typeof vi.fn>;
-    eliminarImagenes: typeof eliminarImagenes;
-  };
 
-  async function crearServicio(
-    fake = crearPrismaIncidenciasFake(),
-    guardar = vi.fn().mockResolvedValue([imagen]),
-  ) {
+  async function crearServicio(fake = crearPrismaIncidenciasFake()) {
     prisma = fake;
-    eliminarImagenes = vi.fn().mockResolvedValue([]);
-    storage = { save: guardar, eliminarImagenes };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         IncidentsService,
         { provide: PrismaService, useValue: prisma.prisma },
-        { provide: UploadStorageService, useValue: storage },
       ],
     }).compile();
     service = module.get(IncidentsService);
     return module;
   }
 
-  it('creates and reads a persisted incident without exposing internal image metadata', async () => {
+  it('crea y consulta una incidencia Prisma con images vacío por compatibilidad', async () => {
     const module = await crearServicio();
-    const created = await service.create(input, []);
+    const created = await service.create(input);
 
     expect(created).toMatchObject({
       title: input.title,
@@ -62,101 +57,97 @@ describe('IncidentsService', () => {
       categoryId: input.categoryId.toLowerCase(),
       category: input.category,
       urbanAssetId: null,
-      departmentId: null,
-      teamId: null,
-      technicianId: null,
       location: {
         latitude: input.latitude,
         longitude: input.longitude,
         accuracy: input.accuracy,
       },
-      images: [
-        {
-          id: imagen.id,
-          url: imagen.url,
-          mimeType: imagen.mimeType,
-          createdAt: imagen.createdAt,
-        },
-      ],
+      images: [],
       status: 'reported',
       priority: 'low',
     });
-    expect(created.images[0]).not.toHaveProperty('cloudinaryId');
-    expect(created.location).not.toHaveProperty('incidentId');
-    expect(await service.findOne(created.id)).toEqual(created);
+    expect(await service.findOne(created.id, propietario)).toEqual(created);
     await module.close();
   });
 
-  it('retains committed records across service instances sharing the same Prisma store', async () => {
+  it('conserva registros confirmados entre instancias con el mismo Prisma', async () => {
     const module = await crearServicio();
-    const created = await service.create(input, []);
-    const secondService = new IncidentsService(
-      prisma.prisma,
-      storage as unknown as UploadStorageService,
-    );
+    const created = await service.create(input);
+    const secondService = new IncidentsService(prisma.prisma);
 
-    await expect(secondService.findOne(created.id)).resolves.toEqual(created);
-    await module.close();
-  });
-
-  it('returns 404 when a requested incident does not exist', async () => {
-    const module = await crearServicio();
-    await expect(service.findOne(randomUUID())).rejects.toBeInstanceOf(
-      NotFoundException,
+    await expect(secondService.findOne(created.id, operador)).resolves.toEqual(
+      created,
     );
     await module.close();
   });
 
-  it('compensates uploaded images after confirmed database rollback', async () => {
+  it('devuelve 404 cuando la incidencia no existe', async () => {
+    const module = await crearServicio();
+    await expect(
+      service.findOne(randomUUID(), operador),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    await module.close();
+  });
+
+  it('no persiste una incidencia si la transacción falla', async () => {
     const module = await crearServicio(
       crearPrismaIncidenciasFake({
         falloCrearIncidencia: new Error('db failure'),
       }),
     );
-    await expect(service.create(input, [])).rejects.toBeInstanceOf(
+    await expect(service.create(input)).rejects.toBeInstanceOf(
       ServiceUnavailableException,
     );
-    expect(eliminarImagenes).toHaveBeenCalledWith([imagen.cloudinaryId]);
     expect(prisma.incidencias).toHaveLength(0);
     await module.close();
   });
 
-  it('recovers a commit whose acknowledgement was lost without deleting referenced images', async () => {
+  it('recupera un commit confirmado cuya respuesta se perdió', async () => {
     const module = await crearServicio(
       crearPrismaIncidenciasFake({
         falloCommitDespuesDeGuardar: new Error('lost acknowledgement'),
       }),
     );
-    const created = await service.create(input, []);
-    expect(await service.findOne(created.id)).toEqual(created);
-    expect(eliminarImagenes).not.toHaveBeenCalled();
+    const created = await service.create(input);
+    expect(await service.findOne(created.id, operador)).toEqual(created);
     await module.close();
   });
 
-  it('preserves images when the commit outcome cannot be reconciled', async () => {
+  it('devuelve 503 si no puede conciliar el resultado de la transacción', async () => {
     const module = await crearServicio(
       crearPrismaIncidenciasFake({
         falloCommitDespuesDeGuardar: new Error('lost acknowledgement'),
         falloLecturaConciliacion: new Error('database unavailable'),
       }),
     );
-    await expect(service.create(input, [])).rejects.toBeInstanceOf(
+    await expect(service.create(input)).rejects.toBeInstanceOf(
       ServiceUnavailableException,
     );
-    expect(eliminarImagenes).not.toHaveBeenCalled();
     await module.close();
   });
 
-  it('does not persist an incident when image upload fails', async () => {
-    const module = await crearServicio(
-      crearPrismaIncidenciasFake(),
-      vi.fn().mockRejectedValue(new Error('Cloudinary failed')),
-    );
-    await expect(service.create(input, [])).rejects.toThrow(
-      'Cloudinary failed',
-    );
-    expect(prisma.incidencias).toHaveLength(0);
-    expect(eliminarImagenes).not.toHaveBeenCalled();
+  it('oculta con 404 una incidencia ajena al ciudadano autenticado', async () => {
+    const module = await crearServicio();
+    const created = await service.create(input);
+    await expect(
+      service.findOne(created.id, {
+        id: randomUUID(),
+        role: 'civic',
+        ciudadanoId: randomUUID(),
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    await module.close();
+  });
+
+  it('rechaza un ciudadano autenticado sin vínculo ciudadano', async () => {
+    const module = await crearServicio();
+    await expect(
+      service.findOne(randomUUID(), {
+        id: randomUUID(),
+        role: 'civic',
+        ciudadanoId: null,
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
     await module.close();
   });
 });

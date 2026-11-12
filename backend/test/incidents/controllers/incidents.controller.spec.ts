@@ -1,50 +1,101 @@
+import { ForbiddenException } from '@nestjs/common';
 import { GUARDS_METADATA } from '@nestjs/common/constants.js';
-import { IncidentsController } from '../../../src/incidents/incidents.controller.js';
 import { JwtAuthGuard } from '../../../src/auth/jwt-auth.guard.js';
-import { AccesoAsignacionesGuard } from '../../../src/incidents/guards/acceso-asignaciones.guard.js';
+import { IncidentsController } from '../../../src/incidents/incidents.controller.js';
+import { AccesoIncidenciasGuard } from '../../../src/incidents/guards/acceso-incidencias.guard.js';
 import type { IncidentsService } from '../../../src/incidents/incidents.service.js';
+import type { UsuarioIncidencias } from '../../../src/incidents/types/usuario-incidencias.js';
 
-describe('Rutas de asignación de incidencias', () => {
-  const opciones = { departments: [], teams: [], technicians: [] };
-  const asignada = {
+describe('IncidentsController autenticado', () => {
+  const civic: UsuarioIncidencias = {
     id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-    departmentId: null,
-    teamId: null,
-    technicianId: null,
+    role: 'civic',
+    ciudadanoId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  };
+  const operador: UsuarioIncidencias = {
+    id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+    role: 'admin',
+    ciudadanoId: null,
+  };
+  const incidencia = {
+    id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+    images: [],
   };
   const servicio = {
-    opcionesAsignacion: vi.fn().mockResolvedValue(opciones),
-    asignar: vi.fn().mockResolvedValue(asignada),
+    listarPorCiudadano: vi.fn().mockResolvedValue([]),
+    create: vi.fn().mockResolvedValue(incidencia),
+    cambiarEstado: vi.fn().mockResolvedValue(incidencia),
+    cambiarPrioridad: vi.fn().mockResolvedValue(incidencia),
+    findOne: vi.fn().mockResolvedValue(incidencia),
   };
   const controlador = new IncidentsController(
     servicio as unknown as IncidentsService,
   );
 
-  it('delega la consulta y el parche en el servicio', async () => {
-    await expect(controlador.opcionesAsignacion()).resolves.toBe(opciones);
-    await expect(
-      controlador.asignar(asignada.id, { departmentId: null }),
-    ).resolves.toBe(asignada);
-    expect(servicio.asignar).toHaveBeenCalledWith(asignada.id, {
-      departmentId: null,
+  beforeEach(() => vi.clearAllMocks());
+
+  it('deriva ciudadano y actor de la identidad autorizada', async () => {
+    await controlador.listar(undefined, civic);
+    await controlador.create(
+      { title: 'Farola apagada' },
+      { setHeader: vi.fn() } as never,
+      civic,
+    );
+    await controlador.cambiarEstado(
+      incidencia.id,
+      { status: 'validated', cause: 'Comprobada' },
+      operador,
+    );
+    await controlador.cambiarPrioridad(
+      incidencia.id,
+      { priority: 'high', cause: 'Urgente' },
+      operador,
+    );
+
+    expect(servicio.listarPorCiudadano).toHaveBeenCalledWith(civic.ciudadanoId);
+    expect(servicio.create).toHaveBeenCalledWith({
+      title: 'Farola apagada',
+      civicId: civic.ciudadanoId,
     });
+    expect(servicio.cambiarEstado).toHaveBeenCalledWith(
+      incidencia.id,
+      { status: 'validated', cause: 'Comprobada' },
+      operador.id,
+    );
+    expect(servicio.cambiarPrioridad).toHaveBeenCalledWith(
+      incidencia.id,
+      { priority: 'high', cause: 'Urgente' },
+      operador.id,
+    );
   });
 
-  it('protege solo las dos rutas nuevas con JWT y rol actual', () => {
-    for (const metodo of ['opcionesAsignacion', 'asignar'] as const) {
-      const funcion: unknown = Object.getOwnPropertyDescriptor(
+  it('rechaza listar y crear sin ciudadano vinculado', async () => {
+    const sinVinculo = { ...civic, ciudadanoId: null };
+    await expect(
+      controlador.listar(undefined, sinVinculo),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(
+      controlador.create(
+        { title: 'Farola apagada' },
+        { setHeader: vi.fn() } as never,
+        sinVinculo,
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('protege todo el controller y no expone rutas de asignación', () => {
+    expect(Reflect.getMetadata(GUARDS_METADATA, IncidentsController)).toEqual([
+      JwtAuthGuard,
+      AccesoIncidenciasGuard,
+    ]);
+    expect(
+      Object.getOwnPropertyDescriptor(
         IncidentsController.prototype,
-        metodo,
-      )?.value;
-      expect(Reflect.getMetadata(GUARDS_METADATA, funcion)).toEqual([
-        JwtAuthGuard,
-        AccesoAsignacionesGuard,
-      ]);
-    }
-    const detalle: unknown = Object.getOwnPropertyDescriptor(
-      IncidentsController.prototype,
-      'findOne',
-    )?.value;
-    expect(Reflect.getMetadata(GUARDS_METADATA, detalle)).toBeUndefined();
+        'opcionesAsignacion',
+      ),
+    ).toBeUndefined();
+    expect(
+      Object.getOwnPropertyDescriptor(IncidentsController.prototype, 'asignar'),
+    ).toBeUndefined();
   });
 });

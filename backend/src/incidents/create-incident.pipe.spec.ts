@@ -8,19 +8,17 @@ describe('CreateIncidentPipe', () => {
   const input = () => ({
     title: '  Farola apagada  ',
     description: '  La farola no ilumina la calle.  ',
-    civicId: randomUUID(),
     categoryId,
     category: '  Iluminación  ',
-    latitude: '0',
-    longitude: '-180',
-    accuracy: '8.5',
+    latitude: 0,
+    longitude: -180,
+    accuracy: 8.5,
   });
 
-  it('normalizes multipart text fields and converts finite numbers', () => {
+  it('normaliza textos JSON y conserva números finitos', () => {
     expect(pipe.transform(input())).toEqual({
       title: 'Farola apagada',
       description: 'La farola no ilumina la calle.',
-      civicId: expect.any(String),
       categoryId,
       category: 'Iluminación',
       latitude: 0,
@@ -43,8 +41,8 @@ describe('CreateIncidentPipe', () => {
   it('accepts code-point title boundaries and coordinate extremes', () => {
     const value = input();
     value.title = '\u{10400}\u{10400}\u{10400}\u{10400}';
-    value.latitude = '-90';
-    value.longitude = '180';
+    value.latitude = -90;
+    value.longitude = 180;
 
     expect(pipe.transform(value)).toMatchObject({
       title: '\u{10400}\u{10400}\u{10400}\u{10400}',
@@ -90,17 +88,18 @@ describe('CreateIncidentPipe', () => {
     'incident',
     { ...input(), title: 'abc' },
     { ...input(), title: 'a'.repeat(36) },
-    { ...input(), civicId: 'not-a-uuid' },
     { ...input(), categoryId: 'not-a-uuid' },
     { ...input(), urbanAssetId: null },
     { ...input(), urbanAssetId: 'not-a-uuid' },
-    { ...input(), latitude: 'NaN' },
-    { ...input(), latitude: '90.1' },
-    { ...input(), longitude: '-180.1' },
-    { ...input(), longitude: 'Infinity' },
+    { ...input(), latitude: '0' },
+    { ...input(), latitude: Number.NaN },
+    { ...input(), latitude: 90.1 },
+    { ...input(), longitude: -180.1 },
+    { ...input(), longitude: Number.POSITIVE_INFINITY },
     { ...input(), accuracy: '' },
-    { ...input(), accuracy: '-1' },
-    { ...input(), civicId: undefined },
+    { ...input(), accuracy: -1 },
+    { ...input(), civicId: randomUUID() },
+    { ...input(), images: [] },
     { ...input(), status: 'reported' },
   ])('rejects invalid input: %j', (value) => {
     expect(() => pipe.transform(value)).toThrow(BadRequestException);

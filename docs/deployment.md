@@ -71,6 +71,6 @@ docker compose down
 
 `stop` detiene los contenedores; `down` retira los contenedores y la red, conservando por defecto el volumen nombrado. `pgdata` conserva PostgreSQL entre recreaciones. Eliminar el volumen, incluido mediante `docker compose down -v`, elimina sus datos.
 
-La API mantiene usuarios en PostgreSQL e incidencias e historial en memoria. Reiniciar el backend elimina estos últimos. Las imágenes se guardan en el sistema de archivos del backend; Compose no monta un volumen para ese directorio. Su conservación no equivale a persistencia del registro de la incidencia.
+La API mantiene usuarios, incidencias, ubicaciones e historiales en PostgreSQL. Reiniciar el backend no elimina esos registros. No existe directorio ni volumen de imágenes: la API no acepta ni almacena archivos de incidencias.
 
 Guías: [arquitectura](architecture.md), [desarrollo](development.md) y [backend](../backend/README.md).

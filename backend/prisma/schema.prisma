@@ -45,7 +45,6 @@ model Incident {
   priority         IncidentPriority  @default(low)
   createdAt        DateTime          @default(now())
   location         IncidentLocation?
-  images           IncidentImage[]
   cambiosEstado    CambioEstado[]
   cambiosPrioridad CambioPrioridad[]
 
@@ -91,18 +90,6 @@ model IncidentLocation {
   longitude  Float?
   accuracy   Float?
   createdAt  DateTime @default(now())
-}
-
-model IncidentImage {
-  id           String   @id @default(uuid()) @db.Uuid
-  cloudinaryId String   @unique @map("cloudinary_id")
-  incidentId   String   @db.Uuid
-  incident     Incident @relation(fields: [incidentId], references: [id])
-  url          String
-  mimeType     String
-  createdAt    DateTime @default(now())
-
-  @@index([incidentId])
 }
 
 // Historial temporal: actor declarado por el cliente, sin identidad verificada.

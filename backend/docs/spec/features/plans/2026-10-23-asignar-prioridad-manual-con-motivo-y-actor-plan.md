@@ -1,5 +1,14 @@
 # 2026-10-23 - Plan de implementación: asignar prioridad manual con motivo y actor
 
+## Actualización de identidad y permisos — 2026-10-27
+
+**DEUDA-28-01 cerrada en la implementación de identidad/permisos.** Solo admin/administrative actuales asignan prioridad; auditoría registra al operador del servidor. El cliente deja de elegir civicId. Véanse [contrato vigente](../specs/2026-10-27-autenticar-incidencias-y-verificar-permisos-spec.md) y [plan con evidencia](../plans/2026-10-27-autenticar-incidencias-y-verificar-permisos-plan.md).
+
+Los apartados posteriores conservan el registro histórico del prototipo. Sus referencias a identidad declarada, ausencia de autenticación y civicId como entrada quedan sustituidas por el contrato vigente. La persistencia permanece pendiente; el acceso de imágenes se ha protegido posteriormente según la [especificación de uploads](../specs/2026-10-27-proteger-imagenes-de-incidencias-con-jwt-spec.md). Evidencia unitaria: guard de roles actuales, controlador con identidad servidor, rechazo de identidad externa y regresiones de servicios.
+
+## Registro histórico de la funcionalidad
+
+
 - Objetivo: resolver #28, #49, #50 y #51 con asignación manual sobre incidencias validated e historial de prioridad.
 - Arquitectura: reutilizar controlador, servicio y Map; historial Prisma CambioPrioridad en el agregado, publicado junto a priority con una única sustitución síncrona.
 - Herramientas: NestJS 12, TypeScript ESM, Prisma 7.10.1, Swagger y Vitest existentes.
