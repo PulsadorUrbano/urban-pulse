@@ -6,11 +6,11 @@
 
 ## Contexto
 
-Se solicita la spec de asignaciones en `frontend-web`. Se crea la rama `asignaciones-frontend` desde `origin/dev` actualizado (`feb78f1`). La trazabilidad de la funcionalidad vive en [spec.md](./spec/features/12-11-26-asignar-incidencias/spec.md) y [plan.md](./spec/features/12-11-26-asignar-incidencias/plan.md).
+Se solicitó la spec de asignaciones en `frontend-web` y después su implementación. La rama `asignaciones-frontend` partió de `origin/dev` actualizado (`feb78f1`). La trazabilidad vive en [spec.md](./spec/features/12-11-26-asignar-incidencias/spec.md) y [plan.md](./spec/features/12-11-26-asignar-incidencias/plan.md).
 
 ## Alcance
 
-Documentar el flujo web de asignar departamento, equipo y técnico a una incidencia, tomando como referencia el contrato backend existente. No se implementa código en esta sesión.
+Implementar el flujo web de consulta y asignación de departamento, equipo y técnico a una incidencia, según el contrato backend existente y la especificación redactada.
 
 ## Decisiones clave
 
@@ -18,14 +18,19 @@ Documentar el flujo web de asignar departamento, equipo y técnico a una inciden
 - Mantener la distinción entre sesión real y modo demo, y entre un guardado real y uno simulado.
 - Adaptar la spec a la estructura actual de `dev`: `App.tsx`, `incident.service.ts`, tipos y utilidades HTTP compartidas.
 - Las decisiones de producto no expresadas por el usuario quedan marcadas como propuestas en la spec.
+- El servicio usa el backend real para la sesión real. El mock se ofrece de forma explícita solo en desarrollo y guarda en memoria.
 
 ## Archivos
 
 | Archivo | Cambio |
 | --- | --- |
 | `docs/spec/features/12-11-26-asignar-incidencias/spec.md` | Contrato funcional, datos, UI y criterios de aceptación |
-| `docs/spec/features/12-11-26-asignar-incidencias/plan.md` | Tareas y comprobaciones futuras |
+| `docs/spec/features/12-11-26-asignar-incidencias/plan.md` | Tareas y resultados de comprobación |
 | `docs/2026-11-12-001-asignaciones-frontend.md` | Registro de la sesión |
+| `src/App.tsx`, `src/components/incident-assignment-view.tsx`, `src/hooks/use-incident-assignment.ts` | Navegación y formulario de asignación |
+| `src/services/assignment.service.ts`, `src/types/assignment.ts`, `src/mocks/assignment-mock.ts` | Contrato HTTP, tipos y demostración |
+| `src/types/incident.ts`, `src/services/incident.service.ts`, `src/constants/incident-labels.ts` | Detalle y estado `assigned` |
+| `src/__tests__/services/`, `src/__tests__/hooks/` | Pruebas de contrato y jerarquía |
 
 ## Checklist de la sesión
 
@@ -33,6 +38,8 @@ Documentar el flujo web de asignar departamento, equipo y técnico a una inciden
 - [x] Revisar la implementación web y los contratos backend de asignaciones.
 - [x] Redactar especificación y plan.
 - [x] Revisar enlaces relativos, marcadores y `git diff --check`.
+- [x] Implementar la asignación con datos reales y modo demo explícito.
+- [x] Ejecutar pruebas, typecheck, lint y build.
 
 ## Documentos actualizados
 
@@ -41,9 +48,9 @@ Documentar el flujo web de asignar departamento, equipo y técnico a una inciden
 
 ## Estado / Verificación
 
-Documentación redactada. Enlaces relativos y marcadores comprobados; `git diff --check` sin errores. Los documentos nuevos se revisaron por separado porque aún no están añadidos a Git. Las pruebas de aplicación, typecheck, lint y build no aplican a esta entrega documental.
+Implementación local verificada: 55 pruebas en cinco archivos, typecheck, lint, build y `git diff --check` correctos. El usuario autorizó `npm ci`; el primer intento no tuvo resolución DNS en el entorno aislado y el segundo terminó con acceso de red.
 
 ## Pendiente / diferido
 
 - [ ] Confirmar las suposiciones de producto y la identidad del desarrollador responsable.
-- [ ] Implementar y verificar la funcionalidad según el plan cuando se solicite.
+- [ ] Probar la integración con un backend activo cuando esté disponible.

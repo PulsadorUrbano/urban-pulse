@@ -23,6 +23,9 @@ const incident: IncidentDetail = {
   categoryId: null,
   category: 'Iluminación',
   urbanAssetId: null,
+  departmentId: null,
+  teamId: null,
+  technicianId: null,
   location: { latitude: 36.7213, longitude: -4.4214, accuracy: 8.5, createdAt: '2026-11-07T10:00:00.000Z' },
   images: [
     { id: 'img-1', url: `/uploads/incidents/${INCIDENT_ID}/img-1.png`, mimeType: 'image/png', createdAt: '2026-11-07T10:00:00.000Z' },
@@ -66,7 +69,7 @@ describe('incident.service', () => {
   });
 
   it('rechaza una respuesta que no cumple el contrato', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(200, { ...incident, status: 'assigned' })));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(200, { ...incident, technicianId: undefined })));
 
     await expect(fetchIncidentById(INCIDENT_ID)).rejects.toBeInstanceOf(BackendContractError);
   });

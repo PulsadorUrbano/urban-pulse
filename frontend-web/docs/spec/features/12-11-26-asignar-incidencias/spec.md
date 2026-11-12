@@ -6,7 +6,7 @@
 
 - Rama: `asignaciones-frontend`, creada desde `origin/dev` en `feb78f1`.
 - Última actualización: 2026-11-12.
-- Estado: borrador; implementación y verificación pendientes.
+- Estado: implementado y verificado localmente; pendiente de prueba con backend activo.
 - Plan: [Plan de implementación](./plan.md#confirmación-de-implementación).
 - Referencias: [especificación backend](../../../../../backend/docs/spec/features/specs/2026-11-03-asignar-departamento-equipo-y-tecnico-spec.md) y [contrato de asignación](../../../../../backend/docs/spec/endpoint/patch-incidents-id-assignment/README.md).
 
@@ -21,10 +21,10 @@ Permitir al personal municipal con rol `admin` o `administrative` consultar una 
 
 ## Contexto verificado
 
-- Implementación actual: [App.tsx](../../../../src/App.tsx) alterna acceso y validación con sesión restaurable y lee `?incidencia=<uuid>`; no hay vista de asignaciones. [incident-validation-view.tsx](../../../../src/components/incident-validation-view.tsx) muestra una incidencia real cargada por UUID. [incident.service.ts](../../../../src/services/incident.service.ts) consume el backend, pero su type guard y [IncidentDetail](../../../../src/types/incident.ts) aún no admiten `assigned` ni los tres IDs de asignación. [use-incident-validation.ts](../../../../src/hooks/use-incident-validation.ts) no gestiona asignaciones. [auth.service.ts](../../../../src/services/auth.service.ts) distingue sesión real y simulada.
+- Implementación actual: [App.tsx](../../../../src/App.tsx) ofrece acceso, validación y asignaciones con sesión restaurable y lee `?incidencia=<uuid>`. [incident-validation-view.tsx](../../../../src/components/incident-validation-view.tsx) mantiene la validación existente. [incident-assignment-view.tsx](../../../../src/components/incident-assignment-view.tsx) presenta la asignación y [use-incident-assignment.ts](../../../../src/hooks/use-incident-assignment.ts) gestiona el formulario. [incident.service.ts](../../../../src/services/incident.service.ts) valida `assigned` y los tres IDs de [IncidentDetail](../../../../src/types/incident.ts). [auth.service.ts](../../../../src/services/auth.service.ts) distingue sesión real y simulada.
 - Contratos y referencias: [GET de detalle](../../../../../backend/docs/spec/endpoint/get-incidents-id/README.md), [GET de opciones](../../../../../backend/docs/spec/endpoint/get-incidents-assignment-options/README.md), [PATCH de asignación](../../../../../backend/docs/spec/endpoint/patch-incidents-id-assignment/README.md). El backend ya implementa esas rutas en esta base de `dev`.
 - Configuración y dependencias: React 19, Vite 8, TypeScript 5.7, Tailwind CSS 3, Vitest 5 y lucide-react, según [package.json](../../../../package.json). [config.ts](../../../../src/constants/config.ts) resuelve `VITE_BACKEND_URL` o `/api`; ya existen `.env.example`, `src/mocks/` y utilidades HTTP compartidas.
-- Diferencia: se añadirá una vista de asignación y un servicio de consumo real, se ampliará el contrato de incidencia existente y se prepararán datos demo compatibles con el backend.
+- Resultado: se añadieron la vista y el servicio de asignación, se amplió el contrato de incidencia y se prepararon datos demo compatibles con el backend.
 
 ## Contrato de datos (backend real + mock)
 
@@ -92,7 +92,7 @@ Una vista nueva en `src/components/`, un hook para carga y formulario en `src/ho
 
 ## Estrategia de verificación
 
-Pruebas Vitest bajo `src/__tests__/` que comprueben type guard de incidencia, filtrado y limpieza jerárquica, construcción del PATCH con `null` frente a omisión, tratamiento de 409 y fallo de red, y separación entre modo real y demo. Comprobar con lectura de código que los endpoints, roles y campos coinciden con las fichas backend. Durante la implementación: `npm run test`, `npm run typecheck`, `npm run lint`, `npm run build` y `git diff --check`; los resultados reales se documentarán en el plan. Esta entrega solo redacta documentación, por lo que se revisan rutas, enlaces y diff sin ejecutar la aplicación.
+Pruebas Vitest bajo `src/__tests__/` comprueban el type guard de incidencia, la limpieza jerárquica, la construcción del PATCH con `null` frente a omisión, el tratamiento de 409 y fallo de red, y la separación entre modo real y demo. Los endpoints, roles y campos se cotejaron con el código backend. Se ejecutaron `npm test`, `npm run typecheck`, `npm run lint`, `npm run build` y `git diff --check`; los resultados reales constan en el plan.
 
 No crear ni ejecutar e2e o integración salvo petición explícita. La verificación del frontend prueba la forma de sus peticiones y el manejo de respuestas; no certifica la lógica interna ni la disponibilidad del backend.
 

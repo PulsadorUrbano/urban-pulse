@@ -6,4 +6,5 @@ export const STATUS_LABELS: Record<IncidentStatus, string> = {
   reported: 'Pendiente de validar',
   validated: 'Validada',
   rejected: 'Descartada',
+  assigned: 'Asignada',
 };
