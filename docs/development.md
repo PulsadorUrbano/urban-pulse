@@ -6,11 +6,11 @@ Cada aplicación tiene su propio manifiesto y lockfile. No hay instalación ni s
 
 | Componente | Gestor | Lockfile | Instalación |
 | --- | --- | --- | --- |
-| Backend | npm | `package-lock.json` | `npm ci` |
+| Backend | pnpm | `pnpm-lock.yaml` | `pnpm install --frozen-lockfile` |
 | Web | npm | `package-lock.json` | `npm ci` |
 | Móvil | pnpm | `pnpm-lock.yaml` | `pnpm install --frozen-lockfile` |
 
-Se necesita Git, Node.js y el gestor de cada componente. El backend declara Node.js ≥22 y npm ≥10. Las restricciones de Node de las dependencias se encuentran en los lockfiles; conserva el gestor y el lockfile de cada aplicación al instalar.
+Se necesita Git, Node.js y el gestor de cada componente. El backend declara Node.js ≥22 y pnpm ≥10.34.8. Las restricciones de Node de las dependencias se encuentran en los lockfiles; conserva el gestor y el lockfile de cada aplicación al instalar.
 
 Docker con el complemento Compose es necesario para ejecutar la infraestructura en contenedores. Los requisitos de dispositivos, emuladores y Expo están en el [README móvil](../frontend-mobile/README.md).
 

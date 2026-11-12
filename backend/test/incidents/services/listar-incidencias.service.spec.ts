@@ -1,7 +1,6 @@
 import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { IncidentsService } from '../../../src/incidents/incidents.service.js';
-import { UploadStorageService } from '../../../src/incidents/upload-storage.service.js';
 import { PrismaService } from '../../../src/prisma/prisma.service.js';
 import { crearPrismaIncidenciasFake } from './prisma-incidencias.fake.js';
 
@@ -19,13 +18,6 @@ describe('Listado de incidencias por ciudadano', () => {
       providers: [
         IncidentsService,
         { provide: PrismaService, useValue: prisma.prisma },
-        {
-          provide: UploadStorageService,
-          useValue: {
-            save: vi.fn().mockResolvedValue([]),
-            eliminarImagenes: vi.fn(),
-          },
-        },
       ],
     }).compile();
     servicio = modulo.get(IncidentsService);
@@ -38,19 +30,16 @@ describe('Listado de incidencias por ciudadano', () => {
 
   it('filtra por ciudadano normalizado, ordena y devuelve únicamente el resumen', async () => {
     vi.setSystemTime(new Date('2026-10-23T08:00:00Z'));
-    const antigua = await servicio.create(
-      { title: 'Farola apagada', civicId: idCiudadano },
-      [],
-    );
+    const antigua = await servicio.create({
+      title: 'Farola apagada',
+      civicId: idCiudadano,
+    });
     vi.setSystemTime(new Date('2026-10-23T09:00:00Z'));
-    const reciente = await servicio.create(
-      { title: 'Banco roto', civicId: idCiudadano },
-      [],
-    );
-    await servicio.create(
-      { title: 'Otra incidencia', civicId: otroCiudadano },
-      [],
-    );
+    const reciente = await servicio.create({
+      title: 'Banco roto',
+      civicId: idCiudadano,
+    });
+    await servicio.create({ title: 'Otra incidencia', civicId: otroCiudadano });
 
     await expect(
       servicio.listarPorCiudadano(idCiudadano.toUpperCase()),
@@ -66,10 +55,7 @@ describe('Listado de incidencias por ciudadano', () => {
 
   it('devuelve una lista vacía si no hay coincidencias', async () => {
     await expect(servicio.listarPorCiudadano(idCiudadano)).resolves.toEqual([]);
-    await servicio.create(
-      { title: 'Otra incidencia', civicId: otroCiudadano },
-      [],
-    );
+    await servicio.create({ title: 'Otra incidencia', civicId: otroCiudadano });
     await expect(servicio.listarPorCiudadano(idCiudadano)).resolves.toEqual([]);
   });
 });

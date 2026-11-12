@@ -5,12 +5,12 @@ import {
 } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { IncidentsService } from '../../../src/incidents/incidents.service.js';
-import { UploadStorageService } from '../../../src/incidents/upload-storage.service.js';
 import { PrismaService } from '../../../src/prisma/prisma.service.js';
 import { crearPrismaIncidenciasFake } from './prisma-incidencias.fake.js';
 
 const propietario = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const actor = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const operador = { id: actor, role: 'admin', ciudadanoId: null } as const;
 
 describe('Asignación manual de prioridad', () => {
   let modulo: TestingModule;
@@ -22,13 +22,6 @@ describe('Asignación manual de prioridad', () => {
       providers: [
         IncidentsService,
         { provide: PrismaService, useValue: prisma.prisma },
-        {
-          provide: UploadStorageService,
-          useValue: {
-            save: vi.fn().mockResolvedValue([]),
-            eliminarImagenes: vi.fn(),
-          },
-        },
       ],
     }).compile();
     servicio = modulo.get(IncidentsService);
@@ -39,27 +32,29 @@ describe('Asignación manual de prioridad', () => {
   });
 
   async function crearValidada() {
-    const creada = await servicio.create(
-      { title: 'Farola apagada', civicId: propietario },
-      [],
-    );
-    return servicio.cambiarEstado(creada.id, {
-      status: 'validated',
-      cause: 'Reporte confirmado',
-      civicId: actor,
+    const creada = await servicio.create({
+      title: 'Farola apagada',
+      civicId: propietario,
     });
+    return servicio.cambiarEstado(
+      creada.id,
+      { status: 'validated', cause: 'Reporte confirmado' },
+      actor,
+    );
   }
 
   it('inicia low y persiste cada asignación con su historial', async () => {
     const validada = await crearValidada();
     for (const priority of ['low', 'medium', 'high'] as const) {
-      await servicio.cambiarPrioridad(validada.id, {
-        priority,
-        cause: `Motivo ${priority}`,
-        civicId: actor,
-      });
+      await servicio.cambiarPrioridad(
+        validada.id,
+        { priority, cause: `Motivo ${priority}` },
+        actor,
+      );
     }
-    await expect(servicio.findOne(validada.id)).resolves.toMatchObject({
+    await expect(
+      servicio.findOne(validada.id, operador),
+    ).resolves.toMatchObject({
       status: 'validated',
       priority: 'high',
     });
@@ -90,23 +85,23 @@ describe('Asignación manual de prioridad', () => {
   it.each(['reported', 'rejected'] as const)(
     'bloquea una incidencia en estado %s',
     async (status) => {
-      const creada = await servicio.create(
-        { title: 'Banco roto', civicId: propietario },
-        [],
-      );
+      const creada = await servicio.create({
+        title: 'Banco roto',
+        civicId: propietario,
+      });
       if (status === 'rejected') {
-        await servicio.cambiarEstado(creada.id, {
-          status,
-          cause: 'Duplicada',
-          civicId: actor,
-        });
+        await servicio.cambiarEstado(
+          creada.id,
+          { status, cause: 'Duplicada' },
+          actor,
+        );
       }
       await expect(
-        servicio.cambiarPrioridad(creada.id, {
-          priority: 'high',
-          cause: 'Revisada',
-          civicId: actor,
-        }),
+        servicio.cambiarPrioridad(
+          creada.id,
+          { priority: 'high', cause: 'Revisada' },
+          actor,
+        ),
       ).rejects.toBeInstanceOf(ConflictException);
       await expect(
         servicio.consultarCambiosPrioridad(creada.id),
@@ -116,24 +111,26 @@ describe('Asignación manual de prioridad', () => {
 
   it('devuelve 404 si la incidencia no existe', async () => {
     await expect(
-      servicio.cambiarPrioridad(propietario, {
-        priority: 'high',
-        cause: 'Revisada',
-        civicId: actor,
-      }),
+      servicio.cambiarPrioridad(
+        propietario,
+        { priority: 'high', cause: 'Revisada' },
+        actor,
+      ),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('rechaza un motivo vacío sin escribir prioridad ni historial', async () => {
     const creada = await crearValidada();
     await expect(
-      servicio.cambiarPrioridad(creada.id, {
-        priority: 'high',
-        cause: '   ',
-        civicId: actor,
-      }),
+      servicio.cambiarPrioridad(
+        creada.id,
+        { priority: 'high', cause: '   ' },
+        actor,
+      ),
     ).rejects.toBeInstanceOf(BadRequestException);
-    await expect(servicio.findOne(creada.id)).resolves.toEqual(creada);
+    await expect(servicio.findOne(creada.id, operador)).resolves.toEqual(
+      creada,
+    );
     await expect(
       servicio.consultarCambiosPrioridad(creada.id),
     ).resolves.toEqual([]);
@@ -143,11 +140,11 @@ describe('Asignación manual de prioridad', () => {
     const creada = await crearValidada();
     await Promise.all(
       (['medium', 'high'] as const).map((priority) =>
-        servicio.cambiarPrioridad(creada.id, {
-          priority,
-          cause: 'Revisada',
-          civicId: actor,
-        }),
+        servicio.cambiarPrioridad(
+          creada.id,
+          { priority, cause: 'Revisada' },
+          actor,
+        ),
       ),
     );
     await expect(

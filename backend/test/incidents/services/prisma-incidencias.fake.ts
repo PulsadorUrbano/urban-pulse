@@ -17,10 +17,6 @@ function objeto(valor: unknown): Registro {
   return valor as Registro;
 }
 
-function lista(valor: unknown): Registro[] {
-  return Array.isArray(valor) ? valor.map(objeto) : [];
-}
-
 function clonar<T>(valor: T): T {
   return structuredClone(valor);
 }
@@ -28,7 +24,6 @@ function clonar<T>(valor: T): T {
 export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
   const incidencias: Registro[] = [];
   const ubicaciones: Registro[] = [];
-  const imagenes: Registro[] = [];
   const cambiosEstado: Registro[] = [];
   const cambiosPrioridad: Registro[] = [];
   const consultasIncidencias: Registro[] = [];
@@ -41,8 +36,6 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
       const data = objeto(objeto(argumentos).data);
       const relation = (data.location ?? {}) as Registro;
       const location = relation.create ? objeto(relation.create) : null;
-      const imageRelation = (data.images ?? {}) as Registro;
-      const rows = lista(imageRelation.create);
       const created: Registro = {
         ...data,
         status: 'reported',
@@ -51,17 +44,12 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
         teamId: null,
         technicianId: null,
         location: null,
-        images: [],
       };
-      delete created.images;
       delete created.location;
       incidencias.push(created);
       if (location) {
         const row = { ...location, incidentId: data.id };
         ubicaciones.push(row);
-      }
-      for (const image of rows) {
-        imagenes.push({ ...image, incidentId: data.id });
       }
       return obtenerAgregado(String(data.id));
     },
@@ -167,7 +155,6 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
       location: clonar(
         ubicaciones.find((row) => String(row.incidentId) === id) ?? null,
       ),
-      images: clonar(imagenes.filter((row) => String(row.incidentId) === id)),
     };
   }
 
@@ -185,7 +172,6 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
       const snapshot = clonar({
         incidencias,
         ubicaciones,
-        imagenes,
         cambiosEstado,
         cambiosPrioridad,
       });
@@ -199,7 +185,6 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
         if (opciones.falloCommitDespuesDeGuardar !== error) {
           reemplazar(incidencias, snapshot.incidencias);
           reemplazar(ubicaciones, snapshot.ubicaciones);
-          reemplazar(imagenes, snapshot.imagenes);
           reemplazar(cambiosEstado, snapshot.cambiosEstado);
           reemplazar(cambiosPrioridad, snapshot.cambiosPrioridad);
         } else {
@@ -220,7 +205,6 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
     prisma: fake as unknown as PrismaService,
     incidencias,
     ubicaciones,
-    imagenes,
     cambiosEstado,
     cambiosPrioridad,
     consultasIncidencias,

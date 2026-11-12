@@ -5,12 +5,12 @@ import {
 } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { IncidentsService } from '../../../src/incidents/incidents.service.js';
-import { UploadStorageService } from '../../../src/incidents/upload-storage.service.js';
 import { PrismaService } from '../../../src/prisma/prisma.service.js';
 import { crearPrismaIncidenciasFake } from './prisma-incidencias.fake.js';
 
 const propietario = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const actor = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const operador = { id: actor, role: 'admin', ciudadanoId: null } as const;
 
 describe('Cambio de estado de incidencias', () => {
   let modulo: TestingModule;
@@ -22,13 +22,6 @@ describe('Cambio de estado de incidencias', () => {
       providers: [
         IncidentsService,
         { provide: PrismaService, useValue: prisma.prisma },
-        {
-          provide: UploadStorageService,
-          useValue: {
-            save: vi.fn().mockResolvedValue([]),
-            eliminarImagenes: vi.fn(),
-          },
-        },
       ],
     }).compile();
     servicio = modulo.get(IncidentsService);
@@ -42,18 +35,20 @@ describe('Cambio de estado de incidencias', () => {
     'cambia a %s y persiste el historial',
     async (status) => {
       await configurar();
-      const creada = await servicio.create(
-        { title: 'Farola apagada', civicId: propietario },
-        [],
-      );
-      const actualizada = await servicio.cambiarEstado(creada.id, {
-        status,
-        cause: '  Revisada por el equipo  ',
-        civicId: actor.toUpperCase(),
+      const creada = await servicio.create({
+        title: 'Farola apagada',
+        civicId: propietario,
       });
+      const actualizada = await servicio.cambiarEstado(
+        creada.id,
+        { status, cause: '  Revisada por el equipo  ' },
+        actor.toUpperCase(),
+      );
 
       expect(actualizada).toEqual({ ...creada, status });
-      await expect(servicio.findOne(creada.id)).resolves.toEqual(actualizada);
+      await expect(servicio.findOne(creada.id, operador)).resolves.toEqual(
+        actualizada,
+      );
       await expect(
         servicio.consultarCambiosEstado(creada.id),
       ).resolves.toMatchObject([
@@ -69,17 +64,13 @@ describe('Cambio de estado de incidencias', () => {
 
   it('solo permite una de dos transiciones concurrentes desde reported', async () => {
     await configurar();
-    const creada = await servicio.create(
-      { title: 'Banco roto', civicId: propietario },
-      [],
-    );
+    const creada = await servicio.create({
+      title: 'Banco roto',
+      civicId: propietario,
+    });
     const resultados = await Promise.allSettled(
       (['validated', 'rejected'] as const).map((status) =>
-        servicio.cambiarEstado(creada.id, {
-          status,
-          cause: 'Revisada',
-          civicId: actor,
-        }),
+        servicio.cambiarEstado(creada.id, { status, cause: 'Revisada' }, actor),
       ),
     );
     expect(
@@ -99,47 +90,51 @@ describe('Cambio de estado de incidencias', () => {
   it('devuelve 404 para una incidencia ausente', async () => {
     await configurar();
     await expect(
-      servicio.cambiarEstado(propietario, {
-        status: 'validated',
-        cause: 'Revisada',
-        civicId: actor,
-      }),
+      servicio.cambiarEstado(
+        propietario,
+        { status: 'validated', cause: 'Revisada' },
+        actor,
+      ),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('rechaza motivos vacíos sin cambiar el estado', async () => {
     await configurar();
-    const creada = await servicio.create(
-      { title: 'Banco roto', civicId: propietario },
-      [],
-    );
+    const creada = await servicio.create({
+      title: 'Banco roto',
+      civicId: propietario,
+    });
     await expect(
-      servicio.cambiarEstado(creada.id, {
-        status: 'rejected',
-        cause: '   ',
-        civicId: actor,
-      }),
+      servicio.cambiarEstado(
+        creada.id,
+        { status: 'rejected', cause: '   ' },
+        actor,
+      ),
     ).rejects.toBeInstanceOf(BadRequestException);
-    await expect(servicio.findOne(creada.id)).resolves.toEqual(creada);
+    await expect(servicio.findOne(creada.id, operador)).resolves.toEqual(
+      creada,
+    );
   });
 
   it('revierte el cambio de estado si falla el alta de historial', async () => {
     await configurar(new Error('constraint detail must not leak'));
-    const creada = await servicio.create(
-      { title: 'Banco roto', civicId: propietario },
-      [],
-    );
+    const creada = await servicio.create({
+      title: 'Banco roto',
+      civicId: propietario,
+    });
     await expect(
-      servicio.cambiarEstado(creada.id, {
-        status: 'validated',
-        cause: 'Revisada',
-        civicId: actor,
-      }),
+      servicio.cambiarEstado(
+        creada.id,
+        { status: 'validated', cause: 'Revisada' },
+        actor,
+      ),
     ).rejects.toMatchObject({
       status: 503,
       message: 'El almacenamiento de incidencias no está disponible.',
     });
-    await expect(servicio.findOne(creada.id)).resolves.toEqual(creada);
+    await expect(servicio.findOne(creada.id, operador)).resolves.toEqual(
+      creada,
+    );
     await expect(servicio.consultarCambiosEstado(creada.id)).resolves.toEqual(
       [],
     );

@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  ParseUUIDPipe,
   type PipeTransform,
 } from '@nestjs/common';
 import type { CursorIncidencias } from './incident.js';

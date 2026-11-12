@@ -5,7 +5,7 @@
 - Estado: implementado; verificado mediante pruebas unitarias, compilación y lint. No se han ejecutado peticiones HTTP de integración.
 - Finalidad: consultar resúmenes paginados, opcionalmente filtrados por ciudadano.
 
-## Entrada y validación
+## Contrato
 
 La primera solicitud comienza en la página 0: GET /incidents. `limit` es opcional, por defecto 10 y admite valores de 1 a 100. Para continuar, enviar el `nextCursor` recibido como `cursor`; no se aceptan números de página como desplazamiento. `civicId` es opcional y, si se usa, debe repetirse en las solicitudes siguientes. No hay cuerpo.
 
@@ -21,7 +21,7 @@ Si se proporciona civicId, debe ser un único UUID no vacío. UUID mal formado, 
     "id": "00000000-0000-4000-8000-000000000001",
     "title": "Farola apagada",
     "status": "reported",
-    "createdAt": "2026-10-23T10:00:00.000Z"
+    "createdAt": "2026-11-09T10:00:00.000Z"
   }
 ]
 ~~~
@@ -34,7 +34,7 @@ DEUDA-27-01 sigue abierta: no hay autenticación ni autorización. El listado gl
 
 El listado consulta incidencias en PostgreSQL y aplica el cursor keyset `(createdAt DESC, id ASC)` en la consulta, con un máximo de `limit + 1` filas. No lee bytes de Cloudinary ni calcula un total global. Los registros sobreviven al reinicio; el cursor solo indica desde qué fila continuar y no acredita identidad. El cuerpo permanece como array y no se exponen consultas de auditoría.
 
-El estado actual puede ser reported, validated o rejected; no devuelve historial, motivos ni actor de auditoría. Los cambios se describen en [validar o rechazar incidencias](../patch-incidents-id-status/README.md).
+PostgreSQL no disponible devuelve 503. No hay paginación ni historial en esta respuesta.
 
 ## Referencias
 
@@ -45,3 +45,4 @@ El estado actual puede ser reported, validated o rejected; no devuelve historial
 - [Servicio](../../../../src/incidents/incidents.service.ts).
 - [Unitarias del servicio](../../../../test/incidents/services/listar-incidencias.service.spec.ts).
 - [Unitarias de validación](../../../../test/incidents/pipes/listar-incidencias.pipe.spec.ts).
+- [Diseño integrado](../../../../../docs/superpowers/specs/2026-11-09-integrar-incidencias-jwt-prisma-sin-imagenes-design.md)

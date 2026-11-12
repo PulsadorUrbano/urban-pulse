@@ -99,12 +99,6 @@ CREATE TABLE "urban_assets" (
   PRIMARY KEY ("id")
 );
 
-CREATE TABLE "incident_images" (
-  "cloudinary_id" varchar,
-  "incident_id" uuid NOT NULL,
-  PRIMARY KEY ("cloudinary_id")
-);
-
 CREATE TABLE "categories" (
   "id" uuid,
   "name" varchar UNIQUE NOT NULL,
@@ -195,8 +189,6 @@ ALTER TABLE "incidents" ADD FOREIGN KEY ("technician_id") REFERENCES "team_membe
 ALTER TABLE "status_changes" ADD FOREIGN KEY ("incident_id") REFERENCES "incidents" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "status_changes" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "incident_images" ADD FOREIGN KEY ("incident_id") REFERENCES "incidents" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "priority_changes" ADD FOREIGN KEY ("incident_id") REFERENCES "incidents" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
