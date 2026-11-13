@@ -69,4 +69,4 @@ Responde 201, cabecera `Location: /incidents/{id}` y el recurso creado. La incid
 - [Controlador](../../../../src/incidents/incidents.controller.ts)
 - [Validación](../../../../src/incidents/create-incident.pipe.ts)
 - [Servicio](../../../../src/incidents/incidents.service.ts)
-- [Diseño integrado](../../../../../docs/superpowers/specs/2026-11-09-integrar-incidencias-jwt-prisma-sin-imagenes-design.md)
+- [Diseño integrado](../../features/specs/2026-11-09-integrar-incidencias-jwt-prisma-sin-imagenes-design.md)

@@ -8,7 +8,7 @@
 
 **Tech Stack:** NestJS 12, TypeScript estricto, Prisma 7, PostgreSQL, Vitest, pnpm.
 
-**Spec:** `docs/superpowers/specs/2026-11-09-integrar-incidencias-jwt-prisma-sin-imagenes-design.md`
+**Spec:** [Diseño de la integración](../specs/2026-11-09-integrar-incidencias-jwt-prisma-sin-imagenes-design.md)
 
 ## Global Constraints
 

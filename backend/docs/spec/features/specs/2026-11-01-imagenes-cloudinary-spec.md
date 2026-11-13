@@ -1,6 +1,6 @@
 # 2026-11-01 — Especificación: imágenes en Cloudinary y referencias en PostgreSQL
 
-> Retirada el 2026-11-09. Este documento se conserva solo como registro histórico. La implementación activa eliminó proveedor, tabla, subida y descarga de imágenes; véase el [diseño vigente](../../../../../docs/superpowers/specs/2026-11-09-integrar-incidencias-jwt-prisma-sin-imagenes-design.md).
+> Retirada el 2026-11-09. Este documento se conserva solo como registro histórico. La implementación activa eliminó proveedor, tabla, subida y descarga de imágenes; véase el [diseño vigente](./2026-11-09-integrar-incidencias-jwt-prisma-sin-imagenes-design.md).
 
 Estado: especificación de la implementación en la rama; código verificado con unitarias, build y lint. El esquema PostgreSQL local ya está migrado; queda pendiente verificar una subida real a Cloudinary y su recuperación tras reiniciar. Responsable: José González. Asistente: Codex; versión exacta del modelo no disponible.
 Rama: feat-imagenes-cloudinary.

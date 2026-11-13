@@ -13,4 +13,4 @@ La respuesta 200 usa el recurso completo documentado en [POST /incidents](../pos
 
 - [Controlador](../../../../src/incidents/incidents.controller.ts)
 - [Servicio](../../../../src/incidents/incidents.service.ts)
-- [Diseño integrado](../../../../../docs/superpowers/specs/2026-11-09-integrar-incidencias-jwt-prisma-sin-imagenes-design.md)
+- [Diseño integrado](../../features/specs/2026-11-09-integrar-incidencias-jwt-prisma-sin-imagenes-design.md)

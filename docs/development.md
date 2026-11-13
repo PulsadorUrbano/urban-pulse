@@ -10,7 +10,7 @@ Cada aplicación tiene su propio manifiesto y lockfile. No hay instalación ni s
 | Web | npm | `package-lock.json` | `npm ci` |
 | Móvil | pnpm | `pnpm-lock.yaml` | `pnpm install --frozen-lockfile` |
 
-Se necesita Git, Node.js y el gestor de cada componente. El backend declara Node.js ≥22 y pnpm ≥10.34.8. Las restricciones de Node de las dependencias se encuentran en los lockfiles; conserva el gestor y el lockfile de cada aplicación al instalar.
+Se necesita Git, Node.js y el gestor de paquetes indicado para cada componente. Si usas Node.js 22, necesitas al menos la versión 22.12 para el backend y la web, o la 22.13 si también ejecutas el móvil. El backend declara pnpm ≥10.34.8.
 
 Docker con el complemento Compose es necesario para ejecutar la infraestructura en contenedores. Los requisitos de dispositivos, emuladores y Expo están en el [README móvil](../frontend-mobile/README.md).
 
@@ -31,9 +31,9 @@ Para contribuir, crea la rama adecuada según [CONTRIBUTING.md](../CONTRIBUTING.
 | API y autenticación | Backend y PostgreSQL accesible. | [Backend](../backend/README.md). |
 | Interfaz web | Vite y navegador; API para las solicitudes de autenticación. | [Web](../frontend-web/README.md). |
 | Aplicación ciudadana | Expo, navegador o dispositivo, y backend o mock para los flujos de datos. | [Móvil](../frontend-mobile/README.md). |
-| Infraestructura en contenedores | Docker Compose con PostgreSQL/PostGIS y backend. | [Despliegue](deployment.md). |
+| Aplicación web en contenedores | Docker Compose con PostgreSQL/PostGIS, backend y panel web. | [Despliegue](deployment.md). |
 
-Cada README contiene los comandos de instalación, arranque y calidad de su componente. Prepara PostgreSQL y las tablas usadas por autenticación antes del backend; después abre los consumidores. Para el flujo simulado móvil, inicia su servidor mock antes de utilizarlo. Compose espera a que la base de datos esté saludable para iniciar la API.
+Cada README contiene los comandos de instalación, arranque y calidad de su componente. Si partes de una base de datos vacía en Compose, sigue los [pasos de primera ejecución](deployment.md#primera-ejecución-con-una-base-de-datos-vacía) para aplicar las migraciones antes de iniciar el backend. Para el flujo simulado móvil, inicia su servidor mock antes de utilizarlo. Compose espera a que la base de datos esté saludable para iniciar la API.
 
 ## Configuración local
 
@@ -50,7 +50,7 @@ Conserva cualquier archivo local existente y no versiones credenciales. Los valo
 
 ### Requisitos previos
 
-Las dependencias de cada componente deben estar instaladas previamente y PostgreSQL debe estar preparado para la autenticación. El lanzador no instala paquetes, inicia la base de datos ni cambia archivos .env.
+Las dependencias de cada componente deben estar instaladas previamente y PostgreSQL debe estar en marcha y tener las migraciones aplicadas. El lanzador no instala paquetes, inicia la base de datos ni cambia archivos .env.
 
 El teléfono debe poder acceder al ordenador por LAN. El túnel de Expo no publica automáticamente backend ni mock. Que un servicio escuche en un puerto no demuestra que el login funcione ni que el teléfono pueda acceder a él; esas comprobaciones requieren el entorno y dispositivo correspondientes. Los comandos individuales de cada componente siguen disponibles.
 
@@ -76,7 +76,7 @@ El backend coordinado no usa watch. Para aplicar cambios del backend, detén y v
 
 ## Local frente a contenedores
 
-En local, cada aplicación utiliza las herramientas y el entorno de su proceso. Compose construye y ejecuta backend y base de datos dentro de su red, con los puertos y volúmenes definidos en [despliegue](deployment.md).
+En local, cada aplicación utiliza las herramientas y el entorno de su proceso. Docker Compose ejecuta PostgreSQL/PostGIS, el backend y el panel web. Los puertos y volúmenes se describen en la [guía de despliegue](deployment.md). La aplicación móvil se inicia aparte con Expo.
 
 Para combinar una aplicación local con un servicio en contenedor, utiliza una dirección accesible desde el consumidor. Los nombres internos de Compose no son direcciones del anfitrión; en un teléfono, `localhost` se refiere al propio dispositivo.
 

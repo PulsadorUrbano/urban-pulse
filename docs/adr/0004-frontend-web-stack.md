@@ -22,7 +22,7 @@ Construir el frontend web como una SPA con este stack (versiones de `frontend-we
 | --- | --- | --- |
 | Librería de UI | React 19 | Mismo modelo de componentes y hooks que React Native en el móvil; el conocimiento se comparte entre equipos. |
 | Herramienta de build y servidor de desarrollo | Vite 8 con `@vitejs/plugin-react` | Arranque y recarga instantáneos, build de producción estático y proxy de desarrollo (`/api` hacia `http://localhost:3000`) que evita problemas de CORS con NestJS. |
-| Lenguaje | TypeScript 5 (migración progresiva desde JSX) | Tipos explícitos para los contratos de la API; por ejemplo, `ProfileRole` en `src/types/auth.ts` refleja el enum `profile_role` del backend. Las piezas nuevas (autenticación) ya están en TypeScript. |
+| Lenguaje | TypeScript 5 en modo estricto | Tipado de componentes, hooks, servicios y contratos de la API. |
 | Estilos | Tailwind CSS 3 (PostCSS y Autoprefixer) | Utilidades rápidas para paneles y tablas, con modo oscuro, sin mantener hojas de estilo propias. Coherente con NativeWind (Tailwind) en el móvil. |
 | Iconos | lucide-react | Iconos SVG ligeros e importables por separado. |
 | Pruebas | Vitest 5 | Integrado con Vite y con la misma API que usa el backend (también Vitest). Pruebas en `src/__tests__/`. |
@@ -48,7 +48,6 @@ Positivas:
 
 Negativas y riesgos:
 
-- Conviven archivos `.jsx` y `.tsx`; hay que completar la migración a TypeScript para que todo el código tenga tipos.
 - Sin renderizado en servidor, la primera carga depende del bundle de JavaScript; es aceptable en un panel interno.
-- La navegación entre vistas se gestiona hoy con estado en `App.jsx`. Cuando crezca el número de pantallas habrá que decidir un enrutador (por ejemplo, React Router) y registrarlo en un ADR nuevo.
-- El proxy de Vite solo actúa en desarrollo; en producción la URL del backend se indica con la variable `VITE_BACKEND_URL` (`src/services/authService.ts`), que hay que definir en cada entorno de despliegue.
+- La navegación entre vistas se gestiona hoy con estado en `src/App.tsx`. Cuando crezca el número de pantallas habrá que decidir un enrutador (por ejemplo, React Router) y registrarlo en un ADR nuevo.
+- `src/constants/config.ts` lee `VITE_BACKEND_URL`, cuyo valor por defecto es `/api`. En desarrollo, Vite reenvía las peticiones al backend. En Docker Compose, ese proxy lo hace Nginx.
