@@ -45,4 +45,4 @@ PostgreSQL no disponible devuelve 503. No hay paginación ni historial en esta r
 - [Servicio](../../../../src/incidents/incidents.service.ts).
 - [Unitarias del servicio](../../../../test/incidents/services/listar-incidencias.service.spec.ts).
 - [Unitarias de validación](../../../../test/incidents/pipes/listar-incidencias.pipe.spec.ts).
-- [Diseño integrado](../../../../../docs/superpowers/specs/2026-11-09-integrar-incidencias-jwt-prisma-sin-imagenes-design.md)
+- [Diseño integrado](../../features/specs/2026-11-09-integrar-incidencias-jwt-prisma-sin-imagenes-design.md)

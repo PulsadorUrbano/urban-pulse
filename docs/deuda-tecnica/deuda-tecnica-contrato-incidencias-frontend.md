@@ -24,4 +24,4 @@ En un cambio coordinado del móvil y, si procede, de la web:
 
 Se conserva `images: []` en las respuestas para reducir la rotura de lectura, pero no se aceptan imágenes de entrada ni se simula que fueron almacenadas. No se añade una capa de compatibilidad que acepte y descarte archivos porque produciría confirmaciones engañosas.
 
-Referencias: [contrato de alta](../backend/docs/spec/endpoint/post-incidents/README.md), [contrato de listado](../backend/docs/spec/endpoint/get-incidents/README.md) y [diseño aprobado](superpowers/specs/2026-11-09-integrar-incidencias-jwt-prisma-sin-imagenes-design.md).
+Referencias: [contrato de alta](../../backend/docs/spec/endpoint/post-incidents/README.md), [contrato de listado](../../backend/docs/spec/endpoint/get-incidents/README.md) y [diseño aprobado](../../backend/docs/spec/features/specs/2026-11-09-integrar-incidencias-jwt-prisma-sin-imagenes-design.md).

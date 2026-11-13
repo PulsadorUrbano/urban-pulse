@@ -50,7 +50,7 @@ Swagger se publica en `http://localhost:3000/`. `GET /health` devuelve `{ "statu
 
 Los contratos detallados, validaciones y respuestas tienen su ubicación principal en el [catálogo de endpoints](docs/spec/endpoint/README.md).
 
-El frontend móvil aún usa el contrato anterior de multipart y `civicId`; la incompatibilidad y la migración pendiente están registradas como [deuda técnica](../docs/deuda-tecnica-contrato-incidencias-frontend.md).
+El frontend móvil aún usa el contrato anterior de multipart y `civicId`; la incompatibilidad y la migración pendiente están registradas como [deuda técnica](../docs/deuda-tecnica/deuda-tecnica-contrato-incidencias-frontend.md).
 
 | Método y ruta | Función |
 | --- | --- |
