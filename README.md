@@ -21,6 +21,20 @@ El proyecto dispone de autenticación ciudadana, registro y consulta de incidenc
 | Docker Compose | Orquestación de base de datos y backend. |
 | Vitest y Jest | Pruebas de backend y web con Vitest; móvil con Jest. |
 
+## Cómo ejecutar el proyecto
+
+### Aplicación web
+
+Con Docker y Docker Compose instalados, abre una terminal en la raíz del repositorio.
+
+1. Crea un `.env` en la raíz a partir de `.env.example` y completa los valores según la [guía de despliegue](docs/deployment.md). Para una primera prueba local con una base vacía, configura `DB_SYNC=dbpush` y `NODE_ENV=development`.
+2. Ejecuta `docker compose up --build`. Se iniciarán la base de datos, el backend y el panel web.
+3. Abre [http://localhost:8080](http://localhost:8080) e inicia sesión con el usuario de prueba `admin` y la contraseña `admin`.
+
+### Aplicación móvil
+
+Con el backend de Compose en marcha, sigue el [README de la aplicación móvil](frontend-mobile/README.md) para configurar la conexión e iniciar Expo. Si usas un teléfono, conéctalo a la misma red Wi-Fi que el ordenador y escanea el código QR con Expo Go.
+
 ## Repositorio y guías
 
 | Ruta | Contenido |
