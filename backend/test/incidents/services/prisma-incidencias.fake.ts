@@ -17,6 +17,10 @@ function objeto(valor: unknown): Registro {
   return valor as Registro;
 }
 
+function lista(valor: unknown): Registro[] {
+  return Array.isArray(valor) ? valor.map(objeto) : [];
+}
+
 function clonar<T>(valor: T): T {
   return structuredClone(valor);
 }
@@ -73,15 +77,19 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
       );
       if (where.OR !== undefined) {
         const condiciones = lista(where.OR);
-        rows = rows.filter((row) => condiciones.some((condicion) => {
-          const fecha = new Date(String(row.createdAt)).getTime();
-          const valorFecha = condicion.createdAt;
-          if (valorFecha instanceof Date) {
-            return fecha === valorFecha.getTime() &&
-              String(row.id) > String(objeto(condicion.id).gt);
-          }
-          return fecha < new Date(String(objeto(valorFecha).lt)).getTime();
-        }));
+        rows = rows.filter((row) =>
+          condiciones.some((condicion) => {
+            const fecha = new Date(String(row.createdAt)).getTime();
+            const valorFecha = condicion.createdAt;
+            if (valorFecha instanceof Date) {
+              return (
+                fecha === valorFecha.getTime() &&
+                String(row.id) > String(objeto(condicion.id).gt)
+              );
+            }
+            return fecha < new Date(String(objeto(valorFecha).lt)).getTime();
+          }),
+        );
       }
       if (Array.isArray(args.orderBy)) {
         rows = [...rows].sort((left, right) => {

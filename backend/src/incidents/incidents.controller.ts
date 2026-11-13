@@ -22,6 +22,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiServiceUnavailableResponse,
   ApiTags,
   ApiUnauthorizedResponse,
@@ -45,9 +46,7 @@ import {
   ListarIncidenciasPipe,
   type ConsultaListadoIncidencias,
 } from './listar-incidencias.pipe.js';
-import type { UploadedImageFile } from './incident.js';
 import { IncidentsService } from './incidents.service.js';
-import { ListarIncidenciasPipe } from './listar-incidencias.pipe.js';
 import type { UsuarioIncidencias } from './types/usuario-incidencias.js';
 
 const esquemaPrioridad = {
@@ -105,35 +104,52 @@ const incidentSchema = {
 };
 
 @ApiTags('incidents')
-@ApiBearerAuth()
-@ApiUnauthorizedResponse({ description: 'JWT inválido o usuario inexistente.' })
-@ApiForbiddenResponse({
-  description:
-    'El rol actual o la vinculación ciudadana no permite la operación.',
-})
-@UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
 @Controller('incidents')
 export class IncidentsController {
   constructor(private readonly incidentsService: IncidentsService) {}
 
   @Get()
-  @SetMetadata('rolesIncidencias', ['civic'])
   @ApiOperation({
     summary: 'Consultar todas las incidencias o filtrarlas por ciudadano',
     description:
       'Sin civicId devuelve todas las incidencias. Con civicId devuelve solo las de ese ciudadano. Prototipo sin autenticación: civicId es un filtro del cliente, no acredita identidad ni propiedad (DEUDA-27-01). No devuelve trazabilidad.',
   })
   @ApiQuery({ name: 'civicId', required: false, type: String, format: 'uuid' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, minimum: 1, maximum: 100, description: 'Por defecto 10.' })
-  @ApiQuery({ name: 'cursor', required: false, type: String, description: 'Cursor opaco devuelto en nextCursor.' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    minimum: 1,
+    maximum: 100,
+    description: 'Por defecto 10.',
+  })
+  @ApiQuery({
+    name: 'cursor',
+    required: false,
+    type: String,
+    description: 'Cursor opaco devuelto en nextCursor.',
+  })
   @ApiOkResponse({
     description:
       'Array de resúmenes, ordenados del más reciente al más antiguo. La paginación se comunica mediante cabeceras.',
     headers: {
-      Link: { description: 'Enlace rel=next a la página siguiente, si existe.', schema: { type: 'string' } },
-      'X-Page': { description: 'Índice de página; la primera es 0.', schema: { type: 'integer' } },
-      'X-Limit': { description: 'Tamaño de página aplicado.', schema: { type: 'integer' } },
-      'X-Next-Cursor': { description: 'Cursor opaco para continuar; ausente en la última página.', schema: { type: 'string' } },
+      Link: {
+        description: 'Enlace rel=next a la página siguiente, si existe.',
+        schema: { type: 'string' },
+      },
+      'X-Page': {
+        description: 'Índice de página; la primera es 0.',
+        schema: { type: 'integer' },
+      },
+      'X-Limit': {
+        description: 'Tamaño de página aplicado.',
+        schema: { type: 'integer' },
+      },
+      'X-Next-Cursor': {
+        description:
+          'Cursor opaco para continuar; ausente en la última página.',
+        schema: { type: 'string' },
+      },
     },
     schema: {
       type: 'array',
@@ -161,27 +177,37 @@ export class IncidentsController {
     @Query(new ListarIncidenciasPipe()) consulta: ConsultaListadoIncidencias,
     @Res({ passthrough: true }) response: Response,
   ): Promise<ResumenIncidencia[]> {
-    return this.incidentsService.listarPagina(
-      consulta.limit,
-      consulta.cursor,
-      consulta.civicId,
-    ).then((pagina) => {
-      response.setHeader('X-Page', String(pagina.pagina));
-      response.setHeader('X-Limit', String(pagina.limit));
-      if (pagina.nextCursor) {
-        response.setHeader('X-Next-Cursor', pagina.nextCursor);
-        const parametros = new URLSearchParams({
-          limit: String(pagina.limit),
-          cursor: pagina.nextCursor,
-        });
-        if (consulta.civicId) parametros.set('civicId', consulta.civicId);
-        response.setHeader('Link', `</incidents?${parametros.toString()}>; rel="next"`);
-      }
-      return pagina.items;
-    });
+    return this.incidentsService
+      .listarPagina(consulta.limit, consulta.cursor, consulta.civicId)
+      .then((pagina) => {
+        response.setHeader('X-Page', String(pagina.pagina));
+        response.setHeader('X-Limit', String(pagina.limit));
+        if (pagina.nextCursor) {
+          response.setHeader('X-Next-Cursor', pagina.nextCursor);
+          const parametros = new URLSearchParams({
+            limit: String(pagina.limit),
+            cursor: pagina.nextCursor,
+          });
+          if (consulta.civicId) parametros.set('civicId', consulta.civicId);
+          response.setHeader(
+            'Link',
+            `</incidents?${parametros.toString()}>; rel="next"`,
+          );
+        }
+        return pagina.items;
+      });
   }
 
   @Post()
+  @ApiBearerAuth()
+  @ApiUnauthorizedResponse({
+    description: 'JWT inválido o usuario inexistente.',
+  })
+  @ApiForbiddenResponse({
+    description:
+      'El rol actual o la vinculación ciudadana no permite la operación.',
+  })
+  @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
   @SetMetadata('rolesIncidencias', ['civic'])
   @ApiOperation({
     summary: 'Crear una incidencia del ciudadano autenticado',
@@ -240,6 +266,15 @@ export class IncidentsController {
   }
 
   @Patch(':id/status')
+  @ApiBearerAuth()
+  @ApiUnauthorizedResponse({
+    description: 'JWT inválido o usuario inexistente.',
+  })
+  @ApiForbiddenResponse({
+    description:
+      'El rol actual o la vinculación ciudadana no permite la operación.',
+  })
+  @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
   @SetMetadata('rolesIncidencias', ['admin', 'administrative'])
   @ApiOperation({
     summary: 'Validar o rechazar una incidencia con motivo',
@@ -280,6 +315,15 @@ export class IncidentsController {
   }
 
   @Patch(':id/priority')
+  @ApiBearerAuth()
+  @ApiUnauthorizedResponse({
+    description: 'JWT inválido o usuario inexistente.',
+  })
+  @ApiForbiddenResponse({
+    description:
+      'El rol actual o la vinculación ciudadana no permite la operación.',
+  })
+  @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
   @SetMetadata('rolesIncidencias', ['admin', 'administrative'])
   @ApiOperation({
     summary: 'Asignar prioridad manual con motivo',
@@ -320,6 +364,15 @@ export class IncidentsController {
   }
 
   @Get(':id')
+  @ApiBearerAuth()
+  @ApiUnauthorizedResponse({
+    description: 'JWT inválido o usuario inexistente.',
+  })
+  @ApiForbiddenResponse({
+    description:
+      'El rol actual o la vinculación ciudadana no permite la operación.',
+  })
+  @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
   @SetMetadata('rolesIncidencias', ['civic', 'admin', 'administrative'])
   @ApiOperation({
     summary: 'Consultar una incidencia por identificador',

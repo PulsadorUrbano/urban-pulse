@@ -1,6 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
 import { ListarIncidenciasPipe } from '../../../src/incidents/listar-incidencias.pipe.js';
 
+const idCiudadano = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+
 describe('Validación de la consulta de incidencias', () => {
   const pipe = new ListarIncidenciasPipe();
 
@@ -18,14 +20,24 @@ describe('Validación de la consulta de incidencias', () => {
     ['límite mínimo', '1', 1],
     ['límite máximo', '100', 100],
   ])('acepta el %s', async (_caso, limit, esperado) => {
-    await expect(pipe.transform({ limit })).resolves.toMatchObject({ limit: esperado });
+    await expect(pipe.transform({ limit })).resolves.toMatchObject({
+      limit: esperado,
+    });
   });
 
   it('rechaza límites inválidos y cursores mal formados', async () => {
-    await expect(pipe.transform({ limit: '0' })).rejects.toThrow(BadRequestException);
-    await expect(pipe.transform({ limit: '101' })).rejects.toThrow(BadRequestException);
-    await expect(pipe.transform({ limit: '1.5' })).rejects.toThrow(BadRequestException);
-    await expect(pipe.transform({ cursor: 'invalido' })).rejects.toThrow(BadRequestException);
+    await expect(pipe.transform({ limit: '0' })).rejects.toThrow(
+      BadRequestException,
+    );
+    await expect(pipe.transform({ limit: '101' })).rejects.toThrow(
+      BadRequestException,
+    );
+    await expect(pipe.transform({ limit: '1.5' })).rejects.toThrow(
+      BadRequestException,
+    );
+    await expect(pipe.transform({ cursor: 'invalido' })).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it.each([
@@ -41,7 +53,7 @@ describe('Validación de la consulta de incidencias', () => {
     ['filtro repetido', { civicId: ['a', 'a'] }],
     ['filtro anidado', { civicId: { id: 'a' } }],
     ['parámetro desconocido', { status: 'reported' }],
-  ])('rechaza %s', (_caso, consulta) => {
-    expect(() => pipe.transform(consulta)).toThrow(BadRequestException);
+  ])('rechaza %s', async (_caso, consulta) => {
+    await expect(pipe.transform(consulta)).rejects.toThrow(BadRequestException);
   });
 });
