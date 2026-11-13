@@ -28,8 +28,8 @@ Construir el frontend móvil con este stack, reflejado en
 
 | Pieza | Elección | Motivo |
 | --- | --- | --- |
-| Framework móvil | React Native 0.86 con React 19 | Desarrollo para Android e iOS con código compartido y un modelo de componentes conocido por el equipo web. |
-| Entorno de desarrollo | Expo SDK 57 | Herramientas de desarrollo y módulos para integrar capacidades del dispositivo, manteniendo versiones compatibles con el SDK. |
+| Framework móvil | React Native 0.88 con React 19 | Desarrollo para Android e iOS con código compartido y un modelo de componentes conocido por el equipo web. |
+| Entorno de desarrollo | Expo SDK 58 | Herramientas de desarrollo y módulos para integrar capacidades del dispositivo, manteniendo versiones compatibles con el SDK. |
 | Lenguaje | TypeScript 6 con modo estricto | Tipado de componentes, hooks y estructuras de datos para detectar errores durante el desarrollo. |
 | Navegación | Expo Router | Rutas basadas en archivos dentro de `src/app/`, con layouts y componentes de pestañas específicos para móvil y web. |
 | Ejecución web | React Native Web | Permite comprobar parte de la aplicación desde el navegador sin mantener otra implementación de la interfaz móvil. |
@@ -44,9 +44,7 @@ Las pantallas y layouts se ubican en `src/app/`. Los componentes
 reutilizables, hooks y constantes se mantienen en directorios separados
 dentro de `src/`.
 
-Comandos de referencia, desde `frontend-mobile/`:
-`npm ci`, `npm run start`, `npm run web`, `npm run android`,
-`npm run ios`, `npm run lint` y `npx tsc --noEmit`.
+Consulta el [README del frontend móvil](../../frontend-mobile/README.md) para instalar las dependencias con pnpm, iniciar Expo y ejecutar las comprobaciones.
 
 ## Alternativas consideradas
 
