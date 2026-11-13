@@ -5,8 +5,11 @@ Urban Pulse es un proyecto universitario para gestionar incidencias urbanas en M
 Está dirigido a la ciudadanía que comunica incidencias, al personal municipal que las gestiona y a responsables y analistas que necesitan información para planificar.
 
 ## Estado del proyecto
+El backend ofrece autenticación ciudadana, registro y consulta de incidencias, categorías y operaciones de validación y prioridad. El panel web permite al personal municipal iniciar sesión, consultar una incidencia por su identificador y validarla o rechazarla. También incluye una pantalla de asignación de departamento, equipo y técnico cuya integración con la API está pendiente.
 
-El proyecto dispone de autenticación ciudadana, registro y consulta de incidencias, categorías y operaciones de validación y prioridad. La aplicación móvil incluye acceso, registro y seguimiento de incidencias propias; la web incorpora pantallas de acceso y validación con datos de demostración. Se prevén más funciones de gestión municipal y análisis con datos contextuales, indicadores y modelos predictivos. Consulta el alcance de cada componente en los README de [backend](backend/README.md), [web](frontend-web/README.md) y [móvil](frontend-mobile/README.md).
+La aplicación móvil incluye acceso, registro y pantallas para crear y consultar incidencias propias. El alta desde el móvil está pendiente de adaptarse al contrato actual del backend.
+
+Consulta los README de [backend](backend/README.md), [web](frontend-web/README.md) y [móvil](frontend-mobile/README.md) para conocer el alcance y las instrucciones de cada módulo.
 
 ## Tecnologías
 
@@ -18,7 +21,7 @@ El proyecto dispone de autenticación ciudadana, registro y consulta de incidenc
 | Expo Router | Navegación móvil basada en archivos. |
 | PostgreSQL y PostGIS | Base de datos relacional y geográfica definida en Compose. |
 | Prisma | Modelado de datos y acceso a PostgreSQL para autenticación. |
-| Docker Compose | Orquestación de base de datos y backend. |
+| Docker Compose | Orquestación de base de datos, backend y panel web. |
 | Vitest y Jest | Pruebas de backend y web con Vitest; móvil con Jest. |
 
 ## Cómo ejecutar el proyecto
@@ -27,8 +30,8 @@ El proyecto dispone de autenticación ciudadana, registro y consulta de incidenc
 
 Con Docker y Docker Compose instalados, abre una terminal en la raíz del repositorio.
 
-1. Crea un `.env` en la raíz a partir de `.env.example` y completa los valores según la [guía de despliegue](docs/deployment.md). Para una primera prueba local con una base vacía, configura `DB_SYNC=dbpush` y `NODE_ENV=development`.
-2. Ejecuta `docker compose up --build`. Se iniciarán la base de datos, el backend y el panel web.
+1. Crea un `.env` en la raíz a partir de `.env.example` y completa los valores según la [guía de despliegue](docs/deployment.md#configuración). Para probar el panel con la cuenta `admin`, configura `NODE_ENV=development`. Si partes de una base de datos vacía, sigue los pasos de [primera ejecución](docs/deployment.md#primera-ejecución-con-una-base-de-datos-vacía) antes de continuar.
+2. Desde la raíz, ejecuta `docker compose up -d --build` para iniciar la base de datos, el backend y el panel web.
 3. Abre [http://localhost:8080](http://localhost:8080) e inicia sesión con el usuario de prueba `admin` y la contraseña `admin`.
 
 ### Aplicación móvil
