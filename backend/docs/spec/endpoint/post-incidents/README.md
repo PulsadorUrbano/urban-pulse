@@ -46,6 +46,9 @@ Responde 201, cabecera `Location: /incidents/{id}` y el recurso creado. La incid
   "categoryId": null,
   "category": null,
   "urbanAssetId": null,
+  "departmentId": null,
+  "teamId": null,
+  "technicianId": null,
   "location": {
     "latitude": 36.7213,
     "longitude": -4.4214,
