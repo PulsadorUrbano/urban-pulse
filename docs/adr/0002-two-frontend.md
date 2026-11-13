@@ -23,14 +23,14 @@ Los requisitos del proyecto también se reparten por perfil:
 Mantener dos aplicaciones cliente independientes que consumen el mismo backend NestJS:
 
 - **`frontend-mobile/`** (React Native con Expo): exclusiva para la ciudadanía (rol `civic`). Su alcance está fijado en `frontend-mobile/CLAUDE.md`, que deja fuera los paneles de gestión, el triaje y los flujos administrativos.
-- **`frontend-web/`** (React con Vite): panel para el personal municipal y los analistas (resto de roles). Ya implementa el inicio de sesión con JWT y la vista de validación de incidencias (`src/components/IncidentValidationView.jsx`).
+- **`frontend-web/`** (React con Vite): panel para el personal municipal y los analistas (resto de roles). Ya implementa el inicio de sesión con JWT y la vista de validación de incidencias (`src/components/incident-validation-view.tsx`).
 
 El backend es la única fuente de verdad: identidad, roles y permisos se validan en el servidor, no en los clientes.
 
 ## Alternativas consideradas
 
 - **Una única aplicación web responsive (o PWA) para todos los perfiles.** Se descarta porque la ciudadanía necesita acceso nativo y fluido a la cámara, la galería y el GPS, y el uso desde el móvil en la calle es el caso principal. Una PWA lo ofrece de forma más limitada y desigual entre plataformas.
-- **Una única aplicación Expo para todos los perfiles, exportada también a web.** Expo permite publicar en web (`npm run web`), pero el panel de gestión se basa en tablas densas, filtros y vistas de escritorio que encajan mal con los componentes de React Native. Además, mezclar las funciones internas del ayuntamiento con la app pública aumentaría su tamaño y la superficie expuesta a la ciudadanía.
+- **Una única aplicación Expo para todos los perfiles, exportada también a web.** Expo permite publicar en web (`pnpm run web`), pero el panel de gestión se basa en tablas densas, filtros y vistas de escritorio que encajan mal con los componentes de React Native. Además, mezclar las funciones internas del ayuntamiento con la app pública aumentaría su tamaño y la superficie expuesta a la ciudadanía.
 - **Una sola aplicación con navegación según el rol.** Se descarta por los mismos motivos: dos experiencias muy distintas en el mismo código, y la app pública acabaría incluyendo funciones administrativas.
 
 ## Consecuencias
@@ -39,7 +39,7 @@ Positivas:
 
 - Cada cliente se diseña para su dispositivo y su usuario: flujo rápido y nativo en el móvil y panel de trabajo completo en el ordenador.
 - La app de la ciudadanía no incluye código ni pantallas administrativas.
-- Los equipos trabajan en paralelo con subramas `feature/<issue>-frontend-mobile` y `feature/<issue>-frontend-web` (ver el flujo de ramas del README).
+- Los equipos trabajan en paralelo con subramas `feature/<issue>-frontend-mobile` y `feature/<issue>-frontend-web` ([guía de contribución](../../CONTRIBUTING.md)).
 
 Negativas y riesgos:
 
