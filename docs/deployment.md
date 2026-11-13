@@ -6,55 +6,77 @@ El `docker-compose.yml` de la raíz define PostgreSQL/PostGIS, backend y fronten
 
 | Servicio | Configuración | Acceso y almacenamiento |
 | --- | --- | --- |
-| `database` | `imresamu/postgis:16-3.5-bookworm`, contenedor `urbanpulse_db`. | Puerto 5432 en la red interna; volumen `pgdata` en `/var/lib/postgresql/data`. |
+| `database` | `imresamu/postgis:16-3.5-bookworm`, contenedor `urbanpulse_db`. | `database:5432` desde la red de Compose y `127.0.0.1:5432` desde el equipo local. Volumen `pgdata` en `/var/lib/postgresql/data`. |
 | `backend` | Construcción desde `backend/Dockerfile`, contenedor `urbanpulse_backend`. | Puerto `API_PORT` publicado en el mismo puerto. |
 | `frontend-web` | Construcción desde `frontend-web/Dockerfile`, contenedor `urbanpulse_frontend_web`; build con Node.js y servicio estático con Nginx. | Puerto 80 del contenedor publicado como `WEB_PORT` (8080 por defecto); `/api/` se redirige al backend interno. |
 
 Los servicios utilizan `restart: always` y la red bridge `urbanpulse_net`. El backend depende de que PostgreSQL supere su healthcheck; el frontend espera a que el backend se inicie.
 
-El Dockerfile del backend utiliza una sola etapa con `node:22-alpine`, instala Nest CLI y las dependencias, copia el código y ejecuta `npm run deploy`. Ese script genera el cliente Prisma, compila y arranca con Nest CLI. El Dockerfile del frontend construye los recursos estáticos de Vite en una etapa Node.js y los sirve desde Nginx; Nginx resuelve las rutas de la SPA y redirige `/api/` a `backend` dentro de Compose, quitando el prefijo `/api`.
+El Dockerfile del backend usa dos etapas con `node:22-alpine`. La primera instala las dependencias y ejecuta `pnpm run build` para generar el cliente Prisma y compilar la API. La segunda instala las dependencias de producción, copia la compilación y arranca con `pnpm run start:prod`.
+
+El Dockerfile del frontend compila la aplicación con Vite y sirve los archivos con Nginx. Nginx resuelve las rutas de la aplicación y reenvía las peticiones `/api/` al backend, quitando ese prefijo.
 
 ## Configuración
 
-Desde la raíz, copia el ejemplo únicamente si no existe ya `.env`:
+Desde la raíz del repositorio, copia `.env.example` a `.env` si todavía no tienes ese archivo:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Compose exige `DB_NAME`, `DB_USER` y `DB_PASSWORD`, que se traducen a las variables `POSTGRES_*` de la base de datos. `API_PORT` configura el puerto del backend (3000 si se omite) y `WEB_PORT` el puerto local del frontend (8080 si se omite). Completa los valores del entorno sin subirlos al repositorio.
+Configura `DB_NAME`, `DB_USER` y `DB_PASSWORD` para PostgreSQL, y `JWT_SECRET` y `JWT_EXPIRES_IN` para la autenticación. Compose construye la conexión del backend a `database:5432` con los valores `DB_*`.
 
-El backend recibe el `.env` raíz mediante `env_file`. Compose fija `PORT` con `API_PORT` y construye `DATABASE_URL` con el host `database` y el puerto 5432. Las variables propias de la API se mantienen en el [README del backend](../backend/README.md); para autenticación, define también `JWT_SECRET` y `JWT_EXPIRES_IN` en el entorno del contenedor.
+`API_PORT` y `WEB_PORT` configuran los puertos del backend y del panel web. `.env.example` usa `3001` y `8080`, respectivamente. PostgreSQL está accesible desde el equipo local en `127.0.0.1:5432`.
 
-`NODE_ENV=development` activa los usuarios de desarrollo. `DB_SYNC` selecciona la sincronización al arrancar: vacío no ejecuta cambios, `dbpush` ejecuta `prisma db push` y `deploy` ejecuta `prisma migrate deploy`. El servicio de sincronización registra el resultado y captura los errores. El SQL de documentación no se carga automáticamente por Compose.
+Para usar las cuentas de prueba locales, configura `NODE_ENV=development` en el `.env` de la raíz. Deja `DB_SYNC` vacío y aplica las migraciones desde el equipo local, donde está instalado Prisma CLI.
 
-`backend/.env` pertenece al flujo local y no sustituye el `.env` raíz de Compose. No hay archivos Compose separados por entorno.
+El `.env` de la raíz configura Compose. `backend/.env` se usa para ejecutar el backend o Prisma desde el equipo local. No subas estos archivos al repositorio.
 
 ## Construcción y arranque
 
-Desde la raíz, después de configurar las variables y preparar el esquema utilizado por la aplicación:
+### Primera ejecución con una base de datos vacía
 
-```bash
-docker compose config --quiet
+1. Desde la raíz, inicia PostgreSQL y espera a que esté disponible:
+
+   ```powershell
+   docker compose up -d --wait database
+   ```
+
+2. Con Node.js 22.12 o posterior dentro de la rama 22, o Node.js 24 o superior y pnpm 10.34.8, entra en `backend/` e instala las dependencias si aún no las tienes:
+
+   ```powershell
+   cd backend
+   pnpm install --frozen-lockfile
+   ```
+
+3. Crea o ajusta `backend/.env`. Sustituye `USUARIO`, `CONTRASEÑA` y `NOMBRE_BD` por los valores de `DB_USER`, `DB_PASSWORD` y `DB_NAME` del `.env` raíz:
+
+   ```dotenv
+   DATABASE_URL="postgresql://USUARIO:CONTRASEÑA@127.0.0.1:5432/NOMBRE_BD?schema=public"
+   ```
+
+4. Desde `backend/`, aplica las migraciones. Cuando terminen correctamente, vuelve a la raíz:
+
+   ```powershell
+   pnpm exec prisma migrate deploy --config prisma7.config.ts
+   cd ..
+   ```
+
+### Arranque con el esquema preparado
+
+Desde la raíz, inicia la base de datos, el backend y el panel web:
+
+```powershell
 docker compose up -d --build
-docker compose ps
 ```
 
-Para iniciar únicamente PostgreSQL/PostGIS:
-
-```bash
-docker compose up -d database
-```
-
-La base de datos no publica 5432 al anfitrión. Los servicios de la red interna la utilizan como `database:5432`. Abre `http://localhost:8080` para usar la web con los valores por defecto; las peticiones de API pasan por el proxy de Nginx. También se puede acceder directamente a la API en `http://localhost:3001` con los valores de `.env.example`.
-
-Se validó `docker compose config --quiet` y se construyó la imagen `frontend-web`; no se inició el conjunto de servicios. El procedimiento descrito no constituye una validación de producción.
+Con los puertos de `.env.example`, abre el [panel web](http://localhost:8080) o accede directamente a la [API](http://localhost:3001). Si configuraste `NODE_ENV=development`, puedes probar el panel con `admin` / `admin`.
 
 ## Salud y logs
 
 El healthcheck de PostgreSQL ejecuta `pg_isready` con el usuario y la base configurados cada 5 segundos, con timeout de 5 segundos y 5 reintentos. Comprueba disponibilidad de PostgreSQL, no la presencia de las tablas del dominio.
 
-Swagger está configurado en `http://localhost:3000/`. `GET http://localhost:3000/health` devuelve `{ "status": "ok" }` según el controlador; no comprueba la base de datos. Compose no define un healthcheck adicional para el backend.
+Con el `API_PORT` de `.env.example`, Swagger está disponible en `http://localhost:3001/`. `GET http://localhost:3001/health` devuelve `{ "status": "ok" }` sin consultar PostgreSQL. Si cambias `API_PORT`, usa ese puerto en ambas URL. Compose no define un healthcheck para el backend.
 
 ```bash
 docker compose ps
