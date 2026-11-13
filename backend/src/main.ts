@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule, ObserveInstrument } from './app.module.js';
 import { anunciarArranqueCoordinado } from './configuracion/arranque-coordinado.js';
+import { registrarPeticion } from './configuracion/registro-conexion-web.js';
 
 function obtenerPuertoSolicitado(): number {
   const valor = process.env.PORT;
@@ -23,6 +24,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     instrument: ObserveInstrument,
   });
+  app.use(registrarPeticion);
 
   const config = new DocumentBuilder()
     .setTitle('Urban Pulse Backend API')
