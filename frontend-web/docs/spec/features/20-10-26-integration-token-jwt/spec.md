@@ -8,6 +8,8 @@
 
 ---
 
+Especificación histórica de la integración JWT del 20 de octubre de 2026. Para consultar el flujo de autenticación actual, véase el [README del frontend web](../../../../README.md).
+
 ## 1. Executive Summary & Overview
 
 This specification documents the implementation of the JWT access token integration within the web frontend (`frontend-web`) of **Urban Pulse**, connecting the client interface with the NestJS authentication microservice and establishing full traceability of the AI-assisted pair-programming engineering process.
