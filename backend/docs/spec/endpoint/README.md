@@ -43,6 +43,8 @@ Al añadir, modificar o retirar un endpoint, actualizar su carpeta en el mismo c
 
 ## Endpoints documentados
 
+- [Consultar opciones de asignación](get-incidents-assignment-options/README.md): GET /incidents/assignment-options, operadores autenticados.
+- [Asignar departamento, equipo y técnico](patch-incidents-id-assignment/README.md): PATCH /incidents/:id/assignment, operadores autenticados.
 - [Asignar prioridad manual con motivo](patch-incidents-id-priority/README.md): PATCH /incidents/:id/priority, solo incidencias validadas y operadores autenticados.
 
 - [Validar o rechazar una incidencia con motivo](patch-incidents-id-status/README.md): PATCH /incidents/:id/status; solo admin/administrative actuales, con actor autenticado.
@@ -55,7 +57,7 @@ Al añadir, modificar o retirar un endpoint, actualizar su carpeta en el mismo c
 
 Contratos revisados estáticamente; consultar cada ficha para los límites y la fecha de revisión.
 
-Las antiguas rutas de descarga de imágenes y asignación no forman parte de la API activa. Las incidencias requieren JWT, usan PostgreSQL mediante Prisma y no aceptan ni almacenan imágenes. El campo de respuesta `images` se conserva temporalmente como `[]` por compatibilidad.
+Las antiguas rutas de descarga de imágenes no forman parte de la API activa. Las incidencias requieren JWT, usan PostgreSQL mediante Prisma y no aceptan ni almacenan imágenes. El campo de respuesta `images` se conserva temporalmente como `[]` por compatibilidad.
 
 ## Autenticación incorporada desde token-backend
 

@@ -1,5 +1,10 @@
 import { ForbiddenException } from '@nestjs/common';
-import { GUARDS_METADATA } from '@nestjs/common/constants.js';
+import {
+  GUARDS_METADATA,
+  METHOD_METADATA,
+  PATH_METADATA,
+} from '@nestjs/common/constants.js';
+import { RequestMethod } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../src/auth/jwt-auth.guard.js';
 import { IncidentsController } from '../../../src/incidents/incidents.controller.js';
 import { AccesoIncidenciasGuard } from '../../../src/incidents/guards/acceso-incidencias.guard.js';
@@ -26,6 +31,10 @@ describe('IncidentsController autenticado', () => {
     create: vi.fn().mockResolvedValue(incidencia),
     cambiarEstado: vi.fn().mockResolvedValue(incidencia),
     cambiarPrioridad: vi.fn().mockResolvedValue(incidencia),
+    opcionesAsignacion: vi
+      .fn()
+      .mockResolvedValue({ departments: [], teams: [], technicians: [] }),
+    asignar: vi.fn().mockResolvedValue(incidencia),
     findOne: vi.fn().mockResolvedValue(incidencia),
   };
   const controlador = new IncidentsController(
@@ -78,6 +87,37 @@ describe('IncidentsController autenticado', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
+  it('expone las rutas de asignación y delega en el servicio', async () => {
+    const opciones = Object.getOwnPropertyDescriptor(
+      IncidentsController.prototype,
+      'opcionesAsignacion',
+    )?.value;
+    const asignar = Object.getOwnPropertyDescriptor(
+      IncidentsController.prototype,
+      'asignar',
+    )?.value;
+    expect(Reflect.getMetadata(PATH_METADATA, opciones)).toBe(
+      'assignment-options',
+    );
+    expect(Reflect.getMetadata(METHOD_METADATA, opciones)).toBe(
+      RequestMethod.GET,
+    );
+    expect(Reflect.getMetadata(PATH_METADATA, asignar)).toBe(':id/assignment');
+    expect(Reflect.getMetadata(METHOD_METADATA, asignar)).toBe(
+      RequestMethod.PATCH,
+    );
+
+    await expect(controlador.opcionesAsignacion()).resolves.toEqual({
+      departments: [],
+      teams: [],
+      technicians: [],
+    });
+    await controlador.asignar(incidencia.id, { departmentId: null });
+    expect(servicio.asignar).toHaveBeenCalledWith(incidencia.id, {
+      departmentId: null,
+    });
+  });
+
   it('deja público el listado y protege las operaciones autenticadas', () => {
     expect(
       Reflect.getMetadata(GUARDS_METADATA, IncidentsController),
@@ -105,15 +145,21 @@ describe('IncidentsController autenticado', () => {
       ]);
     }
 
-    expect(
-      Object.getOwnPropertyDescriptor(
+    for (const metodo of ['opcionesAsignacion', 'asignar'] as const) {
+      const operacion = Object.getOwnPropertyDescriptor(
         IncidentsController.prototype,
-        'opcionesAsignacion',
-      ),
-    ).toBeUndefined();
-    expect(
-      Object.getOwnPropertyDescriptor(IncidentsController.prototype, 'asignar'),
-    ).toBeUndefined();
+        metodo,
+      )?.value;
+      expect(operacion).toBeDefined();
+      expect(Reflect.getMetadata(GUARDS_METADATA, operacion)).toEqual([
+        JwtAuthGuard,
+        AccesoIncidenciasGuard,
+      ]);
+      expect(Reflect.getMetadata('rolesIncidencias', operacion)).toEqual([
+        'admin',
+        'administrative',
+      ]);
+    }
   });
 });
 

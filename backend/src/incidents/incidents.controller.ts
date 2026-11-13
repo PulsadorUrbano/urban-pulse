@@ -32,14 +32,17 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { IncidentPriority, IncidentStatus } from '../generated/prisma/enums.js';
 import { CambiarEstadoIncidenciaPipe } from './cambiar-estado-incidencia.pipe.js';
 import { CambiarPrioridadIncidenciaPipe } from './cambiar-prioridad-incidencia.pipe.js';
+import { AsignarIncidenciaPipe } from './asignar-incidencia.pipe.js';
 import { CreateIncidentPipe } from './create-incident.pipe.js';
 import { UsuarioIncidenciasActual } from './decorators/usuario-incidencias-actual.decorator.js';
 import { AccesoIncidenciasGuard } from './guards/acceso-incidencias.guard.js';
 import type {
   CambiarEstadoIncidenciaInput,
   CambiarPrioridadIncidenciaInput,
+  CambioAsignacionIncidencia,
   CrearIncidenciaBody,
   Incident,
+  OpcionesAsignacion,
   ResumenIncidencia,
 } from './incident.js';
 import {
@@ -70,6 +73,9 @@ const incidentSchema = {
     'images',
     'status',
     'priority',
+    'departmentId',
+    'teamId',
+    'technicianId',
     'createdAt',
   ],
   properties: {
@@ -99,6 +105,9 @@ const incidentSchema = {
     },
     status: { type: 'string', enum: Object.values(IncidentStatus) },
     priority: esquemaPrioridad,
+    departmentId: { type: 'string', format: 'uuid', nullable: true },
+    teamId: { type: 'string', format: 'uuid', nullable: true },
+    technicianId: { type: 'string', format: 'uuid', nullable: true },
     createdAt: { type: 'string', format: 'date-time' },
   },
 };
@@ -107,6 +116,29 @@ const incidentSchema = {
 @Controller('incidents')
 export class IncidentsController {
   constructor(private readonly incidentsService: IncidentsService) {}
+
+  @Get('assignment-options')
+  @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
+  @SetMetadata('rolesIncidencias', ['admin', 'administrative'])
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Consultar departamentos, equipos y técnicos asignables',
+  })
+  @ApiOkResponse({
+    description: 'Catálogos de departamentos, equipos y técnicos asignables.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'JWT inválido o usuario inexistente.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Se requiere rol admin o administrative.',
+  })
+  @ApiServiceUnavailableResponse({
+    description: 'PostgreSQL no está disponible.',
+  })
+  opcionesAsignacion(): Promise<OpcionesAsignacion> {
+    return this.incidentsService.opcionesAsignacion();
+  }
 
   @Get()
   @ApiOperation({
@@ -361,6 +393,49 @@ export class IncidentsController {
       entrada,
       usuario.id,
     );
+  }
+
+  @Patch(':id/assignment')
+  @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
+  @SetMetadata('rolesIncidencias', ['admin', 'administrative'])
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Asignar departamento, equipo y técnico a una incidencia',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      additionalProperties: false,
+      minProperties: 1,
+      properties: {
+        departmentId: { type: 'string', format: 'uuid', nullable: true },
+        teamId: { type: 'string', format: 'uuid', nullable: true },
+        technicianId: { type: 'string', format: 'uuid', nullable: true },
+      },
+    },
+  })
+  @ApiOkResponse({ schema: incidentSchema })
+  @ApiBadRequestResponse({
+    description: 'UUID, cuerpo o ID de catálogo inválido.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'JWT inválido o usuario inexistente.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Se requiere rol admin o administrative.',
+  })
+  @ApiNotFoundResponse({ description: 'La incidencia no existe.' })
+  @ApiConflictResponse({
+    description: 'Estado, jerarquía o versión de asignación incompatible.',
+  })
+  @ApiServiceUnavailableResponse({
+    description: 'PostgreSQL no está disponible.',
+  })
+  asignar(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new AsignarIncidenciaPipe()) cambio: CambioAsignacionIncidencia,
+  ): Promise<Incident> {
+    return this.incidentsService.asignar(id, cambio);
   }
 
   @Get(':id')
