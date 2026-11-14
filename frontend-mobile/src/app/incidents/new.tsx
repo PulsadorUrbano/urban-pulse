@@ -47,8 +47,11 @@ import {
 export default function NewIncidentScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { user, isRestoringSession } = useSession();
-  const { isSubmitting, errorMessage, submitIncident } = useCreateIncident(user?.civicId ?? null);
+  const { user, token, isRestoringSession } = useSession();
+  const { isSubmitting, errorMessage, submitIncident } = useCreateIncident(
+    user?.civicId ?? null,
+    token?.accessToken ?? null,
+  );
   const { isLocationEnabled, toggleLocation } = useLocationPreference();
   const {
     selectedPhotoUris,
