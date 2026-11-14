@@ -1,5 +1,3 @@
-import { File } from 'expo-file-system';
-
 import { API_BASE_URL, BACKEND_API_URL } from '@/constants/config';
 import {
   DEFAULT_INCIDENT_STATUS,
@@ -66,13 +64,6 @@ export function inferImageFormat(uri: string): { extension: string; mimeType: st
     return { extension: 'webp', mimeType: 'image/webp' };
   }
   return { extension: 'jpg', mimeType: 'image/jpeg' };
-}
-
-// El fetch de Expo (runtime "winter") ya no admite el formato propio de React
-// Native `{ uri, name, type }` como parte de un FormData: solo acepta un Blob
-// o algo con `.bytes()`, que es justo lo que implementa `File`.
-function buildImagePart(uri: string): File {
-  return new File(uri);
 }
 
 // Traduce un fallo de conexión (timeout o red) a un Error con mensaje amigable.
@@ -217,51 +208,53 @@ async function createIncidentOnMock(
 export async function createIncident(
   input: CreateIncidentInput,
   civicId: string,
+  accessToken: string,
   imageUris: string[] = [],
 ): Promise<CreateIncidentResult> {
-  const formData = new FormData();
-
-  formData.append('title', input.title.trim());
+  // Contrato JWT/Prisma del backend real (2026-11-09): solo acepta estos
+  // campos en JSON y rechaza con 400 cualquier otro (en particular `civicId`,
+  // que ahora se deriva del JWT en el backend, y `images`, que el backend
+  // real todavía no soporta). Las imágenes solo se envían al mock más abajo.
+  const payload: Record<string, string | number> = {
+    title: input.title.trim(),
+  };
 
   const trimmedDescription = input.description.trim();
   if (trimmedDescription) {
-    formData.append('description', trimmedDescription);
+    payload.description = trimmedDescription;
   }
 
-  formData.append('civicId', civicId);
-
   if (input.categoryId != null) {
-    formData.append('categoryId', input.categoryId);
+    payload.categoryId = input.categoryId;
   }
 
   const trimmedCustomCategory = input.category?.trim();
   if (trimmedCustomCategory) {
-    formData.append('category', trimmedCustomCategory);
+    payload.category = trimmedCustomCategory;
   }
 
   if (input.latitude != null) {
-    formData.append('latitude', String(input.latitude));
+    payload.latitude = input.latitude;
   }
   if (input.longitude != null) {
-    formData.append('longitude', String(input.longitude));
+    payload.longitude = input.longitude;
   }
   if (input.accuracy != null) {
-    formData.append('accuracy', String(input.accuracy));
+    payload.accuracy = input.accuracy;
   }
-
-  imageUris.slice(0, MAX_INCIDENT_IMAGES).forEach((uri) => {
-    formData.append('images', buildImagePart(uri));
-  });
 
   let response: Response;
 
   try {
-    // Sin cabecera Content-Type: fetch añade el boundary multipart solo.
     response = await fetchWithTimeout(
       BACKEND_INCIDENTS_ENDPOINT,
       {
         method: 'POST',
-        body: formData,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
       },
       INCIDENT_WITH_IMAGES_TIMEOUT_MS,
     );
@@ -459,12 +452,16 @@ async function fetchIncidentDetailFromMock(id: string): Promise<FetchIncidentDet
 // backend real y cayendo al mock solo si no hay conexión (timeout o red). Un
 // 404 (la incidencia no existe) nunca cae al mock: es una respuesta
 // definitiva. Un `!ok` por otro motivo (p. ej. 400/500) es error genérico.
-export async function fetchIncidentById(id: string): Promise<FetchIncidentDetailResult> {
+export async function fetchIncidentById(
+  id: string,
+  accessToken: string,
+): Promise<FetchIncidentDetailResult> {
   let response: Response;
 
   try {
     response = await fetchWithTimeout(`${BACKEND_INCIDENTS_ENDPOINT}/${id}`, {
       method: 'GET',
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
   } catch (error) {
     // Sin conexión con el backend: se cae al mock. El motivo real se deja en

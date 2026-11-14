@@ -7,11 +7,13 @@ import { IncidentStatusBadge } from '@/components/incident-status-badge';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useIncidentDetail } from '@/hooks/use-incident-detail';
+import { useSession } from '@/hooks/use-session';
 
 export default function IncidentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { token } = useSession();
   const { incident, isLoading, errorMessage, isNotFound, backendFallbackNotice, reload } =
-    useIncidentDetail(id);
+    useIncidentDetail(id, token?.accessToken ?? null);
 
   return (
     <ThemedView className="flex-1 flex-row justify-center">

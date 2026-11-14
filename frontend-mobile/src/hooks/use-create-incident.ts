@@ -13,9 +13,13 @@ export interface UseCreateIncidentResult {
 }
 
 // Encapsula el estado de envío de una incidencia para que la UI solo consuma
-// `isSubmitting`, `errorMessage` y `submitIncident`. Recibe el `civicId` de la
-// sesión activa, necesario para asociar la incidencia a su autor real.
-export function useCreateIncident(civicId: string | null): UseCreateIncidentResult {
+// `isSubmitting`, `errorMessage` y `submitIncident`. Recibe el `civicId` y el
+// `accessToken` de la sesión activa, necesarios para asociar la incidencia a
+// su autor real y autenticar la petición al backend.
+export function useCreateIncident(
+  civicId: string | null,
+  accessToken: string | null,
+): UseCreateIncidentResult {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -23,8 +27,9 @@ export function useCreateIncident(civicId: string | null): UseCreateIncidentResu
     async (input: CreateIncidentInput, imageUris?: string[]): Promise<CreateIncidentResult | null> => {
       setErrorMessage(null);
 
-      // Sin `civicId` no hay sesión identificable: no se intenta el envío.
-      if (civicId == null) {
+      // Sin `civicId` o `accessToken` no hay sesión identificable: no se
+      // intenta el envío.
+      if (civicId == null || accessToken == null) {
         setErrorMessage('No se pudo identificar tu sesión. Vuelve a iniciar sesión.');
         return null;
       }
@@ -32,7 +37,7 @@ export function useCreateIncident(civicId: string | null): UseCreateIncidentResu
       setIsSubmitting(true);
 
       try {
-        const result = await createIncident(input, civicId, imageUris);
+        const result = await createIncident(input, civicId, accessToken, imageUris);
         return result;
       } catch (error) {
         const message =
@@ -45,7 +50,7 @@ export function useCreateIncident(civicId: string | null): UseCreateIncidentResu
         setIsSubmitting(false);
       }
     },
-    [civicId],
+    [civicId, accessToken],
   );
 
   return { isSubmitting, errorMessage, submitIncident };
