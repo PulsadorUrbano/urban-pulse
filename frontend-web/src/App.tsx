@@ -109,6 +109,7 @@ function App() {
         <IncidentValidationView
           incidentId={incidentId}
           user={auth.user}
+          token={auth.token?.accessToken ?? null}
           isDarkMode={isDarkMode}
           onToggleTheme={toggleTheme}
           onLogout={handleLogout}
