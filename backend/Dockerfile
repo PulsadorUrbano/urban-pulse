@@ -1,22 +1,21 @@
-# -------------------------------------------------------------
-# Etapa 1: Construcción (Build)
-# -------------------------------------------------------------
-FROM node:22-alpine AS builder
+FROM node:22-alpine AS dependencies
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@10.34.8 --activate
 
-# Copiar configuración de dependencias
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
-# Copiar el código fuente y compilar TypeScript a JavaScript (carpeta /dist)
+FROM dependencies AS development
+ENV NODE_ENV=development
+COPY . .
+EXPOSE 3000
+CMD ["pnpm", "run", "start:dev"]
+
+FROM dependencies AS builder
 COPY . .
 RUN pnpm run build
 
-# -------------------------------------------------------------
-# Etapa 2: Producción
-# -------------------------------------------------------------
-FROM node:22-alpine
+FROM node:22-alpine AS production
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@10.34.8 --activate
 
@@ -28,4 +27,5 @@ RUN pnpm install --prod --frozen-lockfile
 COPY --from=builder /app/dist ./dist
 
 # Levantar el servidor compilado
+EXPOSE 3000
 CMD ["pnpm", "run", "start:prod"]

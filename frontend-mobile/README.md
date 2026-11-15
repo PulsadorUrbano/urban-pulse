@@ -39,7 +39,7 @@ Los servicios de autenticación, categorías e incidencias intentan utilizar el 
 pnpm run mock
 ```
 
-El script escucha en `0.0.0.0:3001`. El arranque del backend se explica en su [README](../backend/README.md) y la ejecución con contenedores, en [despliegue](../docs/deployment.md).
+El script escucha en `0.0.0.0:3001`. El arranque del backend se explica en su [README](../backend/README.md). También puedes iniciar Expo y la API mediante [Docker Compose](../docs/deployment.md); la app se abre en tu teléfono con Expo Go. Configura `MOBILE_HOST_IP` en el `.env` de la raíz con la IP LAN del equipo que ejecuta Docker. No se inicia el servidor mock desde Compose.
 
 ## Scripts y comprobaciones
 

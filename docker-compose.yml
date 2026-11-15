@@ -32,6 +32,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: development
     container_name: urbanpulse_backend
     restart: always
     env_file:
@@ -39,8 +40,13 @@ services:
     environment:
       PORT: ${API_PORT:-3000}
       DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@database:5432/${DB_NAME}
+      NODE_ENV: development
+      CHOKIDAR_USEPOLLING: "true"
     ports:
       - "${API_PORT:-3000}:${API_PORT:-3000}" # Acceso directo opcional a la API
+    volumes:
+      - ./backend:/app
+      - backend_node_modules:/app/node_modules
     depends_on:
       database:
         condition: service_healthy
@@ -54,13 +60,38 @@ services:
     build:
       context: ./frontend-web
       dockerfile: Dockerfile
+      target: development
     container_name: urbanpulse_frontend_web
     restart: always
     environment:
-      API_PORT: ${API_PORT:-3000}
-      NGINX_ENVSUBST_FILTER: ^API_PORT$
+      URBAN_PULSE_PROXY_URL: http://backend:${API_PORT:-3000}
+      CHOKIDAR_USEPOLLING: "true"
     ports:
-      - "${WEB_PORT:-8080}:80"
+      - "${WEB_PORT:-8080}:5173"
+    volumes:
+      - ./frontend-web:/app
+      - frontend_web_node_modules:/app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - urbanpulse_net
+
+  frontend-mobile:
+    build:
+      context: ./frontend-mobile
+      dockerfile: Dockerfile
+      target: development
+    container_name: urbanpulse_frontend_mobile
+    restart: always
+    environment:
+      REACT_NATIVE_PACKAGER_HOSTNAME: ${MOBILE_HOST_IP:-localhost}
+      EXPO_PUBLIC_BACKEND_URL: ${EXPO_PUBLIC_BACKEND_URL:-http://${MOBILE_HOST_IP:-localhost}:${API_PORT:-3000}}
+      EXPO_NO_TELEMETRY: "1"
+    ports:
+      - "${EXPO_PORT:-8081}:8081"
+    volumes:
+      - ./frontend-mobile:/app
+      - frontend_mobile_node_modules:/app/node_modules
     depends_on:
       - backend
     networks:
@@ -71,6 +102,9 @@ services:
 # -------------------------------------------------------------
 volumes:
   pgdata:
+  backend_node_modules:
+  frontend_web_node_modules:
+  frontend_mobile_node_modules:
 
 networks:
   urbanpulse_net:

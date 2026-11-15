@@ -2,19 +2,18 @@
 
 ## Servicios
 
-El `docker-compose.yml` de la raíz define PostgreSQL/PostGIS, backend y frontend web. La aplicación móvil se ejecuta mediante el procedimiento de su README.
+El `docker-compose.yml` de la raíz define PostgreSQL/PostGIS, backend y los frontends web y móvil. Compose selecciona las etapas de desarrollo para que los cambios de código se apliquen sin reconstruir. El móvil se ejecuta en el teléfono físico con Expo Go; Compose no crea un simulador ni inicia el mock.
 
 | Servicio | Configuración | Acceso y almacenamiento |
 | --- | --- | --- |
 | `database` | `imresamu/postgis:16-3.5-bookworm`, contenedor `urbanpulse_db`. | `database:5432` desde la red de Compose y `127.0.0.1:5432` desde el equipo local. Volumen `pgdata` en `/var/lib/postgresql/data`. |
-| `backend` | Construcción desde `backend/Dockerfile`, contenedor `urbanpulse_backend`. | Puerto `API_PORT` publicado en el mismo puerto. |
-| `frontend-web` | Construcción desde `frontend-web/Dockerfile`, contenedor `urbanpulse_frontend_web`; build con Node.js y servicio estático con Nginx. | Puerto 80 del contenedor publicado como `WEB_PORT` (8080 por defecto); `/api/` se redirige al backend interno. |
+| `backend` | Etapa `development` de `backend/Dockerfile`; NestJS con `start:dev`. | Puerto `API_PORT` publicado; código montado desde `backend/`. |
+| `frontend-web` | Etapa `development` de `frontend-web/Dockerfile`; Vite con recarga en caliente. | Puerto 5173 del contenedor publicado como `WEB_PORT` (8080 por defecto); Vite pasa `/api` al backend. |
+| `frontend-mobile` | Etapa `development` de `frontend-mobile/Dockerfile`; Expo/Metro. | Puerto `EXPO_PORT` (8081 por defecto); código montado desde `frontend-mobile/`. |
 
-Los servicios utilizan `restart: always` y la red bridge `urbanpulse_net`. El backend depende de que PostgreSQL supere su healthcheck; el frontend espera a que el backend se inicie.
+Los servicios utilizan `restart: always` y la red bridge `urbanpulse_net`. El backend depende de que PostgreSQL supere su healthcheck; la web y Expo esperan a que el backend se inicie.
 
-El Dockerfile del backend usa dos etapas con `node:22-alpine`. La primera instala las dependencias y ejecuta `pnpm run build` para generar el cliente Prisma y compilar la API. La segunda instala las dependencias de producción, copia la compilación y arranca con `pnpm run start:prod`.
-
-El Dockerfile del frontend compila la aplicación con Vite y sirve los archivos con Nginx. Nginx resuelve las rutas de la aplicación y reenvía las peticiones `/api/` al backend, quitando ese prefijo.
+El Dockerfile del backend separa dependencias, desarrollo, compilación y ejecución de producción. La etapa de producción instala únicamente dependencias de producción y copia `dist/`. El Dockerfile web separa dependencias, desarrollo, build de Vite y ejecución con Nginx. Compose usa las etapas de desarrollo; las imágenes de producción mantienen las etapas finales existentes. Expo usa Metro en desarrollo y no genera aquí una imagen nativa de producción.
 
 ## Configuración
 
@@ -28,7 +27,9 @@ Configura `DB_NAME`, `DB_USER` y `DB_PASSWORD` para PostgreSQL, y `JWT_SECRET` y
 
 `API_PORT` y `WEB_PORT` configuran los puertos del backend y del panel web. `.env.example` usa `3001` y `8080`, respectivamente. PostgreSQL está accesible desde el equipo local en `127.0.0.1:5432`.
 
-Para usar las cuentas de prueba locales, configura `NODE_ENV=development` en el `.env` de la raíz. Deja `DB_SYNC` vacío y aplica las migraciones desde el equipo local, donde está instalado Prisma CLI.
+`EXPO_PORT` configura el puerto local de Expo (8081). Para usar Expo Go desde el teléfono, configura `MOBILE_HOST_IP` con la IP LAN del equipo donde corre Docker, para que Expo anuncie una dirección accesible. Compose deriva de ese host la URL del backend. También puedes fijar explícitamente `EXPO_PUBLIC_BACKEND_URL` en `.env`, por ejemplo `http://192.168.1.20:3001` (sustituye la IP y el puerto por los de tu entorno). `localhost` solo sirve para clientes ejecutándose en el propio ordenador.
+
+Compose ejecuta el backend con `NODE_ENV=development`, independientemente del valor del `.env`, para habilitar el entorno de desarrollo. Deja `DB_SYNC` vacío y aplica las migraciones desde el equipo local, donde está instalado Prisma CLI.
 
 El `.env` de la raíz configura Compose. `backend/.env` se usa para ejecutar el backend o Prisma desde el equipo local. No subas estos archivos al repositorio.
 
@@ -64,13 +65,15 @@ El `.env` de la raíz configura Compose. `backend/.env` se usa para ejecutar el 
 
 ### Arranque con el esquema preparado
 
-Desde la raíz, inicia la base de datos, el backend y el panel web:
+Desde la raíz, inicia la base de datos, el backend y ambos frontends:
 
 ```powershell
 docker compose up -d --build
 ```
 
-Con los puertos de `.env.example`, abre el [panel web](http://localhost:8080) o accede directamente a la [API](http://localhost:3001). Si configuraste `NODE_ENV=development`, puedes probar el panel con `admin` / `admin`.
+Con los puertos de `.env.example`, abre el [panel web](http://localhost:8080) o accede directamente a la [API](http://localhost:3001). Compose fuerza `NODE_ENV=development`; si las cuentas de desarrollo están disponibles, puedes probar el panel con `admin` / `admin`.
+
+Expo/Metro está disponible en el puerto 8081. Usa `docker compose logs -f frontend-mobile` para obtener la URL/QR de Expo. Los directorios `node_modules` se conservan en volúmenes nombrados para que los montajes del código fuente no los oculten. Si cambian las dependencias, reconstruye las imágenes con `docker compose up -d --build`.
 
 ## Salud y logs
 

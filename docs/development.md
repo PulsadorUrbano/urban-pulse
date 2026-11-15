@@ -31,9 +31,9 @@ Para contribuir, crea la rama adecuada según [CONTRIBUTING.md](../CONTRIBUTING.
 | API y autenticación | Backend y PostgreSQL accesible. | [Backend](../backend/README.md). |
 | Interfaz web | Vite y navegador; API para las solicitudes de autenticación. | [Web](../frontend-web/README.md). |
 | Aplicación ciudadana | Expo, navegador o dispositivo, y backend o mock para los flujos de datos. | [Móvil](../frontend-mobile/README.md). |
-| Aplicación web en contenedores | Docker Compose con PostgreSQL/PostGIS, backend y panel web. | [Despliegue](deployment.md). |
+| Desarrollo integrado en contenedores | Docker Compose con PostgreSQL/PostGIS, backend, web y Expo en modo de desarrollo. | [Despliegue](deployment.md). |
 
-Cada README contiene los comandos de instalación, arranque y calidad de su componente. Si partes de una base de datos vacía en Compose, sigue los [pasos de primera ejecución](deployment.md#primera-ejecución-con-una-base-de-datos-vacía) para aplicar las migraciones antes de iniciar el backend. Para el flujo simulado móvil, inicia su servidor mock antes de utilizarlo. Compose espera a que la base de datos esté saludable para iniciar la API.
+Cada README contiene los comandos de instalación, arranque y calidad de su componente. Si partes de una base de datos vacía en Compose, sigue los [pasos de primera ejecución](deployment.md#primera-ejecución-con-una-base-de-datos-vacía) para aplicar las migraciones antes de iniciar el backend. Fuera de Compose, inicia el servidor mock móvil si vas a usar su fallback. Compose espera a que la base de datos esté saludable para iniciar la API.
 
 ## Configuración local
 
@@ -76,7 +76,7 @@ El backend coordinado no usa watch. Para aplicar cambios del backend, detén y v
 
 ## Local frente a contenedores
 
-En local, cada aplicación utiliza las herramientas y el entorno de su proceso. Docker Compose ejecuta PostgreSQL/PostGIS, el backend y el panel web. Los puertos y volúmenes se describen en la [guía de despliegue](deployment.md). La aplicación móvil se inicia aparte con Expo.
+En local, cada aplicación utiliza las herramientas y el entorno de su proceso. Docker Compose ejecuta PostgreSQL/PostGIS, backend, web y Expo con montajes para hot reload. Los puertos y la configuración de la app móvil se describen en la [guía de despliegue](deployment.md).
 
 Para combinar una aplicación local con un servicio en contenedor, utiliza una dirección accesible desde el consumidor. Los nombres internos de Compose no son direcciones del anfitrión; en un teléfono, `localhost` se refiere al propio dispositivo.
 
