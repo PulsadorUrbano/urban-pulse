@@ -11,6 +11,9 @@ Esta guía prepara el backend de Urban Pulse ejecutado con Docker Compose en un 
 | Región | Europa (Estocolmo), `eu-north-1` |
 | Acceso público | Bloqueado |
 | Cifrado | Predeterminado de S3; no se usa una clave KMS propia |
+| Distribución CloudFront | `E2ZTI4WP68L09Z` |
+| Dominio CDN | `d3i7srtglafney.cloudfront.net` |
+| Clave pública | `K1T6P7KH35YSW6` |
 
 El backend utiliza únicamente objetos bajo `incidents/`. No hace falta habilitar CORS del bucket porque los clientes envían las fotos al backend, que se comunica con S3. Las URL de lectura se firman en el backend y caducan a los 15 minutos. Al configurar las tres variables `CLOUDFRONT_*`, las lecturas se sirven mediante la distribución privada de CloudFront; sin ellas se conserva la lectura directa de S3 durante la transición.
 
@@ -125,6 +128,10 @@ Para obtener la última variable en PowerShell, con la clave privada guardada fu
 ```
 
 Comprueba que `GET /incidents/:id` devuelve URL con el dominio de CloudFront y parámetros `Expires`, `Signature` y `Key-Pair-Id`; que esa URL carga la foto; y que la misma ruta sin esos parámetros devuelve `403`. El acceso anónimo directo al objeto S3 también debe devolver `403`. Espera a que la distribución esté en estado **Deployed** antes de probar. Si falta una de las tres variables, el backend devolverá `503` al generar la URL en lugar de usar S3 por accidente.
+
+## Verificación realizada el 15 de noviembre de 2026
+
+La distribución `E2ZTI4WP68L09Z` alcanzó el estado `Deployed`. Se reconstruyó y reinició solo el contenedor backend, que recibió las tres variables `CLOUDFRONT_*`. Una imagen PNG temporal bajo `incidents/cloudfront-verification/` se pudo leer con URL firmada (`200`) y bytes idénticos; CloudFront sin firma y S3 anónimo respondieron `403`. El objeto temporal se eliminó. Esta comprobación valida la CDN y el origen, pero no sustituye una prueba HTTP completa de subida con JWT y una incidencia real.
 
 ## Preparar la base y arrancar
 

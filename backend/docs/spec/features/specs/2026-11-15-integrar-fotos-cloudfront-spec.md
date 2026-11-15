@@ -2,7 +2,7 @@
 
 - Rama: `feat-integracion-s3`.
 - Plan: [Plan de implementación](../plans/2026-11-15-integrar-fotos-cloudfront-plan.md).
-- Estado: implementación local verificada; infraestructura AWS pendiente.
+- Estado: distribución creada y verificada el 2026-11-15; prueba HTTP completa con JWT pendiente.
 
 ## Objetivo
 

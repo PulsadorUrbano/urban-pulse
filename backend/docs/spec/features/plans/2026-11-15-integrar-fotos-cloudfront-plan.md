@@ -11,8 +11,8 @@
 - [x] Añadir casos unitarios de URL CloudFront válida y configuración incompleta; comprobar que fallaban antes del cambio (2 fallos).
 - [x] Implementar firma de URL de CloudFront durante 15 minutos con conservación temporal de la ruta S3.
 - [x] Documentar variables de entorno y pasos de configuración de distribución, OAC, grupo de claves y política del bucket.
-- [ ] Crear en AWS la clave pública, grupo de claves, OAC y distribución; limitar la lectura del bucket al ARN de la distribución.
-- [ ] Configurar el `.env` local y verificar la URL firmada y los rechazos sin firma y por acceso directo a S3.
+- [x] Crear en AWS la clave pública, grupo de claves, OAC y distribución; limitar la lectura del bucket al ARN de la distribución.
+- [x] Configurar el `.env` local y verificar la URL firmada y los rechazos sin firma y por acceso directo a S3.
 - [ ] Publicar los cambios en la rama y actualizar la PR existente.
 
 ## Comprobaciones reales
@@ -25,11 +25,14 @@
 | `pnpm build` | Correcto. |
 | `pnpm lint` | Sin errores; 2 avisos previos y 2 avisos del test nuevo, corregidos después. |
 | Acceso AWS `cloudfront:ListDistributions` | Bloqueado por `AccessDenied` de la identidad IAM `Jose`. |
-| Acceso AWS `s3:GetBucketPolicy` | Bloqueado por `AccessDenied` de la misma identidad. |
+| Acceso AWS `s3:GetBucketPolicy` | Inicialmente bloqueado; después de asociar la nueva política, devolvió `NoSuchBucketPolicy`, indicando que no existía una política previa. |
+| CloudFront `E2ZTI4WP68L09Z` | Creada y estado `Deployed`; OAC, grupo de claves y lectura limitada a `incidents/*` comprobados. |
+| Docker Compose | Backend reconstruido y reiniciado; las tres variables CloudFront presentes en el contenedor. |
+| Prueba real de imagen temporal | CloudFront firmado `200` y contenido idéntico; CloudFront sin firma `403`; S3 anónimo `403`; objeto temporal eliminado. |
 
 ## Decisiones y limitaciones
 
 - Se usa el dominio estándar de CloudFront para evitar DNS y certificado propio.
 - La transición mantiene la firma S3 solo cuando no se define ninguna variable de CloudFront. Una configuración parcial da `503`.
-- La creación de recursos AWS requiere permisos adicionales de CloudFront y de política del bucket; solicitados al usuario.
-- Estado: implementación de código verificada; infraestructura y prueba de extremo a extremo pendientes.
+- La creación de recursos AWS requirió permisos temporales de CloudFront y de política del bucket. El usuario debe retirar la política IAM de aprovisionamiento después de verificar la configuración.
+- Estado: CDN y código verificados; una prueba HTTP completa de subida con JWT y una incidencia real sigue pendiente.
