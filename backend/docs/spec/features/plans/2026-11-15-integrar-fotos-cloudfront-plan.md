@@ -13,7 +13,7 @@
 - [x] Documentar variables de entorno y pasos de configuración de distribución, OAC, grupo de claves y política del bucket.
 - [x] Crear en AWS la clave pública, grupo de claves, OAC y distribución; limitar la lectura del bucket al ARN de la distribución.
 - [x] Configurar el `.env` local y verificar la URL firmada y los rechazos sin firma y por acceso directo a S3.
-- [ ] Publicar los cambios en la rama y actualizar la PR existente.
+- [x] Publicar los cambios en la rama y actualizar la PR existente; se notificó a los revisores en la PR #160.
 
 ## Comprobaciones reales
 
@@ -36,3 +36,9 @@
 - La transición mantiene la firma S3 solo cuando no se define ninguna variable de CloudFront. Una configuración parcial da `503`.
 - La creación de recursos AWS requirió permisos temporales de CloudFront y de política del bucket. El usuario debe retirar la política IAM de aprovisionamiento después de verificar la configuración.
 - Estado: CDN y código verificados; una prueba HTTP completa de subida con JWT y una incidencia real sigue pendiente.
+
+## Confirmación de implementación
+
+- Estado final: CDN y backend implementados y verificados el 2026-11-15.
+- Resultado entregado: distribución privada `E2ZTI4WP68L09Z`, backend Docker Compose configurado, guía y PR #160 actualizadas.
+- Limitaciones: no se realizó una subida HTTP multipart con JWT sobre una incidencia real. La política IAM temporal de aprovisionamiento debe retirarse tras la revisión.
