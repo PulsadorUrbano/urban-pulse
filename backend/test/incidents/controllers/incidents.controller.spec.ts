@@ -9,6 +9,7 @@ import { JwtAuthGuard } from '../../../src/auth/jwt-auth.guard.js';
 import { IncidentsController } from '../../../src/incidents/incidents.controller.js';
 import { AccesoIncidenciasGuard } from '../../../src/incidents/guards/acceso-incidencias.guard.js';
 import type { IncidentsService } from '../../../src/incidents/incidents.service.js';
+import type { FotosIncidenciaService } from '../../../src/incidents/services/fotos-incidencia.service.js';
 import type { Response } from 'express';
 import type { UsuarioIncidencias } from '../../../src/incidents/types/usuario-incidencias.js';
 
@@ -37,8 +38,16 @@ describe('IncidentsController autenticado', () => {
     asignar: vi.fn().mockResolvedValue(incidencia),
     findOne: vi.fn().mockResolvedValue(incidencia),
   };
+  const fotos = {
+    subir: vi.fn().mockResolvedValue([]),
+    listar: vi.fn().mockResolvedValue([]),
+    agregarA: vi
+      .fn()
+      .mockImplementation(async (incidencia: unknown) => incidencia),
+  };
   const controlador = new IncidentsController(
     servicio as unknown as IncidentsService,
+    fotos as unknown as FotosIncidenciaService,
   );
 
   beforeEach(() => vi.clearAllMocks());
@@ -85,6 +94,36 @@ describe('IncidentsController autenticado', () => {
         sinVinculo,
       ),
     ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('no confirma cambios si las fotos no pueden prepararse', async () => {
+    const fallo = new Error('No se pudieron consultar las fotos');
+
+    fotos.listar.mockRejectedValueOnce(fallo);
+    await expect(
+      controlador.cambiarEstado(
+        incidencia.id,
+        { status: 'validated', cause: 'Comprobada' },
+        operador,
+      ),
+    ).rejects.toBe(fallo);
+    expect(servicio.cambiarEstado).not.toHaveBeenCalled();
+
+    fotos.listar.mockRejectedValueOnce(fallo);
+    await expect(
+      controlador.cambiarPrioridad(
+        incidencia.id,
+        { priority: 'high', cause: 'Urgente' },
+        operador,
+      ),
+    ).rejects.toBe(fallo);
+    expect(servicio.cambiarPrioridad).not.toHaveBeenCalled();
+
+    fotos.listar.mockRejectedValueOnce(fallo);
+    await expect(
+      controlador.asignar(incidencia.id, { departmentId: null }),
+    ).rejects.toBe(fallo);
+    expect(servicio.asignar).not.toHaveBeenCalled();
   });
 
   it('expone las rutas de asignación y delega en el servicio', async () => {
@@ -134,6 +173,7 @@ describe('IncidentsController autenticado', () => {
       'cambiarEstado',
       'cambiarPrioridad',
       'findOne',
+      'subirFotos',
     ] as const) {
       const operacion = Object.getOwnPropertyDescriptor(
         IncidentsController.prototype,
@@ -161,6 +201,31 @@ describe('IncidentsController autenticado', () => {
       ]);
     }
   });
+
+  it('expone la ruta protegida de fotos y las añade solo al ciudadano vinculado', async () => {
+    const operacion = Object.getOwnPropertyDescriptor(
+      IncidentsController.prototype,
+      'subirFotos',
+    )?.value;
+    expect(Reflect.getMetadata(PATH_METADATA, operacion)).toBe(':id/images');
+    expect(Reflect.getMetadata(METHOD_METADATA, operacion)).toBe(
+      RequestMethod.POST,
+    );
+    expect(Reflect.getMetadata('rolesIncidencias', operacion)).toEqual([
+      'civic',
+    ]);
+    const archivo = {
+      buffer: Buffer.from([0xff, 0xd8, 0xff]),
+      mimetype: 'image/jpeg',
+      size: 3,
+    };
+
+    await controlador.subirFotos(incidencia.id, [archivo] as never, civic);
+
+    expect(fotos.subir).toHaveBeenCalledWith(incidencia.id, civic.ciudadanoId, [
+      { contenido: archivo.buffer, mimeType: 'image/jpeg', extension: 'jpg' },
+    ]);
+  });
 });
 
 describe('Listado paginado de incidencias', () => {
@@ -185,6 +250,7 @@ describe('Listado paginado de incidencias', () => {
     const response = { setHeader } as unknown as Response;
     const controlador = new IncidentsController(
       servicio as unknown as IncidentsService,
+      { agregarA: vi.fn() } as unknown as FotosIncidenciaService,
     );
 
     await expect(
