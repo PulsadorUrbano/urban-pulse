@@ -1,7 +1,7 @@
 # PATCH /incidents/:id/priority — asignar prioridad manual
 
 - Estado: implementado y cubierto por pruebas unitarias.
-- Última revisión: 2026-11-09.
+- Última revisión: 2026-11-15.
 - Autenticación: `Authorization: Bearer <JWT>` obligatoria.
 - Roles: `admin` o `administrative` vigentes en PostgreSQL.
 
@@ -14,7 +14,7 @@
 }
 ```
 
-Solo admite incidencias `validated`. La prioridad y `CambioPrioridad` se escriben en una misma transacción Prisma, con `esManual=true`, UUID y fecha de servidor. Responde 200 con el recurso completo; no expone historial ni actor. Errores: 400 entrada inválida; 401 JWT inválido; 403 rol no permitido; 404 incidencia ausente; 409 estado incompatible; 503 fallo de PostgreSQL.
+Solo admite incidencias `validated`. La prioridad y `CambioPrioridad` se escriben en una misma transacción Prisma, con `esManual=true`, UUID y fecha de servidor. Responde 200 con el recurso completo, incluidas las fotos con URL temporales; no expone historial ni actor. Errores: 400 entrada inválida; 401 JWT inválido; 403 rol no permitido; 404 incidencia ausente; 409 estado incompatible; 502 fallo de S3 al firmar fotos; 503 fallo de PostgreSQL.
 
 ## Referencias
 
