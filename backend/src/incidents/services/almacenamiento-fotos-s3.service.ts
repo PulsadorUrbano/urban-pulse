@@ -12,6 +12,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { getSignedUrl as getCloudFrontSignedUrl } from '@aws-sdk/cloudfront-signer';
 
 export const S3_CLIENT = 'S3_CLIENT';
 
@@ -67,6 +68,35 @@ export class AlmacenamientoFotosS3Service {
 
   async firmarLectura(clave: string): Promise<string> {
     const Bucket = this.bucket();
+    const domain = this.config.get<string>('CLOUDFRONT_DOMAIN')?.trim();
+    const keyPairId = this.config.get<string>('CLOUDFRONT_KEY_PAIR_ID')?.trim();
+    const privateKeyBase64 = this.config
+      .get<string>('CLOUDFRONT_PRIVATE_KEY_BASE64')
+      ?.trim();
+    const cloudFrontConfigurado = domain || keyPairId || privateKeyBase64;
+    if (cloudFrontConfigurado && (!domain || !keyPairId || !privateKeyBase64)) {
+      throw new ServiceUnavailableException('CloudFront no está configurado.');
+    }
+
+    if (cloudFrontConfigurado) {
+      if (!/^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/i.test(domain!)) {
+        throw new ServiceUnavailableException(
+          'CloudFront no está configurado.',
+        );
+      }
+      const privateKey = Buffer.from(privateKeyBase64!, 'base64').toString();
+      try {
+        return getCloudFrontSignedUrl({
+          url: `https://${domain}/${clave.split('/').map(encodeURIComponent).join('/')}`,
+          keyPairId: keyPairId!,
+          privateKey,
+          dateLessThan: new Date(Date.now() + 900_000).toISOString(),
+        });
+      } catch {
+        throw new BadGatewayException('No se pudo obtener la foto.');
+      }
+    }
+
     try {
       return await getSignedUrl(
         this.client,

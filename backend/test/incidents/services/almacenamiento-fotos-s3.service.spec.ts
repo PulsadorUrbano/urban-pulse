@@ -1,3 +1,4 @@
+import { generateKeyPairSync } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import {
   BadGatewayException,
@@ -19,6 +20,7 @@ describe('AlmacenamientoFotosS3Service', () => {
   const send = vi.fn();
   const client = { send } as unknown as S3Client;
   const config = {
+    get: () => undefined,
     getOrThrow: (clave: string) => {
       if (clave === 'S3_BUCKET') return 'fotos-urban-pulse';
       if (clave === 'S3_REGION') return 'eu-south-2';
@@ -78,6 +80,50 @@ describe('AlmacenamientoFotosS3Service', () => {
       Key: 'incidents/1/2.jpg',
     });
     expect(opciones).toEqual({ expiresIn: 900 });
+  });
+
+  it('firma una URL privada de CloudFront durante quince minutos', async () => {
+    const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+    const pem = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
+    const datos: Record<string, string> = {
+      CLOUDFRONT_DOMAIN: 'd111111abcdef8.cloudfront.net',
+      CLOUDFRONT_KEY_PAIR_ID: 'KTEST',
+      CLOUDFRONT_PRIVATE_KEY_BASE64: Buffer.from(pem).toString('base64'),
+    };
+    const configuracion = {
+      get: (clave: string) => datos[clave],
+      getOrThrow: (clave: string) => config.getOrThrow(clave),
+    } as unknown as ConfigService;
+    vi.setSystemTime(new Date('2026-11-15T12:00:00Z'));
+    try {
+      const servicio = new AlmacenamientoFotosS3Service(client, configuracion);
+      const url = new URL(
+        await servicio.firmarLectura('incidents/1/foto uno.jpg'),
+      );
+      expect(url.origin).toBe('https://d111111abcdef8.cloudfront.net');
+      expect(url.pathname).toBe('/incidents/1/foto%20uno.jpg');
+      expect(url.searchParams.get('Key-Pair-Id')).toBe('KTEST');
+      expect(url.searchParams.get('Expires')).toBe('1794744900');
+      expect(url.searchParams.get('Signature')).toBeTruthy();
+      expect(getSignedUrl).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('rechaza CloudFront incompleto sin volver a una URL directa de S3', async () => {
+    const configuracion = {
+      get: (clave: string) =>
+        clave === 'CLOUDFRONT_DOMAIN'
+          ? 'd111111abcdef8.cloudfront.net'
+          : undefined,
+      getOrThrow: (clave: string) => config.getOrThrow(clave),
+    } as unknown as ConfigService;
+    const servicio = new AlmacenamientoFotosS3Service(client, configuracion);
+    await expect(
+      servicio.firmarLectura('incidents/1/2.jpg'),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+    expect(getSignedUrl).not.toHaveBeenCalled();
   });
 
   it('rechaza configuración vacía antes de llamar a S3', async () => {
