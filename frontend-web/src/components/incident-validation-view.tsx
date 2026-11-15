@@ -12,6 +12,7 @@ import { ResolutionForm } from './resolution-form';
 interface IncidentValidationViewProps {
   incidentId: string | null;
   user: SessionUser;
+  token: string | null;
   isDarkMode: boolean;
   onToggleTheme: () => void;
   onLogout: () => void;
@@ -22,8 +23,8 @@ function formatDate(isoDate: string): string {
   return Number.isNaN(date.getTime()) ? isoDate : date.toLocaleString();
 }
 
-export function IncidentValidationView({ incidentId, user, isDarkMode, onToggleTheme, onLogout }: IncidentValidationViewProps) {
-  const validation = useIncidentValidation(incidentId, user.source === 'backend' ? user.id : null);
+export function IncidentValidationView({ incidentId, user, token, isDarkMode, onToggleTheme, onLogout }: IncidentValidationViewProps) {
+  const validation = useIncidentValidation(incidentId, user.source === 'backend' ? token : null);
   const { incident, loading, loadError, outcome, reset } = validation;
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -151,7 +152,7 @@ export function IncidentValidationView({ incidentId, user, isDarkMode, onToggleT
             </div>
           </div>
 
-          <IncidentGallery title={incident.title} images={incident.images} />
+          <IncidentGallery title={incident.title} images={incident.images} onRefreshImages={validation.refreshImages} />
 
           <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800/60 shadow-sm shrink-0">
             <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 mb-4 border-b border-zinc-100 dark:border-zinc-800/60 pb-3">

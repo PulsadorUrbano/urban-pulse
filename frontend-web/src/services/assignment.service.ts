@@ -72,7 +72,7 @@ export async function fetchAssignmentOptions(token: string): Promise<AssignmentO
 }
 
 export async function loadBackendAssignment(id: string, token: string): Promise<{ incident: IncidentDetail; options: AssignmentOptions }> {
-  const [incident, options] = await Promise.all([fetchIncidentById(id), fetchAssignmentOptions(token)]);
+  const [incident, options] = await Promise.all([fetchIncidentById(id, token), fetchAssignmentOptions(token)]);
   return { incident, options };
 }
 

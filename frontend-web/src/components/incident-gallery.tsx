@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Maximize2, X } from 'lucide-react';
 
 import { resolveBackendAssetUrl } from '../constants/config';
@@ -7,11 +7,13 @@ import type { CreatedIncidentImage } from '../types/incident';
 interface IncidentGalleryProps {
   title: string;
   images: CreatedIncidentImage[];
+  onRefreshImages?: () => void;
 }
 
-export function IncidentGallery({ title, images }: IncidentGalleryProps) {
+export function IncidentGallery({ title, images, onRefreshImages }: IncidentGalleryProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
+  const refreshAttempted = useRef(false);
 
   const currentImage = images[Math.min(selectedImageIndex, images.length - 1)];
   const currentImageUrl = currentImage ? resolveBackendAssetUrl(currentImage.url) : null;
@@ -37,6 +39,12 @@ export function IncidentGallery({ title, images }: IncidentGalleryProps) {
             <img
               src={currentImageUrl}
               alt={`Evidencia de la incidencia ${title}`}
+              onError={() => {
+                if (!refreshAttempted.current && onRefreshImages) {
+                  refreshAttempted.current = true;
+                  onRefreshImages();
+                }
+              }}
               className="absolute inset-0 w-full h-full object-contain"
             />
           ) : (

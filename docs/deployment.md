@@ -2,7 +2,7 @@
 
 ## Servicios
 
-El `docker-compose.yml` de la raíz define PostgreSQL/PostGIS, backend y frontend web. La aplicación móvil se ejecuta mediante el procedimiento de su README.
+El `docker-compose.yml` de la raíz define PostgreSQL/PostGIS, backend y frontend web. La aplicación móvil se ejecuta mediante el procedimiento de su README. Para configurar el almacenamiento de fotos en S3, consulta la [guía de conexión](conexion-s3-fotos.md).
 
 | Servicio | Configuración | Acceso y almacenamiento |
 | --- | --- | --- |
