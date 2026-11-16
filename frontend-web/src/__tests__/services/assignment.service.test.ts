@@ -6,7 +6,6 @@ import {
   AssignmentConflictError,
   fetchAssignmentOptions,
   isAssignmentOptions,
-  loadBackendAssignment,
   saveBackendAssignment,
   startDemoAssignment,
 } from '../../services/assignment.service';
@@ -26,18 +25,14 @@ afterEach(() => {
 });
 
 describe('assignment.service', () => {
-  it('carga detalle y catálogo real con Bearer', async () => {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce(jsonResponse(200, incident))
-      .mockResolvedValueOnce(jsonResponse(200, options));
+  it('carga solo el catálogo real con Bearer', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, options));
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(loadBackendAssignment(MOCK_INCIDENT_ID, TOKEN)).resolves.toEqual({ incident, options });
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-      `/api/incidents/${MOCK_INCIDENT_ID}`,
-      '/api/incidents/assignment-options',
-    ]);
-    expect(fetchMock.mock.calls[1][1].headers).toEqual({ Authorization: `Bearer ${TOKEN}` });
+    await expect(fetchAssignmentOptions(TOKEN)).resolves.toEqual(options);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/incidents/assignment-options');
+    expect(fetchMock.mock.calls[0][1].headers).toEqual({ Authorization: `Bearer ${TOKEN}` });
   });
 
   it('valida la forma de las tres listas y rechaza una respuesta incompleta', async () => {
@@ -47,17 +42,17 @@ describe('assignment.service', () => {
     await expect(fetchAssignmentOptions(TOKEN)).rejects.toBeInstanceOf(BackendContractError);
   });
 
-  it('distingue una incidencia inexistente durante la carga', async () => {
-    vi.stubGlobal('fetch', vi.fn()
-      .mockResolvedValueOnce(jsonResponse(404, { message: 'No existe' }))
-      .mockResolvedValueOnce(jsonResponse(200, options)));
-    await expect(loadBackendAssignment(MOCK_INCIDENT_ID, TOKEN)).rejects.toBeInstanceOf(IncidentNotFoundError);
+  it('distingue una incidencia que ya no existe al guardar', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(404, { message: 'No existe' })));
+    await expect(saveBackendAssignment(MOCK_INCIDENT_ID, { teamId: null }, TOKEN))
+      .rejects.toBeInstanceOf(IncidentNotFoundError);
   });
 
   it('envía solo los campos del parche y conserva null explícito', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, { ...incident, departmentId: null }));
     vi.stubGlobal('fetch', fetchMock);
-    await saveBackendAssignment(MOCK_INCIDENT_ID, { departmentId: null }, TOKEN);
+    await expect(saveBackendAssignment(MOCK_INCIDENT_ID, { departmentId: null }, TOKEN))
+      .resolves.toEqual({ ...incident, departmentId: null });
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe(`/api/incidents/${MOCK_INCIDENT_ID}/assignment`);
     expect(init.method).toBe('PATCH');

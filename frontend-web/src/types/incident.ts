@@ -51,18 +51,16 @@ export interface IncidentSummary {
   createdAt: string;
 }
 
-// Cuerpo de PATCH /incidents/:id/status. `civicId` es el actor declarado (el usuario que valida).
+// Cuerpo de PATCH /incidents/:id/status. El backend obtiene el actor de la sesión.
 export interface ChangeIncidentStatusInput {
-  status: Exclude<IncidentStatus, 'reported'>;
+  status: 'validated' | 'rejected';
   cause: string;
-  civicId: string;
 }
 
 // Cuerpo de PATCH /incidents/:id/priority. Solo se admite en incidencias validadas.
 export interface ChangeIncidentPriorityInput {
   priority: IncidentPriority;
   cause: string;
-  civicId: string;
 }
 
 // Decisión del operador en la vista de validación.

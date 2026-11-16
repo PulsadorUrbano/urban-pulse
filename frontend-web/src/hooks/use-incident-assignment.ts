@@ -1,19 +1,20 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import {
   AssignmentAccessError,
   AssignmentConflictError,
-  isUuid,
-  loadBackendAssignment,
-  loadDemoAssignment,
+  fetchAssignmentOptions,
   saveBackendAssignment,
   saveDemoAssignment,
-  startDemoAssignment,
 } from '../services/assignment.service';
-import { BackendUnavailableError } from '../services/incident.service';
-import type { AssignmentOptions, AssignmentPatch, AssignmentSelection, AssignmentSource } from '../types/assignment';
-import type { IncidentDetail } from '../types/incident';
-import type { SessionUser } from '../types/user';
+import type { AssignmentOptions, AssignmentPatch, AssignmentSelection } from '../types/assignment';
+import type { IncidentDetail, IncidentStatus } from '../types/incident';
+
+export type AssignmentMode = { token: string } | { demoOptions: AssignmentOptions };
+
+export function canEditAssignment(status: IncidentStatus): boolean {
+  return status === 'validated' || status === 'assigned';
+}
 
 function selectionOf(incident: IncidentDetail): AssignmentSelection {
   return {
@@ -48,141 +49,96 @@ export function isValidSelection(selection: AssignmentSelection, options: Assign
   return true;
 }
 
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : 'No se pudo completar la operación.';
-}
-
-export function useIncidentAssignment(initialId: string | null, user: SessionUser, token: string | null) {
-  const [inputId, setInputId] = useState(initialId ?? '');
-  const [incident, setIncident] = useState<IncidentDetail | null>(null);
-  const [options, setOptions] = useState<AssignmentOptions | null>(null);
-  const [selection, setSelection] = useState<AssignmentSelection | null>(null);
-  const [source, setSource] = useState<AssignmentSource | null>(null);
-  const [loading, setLoading] = useState(false);
+export function useIncidentAssignment(
+  incident: IncidentDetail,
+  mode: AssignmentMode,
+  disabled: boolean,
+  onSaved: (incident: IncidentDetail) => void,
+  onSavingChange?: (saving: boolean) => void,
+) {
+  const token = 'token' in mode ? mode.token : null;
+  const demoOptions = 'demoOptions' in mode ? mode.demoOptions : null;
+  const [catalogAttempt, setCatalogAttempt] = useState(0);
+  const [catalog, setCatalog] = useState<{
+    token: string;
+    attempt: number;
+    options: AssignmentOptions | null;
+    error: Error | null;
+  } | null>(null);
+  const [selection, setSelection] = useState(() => selectionOf(incident));
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [offline, setOffline] = useState(false);
-  const [conflict, setConflict] = useState(false);
-  const [accessStatus, setAccessStatus] = useState<401 | 403 | null>(null);
+  const [saveError, setSaveError] = useState<Error | null>(null);
+  const [saved, setSaved] = useState(false);
   const savingRef = useRef(false);
 
-  const canAssign = user.role === 'admin' || user.role === 'administrative';
-  const isDemoAvailable = import.meta.env.DEV;
-  const teams = options?.teams.filter((team) => team.departmentId === selection?.departmentId) ?? [];
-  const technicians = options?.technicians.filter((technician) => technician.teamId === selection?.teamId) ?? [];
-  const patch = incident && selection ? buildAssignmentPatch(incident, selection) : null;
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    fetchAssignmentOptions(token).then(
+      (options) => {
+        if (active) setCatalog({ token, attempt: catalogAttempt, options, error: null });
+      },
+      (error: unknown) => {
+        if (active) setCatalog({ token, attempt: catalogAttempt, options: null, error: normalizeError(error) });
+      },
+    );
+    return () => { active = false; };
+  }, [token, catalogAttempt]);
+
+  const currentCatalog = catalog?.token === token && catalog.attempt === catalogAttempt ? catalog : null;
+  const options = demoOptions ?? currentCatalog?.options ?? null;
+  const catalogError = currentCatalog?.error ?? null;
+  const error = saveError ?? catalogError;
+  const conflict = saveError instanceof AssignmentConflictError;
+  const accessStatus = error instanceof AssignmentAccessError ? error.status : null;
+  const teams = options?.teams.filter((team) => team.departmentId === selection.departmentId) ?? [];
+  const technicians = options?.technicians.filter((technician) => technician.teamId === selection.teamId) ?? [];
+  const patch = buildAssignmentPatch(incident, selection);
   const canSave = Boolean(
-    canAssign && incident && options && selection && source && !loading && !saving && !conflict
-    && inputId.trim().toLowerCase() === incident.id
-    && (incident.status === 'validated' || incident.status === 'assigned')
-    && isValidSelection(selection, options) && patch && Object.keys(patch).length > 0,
+    !disabled && !saving && !conflict && accessStatus === null && canEditAssignment(incident.status)
+    && options && isValidSelection(selection, options) && Object.keys(patch).length > 0,
   );
 
-  const setLoaded = (data: { incident: IncidentDetail; options: AssignmentOptions }, nextSource: AssignmentSource) => {
-    setIncident(data.incident);
-    setOptions(data.options);
-    setSelection(selectionOf(data.incident));
-    setSource(nextSource);
-    setInputId(data.incident.id);
-    setError(null);
-    setOffline(false);
-    setConflict(false);
-    setAccessStatus(null);
-    setNotice(nextSource === 'mock' ? 'Modo demostración: los cambios solo viven en esta sesión.' : null);
-  };
-
-  const load = async (id = inputId): Promise<void> => {
-    if (savingRef.current || loading) return;
-    const normalized = id.trim().toLowerCase();
-    if (!isUuid(normalized)) {
-      setError('Introduce un UUID válido de incidencia.');
-      return;
-    }
-    if (!canAssign) {
-      setError('Tu rol no permite asignar incidencias.');
-      return;
-    }
-    if (user.source !== 'backend' || !token) {
-      setError('La sesión actual es simulada. Usa el modo demostración para practicar asignaciones.');
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    setNotice(null);
-    setIncident(null);
-    setOptions(null);
-    setSelection(null);
-    setSource(null);
-    try {
-      setLoaded(await loadBackendAssignment(normalized, token), 'backend');
-    } catch (loadError) {
-      setOffline(loadError instanceof BackendUnavailableError);
-      setAccessStatus(loadError instanceof AssignmentAccessError ? loadError.status : null);
-      setError(messageOf(loadError));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const startDemo = async (): Promise<void> => {
-    if (!isDemoAvailable || !canAssign || savingRef.current || loading) return;
-    setLoading(true);
-    try {
-      setLoaded(await startDemoAssignment(), 'mock');
-    } catch (demoError) {
-      setError(messageOf(demoError));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const reload = async (): Promise<void> => {
-    if (!incident || !source || savingRef.current || loading) return;
-    if (source === 'backend') {
-      await load(incident.id);
-      return;
-    }
-    setLoading(true);
-    try {
-      setLoaded(await loadDemoAssignment(incident.id), 'mock');
-    } catch (loadError) {
-      setError(messageOf(loadError));
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const save = async (): Promise<void> => {
-    if (!canSave || !incident || !selection || !source || !patch || savingRef.current) return;
+    if (!canSave || savingRef.current) return;
     savingRef.current = true;
     setSaving(true);
-    setError(null);
-    setNotice(null);
+    onSavingChange?.(true);
+    setSaveError(null);
+    setSaved(false);
     try {
-      const updated = source === 'backend'
-        ? await saveBackendAssignment(incident.id, patch, token ?? '')
+      const updated = token
+        ? await saveBackendAssignment(incident.id, patch, token)
         : await saveDemoAssignment(patch);
-      setIncident(updated);
       setSelection(selectionOf(updated));
-      setNotice(source === 'backend' ? 'Asignación guardada en el backend.' : 'Asignación de demostración guardada solo en memoria.');
-    } catch (saveError) {
-      setConflict(saveError instanceof AssignmentConflictError);
-      setOffline(saveError instanceof BackendUnavailableError);
-      setAccessStatus(saveError instanceof AssignmentAccessError ? saveError.status : null);
-      setError(`${messageOf(saveError)} No se ha guardado la asignación.`);
+      onSaved(updated);
+      setSaved(true);
+    } catch (error) {
+      setSaveError(normalizeError(error));
     } finally {
       savingRef.current = false;
       setSaving(false);
+      onSavingChange?.(false);
     }
   };
 
-  return {
-    inputId, setInputId, incident, options, selection, source, loading, saving,
-    error, notice, offline, conflict, accessStatus, canAssign, isDemoAvailable, canSave, teams, technicians,
-    load, startDemo, reload, save,
-    setDepartment: (departmentId: string | null) => setSelection((current) => current ? changeDepartment(current, departmentId) : current),
-    setTeam: (teamId: string | null) => setSelection((current) => current ? changeTeam(current, teamId) : current),
-    setTechnician: (technicianId: string | null) => setSelection((current) => current ? { ...current, technicianId } : current),
+  const updateSelection = (update: (current: AssignmentSelection) => AssignmentSelection) => {
+    setSelection(update);
+    setSaved(false);
   };
+
+  return {
+    options, selection, teams, technicians, saving, canSave, saved, save, conflict, accessStatus,
+    loading: Boolean(token && !currentCatalog),
+    catalogError,
+    error: saveError ? `${saveError.message} No se ha guardado la asignación.` : catalogError?.message,
+    retryCatalog: () => setCatalogAttempt((attempt) => attempt + 1),
+    setDepartment: (id: string | null) => updateSelection((current) => changeDepartment(current, id)),
+    setTeam: (id: string | null) => updateSelection((current) => changeTeam(current, id)),
+    setTechnician: (id: string | null) => updateSelection((current) => ({ ...current, technicianId: id })),
+  };
+}
+
+function normalizeError(error: unknown): Error {
+  return error instanceof Error ? error : new Error('No se pudo completar la operación.');
 }
