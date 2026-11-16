@@ -6,6 +6,7 @@ import {
   BackendUnavailableError,
   changeIncidentPriority,
   changeIncidentStatus,
+  fetchIncidentPage,
   fetchIncidentById,
   IncidentConflictError,
   IncidentNotFoundError,
@@ -48,6 +49,41 @@ afterEach(() => {
 });
 
 describe('incident.service', () => {
+  it('obtiene la primera página autenticada y devuelve el siguiente cursor', async () => {
+    const { id, title, status, createdAt } = incident;
+    const items = [{ id, title, status, createdAt }];
+    const response = jsonResponse(200, items);
+    response.headers.set('X-Next-Cursor', 'siguiente');
+    const fetchMock = vi.fn().mockResolvedValueOnce(response);
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchIncidentPage(TOKEN)).resolves.toEqual({ items, nextCursor: 'siguiente' });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('/api/incidents');
+    expect(init.method).toBe('GET');
+    expect(init.headers.Authorization).toBe(`Bearer ${TOKEN}`);
+  });
+
+  it('codifica el cursor y admite una última página vacía', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, []));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchIncidentPage(TOKEN, 'a+/=')).resolves.toEqual({ items: [], nextCursor: null });
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/incidents?cursor=a%2B%2F%3D');
+  });
+
+  it('rechaza un resumen de incidencia inválido', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(200, [{ ...incident, status: 'unknown' }])));
+
+    await expect(fetchIncidentPage(TOKEN)).rejects.toBeInstanceOf(BackendContractError);
+  });
+
+  it('muestra el rechazo del backend al cargar el listado', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(403, { message: 'Acceso denegado' })));
+
+    await expect(fetchIncidentPage(TOKEN)).rejects.toThrow('Acceso denegado');
+  });
+
   it('obtiene el detalle de una incidencia del backend', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, incident));
     vi.stubGlobal('fetch', fetchMock);
