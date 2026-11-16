@@ -51,6 +51,7 @@ function preparar() {
     },
   );
   const prisma = {
+    cambioEstado: { create: vi.fn().mockResolvedValue({}) },
     incident: {
       findUnique: vi.fn(async ({ select }: { select?: object }) =>
         select
@@ -102,6 +103,8 @@ function preparar() {
       callback(prisma),
   };
   const servicio = new IncidentsService(prisma as unknown as PrismaService);
+  const asignarOriginal = servicio.asignar.bind(servicio);
+  servicio.asignar = (id, cambio) => asignarOriginal(id, cambio, tecnico);
   return { fila, servicio, updateMany, prisma };
 }
 

@@ -112,10 +112,10 @@ describe('IncidentsController autenticado', () => {
       teams: [],
       technicians: [],
     });
-    await controlador.asignar(incidencia.id, { departmentId: null });
+    await controlador.asignar(incidencia.id, { departmentId: null }, { id: incidencia.id, role: 'admin', ciudadanoId: null });
     expect(servicio.asignar).toHaveBeenCalledWith(incidencia.id, {
       departmentId: null,
-    });
+    }, incidencia.id);
   });
 
   it('protege el listado y las operaciones autenticadas', () => {

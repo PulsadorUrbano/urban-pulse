@@ -15,7 +15,7 @@ Errores: 400 por cuerpo o UUID inválido o ID de catálogo ausente; 401 sin iden
 
 ## Almacenamiento y referencias
 
-`Incident` conserva las tres claves foráneas. El equipo debe pertenecer al departamento y el técnico debe ser miembro asignable del equipo. El endpoint no proporciona CRUD del catálogo ni añade un registro manual de cambio de estado.
+`Incident` conserva las tres claves foráneas. El equipo debe pertenecer al departamento y el técnico debe ser miembro asignable del equipo. El endpoint no proporciona CRUD del catálogo y registra cada transición efectiva en CambioEstado con el actor autenticado, dentro de la misma transacción.
 
 - [Especificación](../../features/specs/2026-11-03-asignar-departamento-equipo-y-tecnico-spec.md).
 - [Plan](../../features/plans/2026-11-03-asignar-departamento-equipo-y-tecnico-plan.md).

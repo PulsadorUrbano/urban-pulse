@@ -231,6 +231,7 @@ export class IncidentsService {
   async asignar(
     idIncidencia: string,
     cambio: CambioAsignacionIncidencia,
+    idActor: string,
   ): Promise<Incident> {
     const id = idIncidencia.toLowerCase();
     let resultado: IncidenciaConAgregado | null;
@@ -328,6 +329,19 @@ export class IncidentsService {
           throw new ConflictException(
             'La asignación cambió durante la operación',
           );
+        }
+        const nuevoEstado = departmentId && teamId ? 'assigned' : 'validated';
+        if (nuevoEstado !== actual.status) {
+          await tx.cambioEstado.create({
+            data: {
+              id: randomUUID(),
+              incidenciaId: id,
+              actorId: idActor.toLowerCase(),
+              nuevoEstado,
+              motivo: 'Cambio de estado por asignación',
+              fechaCreacion: new Date(),
+            },
+          });
         }
         return tx.incident.findUnique({
           where: { id },

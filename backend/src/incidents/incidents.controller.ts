@@ -449,8 +449,9 @@ export class IncidentsController {
   asignar(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body(new AsignarIncidenciaPipe()) cambio: CambioAsignacionIncidencia,
+    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
   ): Promise<Incident> {
-    return this.incidentsService.asignar(id, cambio);
+    return this.incidentsService.asignar(id, cambio, usuario.id);
   }
 
   @Get(':id')
