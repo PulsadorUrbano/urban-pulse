@@ -118,7 +118,7 @@ describe('IncidentsController autenticado', () => {
     });
   });
 
-  it('deja público el listado y protege las operaciones autenticadas', () => {
+  it('protege el listado y las operaciones autenticadas', () => {
     expect(
       Reflect.getMetadata(GUARDS_METADATA, IncidentsController),
     ).toBeUndefined();
@@ -126,8 +126,15 @@ describe('IncidentsController autenticado', () => {
       IncidentsController.prototype,
       'listar',
     )?.value;
-    expect(Reflect.getMetadata(GUARDS_METADATA, listado)).toBeUndefined();
-    expect(Reflect.getMetadata('rolesIncidencias', listado)).toBeUndefined();
+    expect(Reflect.getMetadata(GUARDS_METADATA, listado)).toEqual([
+      JwtAuthGuard,
+      AccesoIncidenciasGuard,
+    ]);
+    expect(Reflect.getMetadata('rolesIncidencias', listado)).toEqual([
+      'civic',
+      'admin',
+      'administrative',
+    ]);
 
     for (const metodo of [
       'create',
@@ -164,6 +171,66 @@ describe('IncidentsController autenticado', () => {
 });
 
 describe('Listado paginado de incidencias', () => {
+  const ciudadano: UsuarioIncidencias = {
+    id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    role: 'civic',
+    ciudadanoId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  };
+  const operador: UsuarioIncidencias = {
+    id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+    role: 'administrative',
+    ciudadanoId: null,
+  };
+
+  it('rechaza el listado global y un filtro ajeno al ciudadano antes de consultar', () => {
+    const servicio = { listarPagina: vi.fn() };
+    const controlador = new IncidentsController(
+      servicio as unknown as IncidentsService,
+      {} as FotosIncidenciaService,
+    );
+    const response = { setHeader: vi.fn() } as unknown as Response;
+    expect(() =>
+      controlador.listar({ limit: 10 }, response, ciudadano),
+    ).toThrow(ForbiddenException);
+    expect(() =>
+      controlador.listar(
+        { limit: 10, civicId: operador.id },
+        response,
+        ciudadano,
+      ),
+    ).toThrow(ForbiddenException);
+    expect(servicio.listarPagina).not.toHaveBeenCalled();
+  });
+
+  it('permite el listado global a administrative', async () => {
+    const servicio = {
+      listarPagina: vi
+        .fn()
+        .mockResolvedValue({
+          items: [],
+          limit: 10,
+          pagina: 0,
+          nextCursor: null,
+        }),
+    };
+    const controlador = new IncidentsController(
+      servicio as unknown as IncidentsService,
+      {} as FotosIncidenciaService,
+    );
+    await expect(
+      controlador.listar(
+        { limit: 10 },
+        { setHeader: vi.fn() } as unknown as Response,
+        operador,
+      ),
+    ).resolves.toEqual([]);
+    expect(servicio.listarPagina).toHaveBeenCalledWith(
+      10,
+      undefined,
+      undefined,
+    );
+  });
+
   it('publica las cabeceras de continuación y conserva el cuerpo como array', async () => {
     const items = [
       {
@@ -188,7 +255,11 @@ describe('Listado paginado de incidencias', () => {
     );
 
     await expect(
-      controlador.listar({ civicId: items[0].id, limit: 1 }, response),
+      controlador.listar(
+        { civicId: items[0].id, limit: 1 },
+        response,
+        ciudadano,
+      ),
     ).resolves.toBe(items);
     expect(servicio.listarPagina).toHaveBeenCalledWith(
       1,

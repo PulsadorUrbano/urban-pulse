@@ -317,7 +317,12 @@ export class IncidentsService {
             teamId: actual.teamId,
             technicianId: actual.technicianId,
           },
-          data: { departmentId, teamId, technicianId },
+          data: {
+            departmentId,
+            teamId,
+            technicianId,
+            status: departmentId && teamId ? 'assigned' : 'validated',
+          },
         });
         if (actualizadas.count !== 1) {
           throw new ConflictException(

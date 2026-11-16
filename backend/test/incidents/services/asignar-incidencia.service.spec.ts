@@ -40,6 +40,7 @@ function preparar() {
       data: Record<string, unknown>;
     }) => {
       if (
+        where.status !== fila.status ||
         where.departmentId !== fila.departmentId ||
         where.teamId !== fila.teamId ||
         where.technicianId !== fila.technicianId
@@ -179,6 +180,35 @@ describe('Asignación de incidencias', () => {
       departmentId: otroDepartamento,
       teamId: otroEquipo,
       technicianId: null,
+      status: 'assigned',
+    });
+  });
+
+  it('asignar equipo sin técnico pasa de validated a assigned', async () => {
+    const { servicio, fila } = preparar();
+    fila.departmentId = null;
+    fila.teamId = null;
+    fila.technicianId = null;
+    await expect(
+      servicio.asignar(fila.id, { departmentId: departamento, teamId: equipo }),
+    ).resolves.toMatchObject({
+      status: 'assigned',
+      departmentId: departamento,
+      teamId: equipo,
+      technicianId: null,
+    });
+  });
+
+  it('quitar el equipo de una incidencia assigned vuelve a validated', async () => {
+    const { servicio, fila } = preparar();
+    fila.status = 'assigned';
+    await expect(
+      servicio.asignar(fila.id, { teamId: null }),
+    ).resolves.toMatchObject({
+      status: 'validated',
+      departmentId: departamento,
+      teamId: null,
+      technicianId: null,
     });
   });
 
@@ -191,8 +221,9 @@ describe('Asignación de incidencias', () => {
       departmentId: departamento,
       teamId: equipo,
       technicianId: tecnico,
+      status: 'assigned',
     });
-    expect(fila).toEqual(anterior);
+    expect(fila).toEqual({ ...anterior, status: 'assigned' });
   });
 
   it('rechaza estados no editables e ID de técnico desconocido', async () => {

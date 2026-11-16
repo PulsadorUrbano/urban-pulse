@@ -141,10 +141,13 @@ export class IncidentsController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
+  @SetMetadata('rolesIncidencias', ['civic', 'admin', 'administrative'])
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Consultar todas las incidencias o filtrarlas por ciudadano',
     description:
-      'Sin civicId devuelve todas las incidencias. Con civicId devuelve solo las de ese ciudadano. Prototipo sin autenticación: civicId es un filtro del cliente, no acredita identidad ni propiedad (DEUDA-27-01). No devuelve trazabilidad.',
+      'Se requiere JWT. Sin civicId devuelve todas las incidencias solo a admin y administrative. Un ciudadano debe indicar su propio civicId, verificado contra su identidad. No devuelve trazabilidad.',
   })
   @ApiQuery({ name: 'civicId', required: false, type: String, format: 'uuid' })
   @ApiQuery({
@@ -202,13 +205,25 @@ export class IncidentsController {
     description:
       'Parámetros inválidos o desconocidos, limit fuera del rango 1–100 o cursor inválido.',
   })
+  @ApiUnauthorizedResponse({
+    description: 'JWT inválido o usuario inexistente.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Rol insuficiente, civicId ausente o ajeno para un ciudadano.',
+  })
   @ApiServiceUnavailableResponse({
     description: 'PostgreSQL no está disponible.',
   })
   listar(
     @Query(new ListarIncidenciasPipe()) consulta: ConsultaListadoIncidencias,
     @Res({ passthrough: true }) response: Response,
+    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
   ): Promise<ResumenIncidencia[]> {
+    if (usuario.role === 'civic' && consulta.civicId !== usuario.ciudadanoId) {
+      throw new ForbiddenException(
+        'El ciudadano solo puede consultar sus incidencias',
+      );
+    }
     return this.incidentsService
       .listarPagina(consulta.limit, consulta.cursor, consulta.civicId)
       .then((pagina) => {

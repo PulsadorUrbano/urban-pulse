@@ -49,7 +49,7 @@ Al añadir, modificar o retirar un endpoint, actualizar su carpeta en el mismo c
 
 - [Validar o rechazar una incidencia con motivo](patch-incidents-id-status/README.md): PATCH /incidents/:id/status; solo admin/administrative actuales, con actor autenticado.
 
-- [Consultar incidencias con cursor](get-incidents/README.md): GET /incidents, cursor keyset con límite máximo 100, filtro opcional civicId y deuda de identidad documentada.
+- [Consultar incidencias con cursor](get-incidents/README.md): GET /incidents, JWT obligatorio; listado global para operadores y filtro propio para ciudadanos.
 
 - [Registrar incidencias](post-incidents/README.md): POST /incidents.
 - [Consultar una incidencia](get-incidents-id/README.md): GET /incidents/:id.
