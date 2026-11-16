@@ -137,15 +137,15 @@ Las tareas siguientes describen la secuencia de implementación. La sección de 
 
 ## Confirmación de implementación
 
-- Estado final: implementación local y conexión S3 verificadas; prueba HTTP multipart con JWT pendiente.
+- Estado final: implementación local y conexión S3 verificadas; prueba HTTP multipart con JWT completada el 2026-11-16.
 - Fecha de revisión: 2026-11-15.
 - Resultado entregado: ruta multipart protegida, metadatos Prisma y migración incremental, lectura firmada, galería web, contratos y [guía de conexión](../../../../../docs/conexion-s3-fotos.md).
 
 | Criterio de aceptación | Evidencia concreta | Resultado |
 | --- | --- | --- |
-| 1 a 4 y 6 a 7 | Código y unitarias de validación, propiedad, límite, compensación y firma; migración local y operaciones S3 reales | Verificado parcialmente en entorno real; falta subida HTTP con JWT |
+| 1 a 4 y 6 a 7 | Código y unitarias; migración local; login `200`, creación `201`, subida multipart `201`, detalle `200` y lectura CloudFront `200`, con objeto y filas de prueba eliminados | Verificado en entorno local real |
 | 5 | Galería web y renovación limitada a un intento por minuto ante fallos; pruebas del servicio HTTP | Implementado; sin prueba de interfaz automatizada |
 
 - Comprobaciones: backend y web correctos en la revisión actual; verificar de nuevo tras dividir los commits.
-- Decisiones y desviaciones: el bucket es `pulsadorurbano` en `eu-north-1`, con cifrado S3 predeterminado y backend en Docker Compose local. La identidad IAM permite operaciones sobre `incidents/*`; las credenciales están en archivos `.env` locales ignorados por Git. Se aplicaron las tres migraciones pendientes tras comprobar que la tabla antigua de imágenes y la de incidencias estaban vacías. La prueba real desde el contenedor confirmó escritura, lectura, borrado y URL firmada, con limpieza de los objetos temporales. La renovación de URL usa `onError` de la galería y un límite de un refresco por minuto; no hay prueba de interfaz porque las pruebas web actuales carecen de entorno DOM. Los PATCH preparan las imágenes antes de guardar el cambio para que un fallo al firmarlas no convierta una mutación confirmada en error HTTP. Los cambios web incluyen JWT en detalle y modificaciones de incidencia para consumir el contrato de la PR base.
-- Limitaciones y pendientes: no se probó la subida HTTP multipart con un JWT ni el flujo en la aplicación móvil. `frontend-mobile/` permanece sin cambios.
+- Decisiones y desviaciones: el bucket es `pulsadorurbano` en `eu-north-1`, con cifrado S3 predeterminado y backend en Docker Compose local. La identidad IAM permite operaciones sobre `incidents/*`; las credenciales están en archivos `.env` locales ignorados por Git. Se aplicaron las tres migraciones pendientes tras comprobar que la tabla antigua de imágenes y la de incidencias estaban vacías. La prueba real desde el contenedor confirmó escritura, lectura, borrado y URL firmada, con limpieza de los objetos temporales. La renovación de URL usa `onError` de la galería y un límite de un refresco por minuto; no hay prueba de interfaz porque las pruebas web actuales carecen de entorno DOM. Los PATCH guardan el cambio primero; si falla la lectura o firma posterior, devuelven `images: []` y registran el error sin revertir la mutación. Los cambios web incluyen JWT en detalle y modificaciones de incidencia para consumir el contrato de la PR base.
+- Limitaciones y pendientes: la prueba HTTP se realizó con una incidencia temporal del ciudadano de desarrollo y no sustituye una prueba del flujo en la aplicación móvil. `frontend-mobile/` permanece sin cambios.

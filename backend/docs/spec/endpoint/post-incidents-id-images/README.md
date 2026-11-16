@@ -1,7 +1,7 @@
 # POST /incidents/:id/images — añadir fotos
 
-- Estado: implementado en la rama `feat-integracion-s3`; uso real pendiente de configurar el bucket y aplicar la migración.
-- Última revisión: 2026-11-15.
+- Estado: implementado en la rama `feat-integracion-s3`; subida multipart real con JWT, PostgreSQL, S3 y CloudFront verificada con datos temporales eliminados.
+- Última revisión: 2026-11-16.
 - Acceso: `Authorization: Bearer <JWT>`, rol `civic` con vínculo ciudadano vigente. La incidencia debe pertenecer a ese ciudadano.
 - Formato: `multipart/form-data`, campo `images` con entre 1 y 8 archivos; ningún campo de texto adicional.
 
