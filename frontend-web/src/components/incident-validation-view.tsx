@@ -12,6 +12,7 @@ import { ResolutionForm } from './resolution-form';
 interface IncidentValidationViewProps {
   incidentId: string | null;
   user: SessionUser;
+  token: string | null;
   isDarkMode: boolean;
   onToggleTheme: () => void;
   onLogout: () => void;
@@ -22,8 +23,10 @@ function formatDate(isoDate: string): string {
   return Number.isNaN(date.getTime()) ? isoDate : date.toLocaleString();
 }
 
-export function IncidentValidationView({ incidentId, user, isDarkMode, onToggleTheme, onLogout }: IncidentValidationViewProps) {
-  const validation = useIncidentValidation(incidentId, user.source === 'backend' ? user.id : null);
+export function IncidentValidationView({
+  incidentId, user, token, isDarkMode, onToggleTheme, onLogout,
+}: IncidentValidationViewProps) {
+  const validation = useIncidentValidation(incidentId, user.source === 'backend' ? token : null);
   const { incident, loading, loadError, outcome, reset } = validation;
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 

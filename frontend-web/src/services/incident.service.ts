@@ -11,6 +11,7 @@ import type {
   IncidentStatus,
 } from '../types/incident';
 import {
+  bearerHeader,
   buildBackendRejectionMessage,
   extractBackendErrorMessage,
   fetchWithTimeout,
@@ -120,8 +121,11 @@ async function sendToBackend(url: string, init: RequestInit): Promise<Response> 
 }
 
 // Obtiene el detalle de una incidencia (GET /incidents/:id).
-export async function fetchIncidentById(id: string): Promise<IncidentDetail> {
-  const response = await sendToBackend(`${incidentsEndpoint()}/${encodeURIComponent(id)}`, { method: 'GET' });
+export async function fetchIncidentById(id: string, token: string): Promise<IncidentDetail> {
+  const response = await sendToBackend(`${incidentsEndpoint()}/${encodeURIComponent(id)}`, {
+    method: 'GET',
+    headers: bearerHeader(token),
+  });
 
   if (response.status === 404) throw new IncidentNotFoundError();
   if (!response.ok) {
@@ -134,11 +138,12 @@ async function patchIncident(
   id: string,
   path: 'status' | 'priority',
   body: ChangeIncidentStatusInput | ChangeIncidentPriorityInput,
+  token: string,
   genericMessage: string,
 ): Promise<IncidentDetail> {
   const response = await sendToBackend(`${incidentsEndpoint()}/${encodeURIComponent(id)}/${path}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...bearerHeader(token), 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 
@@ -154,11 +159,11 @@ async function patchIncident(
 }
 
 // Valida o rechaza una incidencia con motivo (PATCH /incidents/:id/status).
-export function changeIncidentStatus(id: string, input: ChangeIncidentStatusInput): Promise<IncidentDetail> {
-  return patchIncident(id, 'status', input, 'No se pudo cambiar el estado de la incidencia.');
+export function changeIncidentStatus(id: string, input: ChangeIncidentStatusInput, token: string): Promise<IncidentDetail> {
+  return patchIncident(id, 'status', input, token, 'No se pudo cambiar el estado de la incidencia.');
 }
 
 // Asigna la prioridad de una incidencia validada (PATCH /incidents/:id/priority).
-export function changeIncidentPriority(id: string, input: ChangeIncidentPriorityInput): Promise<IncidentDetail> {
-  return patchIncident(id, 'priority', input, 'No se pudo asignar la prioridad de la incidencia.');
+export function changeIncidentPriority(id: string, input: ChangeIncidentPriorityInput, token: string): Promise<IncidentDetail> {
+  return patchIncident(id, 'priority', input, token, 'No se pudo asignar la prioridad de la incidencia.');
 }

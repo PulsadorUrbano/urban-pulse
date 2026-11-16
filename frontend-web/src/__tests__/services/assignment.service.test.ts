@@ -38,6 +38,7 @@ describe('assignment.service', () => {
       '/api/incidents/assignment-options',
     ]);
     expect(fetchMock.mock.calls[1][1].headers).toEqual({ Authorization: `Bearer ${TOKEN}` });
+    expect(fetchMock.mock.calls[0][1].headers).toEqual({ Authorization: `Bearer ${TOKEN}` });
   });
 
   it('valida la forma de las tres listas y rechaza una respuesta incompleta', async () => {
