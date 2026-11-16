@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { IncidentAssignmentView } from './components/incident-assignment-view';
+import { IncidentAssignmentDemo } from './components/incident-assignment-demo';
 import { IncidentListView } from './components/incident-list-view';
 import { IncidentValidationView } from './components/incident-validation-view';
 import { LoginView } from './components/login-view';
@@ -16,12 +16,12 @@ function App() {
   const { isDarkMode, toggleTheme } = useTheme();
   const [logoutNotification, setLogoutNotification] = useState<string | null>(null);
   const [incidentId, setIncidentId] = useState<string | null>(readIncidentIdFromUrl);
-  const [showAssignments, setShowAssignments] = useState(false);
+  const [showAssignmentDemo, setShowAssignmentDemo] = useState(false);
   const [hasEnteredDemo, setHasEnteredDemo] = useState(auth.user?.source === 'mock');
 
   const handleBack = () => {
     setIncidentId(null);
-    setShowAssignments(false);
+    setShowAssignmentDemo(false);
   };
 
   const handleLogout = () => {
@@ -58,18 +58,13 @@ function App() {
           logoutNotification={logoutNotification}
           onClearLogoutNotification={() => setLogoutNotification(null)}
         />
-      ) : incidentId || showAssignments ? (
+      ) : incidentId || showAssignmentDemo ? (
         <>
           <nav aria-label="Navegación de incidencias" className="flex flex-wrap gap-4 px-4 py-3 text-sm font-semibold text-zinc-700 dark:text-zinc-300 sm:px-6">
             <button type="button" className="hover:underline" onClick={handleBack}>Volver al listado</button>
-            {incidentId && token && canAssign && (
-              <button type="button" className="hover:underline" onClick={() => setShowAssignments(!showAssignments)}>
-                {showAssignments ? 'Volver al detalle' : 'Gestionar asignación'}
-              </button>
-            )}
           </nav>
-          {showAssignments ? (
-            <IncidentAssignmentView incidentId={incidentId} user={user} token={token} {...viewProps} />
+          {import.meta.env.DEV && showAssignmentDemo ? (
+            <IncidentAssignmentDemo />
           ) : (
             <IncidentValidationView key={incidentId} incidentId={incidentId} user={user} token={token} {...viewProps} />
           )}
@@ -79,7 +74,7 @@ function App() {
           user={user}
           token={token}
           onOpenIncident={setIncidentId}
-          onOpenAssignmentDemo={import.meta.env.DEV && canAssign ? () => setShowAssignments(true) : undefined}
+          onOpenAssignmentDemo={import.meta.env.DEV && canAssign ? () => setShowAssignmentDemo(true) : undefined}
           {...viewProps}
         />
       )}

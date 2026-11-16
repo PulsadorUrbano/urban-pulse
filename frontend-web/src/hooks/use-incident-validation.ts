@@ -163,6 +163,7 @@ export function useIncidentValidation(incidentId: string | null, token: string |
     submitting,
     submitError,
     outcome,
+    setIncident,
     reset,
   };
 }

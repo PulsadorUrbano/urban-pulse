@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildAssignmentPatch, changeDepartment, changeTeam, isValidSelection } from '../../hooks/use-incident-assignment';
+import {
+  buildAssignmentPatch, canEditAssignment, changeDepartment, changeTeam, isValidSelection,
+} from '../../hooks/use-incident-assignment';
 import { loadMockAssignment, MOCK_INCIDENT_ID } from '../../mocks/assignment-mock';
 
 const { incident, options } = loadMockAssignment(MOCK_INCIDENT_ID);
@@ -9,6 +11,13 @@ const teamId = options.teams[0].id;
 const technicianId = options.technicians[0].id;
 
 describe('selección jerárquica de asignación', () => {
+  it('solo permite editar incidencias validadas o asignadas', () => {
+    expect(canEditAssignment('validated')).toBe(true);
+    expect(canEditAssignment('assigned')).toBe(true);
+    expect(canEditAssignment('reported')).toBe(false);
+    expect(canEditAssignment('rejected')).toBe(false);
+  });
+
   it('limpia equipo y técnico al cambiar o quitar departamento', () => {
     const selection = { departmentId, teamId, technicianId };
     expect(changeDepartment(selection, options.departments[1].id)).toEqual({

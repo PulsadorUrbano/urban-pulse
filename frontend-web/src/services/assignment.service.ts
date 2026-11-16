@@ -11,14 +11,9 @@ import {
   readJson,
   RequestTimeoutError,
 } from './http';
-import { BackendUnavailableError, fetchIncidentById, IncidentNotFoundError, isIncidentDetail } from './incident.service';
+import { BackendUnavailableError, IncidentNotFoundError, isIncidentDetail } from './incident.service';
 
 const endpoint = (): string => `${resolveBackendApiUrl()}/incidents`;
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-export function isUuid(value: string): boolean {
-  return UUID_PATTERN.test(value);
-}
 
 export class AssignmentAccessError extends Error {
   constructor(readonly status: 401 | 403) {
@@ -71,11 +66,6 @@ export async function fetchAssignmentOptions(token: string): Promise<AssignmentO
   return readJson(response, isAssignmentOptions, 'GET /incidents/assignment-options');
 }
 
-export async function loadBackendAssignment(id: string, token: string): Promise<{ incident: IncidentDetail; options: AssignmentOptions }> {
-  const [incident, options] = await Promise.all([fetchIncidentById(id, token), fetchAssignmentOptions(token)]);
-  return { incident, options };
-}
-
 export async function saveBackendAssignment(id: string, patch: AssignmentPatch, token: string): Promise<IncidentDetail> {
   if (Object.keys(patch).length === 0) throw new Error('Selecciona un cambio antes de guardar.');
   const response = await request(`${endpoint()}/${encodeURIComponent(id)}/assignment`, {
@@ -92,12 +82,6 @@ export async function saveBackendAssignment(id: string, patch: AssignmentPatch, 
   }
   if (!response.ok) throw new Error(await buildBackendRejectionMessage(response, 'No se pudo guardar la asignación.'));
   return readJson(response, isIncidentDetail, 'PATCH /incidents/:id/assignment');
-}
-
-export async function loadDemoAssignment(id: string): Promise<{ incident: IncidentDetail; options: AssignmentOptions }> {
-  if (!import.meta.env.DEV) throw new Error('La demostración solo está disponible en desarrollo.');
-  const demo = await import('../mocks/assignment-mock');
-  return demo.loadMockAssignment(id);
 }
 
 export async function startDemoAssignment(): Promise<{ incident: IncidentDetail; options: AssignmentOptions }> {
