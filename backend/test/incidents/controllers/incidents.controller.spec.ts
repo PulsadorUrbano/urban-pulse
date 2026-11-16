@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Logger } from '@nestjs/common';
 import {
   GUARDS_METADATA,
   METHOD_METADATA,
@@ -96,34 +96,74 @@ describe('IncidentsController autenticado', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
-  it('no confirma cambios si las fotos no pueden prepararse', async () => {
-    const fallo = new Error('No se pudieron consultar las fotos');
+  it('confirma los tres PATCH y devuelve images vacío si falla la firma de fotos', async () => {
+    const fallo = new Error('Firma temporal no disponible');
+    const servicios = {
+      cambiarEstado: vi.fn().mockResolvedValue(incidencia),
+      cambiarPrioridad: vi.fn().mockResolvedValue(incidencia),
+      asignar: vi.fn().mockResolvedValue(incidencia),
+    };
+    const fotosFallando = {
+      listar: vi.fn().mockRejectedValue(fallo),
+      agregarA: vi.fn().mockRejectedValue(fallo),
+    };
+    const controladorConFallo = new IncidentsController(
+      servicios as unknown as IncidentsService,
+      fotosFallando as unknown as FotosIncidenciaService,
+    );
+    const log = vi
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    try {
+      const estado = await controladorConFallo.cambiarEstado(
+        incidencia.id,
+        { status: 'validated', cause: 'Comprobada' },
+        operador,
+      );
+      const prioridad = await controladorConFallo.cambiarPrioridad(
+        incidencia.id,
+        { priority: 'high', cause: 'Urgente' },
+        operador,
+      );
+      const asignacion = await controladorConFallo.asignar(incidencia.id, {
+        departmentId: null,
+      });
+      expect([estado.images, prioridad.images, asignacion.images]).toEqual([
+        [],
+        [],
+        [],
+      ]);
+      expect(servicios.cambiarEstado).toHaveBeenCalledOnce();
+      expect(servicios.cambiarPrioridad).toHaveBeenCalledOnce();
+      expect(servicios.asignar).toHaveBeenCalledOnce();
+      expect(log).toHaveBeenCalledTimes(3);
+    } finally {
+      log.mockRestore();
+    }
+  });
 
-    fotos.listar.mockRejectedValueOnce(fallo);
+  it('propaga un fallo del PATCH sin consultar las fotos', async () => {
+    const conflicto = new ConflictException('Estado incompatible');
+    const servicios = {
+      cambiarEstado: vi.fn().mockRejectedValue(conflicto),
+    };
+    const fotosLocales = {
+      listar: vi.fn().mockResolvedValue([]),
+      agregarA: vi.fn().mockResolvedValue(incidencia),
+    };
+    const controladorConFallo = new IncidentsController(
+      servicios as unknown as IncidentsService,
+      fotosLocales as unknown as FotosIncidenciaService,
+    );
     await expect(
-      controlador.cambiarEstado(
+      controladorConFallo.cambiarEstado(
         incidencia.id,
         { status: 'validated', cause: 'Comprobada' },
         operador,
       ),
-    ).rejects.toBe(fallo);
-    expect(servicio.cambiarEstado).not.toHaveBeenCalled();
-
-    fotos.listar.mockRejectedValueOnce(fallo);
-    await expect(
-      controlador.cambiarPrioridad(
-        incidencia.id,
-        { priority: 'high', cause: 'Urgente' },
-        operador,
-      ),
-    ).rejects.toBe(fallo);
-    expect(servicio.cambiarPrioridad).not.toHaveBeenCalled();
-
-    fotos.listar.mockRejectedValueOnce(fallo);
-    await expect(
-      controlador.asignar(incidencia.id, { departmentId: null }),
-    ).rejects.toBe(fallo);
-    expect(servicio.asignar).not.toHaveBeenCalled();
+    ).rejects.toBe(conflicto);
+    expect(fotosLocales.listar).not.toHaveBeenCalled();
+    expect(fotosLocales.agregarA).not.toHaveBeenCalled();
   });
 
   it('expone las rutas de asignación y delega en el servicio', async () => {

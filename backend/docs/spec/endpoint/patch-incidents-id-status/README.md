@@ -1,7 +1,7 @@
 # PATCH /incidents/:id/status — validar o rechazar
 
 - Estado: implementado y cubierto por pruebas unitarias.
-- Última revisión: 2026-11-15.
+- Última revisión: 2026-11-16.
 - Autenticación: `Authorization: Bearer <JWT>` obligatoria.
 - Roles: `admin` o `administrative` vigentes en PostgreSQL.
 
@@ -14,7 +14,7 @@
 }
 ```
 
-Solo permite la transición desde `reported`. El estado y `CambioEstado` se escriben en una misma transacción Prisma, con UUID y fecha de servidor. Responde 200 con el recurso completo, incluidas las fotos con URL temporales; no expone historial ni actor. Errores: 400 entrada inválida; 401 JWT inválido; 403 rol no permitido; 404 incidencia ausente; 409 estado concurrente o incompatible; 502 fallo de S3 al firmar fotos; 503 fallo de PostgreSQL.
+Solo permite la transición desde `reported`. El estado y `CambioEstado` se escriben en una misma transacción Prisma, con UUID y fecha de servidor. Responde 200 con el recurso completo, incluidas las fotos con URL temporales; no expone historial ni actor. El cambio se guarda antes de consultar las fotos: si falla su lectura o firma, la respuesta conserva el cambio con `images: []` y el fallo se registra en el backend. Errores: 400 entrada inválida; 401 JWT inválido; 403 rol no permitido; 404 incidencia ausente; 409 estado concurrente o incompatible; 503 fallo de PostgreSQL.
 
 ## Referencias
 
