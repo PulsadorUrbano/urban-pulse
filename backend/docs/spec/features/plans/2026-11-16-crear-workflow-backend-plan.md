@@ -5,7 +5,7 @@
 - Herramientas: Node 22 y pnpm 10.34.8.
 - Especificación: [Contrato y criterios](../specs/2026-11-16-crear-workflow-backend-spec.md).
 - Rama: `chore/161-workflow-backend`.
-- Estado: implementado; comprobaciones locales correctas y ejecución de GitHub pendiente.
+- Estado: implementado y verificado localmente y en GitHub Actions.
 
 ## Restricciones generales
 
@@ -29,7 +29,7 @@ Comprobar la ruta del lockfile, el directorio de ejecución, la generación prev
 - [x] Consultar Context7 sobre caché y preparación de pnpm.
 - [x] Crear el workflow con filtros de rutas, permisos de lectura y comandos existentes.
 - [x] Ejecutar build, lint y unitarias; revisar YAML y diff.
-- [ ] Publicar los archivos del alcance y crear PR sobre S3.
+- [x] Publicar los archivos del alcance y crear [PR #167](https://github.com/PulsadorUrbano/urban-pulse/pull/167) sobre S3 #160.
 
 No se añaden pruebas que repliquen el YAML. No hay cambios de contratos que requieran documentación de endpoints.
 
@@ -45,9 +45,11 @@ No se añaden pruebas que repliquen el YAML. No hay cambios de contratos que req
 
 ## Confirmación de implementación
 
-- Estado final: implementado con verificación pendiente.
+- Estado final: implementado y verificado.
 - Fecha de revisión: 2026-11-16.
 - Resultado: workflow creado y documentación del alcance preparada.
 - Verificación local: restauradas las dependencias con `pnpm install --frozen-lockfile`, sin modificar el manifiesto ni el lockfile. El primer intento de build y tests falló porque faltaba instalar `@aws-sdk/cloudfront-signer`; tras restaurar el lockfile ambos pasan.
 - Decisión: permitir PR hacia cualquier rama para comprobar también el stack sobre S3.
-- Limitación: la ejecución del runner de GitHub se comprobará tras abrir la PR; el entorno local usa Node 24.21.0.
+- GitHub Actions: [primera ejecución](https://github.com/PulsadorUrbano/urban-pulse/actions/runs/43849284281) correcta sobre el commit `29888ab`: instalación, generación de Prisma, compilación, lint y unitarias con Node 22 en Ubuntu.
+- Criterios de aceptación: filtros y versiones revisados en el YAML; comandos verificados en el runner sin servicios externos; PR #167 apilada sobre #160 y vinculada al issue #161.
+- Limitación: el entorno local usa Node 24.21.0; el runner confirma las verificaciones con Node 22.
