@@ -5,7 +5,7 @@
 - Herramientas: Node 22, npm con `package-lock.json`, `actions/checkout@v6` y `actions/setup-node@v6`.
 - Especificación: [Contrato y criterios](./spec.md).
 - Rama: chore/161-workflow-frontend-web.
-- Estado: implementado; verificación en GitHub Actions pendiente.
+- Estado: implementado y verificado.
 
 ## Restricciones generales
 
@@ -50,7 +50,7 @@ Rutas relativas a la raíz del repositorio.
 - [x] Definir el job: Node 22 con caché de npm, `npm ci`, `npm run lint`, `npm run test` y `npm run build`, con `working-directory: frontend-web`, `timeout-minutes: 15` y `permissions: contents: read`.
 - [x] Validar la sintaxis: `yaml.safe_load` lee el archivo con los eventos `pull_request` y `push` y los seis pasos esperados.
 - [x] Reproducir los pasos en local sobre una copia limpia de `frontend-web/` sin `node_modules`.
-- [ ] Comprobar la primera ejecución en GitHub Actions en la PR de esta rama.
+- [x] Comprobar la primera ejecución en GitHub Actions en la PR #171: [ejecución 43858645098](https://github.com/PulsadorUrbano/urban-pulse/actions/runs/43858645098) correcta en 55 s sobre `8be6002`.
 
 ## Comprobaciones finales
 
@@ -63,6 +63,7 @@ Ejecutadas desde una copia limpia de `frontend-web/` con Node 22.14.0 y npm 10.9
 | Tests | npm run test | 5 archivos, 60 pruebas correctas |
 | Typecheck y build | npm run build | `tsc --noEmit` sin errores y build de Vite correcto |
 | Sintaxis YAML | yaml.safe_load | Correcta |
+| GitHub Actions | PR #171 | [ejecución 43858645098](https://github.com/PulsadorUrbano/urban-pulse/actions/runs/43858645098) correcta (Ubuntu, Node 22) |
 | Diff, desde la raíz | git diff --check | Sin errores |
 
 - [x] Revisar que cada criterio de aceptación tiene evidencia.
@@ -70,13 +71,13 @@ Ejecutadas desde una copia limpia de `frontend-web/` con Node 22.14.0 y npm 10.9
 
 ## Confirmación de implementación
 
-- Estado final: Implementado con verificación pendiente.
+- Estado final: Implementado y verificado.
 - Fecha de revisión: 2026-11-16.
 - Resultado entregado: `.github/workflows/frontend-web-build.yml` y esta trazabilidad.
 
 | Criterio de aceptación | Evidencia concreta | Resultado |
 | --- | --- | --- |
-| 1. Una PR sobre `frontend-web/` dispara el workflow y termina en verde | Comandos reproducidos en local con éxito; falta la ejecución en GitHub | Pendiente |
+| 1. Una PR sobre `frontend-web/` dispara el workflow y termina en verde | [ejecución 43858645098](https://github.com/PulsadorUrbano/urban-pulse/actions/runs/43858645098) de la PR #171 en verde | Cumplido |
 | 2. Un fallo de lint, pruebas o compilación lo deja en rojo | Cada paso es un comando que detiene el job si sale con error; el typecheck va dentro de `npm run build` | Cumplido por configuración |
 | 3. Una PR que no toca la web no lo dispara | Filtro `paths` en ambos eventos | Cumplido por configuración |
 | 4. Instalación con `npm ci` sin modificar el lockfile | `npm ci` en local; `package-lock.json` sin cambios | Cumplido |
@@ -84,4 +85,4 @@ Ejecutadas desde una copia limpia de `frontend-web/` con Node 22.14.0 y npm 10.9
 
 - Comprobaciones: ver la tabla anterior.
 - Decisiones y desviaciones: ninguna respecto a la especificación.
-- Limitaciones y pendientes: registrar aquí la primera ejecución en GitHub Actions. El check no es obligatorio en las reglas de `dev`; hacerlo obligatorio queda fuera de alcance.
+- Limitaciones y pendientes: el check no es obligatorio en las reglas de `dev`; hacerlo obligatorio queda fuera de alcance.

@@ -6,7 +6,7 @@
 
 - Rama: chore/161-workflow-frontend-web.
 - Última actualización: 2026-11-16.
-- Estado: borrador; verificación en GitHub Actions pendiente.
+- Estado: implementado y verificado.
 - Plan: [Plan de implementación](./plan.md#confirmación-de-implementación).
 - Referencias: issue #161 (Crear Workflows), PR #162 (workflow móvil) y PR #167 (workflow backend).
 

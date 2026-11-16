@@ -28,7 +28,7 @@ Se sigue el patrón del workflow del backend (PR hacia cualquier rama, push a `d
 - [x] Revisar la issue #161 y los workflows del móvil y del backend.
 - [x] Crear el workflow.
 - [x] Reproducir sus pasos en local sobre una copia limpia.
-- [ ] Comprobar la primera ejecución en GitHub Actions.
+- [x] Comprobar la primera ejecución en GitHub Actions.
 
 ## Documentos actualizados
 
@@ -36,8 +36,8 @@ Se sigue el patrón del workflow del backend (PR hacia cualquier rama, push a `d
 
 ## Estado / Verificación
 
-En local, `npm ci`, lint, 60 pruebas y build pasan; la sintaxis YAML es válida.
+En local, `npm ci`, lint, 60 pruebas y build pasan; la sintaxis YAML es válida. En GitHub, la [ejecución 43858645098](https://github.com/PulsadorUrbano/urban-pulse/actions/runs/43858645098) de la PR #171 terminó en verde en 55 s.
 
 ## Pendiente / diferido
 
-Abrir la PR hacia `dev` y registrar en el plan el resultado de la primera ejecución en GitHub.
+Nada en esta parte. #161 sigue pendiente de los workflows del móvil (#162) y del backend (#167).
