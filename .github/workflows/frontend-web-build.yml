@@ -1,0 +1,41 @@
+name: Frontend web - compilación y pruebas
+
+on:
+  pull_request:
+    paths:
+      - 'frontend-web/**'
+      - '.github/workflows/frontend-web-build.yml'
+  push:
+    branches: [dev]
+    paths:
+      - 'frontend-web/**'
+      - '.github/workflows/frontend-web-build.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  frontend-web:
+    name: Analizar, probar y compilar frontend web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend-web
+    steps:
+      - name: Obtener el repositorio
+        uses: actions/checkout@v6
+      - name: Preparar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend-web/package-lock.json
+      - name: Instalar dependencias
+        run: npm ci
+      - name: Analizar código
+        run: npm run lint
+      - name: Ejecutar pruebas
+        run: npm run test
+      - name: Comprobar tipos y compilar
+        run: npm run build
