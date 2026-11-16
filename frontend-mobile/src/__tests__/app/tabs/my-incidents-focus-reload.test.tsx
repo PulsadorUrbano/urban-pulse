@@ -7,6 +7,7 @@ import { Text } from 'react-native';
 import MyIncidentsScreen from '@/app/(tabs)/my-incidents';
 import { useSession, type SessionContextValue } from '@/hooks/use-session';
 import { fetchMyIncidents } from '@/services/incident.service';
+import type { AuthToken } from '@/types/token';
 import type { SessionUser } from '@/types/user';
 
 // ---------------------------------------------------------------------------
@@ -76,10 +77,13 @@ const mockSessionUser: SessionUser = {
   source: 'mock',
 };
 
+const SESSION_ACCESS_TOKEN = 'test-access-token';
+const sessionToken: AuthToken = { accessToken: SESSION_ACCESS_TOKEN, source: 'backend' };
+
 function buildSessionValue(): SessionContextValue {
   return {
     user: mockSessionUser,
-    token: null,
+    token: sessionToken,
     isRestoringSession: false,
     signIn: jest.fn().mockResolvedValue(undefined),
     signOut: jest.fn().mockResolvedValue(undefined),
@@ -118,8 +122,8 @@ describe('MyIncidentsScreen con useMyIncidents real (refresco por foco)', () => 
     await waitFor(() => expect(screen.getByText(EMPTY_STATE_TEXT)).toBeOnTheScreen());
     expect(mockedFetchMyIncidents).toHaveBeenCalledTimes(1);
     // Se pide por civicId de la sesión, no por el id numérico del usuario ('1').
-    expect(mockedFetchMyIncidents).toHaveBeenCalledWith(mockSessionUser.civicId);
-    expect(mockedFetchMyIncidents).not.toHaveBeenCalledWith(mockSessionUser.id);
+    expect(mockedFetchMyIncidents).toHaveBeenCalledWith(mockSessionUser.civicId, SESSION_ACCESS_TOKEN);
+    expect(mockedFetchMyIncidents).not.toHaveBeenCalledWith(mockSessionUser.id, SESSION_ACCESS_TOKEN);
   });
 
   it('un reenfoque posterior al montaje vuelve a pedir las incidencias (2 peticiones en total)', async () => {

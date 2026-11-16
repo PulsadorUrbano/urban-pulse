@@ -13,6 +13,9 @@ const mockedFetchMyIncidents = fetchMyIncidents as jest.MockedFunction<typeof fe
 
 const BACKEND_FALLBACK_NOTICE =
   'No se ha podido conectar al backend, mostrando los datos del mock.';
+const MISSING_SESSION_MESSAGE = 'No se pudo identificar tu sesión. Vuelve a iniciar sesión.';
+
+const TEST_ACCESS_TOKEN = 'test-access-token';
 
 const incidentsFixture: IncidentSummary[] = [
   { id: 'inc-1', title: 'Bache en calle Mayor', status: 'reported', createdAt: '2026-10-20T10:00:00.000Z' },
@@ -45,7 +48,7 @@ describe('useMyIncidents', () => {
   });
 
   it('con civicId null no llama a fetchMyIncidents y termina con isLoading false e incidents vacío', async () => {
-    const { result } = await renderHook(() => useMyIncidents(null));
+    const { result } = await renderHook(() => useMyIncidents(null, TEST_ACCESS_TOKEN));
 
     await flushPendingMicrotasks();
 
@@ -56,17 +59,80 @@ describe('useMyIncidents', () => {
     expect(result.current.backendFallbackNotice).toBeNull();
   });
 
+  describe('sin accessToken (sesión sin token válido)', () => {
+    it('nunca llama a fetchMyIncidents y termina con isLoading false, incidents vacío y el mensaje de sesión', async () => {
+      const { result } = await renderHook(() => useMyIncidents('civic-1', null));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(mockedFetchMyIncidents).not.toHaveBeenCalled();
+      expect(result.current.incidents).toEqual([]);
+      expect(result.current.errorMessage).toBe(MISSING_SESSION_MESSAGE);
+    });
+
+    it('reload sin accessToken vuelve a terminar sin llamar a fetchMyIncidents y con el mensaje de sesión', async () => {
+      const { result } = await renderHook(() => useMyIncidents('civic-1', null));
+
+      await waitFor(() => {
+        expect(result.current.errorMessage).toBe(MISSING_SESSION_MESSAGE);
+      });
+
+      await act(async () => {
+        result.current.reload();
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(mockedFetchMyIncidents).not.toHaveBeenCalled();
+      expect(result.current.incidents).toEqual([]);
+      expect(result.current.errorMessage).toBe(MISSING_SESSION_MESSAGE);
+    });
+  });
+
+  describe('transición de accessToken null a válido', () => {
+    it('al recibir un accessToken válido en un rerender dispara una carga real sin llamar a reload', async () => {
+      mockedFetchMyIncidents.mockResolvedValueOnce({ incidents: incidentsFixture, source: 'backend' });
+
+      const { result, rerender } = await renderHook(
+        ({ accessToken }: { accessToken: string | null }) => useMyIncidents('civic-1', accessToken),
+        { initialProps: { accessToken: null as string | null } },
+      );
+
+      await waitFor(() => {
+        expect(result.current.errorMessage).toBe(MISSING_SESSION_MESSAGE);
+      });
+      expect(mockedFetchMyIncidents).not.toHaveBeenCalled();
+
+      await act(() => {
+        rerender({ accessToken: TEST_ACCESS_TOKEN });
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(mockedFetchMyIncidents).toHaveBeenCalledTimes(1);
+      expect(mockedFetchMyIncidents).toHaveBeenCalledWith('civic-1', TEST_ACCESS_TOKEN);
+      expect(result.current.incidents).toEqual(incidentsFixture);
+      expect(result.current.errorMessage).toBeNull();
+    });
+  });
+
   it('en carga correcta rellena incidents, limpia errorMessage y pone isLoading en false', async () => {
     mockedFetchMyIncidents.mockResolvedValueOnce({ incidents: incidentsFixture, source: 'backend' });
 
-    const { result } = await renderHook(() => useMyIncidents('civic-1'));
+    const { result } = await renderHook(() => useMyIncidents('civic-1', TEST_ACCESS_TOKEN));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
 
     expect(mockedFetchMyIncidents).toHaveBeenCalledTimes(1);
-    expect(mockedFetchMyIncidents).toHaveBeenCalledWith('civic-1');
+    expect(mockedFetchMyIncidents).toHaveBeenCalledWith('civic-1', TEST_ACCESS_TOKEN);
     expect(result.current.incidents).toEqual(incidentsFixture);
     expect(result.current.errorMessage).toBeNull();
   });
@@ -74,7 +140,7 @@ describe('useMyIncidents', () => {
   it('con source "mock" expone backendFallbackNotice con el mensaje exacto', async () => {
     mockedFetchMyIncidents.mockResolvedValueOnce({ incidents: incidentsFixture, source: 'mock' });
 
-    const { result } = await renderHook(() => useMyIncidents('civic-1'));
+    const { result } = await renderHook(() => useMyIncidents('civic-1', TEST_ACCESS_TOKEN));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -87,7 +153,7 @@ describe('useMyIncidents', () => {
   it('con source "backend" deja backendFallbackNotice en null', async () => {
     mockedFetchMyIncidents.mockResolvedValueOnce({ incidents: incidentsFixture, source: 'backend' });
 
-    const { result } = await renderHook(() => useMyIncidents('civic-1'));
+    const { result } = await renderHook(() => useMyIncidents('civic-1', TEST_ACCESS_TOKEN));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -99,7 +165,7 @@ describe('useMyIncidents', () => {
   it('en error de recarga rellena errorMessage y conserva las incidencias de la carga exitosa anterior', async () => {
     mockedFetchMyIncidents.mockResolvedValueOnce({ incidents: incidentsFixture, source: 'backend' });
 
-    const { result } = await renderHook(() => useMyIncidents('civic-1'));
+    const { result } = await renderHook(() => useMyIncidents('civic-1', TEST_ACCESS_TOKEN));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -122,7 +188,7 @@ describe('useMyIncidents', () => {
   it('en error sin carga previa rellena errorMessage y deja incidents vacío', async () => {
     mockedFetchMyIncidents.mockRejectedValueOnce(new Error('Sin conexión.'));
 
-    const { result } = await renderHook(() => useMyIncidents('civic-1'));
+    const { result } = await renderHook(() => useMyIncidents('civic-1', TEST_ACCESS_TOKEN));
 
     await waitFor(() => {
       expect(result.current.errorMessage).toBe('Sin conexión.');
@@ -135,7 +201,7 @@ describe('useMyIncidents', () => {
   it('reload() pone isLoading en true, limpia errorMessage y dispara una segunda llamada a fetchMyIncidents', async () => {
     mockedFetchMyIncidents.mockRejectedValueOnce(new Error('Primer fallo.'));
 
-    const { result } = await renderHook(() => useMyIncidents('civic-1'));
+    const { result } = await renderHook(() => useMyIncidents('civic-1', TEST_ACCESS_TOKEN));
 
     await waitFor(() => {
       expect(result.current.errorMessage).toBe('Primer fallo.');
@@ -151,7 +217,7 @@ describe('useMyIncidents', () => {
     expect(result.current.isLoading).toBe(true);
     expect(result.current.errorMessage).toBeNull();
     expect(mockedFetchMyIncidents).toHaveBeenCalledTimes(2);
-    expect(mockedFetchMyIncidents).toHaveBeenLastCalledWith('civic-1');
+    expect(mockedFetchMyIncidents).toHaveBeenLastCalledWith('civic-1', TEST_ACCESS_TOKEN);
 
     await act(async () => {
       secondLoad.resolve({ incidents: incidentsFixture, source: 'backend' });
@@ -168,7 +234,7 @@ describe('useMyIncidents', () => {
     mockedFetchMyIncidents.mockResolvedValueOnce({ incidents: incidentsFixture, source: 'backend' });
 
     const { result, rerender } = await renderHook(
-      ({ civicId }: { civicId: string | null }) => useMyIncidents(civicId),
+      ({ civicId }: { civicId: string | null }) => useMyIncidents(civicId, TEST_ACCESS_TOKEN),
       { initialProps: { civicId: 'civic-1' as string | null } },
     );
 
@@ -186,7 +252,7 @@ describe('useMyIncidents', () => {
       expect(mockedFetchMyIncidents).toHaveBeenCalledTimes(2);
     });
 
-    expect(mockedFetchMyIncidents).toHaveBeenLastCalledWith('civic-2');
+    expect(mockedFetchMyIncidents).toHaveBeenLastCalledWith('civic-2', TEST_ACCESS_TOKEN);
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -199,7 +265,7 @@ describe('useMyIncidents', () => {
     mockedFetchMyIncidents.mockResolvedValueOnce({ incidents: incidentsFixture, source: 'backend' });
 
     const { result, rerender } = await renderHook(
-      ({ civicId }: { civicId: string | null }) => useMyIncidents(civicId),
+      ({ civicId }: { civicId: string | null }) => useMyIncidents(civicId, TEST_ACCESS_TOKEN),
       { initialProps: { civicId: null as string | null } },
     );
 
@@ -216,7 +282,7 @@ describe('useMyIncidents', () => {
     });
 
     expect(mockedFetchMyIncidents).toHaveBeenCalledTimes(1);
-    expect(mockedFetchMyIncidents).toHaveBeenCalledWith('civic-1');
+    expect(mockedFetchMyIncidents).toHaveBeenCalledWith('civic-1', TEST_ACCESS_TOKEN);
     expect(result.current.incidents).toEqual(incidentsFixture);
   });
 
@@ -225,7 +291,7 @@ describe('useMyIncidents', () => {
     const pendingLoad = createDeferred<FetchMyIncidentsResolution>();
     mockedFetchMyIncidents.mockReturnValueOnce(pendingLoad.promise);
 
-    const { unmount } = await renderHook(() => useMyIncidents('civic-1'));
+    const { unmount } = await renderHook(() => useMyIncidents('civic-1', TEST_ACCESS_TOKEN));
 
     expect(mockedFetchMyIncidents).toHaveBeenCalledTimes(1);
 
@@ -244,7 +310,7 @@ describe('useMyIncidents', () => {
     const pendingLoad = createDeferred<FetchMyIncidentsResolution>();
     mockedFetchMyIncidents.mockReturnValueOnce(pendingLoad.promise);
 
-    const { unmount } = await renderHook(() => useMyIncidents('civic-1'));
+    const { unmount } = await renderHook(() => useMyIncidents('civic-1', TEST_ACCESS_TOKEN));
 
     await unmount();
 

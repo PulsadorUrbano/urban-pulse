@@ -321,12 +321,16 @@ async function fetchMyIncidentsFromMock(civicId: string): Promise<FetchMyInciden
 // Obtiene las incidencias propias del ciudadano `civicId`, intentando primero
 // el backend real y cayendo al mock solo si no hay conexión (timeout o red).
 // Un `!ok` del backend (p. ej. 400/500) se trata como error genérico, sin mock.
-export async function fetchMyIncidents(civicId: string): Promise<FetchMyIncidentsResult> {
+export async function fetchMyIncidents(
+  civicId: string,
+  accessToken: string,
+): Promise<FetchMyIncidentsResult> {
   let response: Response;
 
   try {
     response = await fetchWithTimeout(`${BACKEND_INCIDENTS_ENDPOINT}?civicId=${civicId}`, {
       method: 'GET',
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
   } catch (error) {
     // Sin conexión con el backend: se cae al mock. El motivo real se deja en

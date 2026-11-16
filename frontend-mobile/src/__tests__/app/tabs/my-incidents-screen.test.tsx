@@ -8,6 +8,7 @@ import MyIncidentsScreen from '@/app/(tabs)/my-incidents';
 import { useMyIncidents, type UseMyIncidentsResult } from '@/hooks/use-my-incidents';
 import { useSession, type SessionContextValue } from '@/hooks/use-session';
 import type { IncidentSummary } from '@/types/incident';
+import type { AuthToken } from '@/types/token';
 import type { SessionUser } from '@/types/user';
 
 // ---------------------------------------------------------------------------
@@ -88,6 +89,9 @@ const mockSessionUser: SessionUser = {
   source: 'mock',
 };
 
+const SESSION_ACCESS_TOKEN = 'test-access-token';
+const sessionToken: AuthToken = { accessToken: SESSION_ACCESS_TOKEN, source: 'backend' };
+
 // Incidencias en un orden deliberadamente distinto al de id y al de título,
 // para comprobar que la pantalla respeta el orden recibido del hook.
 const incidentsInReceivedOrder: IncidentSummary[] = [
@@ -117,7 +121,7 @@ function buildSessionValue(
 ): SessionContextValue {
   return {
     user: mockSessionUser,
-    token: null,
+    token: sessionToken,
     isRestoringSession: false,
     signIn: jest.fn().mockResolvedValue(undefined),
     signOut: jest.fn().mockResolvedValue(undefined),
@@ -317,7 +321,7 @@ describe('MyIncidentsScreen (tab Mis incidencias)', () => {
     expect(screen.queryByText(EMPTY_STATE_TEXT)).toBeNull();
   });
 
-  it('pide las incidencias con el civicId de la sesión, no con el id de usuario', async () => {
+  it('pide las incidencias con el civicId y el accessToken de la sesión, no con el id de usuario', async () => {
     await renderMyIncidentsScreen();
 
     expect(mockedUseMyIncidents).toHaveBeenCalled();
@@ -326,16 +330,25 @@ describe('MyIncidentsScreen (tab Mis incidencias)', () => {
     // El fixture distingue ambos valores: el id de usuario ('1') no debe usarse.
     expect(mockSessionUser.civicId).not.toBe(mockSessionUser.id);
     expect(requestedCivicIds).not.toContain(mockSessionUser.id);
+    expect(mockedUseMyIncidents).toHaveBeenCalledWith(mockSessionUser.civicId, SESSION_ACCESS_TOKEN);
   });
 
-  it('sin sesión resuelta pide las incidencias con civicId null', async () => {
+  it('sin sesión resuelta pide las incidencias con civicId y accessToken null', async () => {
     mockedUseSession.mockReturnValue(
-      buildSessionValue({ user: null, isRestoringSession: false }),
+      buildSessionValue({ user: null, token: null, isRestoringSession: false }),
     );
 
     await renderMyIncidentsScreen();
 
-    expect(mockedUseMyIncidents).toHaveBeenCalledWith(null);
+    expect(mockedUseMyIncidents).toHaveBeenCalledWith(null, null);
+  });
+
+  it('sin token de acceso (token null) la pantalla no se rompe, pasa null al hook y no llama a useMyIncidents con un token', async () => {
+    mockedUseSession.mockReturnValue(buildSessionValue({ token: null }));
+
+    await renderMyIncidentsScreen();
+
+    expect(mockedUseMyIncidents).toHaveBeenCalledWith(mockSessionUser.civicId, null);
   });
 
   it('registra un useFocusEffect al montar la pantalla', async () => {

@@ -14,9 +14,10 @@ import type { IncidentSummary } from '@/types/incident';
 export default function MyIncidentsScreen() {
   // Los hooks se llaman siempre antes de cualquier return condicional, igual
   // que en HomeScreen: el guard de sesión de abajo no puede saltarse esto.
-  const { user, isRestoringSession } = useSession();
+  const { user, token, isRestoringSession } = useSession();
   const { incidents, isLoading, errorMessage, backendFallbackNotice, reload } = useMyIncidents(
     user?.civicId ?? null,
+    token?.accessToken ?? null,
   );
 
   // Las tabs de Expo Router no desmontan esta pantalla al navegar a

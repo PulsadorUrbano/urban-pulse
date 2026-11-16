@@ -16,8 +16,13 @@ const BACKEND_FALLBACK_NOTICE =
 
 // Carga las incidencias del ciudadano de la sesión activa. Si `civicId` es
 // `null` (sesión aún no resuelta) no dispara ninguna petición y deja el
-// listado vacío sin quedarse colgado en estado de carga.
-export function useMyIncidents(civicId: string | null): UseMyIncidentsResult {
+// listado vacío sin quedarse colgado en estado de carga. Si `civicId` ya está
+// pero falta `accessToken` (sesión sin token válido), informa del problema en
+// vez de intentar la petición real, igual que `useIncidentDetail`.
+export function useMyIncidents(
+  civicId: string | null,
+  accessToken: string | null,
+): UseMyIncidentsResult {
   const [incidents, setIncidents] = useState<IncidentSummary[]>([]);
   // La primera carga arranca al montar solo si ya hay `civicId`; si es `null`
   // el efecto de abajo lo corrige a `false` de inmediato.
@@ -46,7 +51,22 @@ export function useMyIncidents(civicId: string | null): UseMyIncidentsResult {
       };
     }
 
-    fetchMyIncidents(civicId)
+    if (accessToken == null) {
+      // Hay civicId pero no token válido (sesión sin accessToken, p. ej. tras
+      // un autoLoginFailed): no se intenta la petición real, igual que el
+      // guard equivalente de `useIncidentDetail`.
+      Promise.resolve().then(() => {
+        if (!isMountedRef.current) return;
+        setIncidents([]);
+        setErrorMessage('No se pudo identificar tu sesión. Vuelve a iniciar sesión.');
+        setIsLoading(false);
+      });
+      return () => {
+        isMountedRef.current = false;
+      };
+    }
+
+    fetchMyIncidents(civicId, accessToken)
       .then((result) => {
         if (!isMountedRef.current) return;
         setIncidents(result.incidents);
@@ -72,7 +92,7 @@ export function useMyIncidents(civicId: string | null): UseMyIncidentsResult {
     return () => {
       isMountedRef.current = false;
     };
-  }, [civicId, reloadToken]);
+  }, [civicId, accessToken, reloadToken]);
 
   // El reseteo de carga y error vive aquí porque se invoca desde eventos de la UI,
   // no desde un efecto, y fuerza una nueva carga incrementando el token.

@@ -1070,8 +1070,15 @@ describe('fetchMyIncidents', () => {
   });
 
   describe('camino backend', () => {
+    it('envía Authorization Bearer con el accessToken recibido en el GET al backend', async () => {
+      await fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN);
+
+      expect(readSentHeaders(0)).toEqual({ Authorization: `Bearer ${TEST_ACCESS_TOKEN}` });
+      expect(readSentInit(0).method).toBe('GET');
+    });
+
     it('pide las incidencias al backend con el civicId recibido y devuelve source "backend"', async () => {
-      await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      await fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN);
 
       expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
       expect(readRequestUrlAt(0)).toBe(BACKEND_LIST_URL);
@@ -1079,7 +1086,7 @@ describe('fetchMyIncidents', () => {
     });
 
     it('mapea la respuesta del backend 1:1 como IncidentSummary[] sin reordenarla', async () => {
-      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN);
 
       expect(result).toEqual({ incidents: backendIncidentSummaries, source: 'backend' });
     });
@@ -1087,13 +1094,13 @@ describe('fetchMyIncidents', () => {
     it('con lista vacía del backend devuelve incidents vacío con source "backend"', async () => {
       routeMyIncidentsRequests(jsonResponse([], 200));
 
-      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN);
 
       expect(result).toEqual({ incidents: [], source: 'backend' });
     });
 
     it('con backend OK no consulta el mock', async () => {
-      await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      await fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN);
 
       expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
       expect(readRequestUrlAt(0)).not.toBe(MOCK_LIST_URL);
@@ -1104,17 +1111,26 @@ describe('fetchMyIncidents', () => {
     it('con RequestTimeoutError cae al mock, ordena desc por createdAt y devuelve source "mock"', async () => {
       routeMyIncidentsRequests(new RequestTimeoutError());
 
-      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN);
 
       expect(result).toEqual({ incidents: expectedOrderedSummaries, source: 'mock' });
       expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(2);
       expect(readRequestUrlAt(1)).toBe(MOCK_LIST_URL);
     });
 
+    it('el GET de respaldo al mock no lleva cabecera Authorization', async () => {
+      routeMyIncidentsRequests(new RequestTimeoutError());
+
+      await fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN);
+
+      expect(readRequestUrlAt(1)).toBe(MOCK_LIST_URL);
+      expect(readSentInit(1).headers).toBeUndefined();
+    });
+
     it('con error de red (TypeError) cae al mock y devuelve source "mock" con el mismo orden', async () => {
       routeMyIncidentsRequests(new TypeError('Network request failed'));
 
-      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN);
 
       expect(result.source).toBe('mock');
       expect(result.incidents.map((incident) => incident.id)).toEqual(['1', '2', '3']);
@@ -1124,7 +1140,7 @@ describe('fetchMyIncidents', () => {
     it('desempata por id ascendente cuando dos incidencias tienen el mismo createdAt', async () => {
       routeMyIncidentsRequests(new RequestTimeoutError());
 
-      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN);
 
       const tiedIncidentIds = result.incidents
         .filter((incident) => incident.createdAt === LIST_OLDER_CREATED_AT)
@@ -1135,7 +1151,7 @@ describe('fetchMyIncidents', () => {
     it('con mock sin incidencias devuelve incidents vacío con source "mock"', async () => {
       routeMyIncidentsRequests(new RequestTimeoutError(), jsonResponse([], 200));
 
-      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN);
 
       expect(result).toEqual({ incidents: [], source: 'mock' });
     });
@@ -1149,7 +1165,7 @@ describe('fetchMyIncidents', () => {
         jsonResponse([buildMockIncidentRecord({ id: '4', title: 'Registro sin estado' })], 200),
       );
 
-      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN);
 
       expect(result.incidents).toHaveLength(1);
       expect(result.incidents[0].status).toBe(DEFAULT_INCIDENT_STATUS);
@@ -1170,7 +1186,7 @@ describe('fetchMyIncidents', () => {
         ),
       );
 
-      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN);
 
       expect(result.incidents.map((incident) => incident.id)).toEqual(['1', '4', '2', '3']);
       expect(result.incidents[1]).toEqual({
@@ -1188,7 +1204,7 @@ describe('fetchMyIncidents', () => {
       async (status) => {
         routeMyIncidentsRequests(jsonResponse({ message: 'boom' }, status));
 
-        await expect(fetchMyIncidents(CITIZEN_CIVIC_ID)).rejects.toThrow(MESSAGE_MY_INCIDENTS_ERROR);
+        await expect(fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN)).rejects.toThrow(MESSAGE_MY_INCIDENTS_ERROR);
 
         expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
         expect(readRequestUrlAt(0)).toBe(BACKEND_LIST_URL);
@@ -1198,13 +1214,13 @@ describe('fetchMyIncidents', () => {
     it('con mock !ok tras caída del backend lanza error genérico', async () => {
       routeMyIncidentsRequests(new RequestTimeoutError(), jsonResponse({}, 500));
 
-      await expect(fetchMyIncidents(CITIZEN_CIVIC_ID)).rejects.toThrow(MESSAGE_MY_INCIDENTS_ERROR);
+      await expect(fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN)).rejects.toThrow(MESSAGE_MY_INCIDENTS_ERROR);
     });
 
     it('con mock sin conexión tras caída del backend lanza el mensaje de conexión', async () => {
       routeMyIncidentsRequests(new RequestTimeoutError(), new TypeError('Network request failed'));
 
-      await expect(fetchMyIncidents(CITIZEN_CIVIC_ID)).rejects.toThrow(
+      await expect(fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN)).rejects.toThrow(
         'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
       );
     });
@@ -1259,7 +1275,7 @@ describe('motivo del rechazo del backend en fetchMyIncidents', () => {
   it('con backend !ok y message como string añade el motivo entre paréntesis', async () => {
     routeMyIncidentsRequests(rawBodyResponse(400, JSON.stringify({ message: 'civicId must be a UUID' })));
 
-    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID));
+    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN));
 
     expect(error.message).toBe(`${MESSAGE_MY_INCIDENTS_ERROR} (civicId must be a UUID)`);
     expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
@@ -1270,7 +1286,7 @@ describe('motivo del rechazo del backend en fetchMyIncidents', () => {
       rawBodyResponse(400, JSON.stringify({ message: ['status must be a string', 'civicId is required'] })),
     );
 
-    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID));
+    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN));
 
     expect(error.message).toBe(
       `${MESSAGE_MY_INCIDENTS_ERROR} (status must be a string; civicId is required)`,
@@ -1280,7 +1296,7 @@ describe('motivo del rechazo del backend en fetchMyIncidents', () => {
   it('con backend !ok y cuerpo no JSON lanza solo el mensaje genérico', async () => {
     routeMyIncidentsRequests(rawBodyResponse(500, 'Internal Server Error'));
 
-    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID));
+    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN));
 
     expect(error.message).toBe(MESSAGE_MY_INCIDENTS_ERROR);
   });
@@ -1288,7 +1304,7 @@ describe('motivo del rechazo del backend en fetchMyIncidents', () => {
   it('con backend !ok y JSON sin message lanza solo el mensaje genérico', async () => {
     routeMyIncidentsRequests(rawBodyResponse(500, JSON.stringify({ error: 'Internal', statusCode: 500 })));
 
-    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID));
+    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN));
 
     expect(error.message).toBe(MESSAGE_MY_INCIDENTS_ERROR);
   });
@@ -1296,7 +1312,7 @@ describe('motivo del rechazo del backend en fetchMyIncidents', () => {
   it('con backend !ok y message vacío lanza solo el mensaje genérico, sin paréntesis vacíos', async () => {
     routeMyIncidentsRequests(rawBodyResponse(400, JSON.stringify({ message: '' })));
 
-    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID));
+    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN));
 
     expect(error.message).toBe(MESSAGE_MY_INCIDENTS_ERROR);
   });
@@ -1304,7 +1320,7 @@ describe('motivo del rechazo del backend en fetchMyIncidents', () => {
   it('con backend !ok y cuerpo ilegible lanza solo el mensaje genérico', async () => {
     routeMyIncidentsRequests(unreadableBodyResponse(500));
 
-    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID));
+    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID, TEST_ACCESS_TOKEN));
 
     expect(error.message).toBe(MESSAGE_MY_INCIDENTS_ERROR);
     expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
@@ -1375,7 +1391,7 @@ describe('mensajes genéricos independientes entre createIncident y fetchMyIncid
     fetchWithTimeoutMock.mockImplementation(async () => rawBodyResponse(500, JSON.stringify({ message: 'boom' })));
 
     const registerError = await captureRejection(createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN));
-    const listError = await captureRejection(fetchMyIncidents(TEST_CIVIC_ID));
+    const listError = await captureRejection(fetchMyIncidents(TEST_CIVIC_ID, TEST_ACCESS_TOKEN));
 
     expect(MESSAGE_REGISTER_ERROR).not.toBe(MESSAGE_MY_INCIDENTS_ERROR);
     expect(registerError.message).toBe(`${MESSAGE_REGISTER_ERROR} (boom)`);
@@ -1426,11 +1442,13 @@ describe('aislamiento del civicId entre llamadas sucesivas', () => {
   it('dos civicId distintos en fetchMyIncidents consultan cada uno su propio listado', async () => {
     fetchWithTimeoutMock.mockImplementation(async () => jsonResponse([], 200));
 
-    await fetchMyIncidents(FIRST_CIVIC_ID);
-    await fetchMyIncidents(SECOND_CIVIC_ID);
+    await fetchMyIncidents(FIRST_CIVIC_ID, FIRST_ACCESS_TOKEN);
+    await fetchMyIncidents(SECOND_CIVIC_ID, SECOND_ACCESS_TOKEN);
 
     expect(readRequestUrlAt(0)).toBe(`${BACKEND_API_URL}/incidents?civicId=${FIRST_CIVIC_ID}`);
     expect(readRequestUrlAt(1)).toBe(`${BACKEND_API_URL}/incidents?civicId=${SECOND_CIVIC_ID}`);
+    expect(readSentHeaders(0).Authorization).toBe(`Bearer ${FIRST_ACCESS_TOKEN}`);
+    expect(readSentHeaders(1).Authorization).toBe(`Bearer ${SECOND_ACCESS_TOKEN}`);
   });
 });
 
