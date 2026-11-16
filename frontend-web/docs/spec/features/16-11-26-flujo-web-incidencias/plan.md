@@ -5,7 +5,7 @@
 - Herramientas: React 19, Vite 8, TypeScript 5.7, Tailwind CSS 3 y Vitest 5.
 - Especificación: [Contrato y criterios](./spec.md).
 - Rama: `feature/flujo-web-incidencias`, con base en `dev`.
-- Estado: implementación parcial. Se adelantó la autenticación del detalle y la validación porque el listado abrirá ese detalle.
+- Estado: flujo principal verificado con backend y PostgreSQL locales.
 
 ## Restricciones generales
 
@@ -44,38 +44,38 @@ Rutas relativas a la raíz del repositorio.
 
 ## Preparación
 
-- [ ] Revisar los contratos actuales en `dev`, el estado de Git y las guías de código y diseño web.
-- [ ] Preparar un entorno local con la migración aplicada, catálogo de asignación, una cuenta municipal real y una incidencia en estado `reported`.
+- [x] Revisar los contratos actuales en `dev`, el estado de Git y las guías de código y diseño web.
+- [x] Preparar un entorno local con la migración aplicada, catálogo de asignación, una cuenta municipal real y una incidencia en estado `reported`.
 
 ## Tarea 1. Mostrar el listado municipal tras el login
 
-- [ ] Consumir `GET /incidents` y mostrar título, estado y fecha. Usar el ID de cada fila para abrir el detalle.
-- [ ] Leer `X-Next-Cursor` y usarlo para cargar más resultados. Mostrar estados de carga, lista vacía y error.
-- [ ] Sustituir el selector flotante de módulos del flujo normal por la navegación entre listado y detalle. Mantener o refrescar los datos del listado al volver tras un cambio.
+- [x] Consumir `GET /incidents` y mostrar título, estado y fecha. Usar el ID de cada fila para abrir el detalle.
+- [x] Leer `X-Next-Cursor` y usarlo para cargar más resultados. Mostrar estados de carga, lista vacía y error.
+- [x] Sustituir el selector flotante de módulos por la navegación entre listado y detalle. Recargar el listado al volver.
 
 ## Tarea 2. Conectar el detalle y la validación
 
-- [ ] Abrir el detalle existente con el ID seleccionado y cargarlo con JWT. Reutilizar la descripción, categoría, galería y formulario de validación.
+- [x] Abrir el detalle existente con el ID seleccionado y cargarlo con JWT. Reutilizar la descripción, categoría, galería y formulario de validación.
 - [x] Enviar JWT en `PATCH /incidents/:id/status` y `PATCH /incidents/:id/priority`, con los campos admitidos por cada endpoint.
-- [ ] Actualizar el detalle con la respuesta de cada PATCH y mantener el reintento de prioridad si ya se confirmó la validación.
+- [x] Actualizar el detalle con la respuesta de cada PATCH y mantener el reintento de prioridad si ya se confirmó la validación. La confirmación se muestra dentro del expediente.
 
 ## Tarea 3. Integrar las asignaciones en el detalle
 
-- [ ] Activar la edición en la sección «Asignación» para los roles autorizados cuando la incidencia esté en `validated` o `assigned`.
-- [ ] Alimentar el formulario con la incidencia ya abierta y cargar el catálogo con `GET /incidents/assignment-options`. El flujo real empieza en la fila seleccionada y usa una sola carga del detalle.
-- [ ] Reutilizar los desplegables, el filtrado de equipos y técnicos, la limpieza de niveles inferiores y el cálculo del parche.
-- [ ] Guardar mediante `PATCH /incidents/:id/assignment` y usar la respuesta para actualizar el detalle. Mostrar el error si falla el guardado y permitir recargar ante un conflicto.
+- [x] Activar la edición en la sección «Asignación» para los roles autorizados cuando la incidencia esté en `validated` o `assigned`.
+- [x] Alimentar el formulario con la incidencia ya abierta y cargar el catálogo con `GET /incidents/assignment-options`. El flujo real empieza en la fila seleccionada y usa una sola carga del detalle.
+- [x] Reutilizar los desplegables, el filtrado de equipos y técnicos, la limpieza de niveles inferiores y el cálculo del parche.
+- [x] Guardar mediante `PATCH /incidents/:id/assignment` y usar la respuesta para actualizar el detalle. Mostrar el error si falla el guardado y permitir recargar ante un conflicto.
 
 ## Comprobaciones finales
 
 | Comprobación | Comando o recorrido | Resultado |
 | --- | --- | --- |
-| Pruebas unitarias | `npm run test` | Pendiente |
-| Tipos | `npm run typecheck` | Pendiente |
-| Lint | `npm run lint` | Pendiente |
-| Build | `npm run build` | Pendiente |
-| Diff | `git diff --check` desde la raíz | Pendiente |
-| Flujo real | Login municipal → listado → abrir incidencia `reported` → validar → asignar los tres valores → volver a abrir y comprobar la persistencia | Pendiente |
+| Pruebas unitarias | `npm run test` | 60 pruebas correctas en 5 archivos |
+| Tipos | `npm run typecheck` | Correcto tras `npm ci` |
+| Lint | `npm run lint` | Correcto tras `npm ci` |
+| Build | `npm run build` | Correcto tras `npm ci` |
+| Diff | `git diff --check` desde la raíz | Correcto |
+| Flujo real | Login municipal → listado → abrir incidencia `reported` → validar → asignar los tres valores → volver a abrir y comprobar la persistencia | Confirmado por Artina en Docker Compose con «Farola apagada» |
 
 - [ ] Comprobar que una incidencia pendiente o rechazada no permite editar la asignación.
 - [ ] Comprobar que la segunda página se añade al listado y que los cambios de estado aparecen al volver.
@@ -88,10 +88,14 @@ Rutas relativas a la raíz del repositorio.
 | `services/assignment.service.test.ts` | Bearer al cargar el catálogo y guardar, cuerpo con campos omitidos o anulados explícitamente y respuesta de conflicto o error sin confirmación de guardado |
 | `hooks/use-incident-assignment.test.ts` | Limpieza de equipo y técnico al cambiar el departamento, limpieza de técnico al cambiar el equipo, selección incompatible y parche con solo los campos modificados |
 
-- [ ] Actualizar las pruebas existentes en esas rutas y ejecutar `npm run test`.
+- [x] Actualizar las pruebas existentes en esas rutas y ejecutar `npm run test`.
 - [ ] Si la integración introduce lógica nueva de coordinación, cubrir el reintento de prioridad tras una validación confirmada y que solo una respuesta de guardado correcta actualice el detalle. Usar los servicios sustituidos por dobles de prueba en lugar de depender del backend para estas comprobaciones unitarias.
 
 ## Confirmación de implementación
 
-- Estado: autenticación del detalle, estado y prioridad implementada, incluida la carga de detalle desde asignaciones. Listado e integración pendientes.
+- Estado: recorrido principal verificado. Siguen pendientes las comprobaciones adicionales marcadas arriba.
 - Evidencia parcial: antes del ajuste fallaron las tres pruebas de cabecera Bearer. Tras el ajuste, `npm run test` pasó con 55 pruebas en 5 archivos y `git diff --check` pasó. Typecheck y build se detuvieron por ausencia de `@types/node`. Lint se detuvo por ausencia de `typescript-eslint`.
+- Evidencia del listado: `npm run test` pasó con 59 pruebas en 5 archivos. Las cuatro pruebas nuevas cubren primera página, cursor, respuesta vacía o inválida y rechazo del backend. Typecheck, build y lint siguen pendientes por las mismas dependencias locales. Pendiente la comprobación visual y con datos reales.
+- Evidencia de asignación: las pruebas verifican la carga del catálogo, la respuesta del guardado y los estados editables. Artina comprobó que los tres valores persistían al volver a abrir la incidencia.
+- Verificación tras el commit de integración `ff2478e`: las 60 pruebas unitarias volvieron a pasar. La configuración local usa `NODE_ENV=development` y tiene `DB_SYNC` vacío, por lo que hay que comprobar que la migración de asignaciones ya está aplicada antes de probar con el catálogo.
+- Preparación de la prueba manual: el volumen local tenía un esquema antiguo y carecía de historial Prisma. Artina aplicó el SQL de asignaciones y cargó datos locales de prueba antes de completar el recorrido.

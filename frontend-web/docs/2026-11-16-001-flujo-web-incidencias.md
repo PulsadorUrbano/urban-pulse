@@ -10,7 +10,7 @@ Trabajo en `feature/flujo-web-incidencias`. El listado abrirá un detalle que re
 
 ## Alcance
 
-Ajustar las peticiones de detalle, estado y prioridad al contrato vigente de la API.
+Ajustar las peticiones de detalle, estado y prioridad al contrato vigente de la API y conectar el listado al detalle.
 
 ## Decisiones clave
 
@@ -23,12 +23,14 @@ Reutilizar `bearerHeader` y pasar el token de sesión al detalle desde sus dos p
 | `src/App.tsx`, `src/components/incident-validation-view.tsx`, `src/hooks/use-incident-validation.ts` | Propagación del JWT en el flujo de validación |
 | `src/services/incident.service.ts`, `src/services/assignment.service.ts`, `src/types/incident.ts` | Peticiones autenticadas y cuerpos ajustados |
 | `src/__tests__/services/` | Cobertura de cabeceras y cuerpos |
+| `src/components/incident-list-view.tsx`, `src/hooks/use-incident-list.ts` | Listado paginado con estados de carga, vacío y error |
+| `src/components/incident-assignment-view.tsx`, `src/components/incident-assignment-demo.tsx`, `src/hooks/use-incident-assignment.ts` | Formulario integrado con catálogo y edición reutilizada en la demostración |
 
 ## Checklist de la sesión
 
 - [x] Ajustar la autenticación y verificar las pruebas unitarias.
-- [ ] Implementar listado y navegación.
-- [ ] Integrar asignaciones en el detalle.
+- [x] Implementar listado y navegación.
+- [x] Integrar asignaciones en el detalle.
 
 ## Documentos actualizados
 
@@ -36,8 +38,8 @@ Reutilizar `bearerHeader` y pasar el token de sesión al detalle desde sus dos p
 
 ## Estado / Verificación
 
-55 pruebas unitarias correctas. Typecheck, lint y build pendientes por dependencias locales ausentes. Los resultados detallados quedan en el plan.
+60 pruebas unitarias correctas, typecheck, lint y build correctos. Artina verificó el flujo con Docker Compose al crear, validar y asignar «Farola apagada». Los tres valores persistieron al volver a abrir el detalle.
 
 ## Pendiente / diferido
 
-Commit del primer bloque a cargo de Artina. Quedan el listado, el formulario integrado y la prueba con datos reales.
+La autenticación quedó en `3815424`, el listado en `5a5b416` y la integración en `ff2478e`. El esquema se actualizó y el catálogo se cargó de forma manual en la base local de prueba. Las comprobaciones adicionales y el resultado detallado quedan en el plan.
