@@ -135,7 +135,7 @@ export function IncidentValidationView({
             </div>
           </div>
 
-          <IncidentGallery title={incident.title} images={incident.images} />
+          <IncidentGallery title={incident.title} images={incident.images} onRefreshImages={validation.refreshImages} />
 
           <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800/60 shadow-sm shrink-0">
             <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 mb-4 border-b border-zinc-100 dark:border-zinc-800/60 pb-3">

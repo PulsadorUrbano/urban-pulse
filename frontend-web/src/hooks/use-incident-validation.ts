@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   changeIncidentPriority,
@@ -14,6 +14,7 @@ import type {
 
 // La vista exige una justificación mínima para la trazabilidad; el backend solo exige que no esté vacía.
 export const MIN_JUSTIFICATION_LENGTH = 10;
+const IMAGE_REFRESH_COOLDOWN_MS = 60_000;
 
 export type ValidationOutcome = 'validated' | 'rejected';
 
@@ -27,6 +28,7 @@ export function useIncidentValidation(incidentId: string | null, token: string |
   // Resultado de la última carga, etiquetado con la petición que lo produjo: así "cargando"
   // se deriva sin actualizar estado de forma síncrona dentro del efecto.
   const [reloadKey, setReloadKey] = useState(0);
+  const lastImageRefresh = useRef<{ key: string; at: number } | null>(null);
   const requestKey = incidentId ? `${incidentId}#${reloadKey}` : null;
   const [loaded, setLoaded] = useState<{
     key: string;
@@ -139,6 +141,7 @@ export function useIncidentValidation(incidentId: string | null, token: string |
 
   // Vuelve a cargar la incidencia y limpia el formulario.
   const reset = useCallback(() => {
+    lastImageRefresh.current = null;
     setDecision(null);
     setRejectReason(null);
     setJustification('');
@@ -146,6 +149,15 @@ export function useIncidentValidation(incidentId: string | null, token: string |
     setOutcome(null);
     setReloadKey((key) => key + 1);
   }, []);
+
+  const refreshImages = useCallback(() => {
+    if (!incidentId || !token) return;
+    const key = `${incidentId}#${token}`;
+    const now = Date.now();
+    if (lastImageRefresh.current?.key === key && now - lastImageRefresh.current.at < IMAGE_REFRESH_COOLDOWN_MS) return;
+    lastImageRefresh.current = { key, at: now };
+    setReloadKey((current) => current + 1);
+  }, [incidentId, token]);
 
   return {
     incident,
@@ -165,5 +177,6 @@ export function useIncidentValidation(incidentId: string | null, token: string |
     outcome,
     setIncident,
     reset,
+    refreshImages,
   };
 }
