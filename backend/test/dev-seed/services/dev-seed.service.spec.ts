@@ -13,13 +13,12 @@ import type { PrismaService } from '../../../src/prisma/prisma.service.js';
 describe('DevSeedService', () => {
   let prisma: { users: { upsert: ReturnType<typeof vi.fn> } };
   let config: { get: ReturnType<typeof vi.fn> };
-  let logSpy: ReturnType<typeof vi.spyOn>;
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     prisma = { users: { upsert: vi.fn().mockResolvedValue({}) } };
     config = { get: vi.fn() };
-    logSpy = vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
     warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
   });
 
