@@ -3,6 +3,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  Logger,
   UploadedFiles,
   UseInterceptors,
   Param,
@@ -139,6 +140,8 @@ const incidentSchema = {
 @ApiTags('incidents')
 @Controller('incidents')
 export class IncidentsController {
+  private readonly logger = new Logger(IncidentsController.name);
+
   constructor(
     private readonly incidentsService: IncidentsService,
     private readonly fotosService: FotosIncidenciaService,
@@ -421,13 +424,12 @@ export class IncidentsController {
     entrada: CambiarEstadoIncidenciaInput,
     @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
   ): Promise<Incident> {
-    const images = await this.fotosService.listar(idIncidencia);
     const incidencia = await this.incidentsService.cambiarEstado(
       idIncidencia,
       entrada,
       usuario.id,
     );
-    return { ...incidencia, images };
+    return this.responderConFotos(incidencia);
   }
 
   @Patch(':id/priority')
@@ -472,13 +474,12 @@ export class IncidentsController {
     entrada: CambiarPrioridadIncidenciaInput,
     @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
   ): Promise<Incident> {
-    const images = await this.fotosService.listar(idIncidencia);
     const incidencia = await this.incidentsService.cambiarPrioridad(
       idIncidencia,
       entrada,
       usuario.id,
     );
-    return { ...incidencia, images };
+    return this.responderConFotos(incidencia);
   }
 
   @Patch(':id/assignment')
@@ -521,9 +522,20 @@ export class IncidentsController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body(new AsignarIncidenciaPipe()) cambio: CambioAsignacionIncidencia,
   ): Promise<Incident> {
-    const images = await this.fotosService.listar(id);
     const incidencia = await this.incidentsService.asignar(id, cambio);
-    return { ...incidencia, images };
+    return this.responderConFotos(incidencia);
+  }
+
+  private async responderConFotos(incidencia: Incident): Promise<Incident> {
+    try {
+      return await this.fotosService.agregarA(incidencia);
+    } catch (error) {
+      const motivo = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `No se pudieron adjuntar las fotos de la incidencia ${incidencia.id}: ${motivo}`,
+      );
+      return { ...incidencia, images: [] };
+    }
   }
 
   @Get(':id')

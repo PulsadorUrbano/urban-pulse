@@ -131,7 +131,7 @@ Comprueba que `GET /incidents/:id` devuelve URL con el dominio de CloudFront y p
 
 ## Verificación realizada el 15 de noviembre de 2026
 
-La distribución `E2ZTI4WP68L09Z` alcanzó el estado `Deployed`. Se reconstruyó y reinició solo el contenedor backend, que recibió las tres variables `CLOUDFRONT_*`. Una imagen PNG temporal bajo `incidents/cloudfront-verification/` se pudo leer con URL firmada (`200`) y bytes idénticos; CloudFront sin firma y S3 anónimo respondieron `403`. El objeto temporal se eliminó. Esta comprobación valida la CDN y el origen, pero no sustituye una prueba HTTP completa de subida con JWT y una incidencia real.
+La distribución `E2ZTI4WP68L09Z` alcanzó el estado `Deployed`. Se reconstruyó y reinició solo el contenedor backend, que recibió las tres variables `CLOUDFRONT_*`. Una imagen PNG temporal bajo `incidents/cloudfront-verification/` se pudo leer con URL firmada (`200`) y bytes idénticos; CloudFront sin firma y S3 anónimo respondieron `403`. El objeto temporal se eliminó. El 16 de noviembre de 2026 se realizó además la prueba HTTP completa con el ciudadano de desarrollo: login `200`, creación de incidencia `201`, subida multipart autenticada `201`, detalle `200` con una foto y lectura de CloudFront `200` con bytes idénticos. Se eliminaron el objeto S3 y las filas de prueba de PostgreSQL.
 
 ## Preparar la base y arrancar
 

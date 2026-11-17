@@ -24,13 +24,12 @@ function messageOf(error: unknown, fallback: string): string {
 
 // Carga una incidencia del backend y aplica la decisión del operador:
 // validar (PATCH status + PATCH priority) o descartar (PATCH status con motivo).
-// `token` pertenece a una sesión real del backend; una sesión simulada no puede resolver incidencias.
 export function useIncidentValidation(incidentId: string | null, token: string | null) {
   // Resultado de la última carga, etiquetado con la petición que lo produjo: así "cargando"
   // se deriva sin actualizar estado de forma síncrona dentro del efecto.
   const [reloadKey, setReloadKey] = useState(0);
   const lastImageRefresh = useRef<{ key: string; at: number } | null>(null);
-  const requestKey = incidentId && token ? `${incidentId}#${reloadKey}#${token}` : null;
+  const requestKey = incidentId ? `${incidentId}#${reloadKey}` : null;
   const [loaded, setLoaded] = useState<{
     key: string;
     incident: IncidentDetail | null;
@@ -65,10 +64,10 @@ export function useIncidentValidation(incidentId: string | null, token: string |
 
   const isCurrent = requestKey !== null && loaded?.key === requestKey;
   const incident = isCurrent ? loaded.incident : null;
-  const loadError = incidentId && !token
-    ? 'La sesión actual no permite consultar incidencias del backend.'
+  const loadError = !token && incidentId
+    ? 'Inicia sesión con el backend para consultar la incidencia.'
     : isCurrent ? loaded.error : null;
-  const loading = requestKey !== null && !isCurrent;
+  const loading = Boolean(token && requestKey && !isCurrent);
 
   // Sustituye la incidencia cargada por la respuesta de un PATCH.
   const setIncident = useCallback(
@@ -138,7 +137,7 @@ export function useIncidentValidation(incidentId: string | null, token: string |
     } finally {
       setSubmitting(false);
     }
-  }, [token, decision, incident, justification, rejectReason, selectedPriority, setIncident]);
+  }, [decision, incident, justification, rejectReason, selectedPriority, setIncident, token]);
 
   // Vuelve a cargar la incidencia y limpia el formulario.
   const reset = useCallback(() => {
@@ -176,6 +175,7 @@ export function useIncidentValidation(incidentId: string | null, token: string |
     submitting,
     submitError,
     outcome,
+    setIncident,
     reset,
     refreshImages,
   };

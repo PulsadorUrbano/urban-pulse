@@ -59,3 +59,11 @@ No se añaden pruebas que repliquen el YAML. No hay cambios de contratos que req
 - En `test/dev-seed/services/dev-seed.service.spec.ts`, eliminar la variable `logSpy` sin uso, conservando el doble del logger y su restauración.
 - En `test/auth/services/auth.service.spec.ts`, construir la entrada sin teléfono mediante campos explícitos en lugar de aplicar spread sobre el tipo de clase DTO.
 - Verificación tras los cambios: lint sin errores ni advertencias, 306 pruebas correctas en 27 archivos y compilación correcta. Se conservan las aserciones y el comportamiento de las pruebas.
+
+### Resolución de conflictos con la rama base (2026-11-17)
+
+- Integrada la base feat-integracion-s3 en la rama de la PR #167 mediante un commit de merge.
+- Resueltos 16 archivos en conflicto conservando las versiones actuales de S3 y del flujo web, incluida la recuperación de URLs de fotos y la respuesta correcta de los PATCH cuando falla la firma.
+- Conservados el workflow, las correcciones de lint y los cambios previos de la rama.
+- Comprobaciones locales: YAML válido con siete pasos, sin marcadores de conflicto ni errores de whitespace en los cambios; los archivos en conflicto coinciden con la base actual.
+- Generación de Prisma, compilación, lint y unitarias intentados pero bloqueados por dependencias no disponibles en la copia aislada. El entorno impide enlazar node_modules; no se presentan estas comprobaciones como superadas. La ejecución completa corresponde al workflow de la PR.

@@ -39,7 +39,6 @@ Las siguientes ramas son ancestro de al menos una de las ramas punta de arriba, 
 - `fix-resolve-backend-conflicts`
 - `fix/puerto-backend-movil`
 - `fix/unificar-login`
-- `main`
 
 **Plan:** estas ramas están pendientes de eliminación una vez se revise y confirme que no se pierde ningún trabajo.
 

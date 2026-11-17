@@ -9,8 +9,10 @@ import type {
   IncidentLocation,
   IncidentPriority,
   IncidentStatus,
+  IncidentSummary,
 } from '../types/incident';
 import {
+  bearerHeader,
   buildBackendRejectionMessage,
   extractBackendErrorMessage,
   fetchWithTimeout,
@@ -18,7 +20,6 @@ import {
   isRecord,
   readJson,
   RequestTimeoutError,
-  bearerHeader,
 } from './http';
 
 const incidentsEndpoint = (): string => `${resolveBackendApiUrl()}/incidents`;
@@ -120,9 +121,41 @@ async function sendToBackend(url: string, init: RequestInit): Promise<Response> 
   return response;
 }
 
+function isIncidentSummary(value: unknown): value is IncidentSummary {
+  return isRecord(value)
+    && typeof value.id === 'string'
+    && typeof value.title === 'string'
+    && typeof value.status === 'string'
+    && (INCIDENT_STATUSES as readonly string[]).includes(value.status)
+    && typeof value.createdAt === 'string';
+}
+
+function isIncidentSummaryList(value: unknown): value is IncidentSummary[] {
+  return Array.isArray(value) && value.every(isIncidentSummary);
+}
+
+export async function fetchIncidentPage(token: string, cursor?: string): Promise<{
+  items: IncidentSummary[];
+  nextCursor: string | null;
+}> {
+  const query = cursor ? `?${new URLSearchParams({ cursor })}` : '';
+  const response = await sendToBackend(`${incidentsEndpoint()}${query}`, {
+    method: 'GET',
+    headers: bearerHeader(token),
+  });
+  if (!response.ok) {
+    throw new Error(await buildBackendRejectionMessage(response, 'No se pudo cargar el listado de incidencias.'));
+  }
+  const items = await readJson(response, isIncidentSummaryList, 'GET /incidents');
+  return { items, nextCursor: response.headers.get('X-Next-Cursor') || null };
+}
+
 // Obtiene el detalle de una incidencia (GET /incidents/:id).
 export async function fetchIncidentById(id: string, token: string): Promise<IncidentDetail> {
-  const response = await sendToBackend(`${incidentsEndpoint()}/${encodeURIComponent(id)}`, { method: 'GET', headers: bearerHeader(token) });
+  const response = await sendToBackend(`${incidentsEndpoint()}/${encodeURIComponent(id)}`, {
+    method: 'GET',
+    headers: bearerHeader(token),
+  });
 
   if (response.status === 404) throw new IncidentNotFoundError();
   if (!response.ok) {

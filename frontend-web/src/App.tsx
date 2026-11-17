@@ -1,118 +1,81 @@
 import { useState } from 'react';
 
+import { IncidentAssignmentDemo } from './components/incident-assignment-demo';
+import { IncidentListView } from './components/incident-list-view';
 import { IncidentValidationView } from './components/incident-validation-view';
-import { IncidentAssignmentView } from './components/incident-assignment-view';
 import { LoginView } from './components/login-view';
 import { useAuth } from './hooks/use-auth';
 import { useTheme } from './hooks/use-theme';
 
-type AppView = 'login' | 'incidents' | 'assignments';
-
-// Incidencia a validar, indicada en la URL (?incidencia=<uuid>). El backend aún no
-// ofrece un listado de incidencias pendientes para el personal municipal.
 function readIncidentIdFromUrl(): string | null {
-  const value = new URLSearchParams(window.location.search).get('incidencia');
-  return value?.trim() || null;
+  return new URLSearchParams(window.location.search).get('incidencia')?.trim() || null;
 }
 
 function App() {
   const auth = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
-  // Con una sesión guardada se entra directamente al panel, como al reabrir la app móvil.
-  const [currentView, setCurrentView] = useState<AppView>(() => (auth.session ? 'incidents' : 'login'));
   const [logoutNotification, setLogoutNotification] = useState<string | null>(null);
-  const [incidentId] = useState<string | null>(readIncidentIdFromUrl);
+  const [incidentId, setIncidentId] = useState<string | null>(readIncidentIdFromUrl);
+  const [showAssignmentDemo, setShowAssignmentDemo] = useState(false);
+  const [hasEnteredDemo, setHasEnteredDemo] = useState(auth.user?.source === 'mock');
+
+  const handleBack = () => {
+    setIncidentId(null);
+    setShowAssignmentDemo(false);
+  };
 
   const handleLogout = () => {
     auth.logout();
+    handleBack();
+    setHasEnteredDemo(false);
     setLogoutNotification('Sesión cerrada y token eliminado del navegador.');
-    setCurrentView('login');
   };
 
-  const handleLoginSuccess = () => {
-    setLogoutNotification(null);
-    setCurrentView('incidents');
-  };
-
-  if (auth.isRestoringSession && !auth.isAuthenticated) {
+  if (auth.isRestoringSession) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
-        <div className="w-6 h-6 border-2 border-zinc-300 dark:border-zinc-700 border-t-zinc-900 dark:border-t-zinc-100 rounded-full animate-spin" />
+      <div className="flex h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-700 dark:border-t-zinc-100" />
       </div>
     );
   }
 
-  // Sin sesión solo se muestra el login.
-  const view: AppView = auth.isAuthenticated ? currentView : 'login';
+  const user = auth.user;
+  const token = user?.source === 'backend' ? auth.token?.accessToken ?? null : null;
+  const canAssign = user?.role === 'admin' || user?.role === 'administrative';
+  const viewProps = { isDarkMode, onToggleTheme: toggleTheme, onLogout: handleLogout };
 
   return (
-    <main className="min-h-screen w-screen bg-zinc-50 dark:bg-zinc-950 font-sans">
-      {auth.isAuthenticated && (
-        // Selector flotante para alternar entre pantallas en modo desarrollo/evaluación
-        <aside className="fixed bottom-3 left-3 right-3 z-50 flex flex-wrap items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white/95 px-3 py-1.5 text-xs font-semibold shadow-xl backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/95 sm:bottom-4 sm:left-auto sm:right-4 sm:rounded-full">
-          <span className="text-zinc-400 text-[10px] uppercase tracking-wider pl-1.5 pr-1">Módulos:</span>
-          <button
-            type="button"
-            onClick={() => setCurrentView('login')}
-            className={`px-3 py-1 rounded-full transition-all text-xs ${
-              view === 'login'
-                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
-            }`}
-          >
-            Acceso (Login)
-          </button>
-          <button
-            type="button"
-            onClick={() => setCurrentView('incidents')}
-            className={`px-3 py-1 rounded-full transition-all text-xs ${
-              view === 'incidents'
-                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
-            }`}
-          >
-            Validación
-          </button>
-          <button
-            type="button"
-            onClick={() => setCurrentView('assignments')}
-            className={`px-3 py-1 rounded-full transition-all text-xs ${
-              view === 'assignments'
-                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
-            }`}
-          >
-            Asignaciones
-          </button>
-        </aside>
-      )}
-
-      {view === 'login' || !auth.user ? (
+    <main className="min-h-screen bg-zinc-50 font-sans dark:bg-zinc-950">
+      {!user || (user.source === 'mock' && !hasEnteredDemo) ? (
         <LoginView
           auth={auth}
           isDarkMode={isDarkMode}
           onToggleTheme={toggleTheme}
-          onSuccessNavigate={handleLoginSuccess}
+          onSuccessNavigate={() => {
+            setLogoutNotification(null);
+            setHasEnteredDemo(auth.user?.source === 'mock');
+          }}
           logoutNotification={logoutNotification}
           onClearLogoutNotification={() => setLogoutNotification(null)}
         />
-      ) : view === 'assignments' ? (
-        <IncidentAssignmentView
-          incidentId={incidentId}
-          user={auth.user}
-          token={auth.token?.accessToken ?? null}
-          isDarkMode={isDarkMode}
-          onToggleTheme={toggleTheme}
-          onLogout={handleLogout}
-        />
+      ) : incidentId || showAssignmentDemo ? (
+        <>
+          <nav aria-label="Navegación de incidencias" className="flex flex-wrap gap-4 px-4 py-3 text-sm font-semibold text-zinc-700 dark:text-zinc-300 sm:px-6">
+            <button type="button" className="hover:underline" onClick={handleBack}>Volver al listado</button>
+          </nav>
+          {import.meta.env.DEV && showAssignmentDemo ? (
+            <IncidentAssignmentDemo />
+          ) : (
+            <IncidentValidationView key={incidentId} incidentId={incidentId} user={user} token={token} {...viewProps} />
+          )}
+        </>
       ) : (
-        <IncidentValidationView
-          incidentId={incidentId}
-          user={auth.user}
-          token={auth.token?.accessToken ?? null}
-          isDarkMode={isDarkMode}
-          onToggleTheme={toggleTheme}
-          onLogout={handleLogout}
+        <IncidentListView
+          user={user}
+          token={token}
+          onOpenIncident={setIncidentId}
+          onOpenAssignmentDemo={import.meta.env.DEV && canAssign ? () => setShowAssignmentDemo(true) : undefined}
+          {...viewProps}
         />
       )}
     </main>

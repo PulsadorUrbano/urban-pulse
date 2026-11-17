@@ -51,9 +51,9 @@ export interface IncidentSummary {
   createdAt: string;
 }
 
-// Cuerpo de PATCH /incidents/:id/status. El backend obtiene el actor del JWT.
+// Cuerpo de PATCH /incidents/:id/status. El backend obtiene el actor de la sesión.
 export interface ChangeIncidentStatusInput {
-  status: Exclude<IncidentStatus, 'reported'>;
+  status: 'validated' | 'rejected';
   cause: string;
 }
 
