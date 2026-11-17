@@ -3,6 +3,9 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  Logger,
+  UploadedFiles,
+  UseInterceptors,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -14,9 +17,11 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBadGatewayResponse,
   ApiBearerAuth,
   ApiBody,
   ApiConflictResponse,
+  ApiConsumes,
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
@@ -28,6 +33,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { IncidentPriority, IncidentStatus } from '../generated/prisma/enums.js';
 import { CambiarEstadoIncidenciaPipe } from './cambiar-estado-incidencia.pipe.js';
@@ -50,6 +56,11 @@ import {
   type ConsultaListadoIncidencias,
 } from './listar-incidencias.pipe.js';
 import { IncidentsService } from './incidents.service.js';
+import { FotosIncidenciaService } from './services/fotos-incidencia.service.js';
+import {
+  validarFotosIncidencia,
+  type ArchivoFoto,
+} from './validar-fotos-incidencia.js';
 import type { UsuarioIncidencias } from './types/usuario-incidencias.js';
 
 const esquemaPrioridad = {
@@ -98,10 +109,24 @@ const incidentSchema = {
     },
     images: {
       type: 'array',
-      maxItems: 0,
-      items: { type: 'object' },
-      description:
-        'Campo de compatibilidad temporal. Siempre es un array vacío; la API no almacena imágenes.',
+      maxItems: 8,
+      items: {
+        type: 'object',
+        required: ['id', 'url', 'mimeType', 'createdAt'],
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          url: {
+            type: 'string',
+            format: 'uri',
+            description: 'URL de lectura temporal.',
+          },
+          mimeType: {
+            type: 'string',
+            enum: ['image/jpeg', 'image/png', 'image/webp'],
+          },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
     },
     status: { type: 'string', enum: Object.values(IncidentStatus) },
     priority: esquemaPrioridad,
@@ -115,7 +140,12 @@ const incidentSchema = {
 @ApiTags('incidents')
 @Controller('incidents')
 export class IncidentsController {
-  constructor(private readonly incidentsService: IncidentsService) {}
+  private readonly logger = new Logger(IncidentsController.name);
+
+  constructor(
+    private readonly incidentsService: IncidentsService,
+    private readonly fotosService: FotosIncidenciaService,
+  ) {}
 
   @Get('assignment-options')
   @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
@@ -312,6 +342,61 @@ export class IncidentsController {
     return incident;
   }
 
+  @Post(':id/images')
+  @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
+  @SetMetadata('rolesIncidencias', ['civic'])
+  @UseInterceptors(
+    FilesInterceptor('images', 8, {
+      limits: { fileSize: 5 * 1024 * 1024, files: 8, fields: 0, parts: 8 },
+    }),
+  )
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Añadir fotos a una incidencia propia' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['images'],
+      properties: {
+        images: {
+          type: 'array',
+          minItems: 1,
+          maxItems: 8,
+          items: { type: 'string', format: 'binary' },
+        },
+      },
+    },
+  })
+  @ApiCreatedResponse({
+    description: 'Lista completa de fotos con URL temporales de lectura.',
+  })
+  @ApiBadRequestResponse({
+    description: 'Archivo ausente, inválido o superior a 5 MiB.',
+  })
+  @ApiUnauthorizedResponse({ description: 'JWT inválido o ausente.' })
+  @ApiForbiddenResponse({
+    description: 'El usuario no es ciudadano vinculado.',
+  })
+  @ApiNotFoundResponse({ description: 'La incidencia no existe o es ajena.' })
+  @ApiConflictResponse({ description: 'La incidencia ya tiene ocho fotos.' })
+  @ApiBadGatewayResponse({ description: 'S3 no está disponible.' })
+  @ApiServiceUnavailableResponse({
+    description: 'PostgreSQL o la configuración S3 no está disponible.',
+  })
+  subirFotos(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @UploadedFiles() archivos: ArchivoFoto[],
+    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
+  ) {
+    if (!usuario.ciudadanoId)
+      throw new ForbiddenException('Se requiere un ciudadano vinculado');
+    return this.fotosService.subir(
+      id,
+      usuario.ciudadanoId,
+      validarFotosIncidencia(archivos ?? []),
+    );
+  }
+
   @Patch(':id/status')
   @ApiBearerAuth()
   @ApiUnauthorizedResponse({
@@ -348,17 +433,18 @@ export class IncidentsController {
   @ApiServiceUnavailableResponse({
     description: 'PostgreSQL no está disponible.',
   })
-  cambiarEstado(
+  async cambiarEstado(
     @Param('id', new ParseUUIDPipe()) idIncidencia: string,
     @Body(new CambiarEstadoIncidenciaPipe())
     entrada: CambiarEstadoIncidenciaInput,
     @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
   ): Promise<Incident> {
-    return this.incidentsService.cambiarEstado(
+    const incidencia = await this.incidentsService.cambiarEstado(
       idIncidencia,
       entrada,
       usuario.id,
     );
+    return this.responderConFotos(incidencia);
   }
 
   @Patch(':id/priority')
@@ -397,17 +483,18 @@ export class IncidentsController {
   @ApiServiceUnavailableResponse({
     description: 'PostgreSQL no está disponible.',
   })
-  cambiarPrioridad(
+  async cambiarPrioridad(
     @Param('id', new ParseUUIDPipe()) idIncidencia: string,
     @Body(new CambiarPrioridadIncidenciaPipe())
     entrada: CambiarPrioridadIncidenciaInput,
     @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
   ): Promise<Incident> {
-    return this.incidentsService.cambiarPrioridad(
+    const incidencia = await this.incidentsService.cambiarPrioridad(
       idIncidencia,
       entrada,
       usuario.id,
     );
+    return this.responderConFotos(incidencia);
   }
 
   @Patch(':id/assignment')
@@ -446,12 +533,25 @@ export class IncidentsController {
   @ApiServiceUnavailableResponse({
     description: 'PostgreSQL no está disponible.',
   })
-  asignar(
+  async asignar(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body(new AsignarIncidenciaPipe()) cambio: CambioAsignacionIncidencia,
     @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
   ): Promise<Incident> {
-    return this.incidentsService.asignar(id, cambio, usuario.id);
+    const incidencia = await this.incidentsService.asignar(id, cambio, usuario.id);
+    return this.responderConFotos(incidencia);
+  }
+
+  private async responderConFotos(incidencia: Incident): Promise<Incident> {
+    try {
+      return await this.fotosService.agregarA(incidencia);
+    } catch (error) {
+      const motivo = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `No se pudieron adjuntar las fotos de la incidencia ${incidencia.id}: ${motivo}`,
+      );
+      return { ...incidencia, images: [] };
+    }
   }
 
   @Get(':id')
@@ -478,10 +578,12 @@ export class IncidentsController {
   @ApiServiceUnavailableResponse({
     description: 'PostgreSQL no está disponible.',
   })
-  findOne(
+  async findOne(
     @Param('id', new ParseUUIDPipe()) id: string,
     @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
   ): Promise<Incident> {
-    return this.incidentsService.findOne(id, usuario);
+    return this.fotosService.agregarA(
+      await this.incidentsService.findOne(id, usuario),
+    );
   }
 }

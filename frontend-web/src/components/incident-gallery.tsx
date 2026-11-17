@@ -7,9 +7,10 @@ import type { CreatedIncidentImage } from '../types/incident';
 interface IncidentGalleryProps {
   title: string;
   images: CreatedIncidentImage[];
+  onRefreshImages?: () => void;
 }
 
-export function IncidentGallery({ title, images }: IncidentGalleryProps) {
+export function IncidentGallery({ title, images, onRefreshImages }: IncidentGalleryProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
 
@@ -37,6 +38,7 @@ export function IncidentGallery({ title, images }: IncidentGalleryProps) {
             <img
               src={currentImageUrl}
               alt={`Evidencia de la incidencia ${title}`}
+              onError={onRefreshImages}
               className="absolute inset-0 w-full h-full object-contain"
             />
           ) : (
