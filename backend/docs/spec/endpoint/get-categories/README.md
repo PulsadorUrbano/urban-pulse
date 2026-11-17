@@ -18,7 +18,7 @@ Catálogo en memoria del proceso, con IDs generados al inicializarlo. Se reinici
 
 ## Referencias
 
-- [Especificación vigente](../../features/specs/2026-10-21-adaptar-documentacion-registro-incidencias-spec.md).
-- [Plan y confirmación](../../features/plans/2026-10-21-adaptar-documentacion-registro-incidencias-plan.md).
+- [Especificación vigente](../../features/21-10-26-adaptar-documentacion-registro-incidencias/spec.md).
+- [Plan y confirmación](../../features/21-10-26-adaptar-documentacion-registro-incidencias/plan.md).
 - [Controlador](../../../../src/incidents/categories.controller.ts).
 - [Servicio](../../../../src/incidents/categories.service.ts).

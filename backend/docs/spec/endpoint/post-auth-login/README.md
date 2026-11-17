@@ -57,9 +57,9 @@ Las pruebas cubren username/email, contraseña conservada, límites UTF-8, error
 
 ## Referencias
 
-- Especificación: [autenticación de ciudadanía](../../specs/2026-10-25-auth-ciudadania.md).
-- Plan: [plan de implementación](../../plans/2026-10-25-auth-ciudadania-plan.md).
+- Especificación: [autenticación de ciudadanía](../../features/25-10-26-auth-ciudadania/spec.md).
+- Plan: [plan de implementación](../../features/25-10-26-auth-ciudadania/plan.md).
 - Código: `backend/src/auth/auth.controller.ts`, `backend/src/auth/auth.service.ts`, `backend/src/auth/pipes/login.pipe.ts`, `backend/src/auth/dto/login.dto.ts`.
 
-- [Especificación de login](../../features/specs/2026-10-27-completar-login-backend-con-jwt-spec.md).
-- [Plan y confirmación](../../features/plans/2026-10-27-completar-login-backend-con-jwt-plan.md).
+- [Especificación de login](../../features/27-10-26-completar-login-backend-con-jwt/spec.md).
+- [Plan y confirmación](../../features/27-10-26-completar-login-backend-con-jwt/plan.md).

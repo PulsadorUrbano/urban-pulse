@@ -1,26 +1,28 @@
 # Documentación del backend
 
-La documentación se mantiene en backend/docs/. Los cambios nuevos generan una especificación y un plan; las tareas, comprobaciones y confirmación de implementación quedan en ese mismo plan.
+La [guía de organización](spec/README.md) define la estructura compartida con los módulos frontend: una carpeta por funcionalidad con spec.md y plan.md, documentos agrupados de bugs y refactorizaciones, plantillas y notas de sesión.
 
-- [Guía del backend](../AGENTS.md).
-- [Plantilla de especificación](spec/templates/spec-template.md).
-- [Plantilla de plan](spec/templates/plan-template.md).
-- Especificaciones: spec/features/specs/.
-- Planes: spec/features/plans/.
-- [Catálogo de endpoints](spec/endpoint/README.md).
-- ADR: adr/; diagramas: c4/; referencias SQL: migrations/.
-
-Los nombres y títulos nuevos deben incluir fecha AAAA-MM-DD y descripción concreta de la acción. Ejemplo: 2026-10-21-adaptar-documentacion-registro-incidencias-plan.md.
+| Referencia | Contenido |
+| --- | --- |
+| [Guía del backend](../AGENTS.md) | Convenciones y comandos del componente. |
+| [Organización documental](spec/README.md) | Ubicaciones, nombres y flujos de trabajo. |
+| [Funcionalidades](spec/features/) | Especificaciones y planes agrupados por fecha y cambio. |
+| [Bugs pendientes](spec/bugs/todo.md) | Registro de fallos aplazados. |
+| [Refactorizaciones](spec/refactor/) | Cambios estructurales por funcionalidad o independientes. |
+| [Plantillas](spec/templates/) | Especificación, plan, bug y refactor. |
+| [Catálogo de endpoints](spec/endpoint/README.md) | Contratos HTTP y referencias al código. |
+| [Archivo histórico](old/README.md) | Informes anteriores conservados para trazabilidad. |
+| [Diagramas](c4/) y [SQL de referencia](migrations/) | Referencias de arquitectura y datos. |
 
 ## Registro de incidencias
 
-- [Especificación vigente](spec/features/specs/2026-10-21-adaptar-documentacion-registro-incidencias-spec.md).
-- [Plan y confirmación de adaptación](spec/features/plans/2026-10-21-adaptar-documentacion-registro-incidencias-plan.md).
-
-Los documentos anteriores se conservan con una nota de referencia histórica. spec/reports/ contiene informes anteriores; no se crean informes ni archivos de tareas separados para los cambios nuevos. El catálogo documenta el estado leído en el código; no acredita una conexión probada.
+- [Especificación de adaptación](spec/features/21-10-26-adaptar-documentacion-registro-incidencias/spec.md).
+- [Plan y confirmación](spec/features/21-10-26-adaptar-documentacion-registro-incidencias/plan.md).
 
 ## Issue #27: consulta por ciudadano
 
-- [Especificación](spec/features/specs/2026-10-23-consultar-incidencias-por-ciudadano-spec.md).
-- [Plan y confirmación de implementación](spec/features/plans/2026-10-23-consultar-incidencias-por-ciudadano-plan.md).
+- [Especificación](spec/features/23-10-26-consultar-incidencias-por-ciudadano/spec.md).
+- [Plan y confirmación](spec/features/23-10-26-consultar-incidencias-por-ciudadano/plan.md).
 - [Contrato GET /incidents](spec/endpoint/get-incidents/README.md).
+
+Los documentos conservan las decisiones de su fecha. Para conocer los contratos actuales, consultar el catálogo y el código de la rama; la documentación no acredita una conexión probada.

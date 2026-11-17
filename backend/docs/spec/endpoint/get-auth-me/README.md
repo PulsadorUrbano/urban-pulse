@@ -44,9 +44,9 @@ Un fallo devuelve 401 sin publicar request.user. La respuesta usa perfil actual 
 
 ## Referencias
 
-- Especificación: [autenticación de ciudadanía](../../specs/2026-10-25-auth-ciudadania.md).
-- Plan: [plan de implementación](../../plans/2026-10-25-auth-ciudadania-plan.md).
+- Especificación: [autenticación de ciudadanía](../../features/25-10-26-auth-ciudadania/spec.md).
+- Plan: [plan de implementación](../../features/25-10-26-auth-ciudadania/plan.md).
 - Código: `backend/src/auth/auth.controller.ts`, `backend/src/auth/auth.service.ts`, `backend/src/auth/jwt-auth.guard.ts`, `backend/src/auth/current-user.decorator.ts`.
 
-- [Especificación de login](../../features/specs/2026-10-27-completar-login-backend-con-jwt-spec.md).
-- [Plan y confirmación](../../features/plans/2026-10-27-completar-login-backend-con-jwt-plan.md).
+- [Especificación de login](../../features/27-10-26-completar-login-backend-con-jwt/spec.md).
+- [Plan y confirmación](../../features/27-10-26-completar-login-backend-con-jwt/plan.md).
