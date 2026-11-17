@@ -1,6 +1,8 @@
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { IncidentStatusBadge } from '@/components/incident-status-badge';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { type IncidentSummary } from '@/types/incident';
 
 export interface IncidentListItemProps {
@@ -26,14 +28,18 @@ export function IncidentListItem({ incident, onPress }: IncidentListItemProps) {
     <Pressable
       accessibilityRole="button"
       onPress={() => onPress(incident.id)}
-      className="flex-row items-center justify-between rounded-xl bg-white px-4 py-3 active:opacity-70">
-      <View className="flex-1 pr-3">
-        <Text className="text-base font-semibold text-gray-900" numberOfLines={1}>
-          {incident.title}
-        </Text>
-        <Text className="mt-1 text-sm text-gray-500">{formatIncidentDate(incident.createdAt)}</Text>
-      </View>
-      <IncidentStatusBadge status={incident.status} />
+      className="active:opacity-70">
+      <ThemedView type="backgroundElement" className="flex-row items-center justify-between rounded-xl px-4 py-3">
+        <View className="flex-1 pr-3">
+          <ThemedText type="default" style={{ fontWeight: '600' }} numberOfLines={1}>
+            {incident.title}
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={{ fontWeight: '400' }} className="mt-1">
+            {formatIncidentDate(incident.createdAt)}
+          </ThemedText>
+        </View>
+        <IncidentStatusBadge status={incident.status} />
+      </ThemedView>
     </Pressable>
   );
 }

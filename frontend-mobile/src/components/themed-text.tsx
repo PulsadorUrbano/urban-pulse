@@ -4,7 +4,7 @@ import { Fonts, ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextProps = TextProps & {
-  type?: 'default' | 'title' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'linkPrimary' | 'codeSmall' | 'serifTitle';
+  type?: 'default' | 'title' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'serifTitle';
   themeColor?: ThemeColor;
 };
 
@@ -21,8 +21,6 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
         type === 'smallBold' && styles.smallBold,
         type === 'subtitle' && styles.subtitle,
         type === 'link' && styles.link,
-        type === 'linkPrimary' && styles.linkPrimary,
-        type === 'codeSmall' && styles.codeSmall,
         type === 'serifTitle' && styles.serifTitle,
         style,
       ]}
@@ -31,6 +29,9 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
   );
 }
 
+// Se mantiene `StyleSheet` (no NativeWind) para la tipografía: el color del tema va
+// por `style` inline y el `style` del consumidor debe poder sobrescribirlo; mezclar
+// con `className` no garantiza ese orden de prioridad.
 const styles = StyleSheet.create({
   small: {
     fontSize: 14,
@@ -60,16 +61,6 @@ const styles = StyleSheet.create({
   link: {
     lineHeight: 30,
     fontSize: 14,
-  },
-  linkPrimary: {
-    lineHeight: 30,
-    fontSize: 14,
-    color: '#3c87f7',
-  },
-  codeSmall: {
-    fontFamily: Fonts.mono,
-    fontWeight: Platform.select({ android: 700 }) ?? 500,
-    fontSize: 12,
   },
   serifTitle: {
     fontFamily: Fonts.serif,

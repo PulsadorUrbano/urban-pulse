@@ -30,12 +30,12 @@ export function LocationToggle({ isLocationEnabled, onToggle, disabled = false }
       // Color final decidido: fondo negro (#000000) con icono blanco (#ffffff),
       // fijo en ambos temas (light/dark). El fondo va en estilo inline para
       // poder verificarlo en tests (igual que el botón Enviar).
-      style={[{ width: LOCATION_TOGGLE_SIZE, height: LOCATION_TOGGLE_SIZE, backgroundColor: '#000000' }]}>
+      style={{ width: LOCATION_TOGGLE_SIZE, height: LOCATION_TOGGLE_SIZE, backgroundColor: '#000000' }}>
       <MaterialIcons name="location-on" size={TOGGLE_ICON_SIZE} color="#ffffff" />
       {isLocationEnabled ? null : (
         <View pointerEvents="none" className="absolute inset-0 items-center justify-center">
           {/* Línea diagonal (w-12 = 48dp, h-[3px]) que tacha el icono. */}
-          <View className="h-[3px] w-12 -rotate-45 rounded-full bg-gray-800" />
+          <View className="h-[3px] w-12 -rotate-45 rounded-full bg-white" />
         </View>
       )}
     </Pressable>
