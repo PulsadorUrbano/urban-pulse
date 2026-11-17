@@ -5,7 +5,7 @@ import { useColorScheme as useRNColorScheme } from 'react-native';
 const subscribe = () => () => {};
 
 /**
- * To support static rendering, this value needs to be re-calculated on the client side for web
+ * Para soportar el renderizado estático, este valor debe recalcularse en el lado del cliente para web
  */
 export function useColorScheme() {
   // `false` durante el render estático (servidor) y `true` ya en el cliente.
