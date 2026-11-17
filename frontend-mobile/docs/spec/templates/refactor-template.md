@@ -28,7 +28,8 @@
 - [ ] Registrar el comportamiento observado antes del cambio (capturas, pasos manuales o test existente) para poder comparar: {{detalle}}.
 - [ ] Aplicar el refactor.
 - [ ] Confirmar que el comportamiento es el mismo que antes: {{mismos pasos, mismo resultado}}.
-- [ ] `npx expo lint` y `npx tsc --noEmit` sin errores nuevos.
+- [ ] `pnpm expo lint` y `pnpm tsc --noEmit` sin errores nuevos.
+- [ ] `pnpm test` en verde.
 - [ ] Tests existentes en `src/__tests__/` siguen pasando; no se elimina cobertura salvo que el código que cubrían también se elimine.
 
 ## Confirmación

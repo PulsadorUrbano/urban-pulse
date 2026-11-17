@@ -14,7 +14,7 @@
 - Respetar el alcance y los valores exactos de la especificación; no añadir requisitos implícitos.
 - Programar en inglés (identificadores) y documentar en español (comentarios); conservar contratos públicos y nombres exigidos por las dependencias.
 - Mantener TypeScript estricto (cero `any`), estilos solo con NativeWind (`className`) y nunca lógica de negocio dentro de `src/app/` (solo pantallas y `_layout.tsx`).
-- Cualquier dependencia nueva se instala con `npx expo install` (nunca npm/yarn/pnpm/bun add) y requiere aprobación explícita previa.
+- Cualquier dependencia nueva se instala con `pnpm expo install` (nunca con npm/yarn/bun) y requiere aprobación explícita previa.
 - Backend y mock: real-first con fallback a mock, mostrando un aviso claro en pantalla si no hay conexión. Nunca borrar lógica o simulación mock que el backend aún no cubra de forma estable (regla dura: si hay duda, no se borra). No depurar ni arreglar el backend — si falla, reportarlo y continuar.
 - Crear tests en `src/__tests__/<ruta-que-refleja-src>/`, nunca dentro de `src/app/`. No crear ni ejecutar e2e/integración salvo solicitud explícita.
 - Preservar cambios ajenos y la rama acordada. No crear commits ni hacer push salvo petición explícita; no conectar al backend real fuera del alcance solicitado.
@@ -63,9 +63,9 @@ Ejecutar desde frontend-mobile/ para cambios de código o dependencias; marcar n
 
 | Comprobación | Comando | Resultado real |
 | --- | --- | --- |
-| Tests | {{comando si existe runner configurado}} | Pendiente |
-| Typecheck | npx tsc --noEmit | Pendiente |
-| Lint | npx expo lint | Pendiente |
+| Tests | pnpm test | Pendiente |
+| Typecheck | pnpm tsc --noEmit | Pendiente |
+| Lint | pnpm expo lint | Pendiente |
 | Diff, desde la raíz | git diff --check | Pendiente |
 
 - [ ] Revisar que cada criterio de aceptación tiene evidencia y que los tipos y firmas coinciden entre tareas.

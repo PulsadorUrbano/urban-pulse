@@ -34,7 +34,8 @@
 - [ ] Reproducir el fallo antes del cambio y registrar el resultado: {{pasos o comando concreto y resultado observado}}.
 - [ ] Aplicar la corrección.
 - [ ] Confirmar que el síntoma ya no ocurre: {{mismos pasos, resultado esperado}}.
-- [ ] `npx expo lint` y `npx tsc --noEmit` sin errores nuevos.
+- [ ] `pnpm expo lint` y `pnpm tsc --noEmit` sin errores nuevos.
+- [ ] `pnpm test` en verde.
 - [ ] Tests en `src/__tests__/<ruta-que-refleja-src>/` si el bug es cubrible con un test (no crear tests solo para registrar texto).
 
 ## Confirmación
