@@ -22,6 +22,13 @@ export interface CreateIncidentInput {
 
 export type CrearIncidenciaBody = Omit<CreateIncidentInput, 'civicId'>;
 
+export interface ImagenIncidencia {
+  id: string;
+  url: string;
+  mimeType: string;
+  createdAt: string;
+}
+
 export interface Incident {
   id: string;
   title: string;
@@ -40,7 +47,7 @@ export interface Incident {
     createdAt: string;
     address: IncidentAddress | null;
   };
-  images: [];
+  images: ImagenIncidencia[];
   status: PrismaIncident['status'];
   priority: PrismaIncident['priority'];
   createdAt: string;

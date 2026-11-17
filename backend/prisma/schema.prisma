@@ -67,6 +67,7 @@ model Incident {
   cambiosEstado     CambioEstado[]
   cambiosPrioridad  CambioPrioridad[]
   cambiosAsignacion CambioAsignacion[]
+  images            IncidentImage[]
 
   @@index([departmentId])
   @@index([civicId, createdAt, id])
@@ -168,6 +169,16 @@ model UrbanContext {
   demography  Int?
 }
 
+model IncidentImage {
+  id         String   @id @default(uuid()) @db.Uuid
+  incidentId String   @db.Uuid
+  objectKey  String   @unique
+  mimeType   String
+  createdAt  DateTime @default(now())
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Restrict)
+
+  @@index([incidentId])
+}
 model CambioEstado {
   id            String         @id @default(uuid()) @db.Uuid
   incidenciaId  String         @map("incident_id") @db.Uuid

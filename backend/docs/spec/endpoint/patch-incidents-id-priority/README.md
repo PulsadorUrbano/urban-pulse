@@ -14,7 +14,7 @@
 }
 ```
 
-Solo admite incidencias `validated`. La prioridad y `CambioPrioridad` se escriben en una misma transacción Prisma, con `esManual=true`, el usuario autenticado, UUID y fecha de servidor. El servicio dispone además de una operación interna para cambios automáticos con `esManual=false` y sin usuario; no tiene ruta HTTP pública. Responde 200 con el recurso completo; no expone historial ni actor. Errores: 400 entrada inválida; 401 JWT inválido; 403 rol no permitido; 404 incidencia ausente; 409 estado incompatible; 503 fallo de PostgreSQL.
+Solo admite incidencias `validated`. La prioridad y `CambioPrioridad` se escriben en una misma transacción Prisma, con `esManual=true`, el usuario autenticado, UUID y fecha de servidor. El servicio dispone además de una operación interna para cambios automáticos con `esManual=false` y sin usuario; no tiene ruta HTTP pública. Responde 200 con el recurso completo y fotos con URL temporales; no expone historial ni actor. Si falla la lectura o firma de fotos, conserva el cambio con `images: []` y registra el fallo. Errores: 400 entrada inválida; 401 JWT inválido; 403 rol no permitido; 404 incidencia ausente; 409 estado incompatible; 503 fallo de PostgreSQL.
 
 ## Referencias
 

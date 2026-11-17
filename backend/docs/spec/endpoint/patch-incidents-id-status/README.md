@@ -1,8 +1,14 @@
 # PATCH /incidents/:id/status
 
-JWT obligatorio. JSON con status y cause no vacío, sin otros campos.
-Transiciones y permisos: reported a validated/rejected por administración; assigned a in_progress y de ahí a resolved por el técnico asignado; resolved a closed/reopened por administración o departamento propio; closed a reopened por administración.
-La entrada en assigned se realiza mediante PATCH assignment, también desde reopened. rejected es terminal.
-El motivo describe la intervención al resolver. Escritura atómica con historial y control de concurrencia. 200 devuelve el recurso.
-Errores: 400 entrada inválida, 401 identidad inválida, 403 actor sin permiso, 404 ausente, 409 transición o concurrencia incompatible, 503 persistencia.
-Última revisión: 2026-11-17.
+- Estado: implementado; JWT obligatorio.
+- Última revisión: 2026-11-17.
+
+El JSON admite exactamente `status` y `cause` no vacío. Administración puede pasar `reported` a `validated` o `rejected`; el técnico asignado puede pasar `assigned` a `in_progress` y después a `resolved`; administración o el departamento propio pueden pasar `resolved` a `closed` o `reopened`; administración puede pasar `closed` a `reopened`. La entrada en `assigned` se hace mediante PATCH assignment, también desde `reopened`. `rejected` es terminal.
+
+El estado y su historial se escriben atómicamente con el actor autenticado y control de concurrencia. La respuesta 200 contiene la incidencia y las fotos con URL temporales. Si falla su lectura o firma, conserva el cambio con `images: []` y registra el fallo. Errores: 400 entrada inválida; 401 identidad inválida; 403 actor sin permiso; 404 ausente; 409 transición o concurrencia incompatible; 503 persistencia.
+
+## Referencias
+
+- [Controlador](../../../../src/incidents/incidents.controller.ts).
+- [Validación](../../../../src/incidents/cambiar-estado-incidencia.pipe.ts).
+- [Servicio](../../../../src/incidents/incidents.service.ts).
