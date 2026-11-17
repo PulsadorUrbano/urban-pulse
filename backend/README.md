@@ -57,7 +57,7 @@ El frontend móvil aún usa el contrato anterior de multipart y `civicId`; la in
 | `POST /auth/register` | Registrar un ciudadano. |
 | `POST /auth/login` | Iniciar sesión y obtener un JWT. |
 | `GET /auth/me` | Consultar el usuario autenticado mediante un token Bearer. |
-| `GET /categories` | Consultar el catálogo temporal de categorías. |
+| `GET /categories` | Consultar el catálogo persistido de categorías. |
 | `POST /incidents` | Crear una incidencia con `multipart/form-data`. |
 | `GET /incidents` | Listar incidencias con cursor en cabeceras (`limit` por defecto 10, máximo 100) y filtro opcional `civicId`. |
 | `GET /incidents/:id` | Consultar una incidencia. |
@@ -104,7 +104,7 @@ La configuración unitaria descubre `**/*.spec.ts` y la e2e `**/*.e2e-spec.ts`.
 
 Los usuarios y ciudadanos se almacenan en PostgreSQL mediante Prisma. Las contraseñas se guardan con hash bcrypt. El esquema `prisma/schema.prisma` también define incidencias, ubicaciones y cambios de estado y prioridad.
 
-`IncidentsService` usa operaciones asíncronas de Prisma para incidencias, ubicaciones e historiales. La creación y los cambios auditados usan transacciones. No existe almacenamiento local ni remoto de imágenes, ni ruta de descarga; la migración `20261109000000_retirar_imagenes` elimina la tabla anterior. El catálogo de categorías sigue siendo temporal. El esquema local debe estar preparado; no se aplican migraciones automáticamente salvo que `DB_SYNC=deploy` se configure expresamente.
+`IncidentsService` usa operaciones asíncronas de Prisma para incidencias, ubicaciones e historiales. La creación y los cambios auditados usan transacciones. No existe almacenamiento local ni remoto de imágenes, ni ruta de descarga; la migración `20261109000000_retirar_imagenes` elimina la tabla anterior. La migración `20261117000000_model_integrity` crea categorías, activos urbanos, direcciones y contextos urbanos persistentes, amplía los estados y añade restricciones de integridad. Retira filas históricas de ubicación completamente vacías y se detiene ante otros datos incompatibles para corregirlos antes de desplegarla. El esquema local debe estar preparado; no se aplican migraciones automáticamente salvo que `DB_SYNC=deploy` se configure expresamente.
 
 El [DBML](../database/diagram.dbml) y el [SQL de referencia](docs/migrations/001_base_diagram.sql) describen el modelo de datos del proyecto.
 
