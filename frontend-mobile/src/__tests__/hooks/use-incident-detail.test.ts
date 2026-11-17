@@ -17,9 +17,7 @@ jest.mock('@/services/incident.service', () => {
   };
 });
 
-const mockedFetchIncidentById = fetchIncidentById as jest.MockedFunction<
-  typeof fetchIncidentById
->;
+const mockedFetchIncidentById = jest.mocked(fetchIncidentById);
 
 const incidentFixture: IncidentDetail = {
   id: '42',
@@ -250,5 +248,57 @@ describe('useIncidentDetail', () => {
     });
 
     expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it('una respuesta antigua tras cambiar el id no pisa el resultado de la petición nueva', async () => {
+    const firstLoad = createDeferred<FetchIncidentDetailResult>();
+    const secondLoad = createDeferred<FetchIncidentDetailResult>();
+    const secondIncident: IncidentDetail = { ...incidentFixture, id: '43', title: 'Farola rota' };
+    mockedFetchIncidentById
+      .mockReturnValueOnce(firstLoad.promise)
+      .mockReturnValueOnce(secondLoad.promise);
+
+    const { result, rerender } = await renderHook(
+      ({ id }: { id: string }) => useIncidentDetail(id),
+      { initialProps: { id: '42' } },
+    );
+    await act(() => {
+      rerender({ id: '43' });
+    });
+
+    await act(async () => {
+      secondLoad.resolve({ incident: secondIncident, source: 'backend' });
+    });
+    await act(async () => {
+      firstLoad.resolve(mockResultFixture);
+    });
+
+    expect(result.current.incident).toEqual(secondIncident);
+    expect(result.current.backendFallbackNotice).toBeNull();
+  });
+
+  it('una respuesta antigua tras reload() no pisa el resultado de la recarga', async () => {
+    const firstLoad = createDeferred<FetchIncidentDetailResult>();
+    const secondLoad = createDeferred<FetchIncidentDetailResult>();
+    const reloadedIncident: IncidentDetail = { ...incidentFixture, title: 'Recargada' };
+    mockedFetchIncidentById
+      .mockReturnValueOnce(firstLoad.promise)
+      .mockReturnValueOnce(secondLoad.promise);
+
+    const { result } = await renderHook(() => useIncidentDetail('42'));
+    await act(() => {
+      result.current.reload();
+    });
+
+    await act(async () => {
+      secondLoad.resolve({ incident: reloadedIncident, source: 'backend' });
+    });
+    await act(async () => {
+      firstLoad.reject(new Error('Fallo antiguo.'));
+    });
+
+    expect(result.current.incident).toEqual(reloadedIncident);
+    expect(result.current.errorMessage).toBeNull();
+    expect(result.current.isLoading).toBe(false);
   });
 });

@@ -5,10 +5,6 @@ import { CountryCodePicker, type CountryCodePickerProps } from '@/components/cou
 import { COUNTRIES, DEFAULT_COUNTRY } from '@/constants/countries';
 import type { Country } from '@/types/country';
 
-// El tema importa `global.css` (Tailwind) que Jest no puede transformar;
-// se sustituye por un módulo vacío solo en el entorno de test.
-jest.mock('@/global.css', () => ({}));
-
 const FRANCE_COUNTRY: Country = COUNTRIES[1];
 const PORTUGAL_COUNTRY: Country = COUNTRIES[2];
 

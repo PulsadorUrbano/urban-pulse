@@ -56,7 +56,7 @@ const tokenFixture: AuthToken = { accessToken: 'token-abc', source: 'backend' };
 const mockLoginResultFixture: LoginResult = { user: userFixture, token: tokenFixture, source: 'mock' };
 const backendLoginResultFixture: LoginResult = { user: userFixture, token: tokenFixture, source: 'backend' };
 
-const inputFixture: LoginUserInput = { username_email: 'ana', password: 'secreto' };
+const inputFixture: LoginUserInput = { usernameOrEmail: 'ana', password: 'secreto' };
 
 async function renderLoginHook() {
   const renderResult = await renderHook(() => useLogin());

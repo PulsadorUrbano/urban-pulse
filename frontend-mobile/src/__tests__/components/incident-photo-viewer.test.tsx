@@ -1,14 +1,10 @@
 /// <reference types="jest" />
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
+import { Dimensions, StyleSheet } from 'react-native';
 
 import { IncidentPhotoViewer } from '@/components/incident-photo-viewer';
 import type { CreatedIncidentImage } from '@/types/incident';
-
-// El tema importa `global.css` (Tailwind) que Jest no puede transformar;
-// se sustituye por un módulo vacío solo en el entorno de test (mismo patrón
-// que `photo-picker.test.tsx`).
-jest.mock('@/global.css', () => ({}));
 
 // `expo-image` renderiza una vista nativa (`ViewManagerAdapter_ExpoImage`) que
 // RNTL no considera accesible, por lo que `getAllByRole('image')` no la encuentra
@@ -37,6 +33,12 @@ function buildIncidentImage(index: number): CreatedIncidentImage {
     mimeType: 'image/jpeg',
     createdAt: '2026-10-24T10:00:00.000Z',
   };
+}
+
+// Simula el primer layout del contenedor con el ancho indicado.
+async function layoutViewer(width: number) {
+  const container = screen.getByTestId('incident-photo-viewer');
+  await fireEvent(container, 'layout', { nativeEvent: { layout: { width, height: 240, x: 0, y: 0 } } });
 }
 
 describe('IncidentPhotoViewer', () => {
@@ -69,5 +71,20 @@ describe('IncidentPhotoViewer', () => {
 
     expect(screen.queryAllByRole('image')).toHaveLength(0);
     expect(screen.getByText('Sin fotos adjuntas')).toBeOnTheScreen();
+  });
+
+  it('antes del layout renderiza las imágenes con el ancho de la ventana', async () => {
+    await render(<IncidentPhotoViewer images={[buildIncidentImage(1)]} />);
+
+    const imageStyle = StyleSheet.flatten(screen.getAllByRole('image')[0].props.style);
+    expect(imageStyle.width).toBe(Dimensions.get('window').width);
+  });
+
+  it('tras el layout cada página usa el ancho medido del contenedor, no el de la ventana', async () => {
+    await render(<IncidentPhotoViewer images={[buildIncidentImage(1)]} />);
+    await layoutViewer(320);
+
+    const imageStyle = StyleSheet.flatten(screen.getAllByRole('image')[0].props.style);
+    expect(imageStyle.width).toBe(320);
   });
 });

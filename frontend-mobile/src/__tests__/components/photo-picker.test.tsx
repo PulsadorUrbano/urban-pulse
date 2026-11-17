@@ -9,14 +9,6 @@ import {
 } from '@/components/photo-picker';
 import { MAX_SELECTED_PHOTOS } from '@/hooks/use-photo-attachment';
 
-// El tema importa `global.css` (Tailwind) que Jest no puede transformar;
-// se sustituye por un módulo vacío solo en el entorno de test.
-jest.mock('@/global.css', () => ({}));
-
-// Evita cargar la fuente del icono en el entorno de test (mismo patrón
-// que `location-toggle.test.tsx`).
-jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');
-
 const cameraPhotoUri = 'file:///photos/incident-1.jpg';
 const libraryPhotoUri = 'file:///photos/library-2.jpg';
 
@@ -265,7 +257,7 @@ describe('PhotoPicker', () => {
 
     // Al alcanzar el límite se informa en rojo y desaparece el recuadro de
     // añadir de la fila.
-    expect(screen.getByText('El número máximo de imágenes son 8')).toBeOnTheScreen();
+    expect(screen.getByText('El número máximo de imágenes es 8')).toBeOnTheScreen();
     expect(screen.queryByLabelText('Añadir imagen')).not.toBeOnTheScreen();
 
     // Las ocho miniaturas siguen presentes.

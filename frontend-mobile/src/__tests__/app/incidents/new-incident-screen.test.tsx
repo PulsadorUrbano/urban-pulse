@@ -34,14 +34,6 @@ import type { SessionUser } from '@/types/user';
 // pantalla ya no persiste imágenes por separado.
 // ---------------------------------------------------------------------------
 
-// El tema importa `global.css` (Tailwind) que Jest no puede transformar;
-// se sustituye por un módulo vacío solo en el entorno de test.
-jest.mock('@/global.css', () => ({}));
-
-// Evita cargar la fuente del icono en el entorno de test (mismo patrón
-// que `photo-picker.test.tsx` y `location-toggle.test.tsx`).
-jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');
-
 // La pantalla usa `router.back()` desde la confirmación y `<Redirect>` cuando
 // no hay sesión. `Redirect` se sustituye por un stub que pinta el `href`, para
 // distinguir "se redirigió a /login" por contenido visible.

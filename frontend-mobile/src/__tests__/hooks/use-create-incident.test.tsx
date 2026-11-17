@@ -13,7 +13,7 @@ jest.mock('@/services/incident.service', () => ({
   createIncident: jest.fn(),
 }));
 
-const mockedCreateIncident = createIncident as jest.MockedFunction<typeof createIncident>;
+const mockedCreateIncident = jest.mocked(createIncident);
 
 // Civic ID de fixture que representa la sesión activa en los casos felices.
 const TEST_CIVIC_ID = 'civic-123';

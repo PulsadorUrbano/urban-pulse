@@ -24,14 +24,6 @@ import type { User } from '@/types/user';
 // `SessionProvider` corren con su implementación real.
 // ---------------------------------------------------------------------------
 
-// El tema importa `global.css` (Tailwind) que Jest no puede transformar;
-// se sustituye por un módulo vacío solo en el entorno de test.
-jest.mock('@/global.css', () => ({}));
-
-// Evita cargar la fuente del icono en el entorno de test (mismo patrón
-// que `new-incident-screen.test.tsx`).
-jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');
-
 // La pantalla usa `router.push` (registrar incidencia), `router.replace`
 // (cierre de sesión) y el componente `Redirect` cuando no hay usuario.
 // `Redirect` debe existir en el stub: HomeScreen lo renderiza tras cerrar sesión.
