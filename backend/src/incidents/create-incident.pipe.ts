@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
+import { AddressDistrict } from '../generated/prisma/enums.js';
 import type { CrearIncidenciaBody } from './incident.js';
 
 const allowedKeys = new Set([
@@ -10,6 +11,7 @@ const allowedKeys = new Set([
   'longitude',
   'accuracy',
   'urbanAssetId',
+  'address',
 ]);
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -35,6 +37,11 @@ export class CreateIncidentPipe implements PipeTransform<
       value.description === undefined
         ? undefined
         : this.text(value.description, 'description');
+    if (description !== undefined && Array.from(description).length < 10) {
+      throw new BadRequestException(
+        'description requiere al menos 10 caracteres',
+      );
+    }
     const category =
       value.category === undefined
         ? undefined
@@ -62,6 +69,47 @@ export class CreateIncidentPipe implements PipeTransform<
       value.accuracy === undefined
         ? undefined
         : this.number(value.accuracy, 'accuracy', 0);
+    if ((latitude === undefined) !== (longitude === undefined)) {
+      throw new BadRequestException(
+        'latitude y longitude deben enviarse juntas',
+      );
+    }
+    if (accuracy !== undefined && latitude === undefined) {
+      throw new BadRequestException('accuracy requiere coordenadas');
+    }
+
+    let address: CrearIncidenciaBody['address'];
+    if (value.address !== undefined) {
+      if (latitude === undefined || !this.isRecord(value.address)) {
+        throw new BadRequestException(
+          'address requiere coordenadas y un objeto',
+        );
+      }
+      const fields = Object.keys(value.address);
+      if (
+        fields.length !== 3 ||
+        fields.some(
+          (field) => !['street', 'zipCode', 'district'].includes(field),
+        )
+      ) {
+        throw new BadRequestException(
+          'address debe contener street, zipCode y district',
+        );
+      }
+      const street = this.text(value.address.street, 'address.street');
+      const zipCode = value.address.zipCode;
+      const district = value.address.district;
+      if (
+        !street ||
+        typeof zipCode !== 'string' ||
+        !/^[0-9]{5}$/.test(zipCode) ||
+        typeof district !== 'string' ||
+        !Object.values(AddressDistrict).includes(district as AddressDistrict)
+      ) {
+        throw new BadRequestException('address no es válida');
+      }
+      address = { street, zipCode, district: district as AddressDistrict };
+    }
 
     if (value.urbanAssetId !== undefined) {
       this.uuid(value.urbanAssetId, 'urbanAssetId');
@@ -77,6 +125,7 @@ export class CreateIncidentPipe implements PipeTransform<
       ...(latitude === undefined ? {} : { latitude }),
       ...(longitude === undefined ? {} : { longitude }),
       ...(accuracy === undefined ? {} : { accuracy }),
+      ...(address === undefined ? {} : { address }),
       ...(value.urbanAssetId === undefined
         ? {}
         : { urbanAssetId: value.urbanAssetId }),

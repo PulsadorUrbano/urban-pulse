@@ -65,12 +65,67 @@ describe('CreateIncidentPipe', () => {
   });
 
   it('accepts omitted latitude and longitude', () => {
-    const { latitude: _latitude, longitude: _longitude, ...value } = input();
+    const {
+      latitude: _latitude,
+      longitude: _longitude,
+      accuracy: _accuracy,
+      ...value
+    } = input();
 
     const result = pipe.transform(value);
     expect(result.title).toBe('Farola apagada');
     expect(result).not.toHaveProperty('latitude');
     expect(result).not.toHaveProperty('longitude');
+  });
+
+  it('rechaza una coordenada aislada', () => {
+    const { longitude: _longitude, ...value } = input();
+    expect(() => pipe.transform(value)).toThrow(BadRequestException);
+  });
+
+  it('acepta una dirección normalizada asociada a coordenadas', () => {
+    expect(
+      pipe.transform({
+        ...input(),
+        address: {
+          street: '  Calle Larios  ',
+          zipCode: '29005',
+          district: 'centro',
+        },
+      }),
+    ).toMatchObject({
+      address: { street: 'Calle Larios', zipCode: '29005', district: 'centro' },
+    });
+  });
+
+  it('rechaza direcciones incompletas o sin coordenadas', () => {
+    expect(() =>
+      pipe.transform({
+        ...input(),
+        address: { street: 'Calle Larios', zipCode: '29005' },
+      }),
+    ).toThrow(BadRequestException);
+    const {
+      latitude: _latitude,
+      longitude: _longitude,
+      ...sinCoordenadas
+    } = input();
+    expect(() =>
+      pipe.transform({
+        ...sinCoordenadas,
+        address: {
+          street: 'Calle Larios',
+          zipCode: '29005',
+          district: 'centro',
+        },
+      }),
+    ).toThrow(BadRequestException);
+  });
+
+  it('rechaza una descripción demasiado corta', () => {
+    expect(() => pipe.transform({ ...input(), description: 'Corta' })).toThrow(
+      BadRequestException,
+    );
   });
 
   it('accepts an omitted categoryId and category', () => {

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   NotFoundException,
   ServiceUnavailableException,
@@ -67,6 +68,78 @@ describe('IncidentsService', () => {
       priority: 'low',
     });
     expect(await service.findOne(created.id, propietario)).toEqual(created);
+    await module.close();
+  });
+
+  it('no crea una ubicación vacía cuando no llegan coordenadas', async () => {
+    const module = await crearServicio();
+    const created = await service.create({
+      title: 'Farola apagada',
+      civicId: input.civicId,
+    });
+
+    expect(prisma.ubicaciones).toHaveLength(0);
+    expect(created.location).toMatchObject({
+      latitude: null,
+      longitude: null,
+      accuracy: null,
+    });
+    await module.close();
+  });
+
+  it('rechaza una categoría inexistente sin guardar la incidencia', async () => {
+    const module = await crearServicio(
+      crearPrismaIncidenciasFake({ categoriaInexistente: true }),
+    );
+    await expect(service.create(input)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    expect(prisma.incidencias).toHaveLength(0);
+    await module.close();
+  });
+
+  it('rechaza un activo urbano inexistente sin guardar la incidencia', async () => {
+    const module = await crearServicio(
+      crearPrismaIncidenciasFake({ activoInexistente: true }),
+    );
+    await expect(
+      service.create({ ...input, urbanAssetId: randomUUID() }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.incidencias).toHaveLength(0);
+    await module.close();
+  });
+
+  it('enlaza una categoría indicada solo por nombre', async () => {
+    const module = await crearServicio();
+    const created = await service.create({
+      title: 'Farola apagada',
+      civicId: input.civicId,
+      category: 'Iluminación',
+    });
+    expect(created.categoryId).toBe('10000000-0000-4000-8000-000000000001');
+    expect(created.category).toBe('Iluminación');
+    await module.close();
+  });
+
+  it('guarda una dirección normalizada con la ubicación', async () => {
+    const module = await crearServicio();
+    const created = await service.create({
+      title: 'Farola apagada',
+      civicId: input.civicId,
+      latitude: 36.7213,
+      longitude: -4.4214,
+      address: {
+        street: 'Calle Larios',
+        zipCode: '29005',
+        district: 'centro',
+      },
+    });
+
+    expect(created.location.address).toEqual({
+      street: 'Calle Larios',
+      zipCode: '29005',
+      district: 'centro',
+    });
     await module.close();
   });
 

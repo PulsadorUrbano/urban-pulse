@@ -11,6 +11,7 @@ import { randomUUID } from 'node:crypto';
 import type {
   CambioEstadoModel,
   CambioPrioridadModel,
+  AddressModel,
   IncidentModel as PrismaIncident,
   IncidentLocationModel as PrismaIncidentLocation,
 } from '../generated/prisma/models.js';
@@ -27,13 +28,14 @@ import type {
   ResumenIncidencia,
 } from './incident.js';
 import type { UsuarioIncidencias } from './types/usuario-incidencias.js';
+import { normalizeCategoryName } from './category.js';
 
 const incluirAgregado = {
-  location: true,
+  location: { include: { address: true } },
 };
 
 type IncidenciaConAgregado = PrismaIncident & {
-  location: PrismaIncidentLocation | null;
+  location: (PrismaIncidentLocation & { address: AddressModel | null }) | null;
 };
 
 @Injectable()
@@ -43,32 +45,103 @@ export class IncidentsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(input: CreateIncidentInput): Promise<Incident> {
+    let nombreCategoria = input.category?.trim() || null;
+    try {
+      if (input.categoryId) {
+        const categoria = await this.prisma.category.findUnique({
+          where: { id: input.categoryId.toLowerCase() },
+          select: { name: true },
+        });
+        if (!categoria) {
+          throw new BadRequestException('categoryId no existe');
+        }
+        if (
+          nombreCategoria &&
+          normalizeCategoryName(nombreCategoria) !==
+            normalizeCategoryName(categoria.name)
+        ) {
+          throw new BadRequestException('category no coincide con categoryId');
+        }
+        nombreCategoria = categoria.name;
+      }
+      if (input.urbanAssetId) {
+        const activo = await this.prisma.urbanAsset.findUnique({
+          where: { id: input.urbanAssetId.toLowerCase() },
+          select: { id: true },
+        });
+        if (!activo) {
+          throw new BadRequestException('urbanAssetId no existe');
+        }
+      }
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw this.errorPersistencia('validar los catálogos de la incidencia');
+    }
     const id = randomUUID();
     const createdAt = new Date();
+    const ubicacion =
+      input.latitude === undefined || input.longitude === undefined
+        ? null
+        : {
+            latitude: input.latitude,
+            longitude: input.longitude,
+            accuracy: input.accuracy ?? null,
+            createdAt,
+          };
     const datos = {
       id,
       title: input.title,
       description: input.description ?? null,
       civicId: input.civicId.toLowerCase(),
       categoryId: input.categoryId?.toLowerCase() ?? null,
-      category: input.category?.trim() || null,
+      category: nombreCategoria,
       urbanAssetId: input.urbanAssetId?.toLowerCase() ?? null,
       createdAt,
-      location: {
-        create: {
-          latitude: input.latitude ?? null,
-          longitude: input.longitude ?? null,
-          accuracy: input.accuracy ?? null,
-          createdAt,
-        },
-      },
     };
 
     let creada: IncidenciaConAgregado;
     try {
-      creada = await this.prisma.$transaction((tx) =>
-        tx.incident.create({ data: datos, include: incluirAgregado }),
-      );
+      creada = await this.prisma.$transaction(async (tx) => {
+        const addressId = input.address
+          ? (
+              await tx.address.upsert({
+                where: {
+                  street_zipCode_district: input.address,
+                },
+                update: {},
+                create: input.address,
+              })
+            ).id
+          : null;
+        if (!datos.categoryId && datos.category) {
+          const categoria = await tx.category.upsert({
+            where: { normalizedName: normalizeCategoryName(datos.category) },
+            update: {},
+            create: {
+              name: datos.category,
+              normalizedName: normalizeCategoryName(datos.category),
+            },
+          });
+          datos.categoryId = categoria.id;
+          datos.category = categoria.name;
+        }
+        return tx.incident.create({
+          data: {
+            ...datos,
+            ...(ubicacion
+              ? {
+                  location: {
+                    create: {
+                      ...ubicacion,
+                      ...(addressId ? { addressId } : {}),
+                    },
+                  },
+                }
+              : {}),
+          },
+          include: incluirAgregado,
+        });
+      });
     } catch {
       // Un fallo de commit puede dejar la transacción confirmada. Consultar antes de informar del error.
       try {
@@ -422,6 +495,22 @@ export class IncidentsService {
     entrada: CambiarPrioridadIncidenciaInput,
     idActor: string,
   ): Promise<Incident> {
+    return this.guardarCambioPrioridad(idIncidencia, entrada, idActor, true);
+  }
+
+  async cambiarPrioridadAutomatica(
+    idIncidencia: string,
+    entrada: CambiarPrioridadIncidenciaInput,
+  ): Promise<Incident> {
+    return this.guardarCambioPrioridad(idIncidencia, entrada, null, false);
+  }
+
+  private async guardarCambioPrioridad(
+    idIncidencia: string,
+    entrada: CambiarPrioridadIncidenciaInput,
+    idActor: string | null,
+    esManual: boolean,
+  ): Promise<Incident> {
     if (
       !['low', 'medium', 'high'].includes(entrada.priority) ||
       !entrada.cause.trim()
@@ -434,10 +523,10 @@ export class IncidentsService {
     const cambio: CambioPrioridadModel = {
       id: randomUUID(),
       incidenciaId: id,
-      actorId: idActor.toLowerCase(),
+      actorId: idActor?.toLowerCase() ?? null,
       nuevaPrioridad: entrada.priority,
       motivo: entrada.cause.trim(),
-      esManual: true,
+      esManual,
       fechaCreacion: new Date(),
     };
 
@@ -529,6 +618,13 @@ export class IncidentsService {
         createdAt: (
           incident.location?.createdAt ?? incident.createdAt
         ).toISOString(),
+        address: incident.location?.address
+          ? {
+              street: incident.location.address.street,
+              zipCode: incident.location.address.zipCode,
+              district: incident.location.address.district,
+            }
+          : null,
       },
       images: [],
     };

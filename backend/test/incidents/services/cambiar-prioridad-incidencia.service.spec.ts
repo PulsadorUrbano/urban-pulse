@@ -82,6 +82,24 @@ describe('Asignación manual de prioridad', () => {
     ]);
   });
 
+  it('registra una decisión automática sin usuario y sin marcarla como manual', async () => {
+    const validada = await crearValidada();
+    await servicio.cambiarPrioridadAutomatica(validada.id, {
+      priority: 'high',
+      cause: 'Clasificación automática',
+    });
+
+    await expect(
+      servicio.consultarCambiosPrioridad(validada.id),
+    ).resolves.toMatchObject([
+      {
+        nuevaPrioridad: 'high',
+        actorId: null,
+        esManual: false,
+      },
+    ]);
+  });
+
   it.each(['reported', 'rejected'] as const)(
     'bloquea una incidencia en estado %s',
     async (status) => {

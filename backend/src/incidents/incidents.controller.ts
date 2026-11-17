@@ -29,7 +29,11 @@ import {
 } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
-import { IncidentPriority, IncidentStatus } from '../generated/prisma/enums.js';
+import {
+  AddressDistrict,
+  IncidentPriority,
+  IncidentStatus,
+} from '../generated/prisma/enums.js';
 import { CambiarEstadoIncidenciaPipe } from './cambiar-estado-incidencia.pipe.js';
 import { CambiarPrioridadIncidenciaPipe } from './cambiar-prioridad-incidencia.pipe.js';
 import { AsignarIncidenciaPipe } from './asignar-incidencia.pipe.js';
@@ -88,12 +92,22 @@ const incidentSchema = {
     urbanAssetId: { type: 'string', format: 'uuid', nullable: true },
     location: {
       type: 'object',
-      required: ['latitude', 'longitude', 'accuracy', 'createdAt'],
+      required: ['latitude', 'longitude', 'accuracy', 'createdAt', 'address'],
       properties: {
         latitude: { type: 'number', nullable: true },
         longitude: { type: 'number', nullable: true },
         accuracy: { type: 'number', nullable: true },
         createdAt: { type: 'string', format: 'date-time' },
+        address: {
+          type: 'object',
+          nullable: true,
+          required: ['street', 'zipCode', 'district'],
+          properties: {
+            street: { type: 'string' },
+            zipCode: { type: 'string', pattern: '^[0-9]{5}$' },
+            district: { type: 'string', enum: Object.values(AddressDistrict) },
+          },
+        },
       },
     },
     images: {
@@ -253,13 +267,23 @@ export class IncidentsController {
       required: ['title'],
       properties: {
         title: { type: 'string', minLength: 4, maxLength: 35 },
-        description: { type: 'string' },
+        description: { type: 'string', minLength: 10 },
         categoryId: { type: 'string', format: 'uuid' },
         category: { type: 'string' },
         latitude: { type: 'number', minimum: -90, maximum: 90 },
         longitude: { type: 'number', minimum: -180, maximum: 180 },
         accuracy: { type: 'number', minimum: 0 },
         urbanAssetId: { type: 'string', format: 'uuid' },
+        address: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['street', 'zipCode', 'district'],
+          properties: {
+            street: { type: 'string', minLength: 1 },
+            zipCode: { type: 'string', pattern: '^[0-9]{5}$' },
+            district: { type: 'string', enum: Object.values(AddressDistrict) },
+          },
+        },
       },
     },
   })

@@ -5,5 +5,5 @@ export interface Category {
 }
 
 export function normalizeCategoryName(name: string): string {
-  return name.trim().toLocaleLowerCase();
+  return name.trim().toLowerCase();
 }

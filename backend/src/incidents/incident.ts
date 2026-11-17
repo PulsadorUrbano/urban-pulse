@@ -1,4 +1,11 @@
 import type { IncidentModel as PrismaIncident } from '../generated/prisma/models.js';
+import type { AddressDistrict } from '../generated/prisma/enums.js';
+
+export interface IncidentAddress {
+  street: string;
+  zipCode: string;
+  district: AddressDistrict;
+}
 
 export interface CreateIncidentInput {
   title: string;
@@ -10,6 +17,7 @@ export interface CreateIncidentInput {
   longitude?: number;
   accuracy?: number;
   urbanAssetId?: string;
+  address?: IncidentAddress;
 }
 
 export type CrearIncidenciaBody = Omit<CreateIncidentInput, 'civicId'>;
@@ -30,6 +38,7 @@ export interface Incident {
     longitude: number | null;
     accuracy: number | null;
     createdAt: string;
+    address: IncidentAddress | null;
   };
   images: [];
   status: PrismaIncident['status'];
