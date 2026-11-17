@@ -88,7 +88,9 @@ describe('AuthService', () => {
       });
 
       const resultado = await service.registrarCiudadano({
-        ...entrada,
+        username: entrada.username,
+        email: entrada.email,
+        password: entrada.password,
         phone: undefined,
       });
 

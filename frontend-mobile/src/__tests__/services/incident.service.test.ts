@@ -1,5 +1,4 @@
 /// <reference types="jest" />
-import { File } from 'expo-file-system';
 
 import { API_BASE_URL, BACKEND_API_URL } from '@/constants/config';
 import { fetchCategories } from '@/services/category.service';
@@ -55,7 +54,8 @@ const MOCK_INCIDENTS_ENDPOINT = `${API_BASE_URL}/incidents`;
 
 // Identificador del ciudadano que se pasa explícitamente a createIncident en cada llamada.
 const TEST_CIVIC_ID = '20ac442e-0f00-4fe4-bad3-61c8e8e0bff5';
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Token de acceso de prueba que se pasa a createIncident y fetchIncidentById.
+const TEST_ACCESS_TOKEN = 'test-access-token';
 
 // Instante fijo para verificar los `createdAt` que el servicio genera en el mock.
 const FIXED_NOW_ISO = '2026-10-19T12:00:00.000Z';
@@ -69,41 +69,6 @@ const MESSAGE_CONNECTION_ERROR =
   'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.';
 const MESSAGE_REGISTER_ERROR = 'No se pudo registrar la incidencia. Inténtalo de nuevo más tarde.';
 
-// ---------------------------------------------------------------------------
-// FormData espía. El FormData de React Native solo expone `getAll` (no `get`)
-// y guarda sus partes en un campo interno; en lugar de depender de esa
-// implementación, se sustituye por una versión mínima que registra cada
-// `append` tal cual llega, y así las aserciones son explícitas.
-// ---------------------------------------------------------------------------
-class RecordingFormData {
-  readonly entries: [string, unknown][] = [];
-
-  append(name: string, value: unknown): void {
-    this.entries.push([name, value]);
-  }
-
-  getAll(name: string): unknown[] {
-    return this.entries.filter(([key]) => key === name).map(([, value]) => value);
-  }
-
-  get(name: string): unknown {
-    return this.getAll(name)[0] ?? null;
-  }
-
-  has(name: string): boolean {
-    return this.entries.some(([key]) => key === name);
-  }
-
-  fieldNames(): string[] {
-    return this.entries.map(([key]) => key);
-  }
-}
-
-// Forma de la parte de fichero: instancia de `File` de expo-file-system (el
-// fetch de Expo ya no admite el antiguo `{ uri, name, type }` de React Native).
-type ImageFilePart = File;
-
-const OriginalFormData = globalThis.FormData;
 
 // Input completo con espacios extra a propósito para verificar el trim().
 const fullInput: CreateIncidentInput = {
@@ -197,13 +162,9 @@ function readSentInit(callIndex = 0): RequestInit {
   return requestInit ?? {};
 }
 
-// Devuelve el FormData enviado en una llamada concreta de fetchWithTimeout.
-function readSentFormData(callIndex = 0): RecordingFormData {
-  const sentBody = readSentInit(callIndex).body;
-  if (!(sentBody instanceof RecordingFormData)) {
-    throw new Error('El body enviado no es un FormData.');
-  }
-  return sentBody;
+// Devuelve las cabeceras de una llamada concreta de fetchWithTimeout.
+function readSentHeaders(callIndex = 0): Record<string, string> {
+  return (readSentInit(callIndex).headers ?? {}) as Record<string, string>;
 }
 
 // Devuelve el body JSON de una llamada concreta (camino del mock).
@@ -230,7 +191,6 @@ describe('createIncident', () => {
     fetchWithTimeoutMock.mockReset();
     mockedCreateImage.mockReset();
     mockedCreateImage.mockImplementation(fakeCreateImageImplementation);
-    globalThis.FormData = RecordingFormData as unknown as typeof FormData;
     // Por defecto el backend responde correctamente; el mock queda sano por si se usara.
     routeFetchByEndpoint({
       backend: jsonResponse(serverCreatedIncident, 201),
@@ -239,117 +199,102 @@ describe('createIncident', () => {
   });
 
   afterEach(() => {
-    globalThis.FormData = OriginalFormData;
     jest.useRealTimers();
   });
 
-  describe('camino backend: petición multipart', () => {
+  describe('camino backend: petición JSON autenticada', () => {
     it('hace POST a `${BACKEND_API_URL}/incidents`', async () => {
-      await createIncident(fullInput, TEST_CIVIC_ID);
+      await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
       expect(INCIDENTS_ENDPOINT).toBe(`${BACKEND_API_URL}/incidents`);
-      expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
-      expect(readRequestUrlAt()).toBe(`${BACKEND_API_URL}/incidents`);
-      expect(readSentInit().method).toBe('POST');
+      expect(readRequestUrlAt(0)).toBe(`${BACKEND_API_URL}/incidents`);
+      expect(readSentInit(0).method).toBe('POST');
     });
 
-    it('envía el body como FormData', async () => {
-      await createIncident(fullInput, TEST_CIVIC_ID);
+    it('envía exactamente las cabeceras Authorization (Bearer) y Content-Type application/json', async () => {
+      await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
-      expect(readSentInit().body).toBeInstanceOf(RecordingFormData);
+      expect(readSentHeaders(0)).toEqual({
+        Authorization: `Bearer ${TEST_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      });
     });
 
-    it('no pasa cabecera Content-Type (fetch añade el boundary multipart)', async () => {
-      await createIncident(fullInput, TEST_CIVIC_ID);
+    it('usa el accessToken recibido como argumento en la cabecera Authorization', async () => {
+      await createIncident(fullInput, TEST_CIVIC_ID, 'otro-token-de-prueba');
 
-      const requestHeaders = readSentInit().headers as Record<string, string> | undefined;
-      expect(requestHeaders?.['Content-Type']).toBeUndefined();
-      expect(requestHeaders?.['content-type']).toBeUndefined();
+      expect(readSentHeaders(0).Authorization).toBe('Bearer otro-token-de-prueba');
+    });
+
+    it('envía el body como cadena JSON (no como FormData)', async () => {
+      await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
+
+      expect(typeof readSentInit(0).body).toBe('string');
+    });
+
+    it('usa el timeout ampliado de 30 s para la petición al backend', async () => {
+      await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
+
+      expect(fetchWithTimeoutMock.mock.calls[0][2]).toBe(30000);
     });
   });
 
-  describe('camino backend: campos del formulario', () => {
-    it('con input completo envía title con trim, civicId recibido como argumento y description con trim', async () => {
-      await createIncident(fullInput, TEST_CIVIC_ID);
+  describe('camino backend: campos del payload JSON', () => {
+    it('con input completo envía title, description, categoryId, category y ubicación con trim aplicado', async () => {
+      await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
-      const sentFormData = readSentFormData();
-      expect(sentFormData.get('title')).toBe('Bache en la avenida principal');
-      expect(sentFormData.get('description')).toBe(
-        'Hay un bache profundo que pone en riesgo a los vehículos.',
-      );
-      expect(sentFormData.get('civicId')).toBe(TEST_CIVIC_ID);
-      expect(UUID_PATTERN.test(String(sentFormData.get('civicId')))).toBe(true);
+      expect(readSentJsonBody(0)).toEqual({
+        title: 'Bache en la avenida principal',
+        description: 'Hay un bache profundo que pone en riesgo a los vehículos.',
+        categoryId: '2',
+        category: 'Vallado',
+        latitude: 40.4168,
+        longitude: -3.7038,
+        accuracy: 10,
+      });
     });
 
-    it('con input completo envía categoryId y category (con trim)', async () => {
-      await createIncident(fullInput, TEST_CIVIC_ID);
+    it('envía latitude, longitude y accuracy como number, no como string', async () => {
+      await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
-      const sentFormData = readSentFormData();
-      expect(sentFormData.get('categoryId')).toBe('2');
-      expect(sentFormData.get('category')).toBe('Vallado');
+      const sentBody = readSentJsonBody(0);
+      expect(sentBody.latitude).toBe(40.4168);
+      expect(sentBody.longitude).toBe(-3.7038);
+      expect(sentBody.accuracy).toBe(10);
     });
 
-    it('con input completo envía latitude, longitude y accuracy como string', async () => {
-      await createIncident(fullInput, TEST_CIVIC_ID);
+    it('no envía civicId en el body (el backend lo deriva del JWT)', async () => {
+      await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
-      const sentFormData = readSentFormData();
-      expect(sentFormData.get('latitude')).toBe('40.4168');
-      expect(sentFormData.get('longitude')).toBe('-3.7038');
-      expect(sentFormData.get('accuracy')).toBe('10');
+      expect(readSentJsonBody(0)).not.toHaveProperty('civicId');
     });
 
-    it('con input completo envía exactamente los 8 campos de texto y ninguno más', async () => {
-      await createIncident(fullInput, TEST_CIVIC_ID);
+    it('no envía images en el body aunque se reciban imageUris', async () => {
+      await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN, ['file:///photos/a.jpg', 'file:///photos/b.png']);
 
-      expect(readSentFormData().fieldNames().sort()).toEqual(
-        [
-          'accuracy',
-          'category',
-          'categoryId',
-          'civicId',
-          'description',
-          'latitude',
-          'longitude',
-          'title',
-        ].sort(),
-      );
+      expect(readSentJsonBody(0)).not.toHaveProperty('images');
     });
 
     it('no envía campos de gestión (status, priority, createdAt) ni relaciones', async () => {
-      await createIncident(fullInput, TEST_CIVIC_ID);
+      await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
-      const sentFieldNames = readSentFormData().fieldNames();
-      for (const managedField of [
-        'status',
-        'priority',
-        'createdAt',
-        'locationId',
-        'urbanAssetId',
-        'departmentId',
-        'teamId',
-        'technicianId',
-      ]) {
-        expect(sentFieldNames).not.toContain(managedField);
-      }
+      const sentBody = readSentJsonBody(0);
+      expect(sentBody).not.toHaveProperty('status');
+      expect(sentBody).not.toHaveProperty('priority');
+      expect(sentBody).not.toHaveProperty('createdAt');
+      expect(sentBody).not.toHaveProperty('urbanAssetId');
     });
 
-    it('con input mínimo omite description, categoryId, category, latitude, longitude y accuracy', async () => {
-      await createIncident(minimalInput, TEST_CIVIC_ID);
+    it('con input mínimo envía solo title', async () => {
+      await createIncident(minimalInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
-      const sentFormData = readSentFormData();
-      expect(sentFormData.fieldNames().sort()).toEqual(['civicId', 'title']);
-      expect(sentFormData.has('description')).toBe(false);
-      expect(sentFormData.has('categoryId')).toBe(false);
-      expect(sentFormData.has('category')).toBe(false);
-      expect(sentFormData.has('latitude')).toBe(false);
-      expect(sentFormData.has('longitude')).toBe(false);
-      expect(sentFormData.has('accuracy')).toBe(false);
+      expect(readSentJsonBody(0)).toEqual({ title: 'Farola fundida' });
     });
 
     it('omite description cuando solo tiene espacios en blanco', async () => {
-      await createIncident({ ...fullInput, description: '   \n\t  ' }, TEST_CIVIC_ID);
+      await createIncident({ ...fullInput, description: '   \n\t  ' }, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
-      expect(readSentFormData().has('description')).toBe(false);
+      expect(readSentJsonBody(0)).not.toHaveProperty('description');
     });
 
     it('omite categoryId cuando es undefined', async () => {
@@ -358,154 +303,92 @@ describe('createIncident', () => {
         description: fullInput.description,
       };
 
-      await createIncident(inputWithoutCategoryId, TEST_CIVIC_ID);
+      await createIncident(inputWithoutCategoryId, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
-      expect(readSentFormData().has('categoryId')).toBe(false);
+      expect(readSentJsonBody(0)).not.toHaveProperty('categoryId');
     });
 
     it('omite category cuando es null', async () => {
-      await createIncident({ ...fullInput, category: null }, TEST_CIVIC_ID);
+      await createIncident({ ...fullInput, category: null }, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
-      expect(readSentFormData().has('category')).toBe(false);
+      expect(readSentJsonBody(0)).not.toHaveProperty('category');
     });
 
     it('omite category cuando es cadena vacía o solo espacios', async () => {
-      await createIncident({ ...fullInput, category: '   ' }, TEST_CIVIC_ID);
+      await createIncident({ ...fullInput, category: '   ' }, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
-      expect(readSentFormData().has('category')).toBe(false);
+      expect(readSentJsonBody(0)).not.toHaveProperty('category');
     });
 
     it('envía categoryId aunque sea cadena vacía, porque solo filtra null y undefined', async () => {
-      await createIncident({ ...fullInput, categoryId: '' }, TEST_CIVIC_ID);
+      await createIncident({ ...fullInput, categoryId: '' }, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
-      expect(readSentFormData().get('categoryId')).toBe('');
+      expect(readSentJsonBody(0).categoryId).toBe('');
     });
 
     it('omite latitude, longitude y accuracy cuando son null, sin afectar a los demás', async () => {
-      await createIncident({ ...fullInput, latitude: null, longitude: null, accuracy: null }, TEST_CIVIC_ID);
+      await createIncident(
+        { ...fullInput, latitude: null, longitude: null, accuracy: null },
+        TEST_CIVIC_ID,
+        TEST_ACCESS_TOKEN,
+      );
 
-      const sentFormData = readSentFormData();
-      expect(sentFormData.has('latitude')).toBe(false);
-      expect(sentFormData.has('longitude')).toBe(false);
-      expect(sentFormData.has('accuracy')).toBe(false);
-      expect(sentFormData.get('title')).toBe('Bache en la avenida principal');
+      const sentBody = readSentJsonBody(0);
+      expect(sentBody).not.toHaveProperty('latitude');
+      expect(sentBody).not.toHaveProperty('longitude');
+      expect(sentBody).not.toHaveProperty('accuracy');
+      expect(sentBody.title).toBe('Bache en la avenida principal');
     });
 
     it('omite solo accuracy cuando hay coordenadas pero la precisión es null', async () => {
-      await createIncident({ ...fullInput, accuracy: null }, TEST_CIVIC_ID);
+      await createIncident({ ...fullInput, accuracy: null }, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
-      const sentFormData = readSentFormData();
-      expect(sentFormData.get('latitude')).toBe('40.4168');
-      expect(sentFormData.get('longitude')).toBe('-3.7038');
-      expect(sentFormData.has('accuracy')).toBe(false);
+      const sentBody = readSentJsonBody(0);
+      expect(sentBody.latitude).toBe(40.4168);
+      expect(sentBody.longitude).toBe(-3.7038);
+      expect(sentBody).not.toHaveProperty('accuracy');
     });
 
-    it('envía latitude 0 como "0" (el cero no es un valor ausente)', async () => {
-      await createIncident({ ...fullInput, latitude: 0 }, TEST_CIVIC_ID);
+    it('envía latitude 0 como 0 (el cero no es un valor ausente)', async () => {
+      await createIncident({ ...fullInput, latitude: 0 }, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
-      expect(readSentFormData().get('latitude')).toBe('0');
+      expect(readSentJsonBody(0).latitude).toBe(0);
     });
 
-    it('envía longitude 0 y accuracy 0 como "0"', async () => {
-      await createIncident({ ...fullInput, longitude: 0, accuracy: 0 }, TEST_CIVIC_ID);
+    it('envía longitude 0 y accuracy 0 como 0', async () => {
+      await createIncident({ ...fullInput, longitude: 0, accuracy: 0 }, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
-      const sentFormData = readSentFormData();
-      expect(sentFormData.get('longitude')).toBe('0');
-      expect(sentFormData.get('accuracy')).toBe('0');
+      const sentBody = readSentJsonBody(0);
+      expect(sentBody.longitude).toBe(0);
+      expect(sentBody.accuracy).toBe(0);
     });
   });
 
   describe('camino backend: imágenes', () => {
-    it('sin imageUris no añade ninguna parte images', async () => {
-      await createIncident(fullInput, TEST_CIVIC_ID);
+    it('sin imageUris no crea registros de imagen ni añade images al body', async () => {
+      await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
-      expect(readSentFormData().has('images')).toBe(false);
+      expect(readSentJsonBody(0)).not.toHaveProperty('images');
+      expect(mockedCreateImage).not.toHaveBeenCalled();
     });
 
-    it('con un array vacío no añade ninguna parte images', async () => {
-      await createIncident(fullInput, TEST_CIVIC_ID, []);
+    it('con un array vacío tampoco añade images al body', async () => {
+      await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN, []);
 
-      expect(readSentFormData().has('images')).toBe(false);
+      expect(readSentJsonBody(0)).not.toHaveProperty('images');
     });
 
-    it('con 9 URIs envía solo las 8 primeras como partes images', async () => {
-      const nineImageUris = [
-        'file:///photos/a.jpg',
-        'file:///photos/b.jpg',
-        'file:///photos/c.jpg',
-        'file:///photos/d.jpg',
-        'file:///photos/e.jpg',
-        'file:///photos/f.jpg',
-        'file:///photos/g.jpg',
-        'file:///photos/h.jpg',
-        'file:///photos/i.jpg',
-      ];
+    it('con 9 URIs no las envía al backend ni recorta el body (el backend aún no admite imágenes)', async () => {
+      const nineUris = Array.from({ length: 9 }, (_, index) => `file:///photos/${index}.jpg`);
 
-      await createIncident(fullInput, TEST_CIVIC_ID, nineImageUris);
+      await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN, nineUris);
 
-      const imageParts = readSentFormData().getAll('images') as ImageFilePart[];
-      expect(MAX_INCIDENT_IMAGES).toBe(8);
-      expect(imageParts).toHaveLength(8);
-      expect(imageParts.map((part) => part.uri)).toEqual(nineImageUris.slice(0, 8));
-    });
-
-    it('con 8 URIs exactas envía las 8 sin recortar', async () => {
-      const eightImageUris = [
-        'file:///photos/1.jpg',
-        'file:///photos/2.jpg',
-        'file:///photos/3.jpg',
-        'file:///photos/4.jpg',
-        'file:///photos/5.jpg',
-        'file:///photos/6.jpg',
-        'file:///photos/7.jpg',
-        'file:///photos/8.jpg',
-      ];
-
-      await createIncident(fullInput, TEST_CIVIC_ID, eightImageUris);
-
-      expect(readSentFormData().getAll('images')).toHaveLength(8);
-    });
-
-    it('envía cada parte images como una instancia de File con la URI original', async () => {
-      await createIncident(fullInput, TEST_CIVIC_ID, ['file:///photos/a.png', 'file:///photos/b.webp', 'file:///photos/c.jpg']);
-
-      const imageParts = readSentFormData().getAll('images') as ImageFilePart[];
-      expect(imageParts.every((part) => part instanceof File)).toBe(true);
-      expect(imageParts.map((part) => part.uri)).toEqual([
-        'file:///photos/a.png',
-        'file:///photos/b.webp',
-        'file:///photos/c.jpg',
-      ]);
-    });
-
-    it('usa el nombre de fichero real derivado de la URI, no uno generado', async () => {
-      await createIncident(fullInput, TEST_CIVIC_ID, ['file:///photos/foto.png']);
-
-      const [imagePart] = readSentFormData().getAll('images') as ImageFilePart[];
-      expect(imagePart.name).toBe('foto.png');
-    });
-
-    it('conserva la URI completa (con query string) aunque el nombre derivado la ignore', async () => {
-      const uriWithQuery = 'file:///photos/foto.png?timestamp=1700000000';
-
-      await createIncident(fullInput, TEST_CIVIC_ID, [uriWithQuery]);
-
-      const [imagePart] = readSentFormData().getAll('images') as ImageFilePart[];
-      expect(imagePart.uri).toBe(uriWithQuery);
-      expect(imagePart.name).toBe('foto.png');
-    });
-
-    it('mantiene el orden de las URIs en las partes images', async () => {
-      const orderedUris = ['file:///photos/z.webp', 'file:///photos/a.png', 'file:///photos/m.jpg'];
-
-      await createIncident(fullInput, TEST_CIVIC_ID, orderedUris);
-
-      const imageParts = readSentFormData().getAll('images') as ImageFilePart[];
-      expect(imageParts.map((part) => part.uri)).toEqual(orderedUris);
+      expect(readSentJsonBody(0)).not.toHaveProperty('images');
+      expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
     });
 
     it('en el camino backend no persiste imágenes por separado (createImage no se llama)', async () => {
-      await createIncident(fullInput, TEST_CIVIC_ID, ['file:///photos/a.jpg', 'file:///photos/b.png']);
+      await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN, ['file:///photos/a.jpg']);
 
       expect(mockedCreateImage).not.toHaveBeenCalled();
     });
@@ -513,13 +396,13 @@ describe('createIncident', () => {
 
   describe('camino backend: éxito y rechazo', () => {
     it('con backend OK devuelve { incident, source: "backend" } con la respuesta parseada', async () => {
-      const result = await createIncident(fullInput, TEST_CIVIC_ID);
+      const result = await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
       expect(result).toEqual({ incident: serverCreatedIncident, source: 'backend' });
     });
 
     it('con backend OK no contacta con el mock ni persiste imágenes', async () => {
-      await createIncident(fullInput, TEST_CIVIC_ID, ['file:///photos/a.jpg']);
+      await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN, ['file:///photos/a.jpg']);
 
       expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
       expect(readRequestUrlAt(0)).not.toBe(MOCK_INCIDENTS_ENDPOINT);
@@ -533,7 +416,7 @@ describe('createIncident', () => {
         mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
       });
 
-      await createIncident(minimalInput, TEST_CIVIC_ID);
+      await createIncident(minimalInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
       expect(jsonSpy).toHaveBeenCalledTimes(1);
     });
@@ -544,7 +427,7 @@ describe('createIncident', () => {
         mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
       });
 
-      await expect(createIncident(fullInput, TEST_CIVIC_ID)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
+      await expect(createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
     });
 
     it('con backend !ok (400) lanza el mensaje de registro fallido', async () => {
@@ -553,7 +436,7 @@ describe('createIncident', () => {
         mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
       });
 
-      await expect(createIncident(fullInput, TEST_CIVIC_ID)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
+      await expect(createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
     });
 
     it('con backend !ok y cuerpo con `message`, incluye el motivo real del backend en el error', async () => {
@@ -566,7 +449,7 @@ describe('createIncident', () => {
         mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
       });
 
-      await expect(createIncident(fullInput, TEST_CIVIC_ID)).rejects.toThrow(
+      await expect(createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN)).rejects.toThrow(
         `${MESSAGE_REGISTER_ERROR} (title must contain 4 to 35 characters)`,
       );
     });
@@ -577,7 +460,7 @@ describe('createIncident', () => {
         mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
       });
 
-      await expect(createIncident(fullInput, TEST_CIVIC_ID, ['file:///photos/a.jpg'])).rejects.toThrow(
+      await expect(createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN, ['file:///photos/a.jpg'])).rejects.toThrow(
         MESSAGE_REGISTER_ERROR,
       );
 
@@ -593,7 +476,7 @@ describe('createIncident', () => {
         mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
       });
 
-      await expect(createIncident(fullInput, TEST_CIVIC_ID)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
+      await expect(createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
       expect(jsonSpy).not.toHaveBeenCalled();
     });
   });
@@ -610,7 +493,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        const result = await createIncident(minimalInput, TEST_CIVIC_ID);
+        const result = await createIncident(minimalInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
         expect(result.source).toBe('mock');
         expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(2);
@@ -622,22 +505,22 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        const result = await createIncident(minimalInput, TEST_CIVIC_ID);
+        const result = await createIncident(minimalInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
         expect(result.source).toBe('mock');
         expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(2);
       });
 
-      it('primero intenta el backend (multipart) y después el mock (JSON)', async () => {
+      it('primero intenta el backend (JSON autenticado) y después el mock (JSON sin Authorization)', async () => {
         routeFetchByEndpoint({
           backend: new RequestTimeoutError(),
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        await createIncident(fullInput, TEST_CIVIC_ID);
+        await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
         expect(readRequestUrlAt(0)).toBe(`${BACKEND_API_URL}/incidents`);
-        expect(readSentInit(0).body).toBeInstanceOf(RecordingFormData);
+        expect(readSentHeaders(0).Authorization).toBe(`Bearer ${TEST_ACCESS_TOKEN}`);
         expect(readRequestUrlAt(1)).toBe(MOCK_INCIDENTS_ENDPOINT);
       });
     });
@@ -649,7 +532,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        await createIncident(fullInput, TEST_CIVIC_ID);
+        await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
         expect(readRequestUrlAt(1)).toBe(`${API_BASE_URL}/incidents`);
         expect(readSentInit(1).method).toBe('POST');
@@ -662,7 +545,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        await createIncident(fullInput, TEST_CIVIC_ID);
+        await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
         expect(readSentJsonBody(1)).toEqual({
           title: 'Bache en la avenida principal',
@@ -684,7 +567,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        await createIncident(minimalInput, TEST_CIVIC_ID);
+        await createIncident(minimalInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
         expect(readSentJsonBody(1)).toEqual({
           title: 'Farola fundida',
@@ -706,7 +589,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        await createIncident(fullInput, TEST_CIVIC_ID);
+        await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
         expect(typeof readSentInit(1).body).toBe('string');
       });
@@ -719,7 +602,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        const result = await createIncident({ ...fullInput, description: '   ' }, TEST_CIVIC_ID);
+        const result = await createIncident({ ...fullInput, description: '   ' }, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
         expect(result.incident.description).toBeNull();
       });
@@ -730,7 +613,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        const result = await createIncident({ ...fullInput, category: '   ' }, TEST_CIVIC_ID);
+        const result = await createIncident({ ...fullInput, category: '   ' }, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
         expect(result.incident.category).toBeNull();
       });
@@ -741,7 +624,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        const result = await createIncident(fullInput, TEST_CIVIC_ID);
+        const result = await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
         const expectedIncident: CreatedIncident = {
           id: MOCK_CREATED_INCIDENT_ID,
@@ -771,7 +654,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        const { incident } = await createIncident(minimalInput, TEST_CIVIC_ID);
+        const { incident } = await createIncident(minimalInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
         expect(incident.id).toBe(MOCK_CREATED_INCIDENT_ID);
         expect(incident.title).toBe('Farola fundida');
@@ -799,7 +682,7 @@ describe('createIncident', () => {
           latitude: 0,
           longitude: 0,
           accuracy: null,
-        }, TEST_CIVIC_ID);
+        }, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
         expect(incident.location).toEqual({
           latitude: 0,
@@ -817,7 +700,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        const { incident } = await createIncident(minimalInput, TEST_CIVIC_ID);
+        const { incident } = await createIncident(minimalInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN);
 
         expect(mockedCreateImage).not.toHaveBeenCalled();
         expect(incident.images).toEqual([]);
@@ -829,7 +712,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        await createIncident(fullInput, TEST_CIVIC_ID, ['file:///photos/a.jpg', 'file:///photos/b.png']);
+        await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN, ['file:///photos/a.jpg', 'file:///photos/b.png']);
 
         expect(mockedCreateImage).toHaveBeenCalledTimes(2);
         expect(mockedCreateImage).toHaveBeenNthCalledWith(1, {
@@ -848,7 +731,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }),
         });
 
-        const { incident } = await createIncident(fullInput, TEST_CIVIC_ID, [
+        const { incident } = await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN, [
           'file:///photos/a.png',
           'file:///photos/b.jpg',
         ]);
@@ -886,7 +769,7 @@ describe('createIncident', () => {
           'file:///photos/9.jpg',
         ];
 
-        const { incident } = await createIncident(fullInput, TEST_CIVIC_ID, nineImageUris);
+        const { incident } = await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN, nineImageUris);
 
         expect(mockedCreateImage).toHaveBeenCalledTimes(MAX_INCIDENT_IMAGES);
         expect(mockedCreateImage.mock.calls.map(([input]) => input.url)).toEqual(
@@ -907,7 +790,7 @@ describe('createIncident', () => {
           return fakeCreateImageImplementation(input);
         });
 
-        const result = await createIncident(fullInput, TEST_CIVIC_ID, [
+        const result = await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN, [
           'file:///photos/a.png',
           'file:///photos/b.jpg',
           'file:///photos/c.webp',
@@ -927,7 +810,7 @@ describe('createIncident', () => {
         });
         mockedCreateImage.mockRejectedValue(new Error('No se pudo guardar la imagen.'));
 
-        const result = await createIncident(fullInput, TEST_CIVIC_ID, ['file:///photos/a.jpg']);
+        const result = await createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN, ['file:///photos/a.jpg']);
 
         expect(result.source).toBe('mock');
         expect(result.incident.id).toBe(MOCK_CREATED_INCIDENT_ID);
@@ -942,7 +825,7 @@ describe('createIncident', () => {
           mock: new RequestTimeoutError(),
         });
 
-        await expect(createIncident(fullInput, TEST_CIVIC_ID, ['file:///photos/a.jpg'])).rejects.toThrow(
+        await expect(createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN, ['file:///photos/a.jpg'])).rejects.toThrow(
           MESSAGE_TIMEOUT_ERROR,
         );
         expect(mockedCreateImage).not.toHaveBeenCalled();
@@ -954,7 +837,7 @@ describe('createIncident', () => {
           mock: new TypeError('Network request failed'),
         });
 
-        await expect(createIncident(fullInput, TEST_CIVIC_ID)).rejects.toThrow(MESSAGE_CONNECTION_ERROR);
+        await expect(createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN)).rejects.toThrow(MESSAGE_CONNECTION_ERROR);
       });
 
       it('con backend caído y mock !ok (500) lanza el mensaje de registro fallido', async () => {
@@ -963,7 +846,7 @@ describe('createIncident', () => {
           mock: jsonResponse({ message: 'boom' }, 500),
         });
 
-        await expect(createIncident(fullInput, TEST_CIVIC_ID, ['file:///photos/a.jpg'])).rejects.toThrow(
+        await expect(createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN, ['file:///photos/a.jpg'])).rejects.toThrow(
           MESSAGE_REGISTER_ERROR,
         );
         expect(mockedCreateImage).not.toHaveBeenCalled();
@@ -975,7 +858,7 @@ describe('createIncident', () => {
           mock: jsonResponse({}, 400),
         });
 
-        await expect(createIncident(minimalInput, TEST_CIVIC_ID)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
+        await expect(createIncident(minimalInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
       });
 
       it('con backend caído y mock !ok no intenta parsear el cuerpo del mock', async () => {
@@ -985,7 +868,7 @@ describe('createIncident', () => {
           mock: { ok: false, status: 500, json: mockJsonSpy } as unknown as Response,
         });
 
-        await expect(createIncident(minimalInput, TEST_CIVIC_ID)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
+        await expect(createIncident(minimalInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN)).rejects.toThrow(MESSAGE_REGISTER_ERROR);
         expect(mockJsonSpy).not.toHaveBeenCalled();
       });
     });
@@ -1431,11 +1314,6 @@ describe('motivo del rechazo del backend en fetchMyIncidents', () => {
 describe('motivo del rechazo del backend en createIncident', () => {
   beforeEach(() => {
     fetchWithTimeoutMock.mockReset();
-    globalThis.FormData = RecordingFormData as unknown as typeof FormData;
-  });
-
-  afterEach(() => {
-    globalThis.FormData = OriginalFormData;
   });
 
   it('con backend !ok y message como array une los motivos con "; " entre paréntesis', async () => {
@@ -1447,7 +1325,7 @@ describe('motivo del rechazo del backend en createIncident', () => {
       mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }, 201),
     });
 
-    const error = await captureRejection(createIncident(fullInput, TEST_CIVIC_ID));
+    const error = await captureRejection(createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN));
 
     expect(error.message).toBe(`${MESSAGE_REGISTER_ERROR} (title is required; description is too long)`);
     expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
@@ -1459,7 +1337,7 @@ describe('motivo del rechazo del backend en createIncident', () => {
       mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }, 201),
     });
 
-    const error = await captureRejection(createIncident(fullInput, TEST_CIVIC_ID));
+    const error = await captureRejection(createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN));
 
     expect(error.message).toBe(MESSAGE_REGISTER_ERROR);
   });
@@ -1470,7 +1348,7 @@ describe('motivo del rechazo del backend en createIncident', () => {
       mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }, 201),
     });
 
-    const error = await captureRejection(createIncident(fullInput, TEST_CIVIC_ID));
+    const error = await captureRejection(createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN));
 
     expect(error.message).toBe(MESSAGE_REGISTER_ERROR);
   });
@@ -1481,7 +1359,7 @@ describe('motivo del rechazo del backend en createIncident', () => {
       mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }, 201),
     });
 
-    const error = await captureRejection(createIncident(fullInput, TEST_CIVIC_ID));
+    const error = await captureRejection(createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN));
 
     expect(error.message).toBe(MESSAGE_REGISTER_ERROR);
     expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
@@ -1491,17 +1369,12 @@ describe('motivo del rechazo del backend en createIncident', () => {
 describe('mensajes genéricos independientes entre createIncident y fetchMyIncidents', () => {
   beforeEach(() => {
     fetchWithTimeoutMock.mockReset();
-    globalThis.FormData = RecordingFormData as unknown as typeof FormData;
-  });
-
-  afterEach(() => {
-    globalThis.FormData = OriginalFormData;
   });
 
   it('con el mismo cuerpo de error ambos mensajes genéricos siguen siendo distintos', async () => {
     fetchWithTimeoutMock.mockImplementation(async () => rawBodyResponse(500, JSON.stringify({ message: 'boom' })));
 
-    const registerError = await captureRejection(createIncident(fullInput, TEST_CIVIC_ID));
+    const registerError = await captureRejection(createIncident(fullInput, TEST_CIVIC_ID, TEST_ACCESS_TOKEN));
     const listError = await captureRejection(fetchMyIncidents(TEST_CIVIC_ID));
 
     expect(MESSAGE_REGISTER_ERROR).not.toBe(MESSAGE_MY_INCIDENTS_ERROR);
@@ -1514,27 +1387,26 @@ describe('mensajes genéricos independientes entre createIncident y fetchMyIncid
 describe('aislamiento del civicId entre llamadas sucesivas', () => {
   const FIRST_CIVIC_ID = '11111111-1111-4111-8111-111111111111';
   const SECOND_CIVIC_ID = '22222222-2222-4222-8222-222222222222';
+  const FIRST_ACCESS_TOKEN = 'first-access-token';
+  const SECOND_ACCESS_TOKEN = 'second-access-token';
 
   beforeEach(() => {
     fetchWithTimeoutMock.mockReset();
-    globalThis.FormData = RecordingFormData as unknown as typeof FormData;
   });
 
-  afterEach(() => {
-    globalThis.FormData = OriginalFormData;
-  });
-
-  it('dos civicId distintos en createIncident por backend llegan cada uno en su propia petición', async () => {
+  it('dos accessToken distintos en createIncident por backend llegan cada uno en su propia petición', async () => {
     routeFetchByEndpoint({
       backend: jsonResponse(serverCreatedIncident, 201),
       mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }, 201),
     });
 
-    await createIncident(fullInput, FIRST_CIVIC_ID);
-    await createIncident(fullInput, SECOND_CIVIC_ID);
+    await createIncident(fullInput, FIRST_CIVIC_ID, FIRST_ACCESS_TOKEN);
+    await createIncident(fullInput, SECOND_CIVIC_ID, SECOND_ACCESS_TOKEN);
 
-    expect(readSentFormData(0).get('civicId')).toBe(FIRST_CIVIC_ID);
-    expect(readSentFormData(1).get('civicId')).toBe(SECOND_CIVIC_ID);
+    expect(readSentHeaders(0).Authorization).toBe(`Bearer ${FIRST_ACCESS_TOKEN}`);
+    expect(readSentHeaders(1).Authorization).toBe(`Bearer ${SECOND_ACCESS_TOKEN}`);
+    expect(readSentJsonBody(0)).not.toHaveProperty('civicId');
+    expect(readSentJsonBody(1)).not.toHaveProperty('civicId');
   });
 
   it('dos civicId distintos en createIncident con fallback al mock no se mezclan en el payload', async () => {
@@ -1543,8 +1415,8 @@ describe('aislamiento del civicId entre llamadas sucesivas', () => {
       mock: jsonResponse({ id: MOCK_CREATED_INCIDENT_ID }, 201),
     });
 
-    await createIncident(minimalInput, FIRST_CIVIC_ID);
-    await createIncident(minimalInput, SECOND_CIVIC_ID);
+    await createIncident(minimalInput, FIRST_CIVIC_ID, TEST_ACCESS_TOKEN);
+    await createIncident(minimalInput, SECOND_CIVIC_ID, TEST_ACCESS_TOKEN);
 
     // Orden de llamadas: backend, mock, backend, mock.
     expect(readSentJsonBody(1).civicId).toBe(FIRST_CIVIC_ID);
@@ -1575,8 +1447,15 @@ describe('fetchIncidentById', () => {
   });
 
   describe('camino backend', () => {
+    it('envía Authorization Bearer con el accessToken recibido en el GET al backend', async () => {
+      await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
+
+      expect(readSentHeaders(0)).toEqual({ Authorization: `Bearer ${TEST_ACCESS_TOKEN}` });
+      expect(readSentInit(0).method).toBe('GET');
+    });
+
     it('pide el detalle a `${BACKEND_API_URL}/incidents/:id` y devuelve source "backend"', async () => {
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
 
       expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
       expect(readRequestUrlAt(0)).toBe(BACKEND_DETAIL_URL);
@@ -1585,7 +1464,7 @@ describe('fetchIncidentById', () => {
     });
 
     it('con backend OK no consulta imágenes, categorías ni el mock', async () => {
-      await fetchIncidentById(DETAIL_INCIDENT_ID);
+      await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
 
       expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
       expect(mockedFetchCategories).not.toHaveBeenCalled();
@@ -1596,7 +1475,7 @@ describe('fetchIncidentById', () => {
     it('404 real lanza IncidentNotFoundError y no hace segunda petición al mock', async () => {
       routeIncidentDetailRequests({ backend: jsonResponse({ message: 'Not Found' }, 404) });
 
-      await expect(fetchIncidentById(DETAIL_INCIDENT_ID)).rejects.toBeInstanceOf(
+      await expect(fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN)).rejects.toBeInstanceOf(
         IncidentNotFoundError,
       );
 
@@ -1609,7 +1488,7 @@ describe('fetchIncidentById', () => {
     it('con RequestTimeoutError cae al mock y devuelve source "mock"', async () => {
       routeIncidentDetailRequests({ backend: new RequestTimeoutError() });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
 
       expect(result.source).toBe('mock');
       expect(result.incident.id).toBe(DETAIL_INCIDENT_ID);
@@ -1617,10 +1496,19 @@ describe('fetchIncidentById', () => {
       expect(readRequestUrlAt(1)).toBe(MOCK_DETAIL_URL);
     });
 
+    it('el GET de respaldo al mock no lleva cabecera Authorization', async () => {
+      routeIncidentDetailRequests({ backend: new RequestTimeoutError() });
+
+      await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
+
+      expect(readRequestUrlAt(1)).toBe(MOCK_DETAIL_URL);
+      expect(readSentInit(1).headers).toBeUndefined();
+    });
+
     it('con error de red (TypeError) cae al mock y devuelve source "mock"', async () => {
       routeIncidentDetailRequests({ backend: new TypeError('Network request failed') });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
 
       expect(result.source).toBe('mock');
       expect(result.incident.title).toBe('Farola fundida');
@@ -1632,7 +1520,7 @@ describe('fetchIncidentById', () => {
         mockDetail: jsonResponse({ message: 'Not Found' }, 404),
       });
 
-      await expect(fetchIncidentById(DETAIL_INCIDENT_ID)).rejects.toBeInstanceOf(
+      await expect(fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN)).rejects.toBeInstanceOf(
         IncidentNotFoundError,
       );
     });
@@ -1643,7 +1531,7 @@ describe('fetchIncidentById', () => {
         mockDetail: jsonResponse({}, 500),
       });
 
-      const error = await fetchIncidentById(DETAIL_INCIDENT_ID).catch((caught: unknown) => caught);
+      const error = await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN).catch((caught: unknown) => caught);
 
       expect(error).toBeInstanceOf(Error);
       expect(error).not.toBeInstanceOf(IncidentNotFoundError);
@@ -1656,7 +1544,7 @@ describe('fetchIncidentById', () => {
         mockDetail: new TypeError('Network request failed'),
       });
 
-      await expect(fetchIncidentById(DETAIL_INCIDENT_ID)).rejects.toThrow(
+      await expect(fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN)).rejects.toThrow(
         'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
       );
     });
@@ -1668,7 +1556,7 @@ describe('fetchIncidentById', () => {
       async (status) => {
         routeIncidentDetailRequests({ backend: jsonResponse({ message: 'boom' }, status) });
 
-        const error = await fetchIncidentById(DETAIL_INCIDENT_ID).catch((caught: unknown) => caught);
+        const error = await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN).catch((caught: unknown) => caught);
 
         expect(error).toBeInstanceOf(Error);
         expect(error).not.toBeInstanceOf(IncidentNotFoundError);
@@ -1684,7 +1572,7 @@ describe('fetchIncidentById', () => {
     });
 
     it('ensambla el detalle completo con categoría resuelta por categoryId', async () => {
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
 
       expect(result).toEqual({
         incident: {
@@ -1711,14 +1599,14 @@ describe('fetchIncidentById', () => {
     });
 
     it('pide las imágenes a `${IMAGES_ENDPOINT}?incidentId=:id`', async () => {
-      await fetchIncidentById(DETAIL_INCIDENT_ID);
+      await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
 
       const requestedUrls = fetchWithTimeoutMock.mock.calls.map(([requestUrl]) => requestUrl);
       expect(requestedUrls).toContain(DETAIL_IMAGES_URL);
     });
 
     it('mapea imágenes con mimeType según la extensión y createdAt igual al de la incidencia', async () => {
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
 
       expect(result.incident.images).toEqual(expectedDetailImages);
       result.incident.images.forEach((image) => {
@@ -1732,7 +1620,7 @@ describe('fetchIncidentById', () => {
         mockImages: new TypeError('Network request failed'),
       });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
 
       expect(result.incident.images).toEqual([]);
       expect(result.incident.title).toBe('Farola fundida');
@@ -1746,7 +1634,7 @@ describe('fetchIncidentById', () => {
         mockImages: jsonResponse({}, 500),
       });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
 
       expect(result.incident.images).toEqual([]);
       expect(result.incident.id).toBe(DETAIL_INCIDENT_ID);
@@ -1764,14 +1652,14 @@ describe('fetchIncidentById', () => {
         mockDetail: jsonResponse({ ...mockDetailRecord, category: 'Vallado' }, 200),
       });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
 
       expect(result.incident.category).toBe('Vallado');
       expect(mockedFetchCategories).not.toHaveBeenCalled();
     });
 
     it('con solo categoryId llama a fetchCategories y resuelve el nombre por id', async () => {
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
 
       expect(mockedFetchCategories).toHaveBeenCalledTimes(1);
       expect(result.incident.category).toBe('Alumbrado público');
@@ -1783,7 +1671,7 @@ describe('fetchIncidentById', () => {
         mockDetail: jsonResponse({ ...mockDetailRecord, category: '' }, 200),
       });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
 
       expect(mockedFetchCategories).toHaveBeenCalledTimes(1);
       expect(result.incident.category).toBe('Alumbrado público');
@@ -1795,7 +1683,7 @@ describe('fetchIncidentById', () => {
         mockDetail: jsonResponse({ ...mockDetailRecord, categoryId: '99' }, 200),
       });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
 
       expect(result.incident.category).toBeNull();
     });
@@ -1803,7 +1691,7 @@ describe('fetchIncidentById', () => {
     it('si fetchCategories falla devuelve category null sin romper el detalle ni las imágenes', async () => {
       mockedFetchCategories.mockRejectedValue(new Error('No se pudieron cargar las categorías.'));
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
 
       expect(result.incident.category).toBeNull();
       expect(result.incident.title).toBe('Farola fundida');
@@ -1816,7 +1704,7 @@ describe('fetchIncidentById', () => {
         mockDetail: jsonResponse({ ...mockDetailRecord, categoryId: null, category: null }, 200),
       });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
 
       expect(mockedFetchCategories).not.toHaveBeenCalled();
       expect(result.incident.category).toBeNull();
@@ -1830,7 +1718,7 @@ describe('fetchIncidentById', () => {
         mockDetail: jsonResponse({ ...mockDetailRecord, description: '' }, 200),
       });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
 
       expect(result.incident.description).toBeNull();
     });
@@ -1850,7 +1738,7 @@ describe('fetchIncidentById', () => {
         mockImages: jsonResponse([], 200),
       });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
 
       expect(result).toEqual({
         incident: {
@@ -1882,7 +1770,7 @@ describe('fetchIncidentById', () => {
         ),
       });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, TEST_ACCESS_TOKEN);
 
       expect(result.incident.status).toBe(DEFAULT_INCIDENT_STATUS);
       expect(result.incident.createdAt).toBe(FIXED_NOW_ISO);

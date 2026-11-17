@@ -6,7 +6,9 @@ import React from 'react';
 import IncidentDetailScreen from '@/app/incidents/[id]';
 import { STATUS_LABELS } from '@/components/incident-status-badge';
 import { useIncidentDetail, type UseIncidentDetailResult } from '@/hooks/use-incident-detail';
+import { useSession, type SessionContextValue } from '@/hooks/use-session';
 import type { CreatedIncidentImage, IncidentDetail } from '@/types/incident';
+import type { AuthToken } from '@/types/token';
 
 // ---------------------------------------------------------------------------
 // Test de la pantalla de detalle de incidencia (`incidents/[id]`). Se monta la
@@ -70,10 +72,39 @@ jest.mock('@/hooks/use-incident-detail', () => ({
   useIncidentDetail: jest.fn(),
 }));
 
+// Sesión controlada por test: la pantalla lee `token.accessToken` para cargar el detalle.
+jest.mock('@/hooks/use-session', () => ({
+  useSession: jest.fn(),
+}));
+
 const mockedUseIncidentDetail = useIncidentDetail as jest.MockedFunction<typeof useIncidentDetail>;
 const mockedUseLocalSearchParams = useLocalSearchParams as jest.MockedFunction<
   typeof useLocalSearchParams
 >;
+const mockedUseSession = jest.mocked(useSession);
+
+// Token de acceso de la sesión activa de fixture: la pantalla lo pasa como
+// segundo argumento de `useIncidentDetail`.
+const SESSION_ACCESS_TOKEN = 'test-access-token';
+
+const sessionToken: AuthToken = {
+  accessToken: SESSION_ACCESS_TOKEN,
+  source: 'backend',
+};
+
+// Construye un valor de sesión con token activo; los tests sin token lo sobrescriben.
+function buildSessionValue(
+  overrides: Partial<SessionContextValue> = {},
+): SessionContextValue {
+  return {
+    user: null,
+    token: sessionToken,
+    isRestoringSession: false,
+    signIn: jest.fn().mockResolvedValue(undefined),
+    signOut: jest.fn().mockResolvedValue(undefined),
+    ...overrides,
+  };
+}
 
 const INCIDENT_IMAGE_ACCESSIBILITY_LABEL = 'Foto de la incidencia';
 const INCIDENT_ID = 'iB09J7Gfu1k';
@@ -152,16 +183,18 @@ describe('IncidentDetailScreen', () => {
   beforeEach(() => {
     mockedUseIncidentDetail.mockReset();
     mockedUseLocalSearchParams.mockReset();
+    mockedUseSession.mockReset();
     jest.mocked(router.back).mockReset();
 
     mockedUseLocalSearchParams.mockReturnValue({ id: INCIDENT_ID });
+    mockedUseSession.mockReturnValue(buildSessionValue());
   });
 
   it('con incidencia completa muestra el visor de fotos, el título, el estado, la categoría y la descripción', async () => {
     await renderDetailScreenWithHookState(buildHookState({ incident: fullIncident }));
 
-    // El hook recibe el id de la ruta tal cual.
-    expect(mockedUseIncidentDetail).toHaveBeenCalledWith(INCIDENT_ID);
+    // El hook recibe el id de la ruta y el token de acceso de la sesión.
+    expect(mockedUseIncidentDetail).toHaveBeenCalledWith(INCIDENT_ID, SESSION_ACCESS_TOKEN);
 
     // Visor de fotos real: una imagen accesible por cada adjunto.
     const renderedImages = screen.getAllByRole('image');
@@ -272,6 +305,23 @@ describe('IncidentDetailScreen', () => {
     await renderDetailScreenWithHookState(buildHookState({ incident: fullIncident }));
 
     expect(screen.queryByText(BACKEND_FALLBACK_NOTICE)).not.toBeOnTheScreen();
+  });
+
+  it('sin token de acceso (token null) la pantalla no se rompe y pasa null como segundo argumento de useIncidentDetail', async () => {
+    mockedUseSession.mockReturnValue(buildSessionValue({ token: null }));
+
+    await renderDetailScreenWithHookState(
+      buildHookState({
+        errorMessage: 'No se pudo identificar tu sesión. Vuelve a iniciar sesión.',
+      }),
+    );
+
+    expect(mockedUseIncidentDetail).toHaveBeenCalledWith(INCIDENT_ID, null);
+    // El error que devuelve el hook sin token se muestra con su botón de reintento.
+    expect(
+      screen.getByText('No se pudo identificar tu sesión. Vuelve a iniciar sesión.'),
+    ).toBeOnTheScreen();
+    expect(screen.getByLabelText('Reintentar')).toBeOnTheScreen();
   });
 
   it('con isLoading y sin incidencia muestra solo el ActivityIndicator, sin error, isNotFound ni contenido', async () => {

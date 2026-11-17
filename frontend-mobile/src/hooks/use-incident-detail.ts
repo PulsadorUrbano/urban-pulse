@@ -15,10 +15,10 @@ export interface UseIncidentDetailResult {
 // Aviso exacto a mostrar cuando la respuesta viene del mock en lugar del backend real.
 const BACKEND_FALLBACK_NOTICE = 'No se ha podido conectar al backend, mostrando los datos del mock.';
 
-// Carga el detalle de una incidencia por `id` al montar (y cuando `id` cambie o
-// se llame a `reload`), siguiendo el mismo patrón que `useCategories`/
-// `useMyIncidents` (`isMountedRef`, `reloadToken`).
-export function useIncidentDetail(id: string): UseIncidentDetailResult {
+// Carga el detalle de una incidencia por `id` al montar (y cuando `id` o
+// `accessToken` cambien, o se llame a `reload`), siguiendo el mismo patrón
+// que `useCategories`/`useMyIncidents` (`isMountedRef`, `reloadToken`).
+export function useIncidentDetail(id: string, accessToken: string | null): UseIncidentDetailResult {
   const [incident, setIncident] = useState<IncidentDetail | null>(null);
   // La primera carga arranca al montar, por eso el estado inicial es cargando.
   const [isLoading, setIsLoading] = useState(true);
@@ -35,7 +35,28 @@ export function useIncidentDetail(id: string): UseIncidentDetailResult {
   useEffect(() => {
     isMountedRef.current = true;
 
-    fetchIncidentById(id)
+    // Sin `accessToken` no hay sesión identificable: no se intenta la
+    // petición real, igual que el guard equivalente de `use-create-incident`.
+    if (accessToken == null) {
+      Promise.resolve().then(() => {
+        if (!isMountedRef.current) return;
+        setIncident(null);
+        setIsNotFound(false);
+        setErrorMessage('No se pudo identificar tu sesión. Vuelve a iniciar sesión.');
+        setIsLoading(false);
+      });
+      return () => {
+        isMountedRef.current = false;
+      };
+    }
+
+    Promise.resolve().then(() => {
+      if (!isMountedRef.current) return;
+      setIsLoading(true);
+      setErrorMessage(null);
+    });
+
+    fetchIncidentById(id, accessToken)
       .then((result) => {
         if (!isMountedRef.current) return;
         setIncident(result.incident);
@@ -69,7 +90,7 @@ export function useIncidentDetail(id: string): UseIncidentDetailResult {
     return () => {
       isMountedRef.current = false;
     };
-  }, [id, reloadToken]);
+  }, [id, accessToken, reloadToken]);
 
   // El reseteo de carga y error vive aquí porque se invoca desde eventos de la UI,
   // no desde un efecto, y fuerza una nueva carga incrementando el token.
