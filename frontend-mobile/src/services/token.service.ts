@@ -16,7 +16,7 @@ interface MockTokenPayload {
 // Codifica texto a base64url (sin padding) sin depender de `btoa`/`Buffer`.
 // Convierte primero a bytes UTF-8 para soportar caracteres no ASCII.
 function encodeBase64Url(text: string): string {
-  const bytes = Array.from(unescape(encodeURIComponent(text)), (char) => char.charCodeAt(0));
+  const bytes = Array.from(new TextEncoder().encode(text));
   let encoded = '';
 
   for (let index = 0; index < bytes.length; index += 3) {

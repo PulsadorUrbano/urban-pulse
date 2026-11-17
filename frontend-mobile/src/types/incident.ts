@@ -12,23 +12,6 @@ export const DEFAULT_INCIDENT_STATUS: IncidentStatus = 'reported';
 
 export type IncidentPriority = 'low' | 'medium' | 'high' | 'urgent';
 
-export interface Incident {
-  id: string;
-  title: string;
-  description: string;
-  status: IncidentStatus;
-  priority: IncidentPriority | null;
-  createdAt: string;
-  civicId: string | null;
-  locationId: string | null;
-  urbanAssetId: string | null;
-  categoryId: string | null;
-  category: string | null;
-  departmentId: string | null;
-  teamId: string | null;
-  technicianId: string | null;
-}
-
 export interface CreateIncidentInput {
   title: string;
   description: string;
@@ -61,8 +44,20 @@ export interface CreatedIncidentImage {
   createdAt: string;
 }
 
-// Respuesta del backend real al crear una incidencia (POST /incidents)
-export interface CreatedIncident {
+// Ubicación asociada a una incidencia tal como la devuelve el backend
+export interface IncidentLocation {
+  latitude: number | null;
+  longitude: number | null;
+  accuracy: number | null;
+  createdAt: string;
+}
+
+// Campos comunes a la incidencia recién creada y a la incidencia consultada.
+// `status` y `priority` NO se unifican aquí: en CreatedIncident son literales
+// ('reported' / 'low', garantizados al crear) y en IncidentDetail son los
+// tipos amplios; unificarlos ensancharía lo que ve el resultado de creación.
+// `description` sí es común (string | null en ambos).
+interface IncidentBase {
   id: string;
   title: string;
   description: string | null;
@@ -70,16 +65,15 @@ export interface CreatedIncident {
   categoryId: string | null;
   category: string | null;
   urbanAssetId: string | null;
-  location: {
-    latitude: number | null;
-    longitude: number | null;
-    accuracy: number | null;
-    createdAt: string;
-  };
+  location: IncidentLocation;
   images: CreatedIncidentImage[];
+  createdAt: string;
+}
+
+// Respuesta del backend real al crear una incidencia (POST /incidents)
+export interface CreatedIncident extends IncidentBase {
   status: 'reported';
   priority: 'low';
-  createdAt: string;
 }
 
 // Origen de la incidencia creada: backend real o simulación en el mock
@@ -101,24 +95,9 @@ export interface IncidentSummary {
 // Detalle completo de una incidencia tal como lo devuelve GET /incidents/:id.
 // Es un tipo independiente de CreatedIncident (no un alias): representa
 // "la incidencia que se consulta", no "la incidencia que se acaba de crear".
-export interface IncidentDetail {
-  id: string;
-  title: string;
-  description: string | null;
-  civicId: string;
-  categoryId: string | null;
-  category: string | null;
-  urbanAssetId: string | null;
-  location: {
-    latitude: number | null;
-    longitude: number | null;
-    accuracy: number | null;
-    createdAt: string;
-  };
-  images: CreatedIncidentImage[];
+export interface IncidentDetail extends IncidentBase {
   status: IncidentStatus;
   priority: IncidentPriority;
-  createdAt: string;
 }
 
 // Resultado de fetchMyIncidents: incluye el origen de los datos (backend real o mock)

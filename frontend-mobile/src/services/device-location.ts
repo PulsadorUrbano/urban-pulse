@@ -36,14 +36,19 @@ function toLocationCoordinates(position: ExpoLocation.LocationObject): LocationC
 
 // Solicita el permiso de ubicación en primer plano: reutiliza el permiso ya
 // concedido y, si no lo está, lanza la petición nativa al usuario.
+// Si la consulta o la petición fallan, devuelve `false` en lugar de lanzar.
 export async function requestLocationPermission(): Promise<boolean> {
-  const currentPermission = await ExpoLocation.getForegroundPermissionsAsync();
-  if (currentPermission.granted) {
-    return true;
-  }
+  try {
+    const currentPermission = await ExpoLocation.getForegroundPermissionsAsync();
+    if (currentPermission.granted) {
+      return true;
+    }
 
-  const requestedPermission = await ExpoLocation.requestForegroundPermissionsAsync();
-  return requestedPermission.granted;
+    const requestedPermission = await ExpoLocation.requestForegroundPermissionsAsync();
+    return requestedPermission.granted;
+  } catch {
+    return false;
+  }
 }
 
 // Comprueba si los servicios de ubicación del dispositivo están activos. Si la
