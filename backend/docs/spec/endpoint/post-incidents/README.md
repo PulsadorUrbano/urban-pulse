@@ -1,7 +1,7 @@
 # POST /incidents — registrar una incidencia
 
 - Estado: implementado y cubierto por pruebas unitarias.
-- Última revisión: 2026-11-09.
+- Última revisión: 2026-11-15.
 - Autenticación: `Authorization: Bearer <JWT>` obligatoria.
 - Rol: `civic` con relación `citizens` vigente en PostgreSQL.
 - Content-Type: `application/json`.
@@ -62,7 +62,7 @@ Responde 201, cabecera `Location: /incidents/{id}` y el recurso creado. La incid
 }
 ```
 
-`images` es deuda técnica de compatibilidad: siempre vale `[]` y no representa almacenamiento disponible. Se retirará cuando los consumidores migren. Errores: 400 entrada inválida; 401 JWT inválido; 403 rol o vínculo ciudadano inválido; 503 PostgreSQL no disponible.
+`POST /incidents` crea la incidencia sin fotos y devuelve `images: []` en ese momento. Después se pueden añadir mediante [POST /incidents/:id/images](../post-incidents-id-images/README.md); el detalle devuelve la lista persistida. Errores: 400 entrada inválida; 401 JWT inválido; 403 rol o vínculo ciudadano inválido; 503 PostgreSQL no disponible.
 
 ## Referencias
 

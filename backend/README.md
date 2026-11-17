@@ -22,9 +22,11 @@ Copy-Item .env.example .env
 | `JWT_EXPIRES_IN` | Duración de los tokens. |
 | `NODE_ENV` | Con `development`, activa la creación de usuarios de desarrollo al arrancar. |
 | `DB_SYNC` | Vacío: no sincroniza tablas. `dbpush`: ejecuta `prisma db push`. `deploy`: ejecuta `prisma migrate deploy`. |
+| `S3_BUCKET` y `S3_REGION` | Bucket privado y región de las fotos de incidencias. |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` | Credenciales del backend local; el token de sesión solo aplica a credenciales temporales. |
 | `OBSERVE_APP_KEY` y `OBSERVE_APP_SECRET` | Credenciales de Nest Observe. |
 
-No versiones los archivos `.env` ni credenciales reales. La configuración de contenedores se explica en [despliegue](../docs/deployment.md).
+No versiones los archivos `.env` ni credenciales reales. La configuración de contenedores se explica en [despliegue](../docs/deployment.md) y la de fotos en la [guía S3](../docs/conexion-s3-fotos.md).
 
 ### Arranque local
 
@@ -50,7 +52,7 @@ Swagger se publica en `http://localhost:3000/`. `GET /health` devuelve `{ "statu
 
 Los contratos detallados, validaciones y respuestas tienen su ubicación principal en el [catálogo de endpoints](docs/spec/endpoint/README.md).
 
-El frontend móvil aún usa el contrato anterior de multipart y `civicId`; la incompatibilidad y la migración pendiente están registradas como [deuda técnica](../docs/deuda-tecnica/deuda-tecnica-contrato-incidencias-frontend.md).
+La PR #158 permite al frontend móvil crear incidencias mediante JSON y JWT. La app todavía no sube las fotos seleccionadas al backend real; ese cambio móvil queda fuera de esta rama.
 
 | Método y ruta | Función |
 | --- | --- |
@@ -58,15 +60,16 @@ El frontend móvil aún usa el contrato anterior de multipart y `civicId`; la in
 | `POST /auth/login` | Iniciar sesión y obtener un JWT. |
 | `GET /auth/me` | Consultar el usuario autenticado mediante un token Bearer. |
 | `GET /categories` | Consultar el catálogo temporal de categorías. |
-| `POST /incidents` | Crear una incidencia con `multipart/form-data`. |
+| `POST /incidents` | Crear una incidencia con JSON y JWT. |
+| `POST /incidents/:id/images` | Añadir entre una y ocho fotos a una incidencia propia. |
 | `GET /incidents` | Listar incidencias con cursor en cabeceras (`limit` por defecto 10, máximo 100) y filtro opcional `civicId`. |
 | `GET /incidents/:id` | Consultar una incidencia. |
-| `PATCH /incidents/:id/status` | Validar o rechazar una incidencia reportada, con motivo y actor declarado. |
-| `PATCH /incidents/:id/priority` | Cambiar la prioridad de una incidencia validada, con motivo y actor declarado. |
+| `PATCH /incidents/:id/status` | Validar o rechazar una incidencia reportada, con motivo y actor derivado del JWT. |
+| `PATCH /incidents/:id/priority` | Cambiar la prioridad de una incidencia validada, con motivo y actor derivado del JWT. |
 
-El alta recibe JSON con `title` obligatorio. El título recortado admite entre 4 y 35 puntos de código; descripción, categoría, activo y ubicación son opcionales. `civicId` procede de la sesión y no se admite en el cuerpo. Tampoco se admiten `images`, archivos ni multipart. Devuelve `201`, el recurso y la cabecera `Location`. El campo de respuesta `images` se conserva temporalmente como `[]` para compatibilidad y no implica almacenamiento disponible.
+El alta recibe JSON con `title` obligatorio. El título recortado admite entre 4 y 35 puntos de código; descripción, categoría, activo y ubicación son opcionales. `civicId` procede de la sesión y no se admite en el cuerpo. Tampoco se admiten `images`, archivos ni multipart en esa ruta. Devuelve `201`, el recurso y la cabecera `Location`. Las fotos se suben después por `POST /incidents/:id/images`; el detalle incluye URL de lectura temporales.
 
-`GET /auth/me` utiliza `JwtAuthGuard`. Las rutas de incidencias no aplican ese guard; por tanto, el listado y el filtro `civicId` no requieren autenticación. El listado usa cursor keyset, no OFFSET. El arranque no configura CORS explícitamente.
+`GET /auth/me` y las rutas de incidencia individuales utilizan `JwtAuthGuard`; el listado y el filtro `civicId` siguen sin requerir autenticación. El listado usa cursor keyset, no OFFSET. El arranque no configura CORS explícitamente.
 
 ## Scripts y comprobaciones
 
@@ -104,7 +107,7 @@ La configuración unitaria descubre `**/*.spec.ts` y la e2e `**/*.e2e-spec.ts`.
 
 Los usuarios y ciudadanos se almacenan en PostgreSQL mediante Prisma. Las contraseñas se guardan con hash bcrypt. El esquema `prisma/schema.prisma` también define incidencias, ubicaciones y cambios de estado y prioridad.
 
-`IncidentsService` usa operaciones asíncronas de Prisma para incidencias, ubicaciones e historiales. La creación y los cambios auditados usan transacciones. No existe almacenamiento local ni remoto de imágenes, ni ruta de descarga; la migración `20261109000000_retirar_imagenes` elimina la tabla anterior. El catálogo de categorías sigue siendo temporal. El esquema local debe estar preparado; no se aplican migraciones automáticamente salvo que `DB_SYNC=deploy` se configure expresamente.
+`IncidentsService` usa operaciones asíncronas de Prisma para incidencias, ubicaciones e historiales. La creación y los cambios auditados usan transacciones. `FotosIncidenciaService` guarda las fotos en S3 y sus referencias en `IncidentImage`; la migración `20261115000000_imagenes_s3` crea la tabla después de la retirada anterior. El catálogo de categorías sigue siendo temporal. El esquema local debe estar preparado; no se aplican migraciones automáticamente salvo que `DB_SYNC=deploy` se configure expresamente.
 
 El [DBML](../database/diagram.dbml) y el [SQL de referencia](docs/migrations/001_base_diagram.sql) describen el modelo de datos del proyecto.
 
