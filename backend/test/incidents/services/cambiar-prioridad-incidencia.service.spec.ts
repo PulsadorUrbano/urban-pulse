@@ -33,13 +33,16 @@ describe('Asignación manual de prioridad', () => {
 
   async function crearValidada() {
     const creada = await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
       title: 'Farola apagada',
       civicId: propietario,
     });
     return servicio.cambiarEstado(
       creada.id,
       { status: 'validated', cause: 'Reporte confirmado' },
-      actor,
+      { id: actor, role: 'admin', ciudadanoId: null },
     );
   }
 
@@ -104,6 +107,9 @@ describe('Asignación manual de prioridad', () => {
     'bloquea una incidencia en estado %s',
     async (status) => {
       const creada = await servicio.create({
+        category: 'Iluminación',
+        latitude: 36.72,
+        longitude: -4.42,
         title: 'Banco roto',
         civicId: propietario,
       });
@@ -111,7 +117,7 @@ describe('Asignación manual de prioridad', () => {
         await servicio.cambiarEstado(
           creada.id,
           { status, cause: 'Duplicada' },
-          actor,
+          { id: actor, role: 'admin', ciudadanoId: null },
         );
       }
       await expect(

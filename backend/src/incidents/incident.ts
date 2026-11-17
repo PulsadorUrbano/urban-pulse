@@ -27,15 +27,15 @@ export interface Incident {
   title: string;
   description: string | null;
   civicId: string;
-  categoryId: string | null;
-  category: string | null;
+  categoryId: string;
+  category: string;
   urbanAssetId: string | null;
   departmentId: string | null;
   teamId: string | null;
   technicianId: string | null;
   location: {
-    latitude: number | null;
-    longitude: number | null;
+    latitude: number;
+    longitude: number;
     accuracy: number | null;
     createdAt: string;
     address: IncidentAddress | null;
@@ -48,7 +48,7 @@ export interface Incident {
 
 export type CambioAsignacionIncidencia = Partial<
   Pick<Incident, 'departmentId' | 'teamId' | 'technicianId'>
->;
+> & { cause: string };
 
 export interface OpcionesAsignacion {
   departments: { id: string; name: string }[];

@@ -53,6 +53,11 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
         location: null,
       };
       delete created.location;
+      const inicial = data.cambiosEstado
+        ? objeto(objeto(data.cambiosEstado).create)
+        : null;
+      delete created.cambiosEstado;
+      if (inicial) cambiosEstado.push({ ...inicial, incidenciaId: data.id });
       incidencias.push(created);
       if (location) {
         const row = {
@@ -167,6 +172,7 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
     if (!incident) return null;
     return {
       ...clonar(incident),
+      categoria: { name: 'Iluminación' },
       location: clonar(
         ubicaciones.find((row) => String(row.incidentId) === id) ?? null,
       ),
@@ -187,7 +193,13 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
     },
     category: {
       findUnique: async () =>
-        opciones.categoriaInexistente ? null : { name: 'Iluminación' },
+        opciones.categoriaInexistente
+          ? null
+          : {
+              id: '10000000-0000-4000-8000-000000000001',
+              name: 'Iluminación',
+              isActive: true,
+            },
       upsert: async () => ({
         id: '10000000-0000-4000-8000-000000000001',
         name: 'Iluminación',

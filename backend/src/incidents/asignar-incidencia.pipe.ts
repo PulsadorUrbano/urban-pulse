@@ -25,14 +25,23 @@ export class AsignarIncidenciaPipe implements PipeTransform<
     }
     const claves = Object.keys(entrada);
     if (
-      claves.length === 0 ||
-      claves.some((clave) => !campos.includes(clave as (typeof campos)[number]))
+      !('cause' in entrada) ||
+      typeof entrada.cause !== 'string' ||
+      !entrada.cause.trim() ||
+      claves.filter((clave) => clave !== 'cause').length === 0 ||
+      claves.some(
+        (clave) =>
+          clave !== 'cause' &&
+          !campos.includes(clave as (typeof campos)[number]),
+      )
     ) {
       throw new BadRequestException(
         'Se requiere al menos un campo de asignación, sin campos desconocidos',
       );
     }
-    const cambio: CambioAsignacionIncidencia = {};
+    const cambio: CambioAsignacionIncidencia = {
+      cause: (entrada as { cause: string }).cause.trim(),
+    };
     for (const campo of campos) {
       if (!(campo in entrada)) continue;
       const valor = (entrada as Record<string, unknown>)[campo];

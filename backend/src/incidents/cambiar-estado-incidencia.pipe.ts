@@ -19,7 +19,14 @@ export class CambiarEstadoIncidenciaPipe implements PipeTransform<
         (campo) => !['status', 'cause'].includes(campo),
       ) ||
       !('status' in entrada) ||
-      (entrada.status !== 'validated' && entrada.status !== 'rejected') ||
+      ![
+        'validated',
+        'rejected',
+        'in_progress',
+        'resolved',
+        'reopened',
+        'closed',
+      ].includes(String(entrada.status)) ||
       !('cause' in entrada) ||
       typeof entrada.cause !== 'string' ||
       !entrada.cause.trim()
@@ -28,6 +35,9 @@ export class CambiarEstadoIncidenciaPipe implements PipeTransform<
         'Se requieren status validated o rejected y cause no vacío, sin otros campos',
       );
     }
-    return { status: entrada.status, cause: entrada.cause.trim() };
+    return {
+      status: entrada.status as CambiarEstadoIncidenciaInput['status'],
+      cause: entrada.cause.trim(),
+    };
   }
 }

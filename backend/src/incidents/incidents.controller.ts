@@ -87,15 +87,15 @@ const incidentSchema = {
     title: { type: 'string' },
     description: { type: 'string', nullable: true },
     civicId: { type: 'string', format: 'uuid' },
-    categoryId: { type: 'string', format: 'uuid', nullable: true },
-    category: { type: 'string', nullable: true },
+    categoryId: { type: 'string', format: 'uuid' },
+    category: { type: 'string' },
     urbanAssetId: { type: 'string', format: 'uuid', nullable: true },
     location: {
       type: 'object',
       required: ['latitude', 'longitude', 'accuracy', 'createdAt', 'address'],
       properties: {
-        latitude: { type: 'number', nullable: true },
-        longitude: { type: 'number', nullable: true },
+        latitude: { type: 'number' },
+        longitude: { type: 'number' },
         accuracy: { type: 'number', nullable: true },
         createdAt: { type: 'string', format: 'date-time' },
         address: {
@@ -133,7 +133,7 @@ export class IncidentsController {
 
   @Get('assignment-options')
   @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
-  @SetMetadata('rolesIncidencias', ['admin', 'administrative'])
+  @SetMetadata('rolesIncidencias', ['admin', 'administrative', 'department'])
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Consultar departamentos, equipos y técnicos asignables',
@@ -150,8 +150,10 @@ export class IncidentsController {
   @ApiServiceUnavailableResponse({
     description: 'PostgreSQL no está disponible.',
   })
-  opcionesAsignacion(): Promise<OpcionesAsignacion> {
-    return this.incidentsService.opcionesAsignacion();
+  opcionesAsignacion(
+    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
+  ): Promise<OpcionesAsignacion> {
+    return this.incidentsService.opcionesAsignacion(usuario);
   }
 
   @Get()
@@ -264,7 +266,8 @@ export class IncidentsController {
     schema: {
       type: 'object',
       additionalProperties: false,
-      required: ['title'],
+      required: ['title', 'latitude', 'longitude'],
+      anyOf: [{ required: ['categoryId'] }, { required: ['category'] }],
       properties: {
         title: { type: 'string', minLength: 4, maxLength: 35 },
         description: { type: 'string', minLength: 10 },
@@ -331,11 +334,17 @@ export class IncidentsController {
       'El rol actual o la vinculación ciudadana no permite la operación.',
   })
   @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
-  @SetMetadata('rolesIncidencias', ['admin', 'administrative'])
+  @SetMetadata('rolesIncidencias', [
+    'admin',
+    'administrative',
+    'department',
+    'team',
+    'technician',
+  ])
   @ApiOperation({
-    summary: 'Validar o rechazar una incidencia con motivo',
+    summary: 'Cambiar el estado de una incidencia con motivo',
     description:
-      'Solo admin o administrative actuales. El actor de auditoría procede de la identidad autenticada y el cambio se persiste atómicamente con su historial.',
+      'Aplica la matriz de transiciones y el ámbito del departamento o técnico asignado. El actor procede del token y el cambio se persiste con su historial.',
   })
   @ApiBody({
     schema: {
@@ -343,7 +352,17 @@ export class IncidentsController {
       additionalProperties: false,
       required: ['status', 'cause'],
       properties: {
-        status: { type: 'string', enum: ['validated', 'rejected'] },
+        status: {
+          type: 'string',
+          enum: [
+            'validated',
+            'rejected',
+            'in_progress',
+            'resolved',
+            'reopened',
+            'closed',
+          ],
+        },
         cause: { type: 'string', minLength: 1 },
       },
     },
@@ -352,7 +371,7 @@ export class IncidentsController {
   @ApiBadRequestResponse({ description: 'UUID o cuerpo inválido.' })
   @ApiNotFoundResponse({ description: 'La incidencia no existe.' })
   @ApiConflictResponse({
-    description: 'La incidencia ya no está en estado reported.',
+    description: 'La transición no está permitida o la incidencia cambió.',
   })
   @ApiServiceUnavailableResponse({
     description: 'PostgreSQL no está disponible.',
@@ -363,11 +382,7 @@ export class IncidentsController {
     entrada: CambiarEstadoIncidenciaInput,
     @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
   ): Promise<Incident> {
-    return this.incidentsService.cambiarEstado(
-      idIncidencia,
-      entrada,
-      usuario.id,
-    );
+    return this.incidentsService.cambiarEstado(idIncidencia, entrada, usuario);
   }
 
   @Patch(':id/priority')
@@ -421,7 +436,7 @@ export class IncidentsController {
 
   @Patch(':id/assignment')
   @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
-  @SetMetadata('rolesIncidencias', ['admin', 'administrative'])
+  @SetMetadata('rolesIncidencias', ['admin', 'administrative', 'department'])
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Asignar departamento, equipo y técnico a una incidencia',
@@ -430,8 +445,10 @@ export class IncidentsController {
     schema: {
       type: 'object',
       additionalProperties: false,
-      minProperties: 1,
+      minProperties: 2,
+      required: ['cause'],
       properties: {
+        cause: { type: 'string', minLength: 1 },
         departmentId: { type: 'string', format: 'uuid', nullable: true },
         teamId: { type: 'string', format: 'uuid', nullable: true },
         technicianId: { type: 'string', format: 'uuid', nullable: true },
@@ -458,8 +475,27 @@ export class IncidentsController {
   asignar(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body(new AsignarIncidenciaPipe()) cambio: CambioAsignacionIncidencia,
+    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
   ): Promise<Incident> {
-    return this.incidentsService.asignar(id, cambio);
+    return this.incidentsService.asignar(id, cambio, usuario);
+  }
+
+  @Get(':id/assignments')
+  @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
+  @SetMetadata('rolesIncidencias', [
+    'admin',
+    'administrative',
+    'department',
+    'team',
+    'technician',
+  ])
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Consultar el historial de asignaciones' })
+  consultarAsignaciones(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
+  ) {
+    return this.incidentsService.consultarCambiosAsignacion(id, usuario);
   }
 
   @Get(':id')
@@ -472,7 +508,15 @@ export class IncidentsController {
       'El rol actual o la vinculación ciudadana no permite la operación.',
   })
   @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
-  @SetMetadata('rolesIncidencias', ['civic', 'admin', 'administrative'])
+  @SetMetadata('rolesIncidencias', [
+    'civic',
+    'admin',
+    'administrative',
+    'department',
+    'team',
+    'technician',
+    'analyst',
+  ])
   @ApiOperation({
     summary: 'Consultar una incidencia por identificador',
     description:

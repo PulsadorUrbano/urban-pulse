@@ -52,6 +52,12 @@ export class CreateIncidentPipe implements PipeTransform<
       throw new BadRequestException('title must contain 4 to 35 characters');
     }
 
+    if (value.categoryId === undefined && !category) {
+      throw new BadRequestException('La categoría es obligatoria');
+    }
+    if (value.latitude === undefined || value.longitude === undefined) {
+      throw new BadRequestException('La ubicación es obligatoria');
+    }
     if (value.categoryId !== undefined) {
       this.uuid(value.categoryId, 'categoryId');
     }

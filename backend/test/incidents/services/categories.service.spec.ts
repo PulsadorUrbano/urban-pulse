@@ -1,55 +1,37 @@
+import { BadRequestException } from '@nestjs/common';
 import type { PrismaService } from '../../../src/prisma/prisma.service.js';
 import { CategoriesService } from '../../../src/incidents/categories.service.js';
-
-describe('Catálogo persistido de categorías', () => {
-  it('mantiene el orden conocido del catálogo inicial', async () => {
-    const fecha = new Date('2026-11-17T00:00:00.000Z');
-    const findMany = vi.fn().mockResolvedValue([
-      { id: '2', name: 'Limpieza', createdAt: fecha },
-      { id: '1', name: 'Iluminación', createdAt: fecha },
-    ]);
-    const prisma = { category: { findMany } } as unknown as PrismaService;
-
-    expect(
-      (await new CategoriesService(prisma).findAll()).map((c) => c.name),
-    ).toEqual(['Iluminación', 'Limpieza']);
-  });
-
-  it('lee los identificadores almacenados, también desde otra instancia', async () => {
-    const fila = {
-      id: '10000000-0000-4000-8000-000000000001',
-      name: 'Iluminación',
-      normalizedName: 'iluminación',
-      createdAt: new Date('2026-11-17T00:00:00.000Z'),
-    };
+describe('Catálogo controlado', () => {
+  const fecha = new Date();
+  const fila = {
+    id: 'categoria',
+    name: 'Alumbrado público',
+    createdAt: fecha,
+    isActive: true,
+  };
+  it('consulta solo categorías activas y devuelve el contrato existente', async () => {
     const findMany = vi.fn().mockResolvedValue([fila]);
-    const prisma = { category: { findMany } } as unknown as PrismaService;
-
-    const primera = new CategoriesService(prisma);
-    const segunda = new CategoriesService(prisma);
-    expect(await primera.findAll()).toEqual([
-      { id: fila.id, name: fila.name, createdAt: fila.createdAt.toISOString() },
+    const servicio = new CategoriesService({
+      category: { findMany },
+    } as unknown as PrismaService);
+    expect(await servicio.findAll()).toEqual([
+      { id: fila.id, name: fila.name, createdAt: fecha.toISOString() },
     ]);
-    expect(await segunda.findAll()).toEqual(await primera.findAll());
-    expect(findMany).toHaveBeenCalledTimes(3);
+    expect(findMany).toHaveBeenCalledWith({
+      where: { isActive: true },
+      orderBy: [{ code: 'asc' }],
+    });
   });
-
-  it('resuelve un mismo nombre al identificador persistido', async () => {
-    const fila = {
-      id: '10000000-0000-4000-8000-000000000001',
-      name: 'Iluminación',
-      createdAt: new Date('2026-11-17T00:00:00.000Z'),
-    };
-    const upsert = vi.fn().mockResolvedValue(fila);
-    const prisma = { category: { upsert } } as unknown as PrismaService;
-    const primera = new CategoriesService(prisma);
-    const segunda = new CategoriesService(prisma);
-
-    expect(await primera.resolve(' iluminación ')).toEqual(
-      await segunda.resolve('ILUMINACIÓN'),
-    );
-    expect(upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { normalizedName: 'iluminación' } }),
-    );
-  });
+  it.each([null, { ...fila, isActive: false }])(
+    'no crea categorías ausentes o inactivas',
+    async (resultado) => {
+      const findUnique = vi.fn().mockResolvedValue(resultado);
+      const servicio = new CategoriesService({
+        category: { findUnique },
+      } as unknown as PrismaService);
+      await expect(servicio.resolve('inventada')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    },
+  );
 });

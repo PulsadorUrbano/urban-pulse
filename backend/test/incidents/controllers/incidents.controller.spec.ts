@@ -67,7 +67,7 @@ describe('IncidentsController autenticado', () => {
     expect(servicio.cambiarEstado).toHaveBeenCalledWith(
       incidencia.id,
       { status: 'validated', cause: 'Comprobada' },
-      operador.id,
+      operador,
     );
     expect(servicio.cambiarPrioridad).toHaveBeenCalledWith(
       incidencia.id,
@@ -107,15 +107,24 @@ describe('IncidentsController autenticado', () => {
       RequestMethod.PATCH,
     );
 
-    await expect(controlador.opcionesAsignacion()).resolves.toEqual({
+    await expect(controlador.opcionesAsignacion(operador)).resolves.toEqual({
       departments: [],
       teams: [],
       technicians: [],
     });
-    await controlador.asignar(incidencia.id, { departmentId: null });
-    expect(servicio.asignar).toHaveBeenCalledWith(incidencia.id, {
-      departmentId: null,
-    });
+    await controlador.asignar(
+      incidencia.id,
+      { departmentId: null, cause: 'Revisada' },
+      operador,
+    );
+    expect(servicio.asignar).toHaveBeenCalledWith(
+      incidencia.id,
+      {
+        departmentId: null,
+        cause: 'Revisada',
+      },
+      operador,
+    );
   });
 
   it('deja público el listado y protege las operaciones autenticadas', () => {
@@ -158,6 +167,7 @@ describe('IncidentsController autenticado', () => {
       expect(Reflect.getMetadata('rolesIncidencias', operacion)).toEqual([
         'admin',
         'administrative',
+        'department',
       ]);
     }
   });

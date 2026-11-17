@@ -64,7 +64,7 @@ describe('CreateIncidentPipe', () => {
     expect(result).not.toHaveProperty('accuracy');
   });
 
-  it('accepts omitted latitude and longitude', () => {
+  it('rechaza ausencia de ubicación', () => {
     const {
       latitude: _latitude,
       longitude: _longitude,
@@ -72,10 +72,7 @@ describe('CreateIncidentPipe', () => {
       ...value
     } = input();
 
-    const result = pipe.transform(value);
-    expect(result.title).toBe('Farola apagada');
-    expect(result).not.toHaveProperty('latitude');
-    expect(result).not.toHaveProperty('longitude');
+    expect(() => pipe.transform(value)).toThrow(BadRequestException);
   });
 
   it('rechaza una coordenada aislada', () => {
@@ -128,13 +125,10 @@ describe('CreateIncidentPipe', () => {
     );
   });
 
-  it('accepts an omitted categoryId and category', () => {
+  it('rechaza ausencia de categoría', () => {
     const { categoryId: _categoryId, category: _category, ...value } = input();
 
-    const result = pipe.transform(value);
-    expect(result.title).toBe('Farola apagada');
-    expect(result).not.toHaveProperty('categoryId');
-    expect(result).not.toHaveProperty('category');
+    expect(() => pipe.transform(value)).toThrow(BadRequestException);
   });
 
   it.each([

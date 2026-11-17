@@ -71,19 +71,17 @@ describe('IncidentsService', () => {
     await module.close();
   });
 
-  it('no crea una ubicación vacía cuando no llegan coordenadas', async () => {
+  it('rechaza una incidencia sin ubicación y no escribe filas', async () => {
     const module = await crearServicio();
-    const created = await service.create({
-      title: 'Farola apagada',
-      civicId: input.civicId,
-    });
-
+    await expect(
+      service.create({
+        title: 'Farola apagada',
+        civicId: input.civicId,
+        category: 'Iluminación',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
     expect(prisma.ubicaciones).toHaveLength(0);
-    expect(created.location).toMatchObject({
-      latitude: null,
-      longitude: null,
-      accuracy: null,
-    });
+    expect(prisma.incidencias).toHaveLength(0);
     await module.close();
   });
 
@@ -112,6 +110,8 @@ describe('IncidentsService', () => {
   it('enlaza una categoría indicada solo por nombre', async () => {
     const module = await crearServicio();
     const created = await service.create({
+      latitude: 36.72,
+      longitude: -4.42,
       title: 'Farola apagada',
       civicId: input.civicId,
       category: 'Iluminación',
@@ -124,6 +124,7 @@ describe('IncidentsService', () => {
   it('guarda una dirección normalizada con la ubicación', async () => {
     const module = await crearServicio();
     const created = await service.create({
+      category: 'Iluminación',
       title: 'Farola apagada',
       civicId: input.civicId,
       latitude: 36.7213,

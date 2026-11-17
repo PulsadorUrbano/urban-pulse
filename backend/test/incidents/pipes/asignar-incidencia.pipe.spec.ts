@@ -22,7 +22,15 @@ describe('AsignarIncidenciaPipe', () => {
 
   it('admite un subconjunto de UUID y null y normaliza los UUID', async () => {
     await expect(
-      pipe.transform({ departmentId: id.toUpperCase(), technicianId: null }),
-    ).resolves.toEqual({ departmentId: id, technicianId: null });
+      pipe.transform({
+        cause: 'Revisada',
+        departmentId: id.toUpperCase(),
+        technicianId: null,
+      }),
+    ).resolves.toEqual({
+      cause: 'Revisada',
+      departmentId: id,
+      technicianId: null,
+    });
   });
 });

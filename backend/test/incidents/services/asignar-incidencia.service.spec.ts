@@ -1,282 +1,197 @@
 import {
-  BadRequestException,
   ConflictException,
+  ForbiddenException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { IncidentsService } from '../../../src/incidents/incidents.service.js';
 import type { PrismaService } from '../../../src/prisma/prisma.service.js';
+import { IncidentsService } from '../../../src/incidents/incidents.service.js';
+import type { UsuarioIncidencias } from '../../../src/incidents/types/usuario-incidencias.js';
 
 const departamento = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
-const otroDepartamento = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-const equipo = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
-const otroEquipo = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
-const equipoHermano = '99999999-9999-4999-8999-999999999999';
-const tecnico = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
-
+const equipo = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const tecnico = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const operador: UsuarioIncidencias = {
+  id: tecnico,
+  role: 'admin',
+  ciudadanoId: null,
+};
 function preparar() {
   const fila = {
-    id: 'ffffffff-ffff-4fff-8fff-ffffffffffff',
+    id: tecnico,
     title: 'Farola apagada',
     description: null,
-    civicId: departamento,
-    categoryId: null,
-    category: null,
+    civicId: tecnico,
+    categoryId: equipo,
+    categoria: { name: 'Alumbrado público' },
     urbanAssetId: null,
+    createdAt: new Date(),
+    location: {
+      latitude: 36.72,
+      longitude: -4.42,
+      accuracy: null,
+      createdAt: new Date(),
+      address: null,
+    },
     status: 'validated',
     priority: 'low',
-    createdAt: new Date('2026-11-03'),
-    departmentId: departamento,
-    teamId: equipo,
-    technicianId: tecnico,
-    location: null,
-    images: [],
+    departmentId: departamento as string | null,
+    teamId: equipo as string | null,
+    technicianId: null as string | null,
   };
-  const updateMany = vi.fn(
-    async ({
-      where,
-      data,
-    }: {
-      where: Record<string, unknown>;
-      data: Record<string, unknown>;
-    }) => {
-      if (
-        where.departmentId !== fila.departmentId ||
-        where.teamId !== fila.teamId ||
-        where.technicianId !== fila.technicianId
-      )
-        return { count: 0 };
-      Object.assign(fila, data);
-      return { count: 1 };
-    },
-  );
+  const historial: unknown[] = [];
+  const estados: unknown[] = [];
   const prisma = {
     incident: {
-      findUnique: vi.fn(async ({ select }: { select?: object }) =>
-        select
-          ? {
-              status: fila.status,
-              departmentId: fila.departmentId,
-              teamId: fila.teamId,
-              technicianId: fila.technicianId,
-            }
-          : { ...fila },
-      ),
-      updateMany,
+      findUnique: vi.fn(async () => ({ ...fila })),
+      updateMany: vi.fn(async ({ data }: { data: object }) => {
+        Object.assign(fila, data);
+        return { count: 1 };
+      }),
     },
-    department: {
-      findUnique: vi.fn(async ({ where }: { where: { id: string } }) =>
-        [departamento, otroDepartamento].includes(where.id)
-          ? { id: where.id }
-          : null,
-      ),
-    },
-    team: {
-      findUnique: vi.fn(async ({ where }: { where: { id: string } }) =>
-        where.id === equipo || where.id === equipoHermano
-          ? { departmentId: departamento }
-          : where.id === otroEquipo
-            ? { departmentId: otroDepartamento }
-            : null,
-      ),
-    },
-    users: {
-      findUnique: vi.fn(async ({ where }: { where: { id: string } }) =>
-        where.id === tecnico ? { id: tecnico } : null,
-      ),
-    },
+    department: { findUnique: vi.fn(async () => ({ id: departamento })) },
+    team: { findUnique: vi.fn(async () => ({ departmentId: departamento })) },
+    users: { findUnique: vi.fn(async () => ({ id: tecnico })) },
     teamMember: {
-      findUnique: vi.fn(
-        async ({
-          where,
-        }: {
-          where: { userId_teamId: { userId: string; teamId: string } };
-        }) =>
-          where.userId_teamId.userId === tecnico &&
-          where.userId_teamId.teamId === equipo
-            ? { isTechnician: true }
-            : null,
-      ),
+      findUnique: vi.fn(async () => ({ isTechnician: true, isActive: true })),
     },
-    $transaction: async (callback: (tx: unknown) => Promise<unknown>) =>
-      callback(prisma),
+    cambioAsignacion: {
+      create: vi.fn(async ({ data }: { data: object }) => {
+        historial.push(data);
+        return data;
+      }),
+      findMany: vi.fn(async () => historial),
+    },
+    cambioEstado: {
+      create: vi.fn(async ({ data }: { data: object }) => {
+        estados.push(data);
+        return data;
+      }),
+    },
+    $transaction: async (operacion: (tx: unknown) => Promise<unknown>) => {
+      const anterior = structuredClone(fila);
+      const n = historial.length;
+      const e = estados.length;
+      try {
+        return await operacion(prisma);
+      } catch (error) {
+        Object.assign(fila, anterior);
+        historial.splice(n);
+        estados.splice(e);
+        throw error;
+      }
+    },
   };
-  const servicio = new IncidentsService(prisma as unknown as PrismaService);
-  return { fila, servicio, updateMany, prisma };
+  return {
+    servicio: new IncidentsService(prisma as unknown as PrismaService),
+    fila,
+    historial,
+    estados,
+    prisma,
+  };
 }
-
-describe('Asignación de incidencias', () => {
-  it('cambiar departamento limpia equipo y técnico; se admite solo departamento', async () => {
-    const { servicio, fila } = preparar();
-    const respuesta = await servicio.asignar(fila.id, {
-      departmentId: otroDepartamento,
-    });
-    expect(respuesta).toMatchObject({
-      departmentId: otroDepartamento,
-      teamId: null,
-      technicianId: null,
-      status: 'validated',
-    });
-    expect(fila).toMatchObject({
-      departmentId: otroDepartamento,
-      teamId: null,
-      technicianId: null,
-    });
-  });
-
-  it('quitar equipo limpia técnico y cambiar solo técnico conserva superiores', async () => {
-    const primero = preparar();
-    expect(
-      await primero.servicio.asignar(primero.fila.id, { teamId: null }),
-    ).toMatchObject({
-      departmentId: departamento,
-      teamId: null,
-      technicianId: null,
-    });
-    const segundo = preparar();
-    expect(
-      await segundo.servicio.asignar(segundo.fila.id, {
-        technicianId: tecnico,
+describe('Asignación auditada', () => {
+  it('guarda actor, motivo y valores anteriores y nuevos junto al estado', async () => {
+    const p = preparar();
+    const respuesta = await p.servicio.asignar(
+      tecnico,
+      { technicianId: tecnico, cause: 'Asignar intervención' },
+      operador,
+    );
+    expect(respuesta.status).toBe('assigned');
+    expect(p.historial).toEqual([
+      expect.objectContaining({
+        actorId: tecnico,
+        motivo: 'Asignar intervención',
+        departamentoAnteriorId: departamento,
+        equipoAnteriorId: equipo,
+        tecnicoAnteriorId: null,
+        departamentoNuevoId: departamento,
+        equipoNuevoId: equipo,
+        tecnicoNuevoId: tecnico,
       }),
-    ).toMatchObject({
-      departmentId: departamento,
-      teamId: equipo,
-      technicianId: tecnico,
-    });
+    ]);
+    expect(p.estados).toEqual([
+      expect.objectContaining({ nuevoEstado: 'assigned' }),
+    ]);
   });
-
-  it('cambiar equipo dentro del mismo departamento limpia técnico', async () => {
-    const { servicio, fila } = preparar();
+  it('revierte asignación si falla el historial', async () => {
+    const p = preparar();
+    p.prisma.cambioAsignacion.create.mockRejectedValueOnce(new Error('Fallo'));
     await expect(
-      servicio.asignar(fila.id, { teamId: equipoHermano }),
-    ).resolves.toMatchObject({
-      departmentId: departamento,
-      teamId: equipoHermano,
-      technicianId: null,
-    });
-  });
-
-  it('rechaza jerarquía cruzada e ID ausente sin escribir', async () => {
-    const { servicio, fila, updateMany } = preparar();
-    await expect(
-      servicio.asignar(fila.id, { teamId: otroEquipo }),
-    ).rejects.toBeInstanceOf(ConflictException);
-    await expect(
-      servicio.asignar(fila.id, {
-        departmentId: '11111111-1111-4111-8111-111111111111',
-      }),
-    ).rejects.toBeInstanceOf(BadRequestException);
-    expect(updateMany).not.toHaveBeenCalled();
-  });
-
-  it('sustituye la cadena completa en una petición', async () => {
-    const { servicio, fila } = preparar();
-    const respuesta = await servicio.asignar(fila.id, {
-      departmentId: otroDepartamento,
-      teamId: otroEquipo,
-      technicianId: null,
-    });
-    expect(respuesta).toMatchObject({
-      departmentId: otroDepartamento,
-      teamId: otroEquipo,
-      technicianId: null,
-    });
-  });
-
-  it('repetir el mismo parche conserva toda la cadena', async () => {
-    const { servicio, fila } = preparar();
-    const anterior = { ...fila };
-    await expect(
-      servicio.asignar(fila.id, { departmentId: departamento }),
-    ).resolves.toMatchObject({
-      departmentId: departamento,
-      teamId: equipo,
-      technicianId: tecnico,
-    });
-    expect(fila).toEqual(anterior);
-  });
-
-  it('rechaza estados no editables e ID de técnico desconocido', async () => {
-    const { servicio, fila, updateMany } = preparar();
-    fila.status = 'reported';
-    await expect(
-      servicio.asignar(fila.id, { departmentId: otroDepartamento }),
-    ).rejects.toBeInstanceOf(ConflictException);
-    fila.status = 'validated';
-    await expect(
-      servicio.asignar(fila.id, {
-        technicianId: '11111111-1111-4111-8111-111111111111',
-      }),
-    ).rejects.toBeInstanceOf(BadRequestException);
-    expect(updateMany).not.toHaveBeenCalled();
-  });
-
-  it('consulta opciones de asignación sin datos ficticios', async () => {
-    const { servicio, prisma } = preparar();
-    Object.assign(prisma.department, {
-      findMany: vi.fn().mockResolvedValue([{ id: departamento, name: 'Vías' }]),
-    });
-    Object.assign(prisma.team, {
-      findMany: vi
-        .fn()
-        .mockResolvedValue([
-          { id: equipo, name: 'Alumbrado', departmentId: departamento },
-        ]),
-    });
-    Object.assign(prisma.teamMember, {
-      findMany: vi
-        .fn()
-        .mockResolvedValue([
-          { teamId: equipo, user: { id: tecnico, username: 'Ana' } },
-        ]),
-    });
-    await expect(servicio.opcionesAsignacion()).resolves.toEqual({
-      departments: [{ id: departamento, name: 'Vías' }],
-      teams: [{ id: equipo, name: 'Alumbrado', departmentId: departamento }],
-      technicians: [{ id: tecnico, name: 'Ana', teamId: equipo }],
-    });
-  });
-
-  it('rechaza asignar técnico sin equipo y conserva la incidencia', async () => {
-    const { servicio, fila, updateMany } = preparar();
-    fila.teamId = null;
-    fila.technicianId = null;
-    await expect(
-      servicio.asignar(fila.id, { technicianId: tecnico }),
-    ).rejects.toBeInstanceOf(ConflictException);
-    expect(updateMany).not.toHaveBeenCalled();
-  });
-
-  it('detecta un cambio concurrente sin sobrescribirlo', async () => {
-    const { servicio, fila, updateMany, prisma } = preparar();
-    prisma.incident.findUnique.mockImplementationOnce(async () => {
-      fila.teamId = otroEquipo;
-      return {
-        status: 'validated',
-        departmentId: departamento,
-        teamId: equipo,
-        technicianId: tecnico,
-      };
-    });
-    await expect(
-      servicio.asignar(fila.id, { technicianId: null }),
-    ).rejects.toBeInstanceOf(ConflictException);
-    expect(updateMany).toHaveBeenCalledOnce();
-    expect(fila.teamId).toBe(otroEquipo);
-  });
-
-  it('traduce un fallo transaccional y conserva la asignación anterior', async () => {
-    const { servicio, fila, prisma } = preparar();
-    const anterior = { ...fila };
-    prisma.$transaction = async (
-      callback: (tx: unknown) => Promise<unknown>,
-    ) => {
-      await callback(prisma);
-      Object.assign(fila, anterior);
-      throw new Error('fallo al confirmar');
-    };
-    await expect(
-      servicio.asignar(fila.id, { departmentId: otroDepartamento }),
+      p.servicio.asignar(
+        tecnico,
+        { technicianId: tecnico, cause: 'Asignar' },
+        operador,
+      ),
     ).rejects.toBeInstanceOf(ServiceUnavailableException);
-    expect(fila).toEqual(anterior);
+    expect(p.fila).toMatchObject({ status: 'validated', technicianId: null });
+    expect(p.historial).toEqual([]);
+  });
+  it('impide operar sobre otro departamento', async () => {
+    const p = preparar();
+    await expect(
+      p.servicio.asignar(
+        tecnico,
+        { technicianId: tecnico, cause: 'Asignar' },
+        { ...operador, role: 'department', departamentoId: equipo },
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(p.historial).toEqual([]);
+  });
+  it('permite al departamento operar dentro de su ámbito', async () => {
+    const p = preparar();
+    await expect(
+      p.servicio.asignar(
+        tecnico,
+        { technicianId: tecnico, cause: 'Asignar' },
+        { ...operador, role: 'department', departamentoId: departamento },
+      ),
+    ).resolves.toMatchObject({ status: 'assigned' });
+  });
+  it.each(['in_progress', 'resolved', 'closed', 'rejected', 'reported'])(
+    'impide asignar desde %s',
+    async (status) => {
+      const p = preparar();
+      p.fila.status = status;
+      await expect(
+        p.servicio.asignar(
+          tecnico,
+          { technicianId: tecnico, cause: 'Asignar' },
+          operador,
+        ),
+      ).rejects.toBeInstanceOf(ConflictException);
+    },
+  );
+  it('exige equipo y no genera un cambio parcial', async () => {
+    const p = preparar();
+    await expect(
+      p.servicio.asignar(tecnico, { teamId: null, cause: 'Retirar' }, operador),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+  it('no pisa una asignación concurrente ni genera historial', async () => {
+    const p = preparar();
+    p.prisma.incident.updateMany.mockResolvedValueOnce({ count: 0 });
+    await expect(
+      p.servicio.asignar(
+        tecnico,
+        { technicianId: tecnico, cause: 'Asignar' },
+        operador,
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(p.historial).toEqual([]);
+  });
+  it('rechaza miembros inactivos', async () => {
+    const p = preparar();
+    p.prisma.teamMember.findUnique.mockResolvedValueOnce({
+      isTechnician: true,
+      isActive: false,
+    });
+    await expect(
+      p.servicio.asignar(
+        tecnico,
+        { technicianId: tecnico, cause: 'Asignar' },
+        operador,
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 });

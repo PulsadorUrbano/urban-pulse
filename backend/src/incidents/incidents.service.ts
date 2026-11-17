@@ -12,6 +12,8 @@ import type {
   CambioEstadoModel,
   CambioPrioridadModel,
   AddressModel,
+  CategoryModel,
+  CambioAsignacionModel,
   IncidentModel as PrismaIncident,
   IncidentLocationModel as PrismaIncidentLocation,
 } from '../generated/prisma/models.js';
@@ -32,9 +34,11 @@ import { normalizeCategoryName } from './category.js';
 
 const incluirAgregado = {
   location: { include: { address: true } },
+  categoria: true,
 };
 
 type IncidenciaConAgregado = PrismaIncident & {
+  categoria: CategoryModel;
   location: (PrismaIncidentLocation & { address: AddressModel | null }) | null;
 };
 
@@ -45,14 +49,22 @@ export class IncidentsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(input: CreateIncidentInput): Promise<Incident> {
+    if (
+      (!input.categoryId && !input.category?.trim()) ||
+      input.latitude === undefined ||
+      input.longitude === undefined
+    ) {
+      throw new BadRequestException('Categoría y ubicación obligatorias');
+    }
+    let categoriaId = input.categoryId?.toLowerCase();
     let nombreCategoria = input.category?.trim() || null;
     try {
       if (input.categoryId) {
         const categoria = await this.prisma.category.findUnique({
           where: { id: input.categoryId.toLowerCase() },
-          select: { name: true },
+          select: { id: true, name: true, isActive: true },
         });
-        if (!categoria) {
+        if (!categoria || !categoria.isActive) {
           throw new BadRequestException('categoryId no existe');
         }
         if (
@@ -63,6 +75,16 @@ export class IncidentsService {
           throw new BadRequestException('category no coincide con categoryId');
         }
         nombreCategoria = categoria.name;
+      }
+      if (!categoriaId && nombreCategoria) {
+        const categoria = await this.prisma.category.findUnique({
+          where: { normalizedName: normalizeCategoryName(nombreCategoria) },
+        });
+        if (!categoria?.isActive)
+          throw new BadRequestException(
+            'La categoría no pertenece al catálogo activo',
+          );
+        categoriaId = categoria.id;
       }
       if (input.urbanAssetId) {
         const activo = await this.prisma.urbanAsset.findUnique({
@@ -93,8 +115,7 @@ export class IncidentsService {
       title: input.title,
       description: input.description ?? null,
       civicId: input.civicId.toLowerCase(),
-      categoryId: input.categoryId?.toLowerCase() ?? null,
-      category: nombreCategoria,
+      categoryId: categoriaId!,
       urbanAssetId: input.urbanAssetId?.toLowerCase() ?? null,
       createdAt,
     };
@@ -113,21 +134,17 @@ export class IncidentsService {
               })
             ).id
           : null;
-        if (!datos.categoryId && datos.category) {
-          const categoria = await tx.category.upsert({
-            where: { normalizedName: normalizeCategoryName(datos.category) },
-            update: {},
-            create: {
-              name: datos.category,
-              normalizedName: normalizeCategoryName(datos.category),
-            },
-          });
-          datos.categoryId = categoria.id;
-          datos.category = categoria.name;
-        }
         return tx.incident.create({
           data: {
             ...datos,
+            cambiosEstado: {
+              create: {
+                actorId: input.civicId.toLowerCase(),
+                nuevoEstado: 'reported',
+                motivo: 'Registro de incidencia',
+                fechaCreacion: createdAt,
+              },
+            },
             ...(ubicacion
               ? {
                   location: {
@@ -259,27 +276,58 @@ export class IncidentsService {
     }
     if (!incident) throw new NotFoundException('La incidencia no existe');
     if (
-      usuario.role === 'civic' &&
-      incident.civicId !== usuario.ciudadanoId?.toLowerCase()
+      !['admin', 'administrative'].includes(usuario.role) &&
+      incident.civicId !== usuario.ciudadanoId?.toLowerCase() &&
+      !(
+        usuario.role === 'department' &&
+        incident.departmentId === usuario.departamentoId
+      ) &&
+      !(incident.teamId && incident.teamId === usuario.equipoId)
     ) {
       throw new NotFoundException('La incidencia no existe');
     }
     return this.serializar(incident);
   }
 
-  async opcionesAsignacion(): Promise<OpcionesAsignacion> {
+  async opcionesAsignacion(
+    usuario?: UsuarioIncidencias,
+  ): Promise<OpcionesAsignacion> {
     try {
       const [departments, teams, members] = await Promise.all([
         this.prisma.department.findMany({
+          where: {
+            isActive: true,
+            ...(usuario?.role === 'department'
+              ? { id: usuario.departamentoId ?? '' }
+              : {}),
+          },
           select: { id: true, name: true },
           orderBy: { name: 'asc' },
         }),
         this.prisma.team.findMany({
+          where: {
+            isActive: true,
+            department: { isActive: true },
+            ...(usuario?.role === 'department'
+              ? { departmentId: usuario.departamentoId ?? '' }
+              : {}),
+          },
           select: { id: true, name: true, departmentId: true },
           orderBy: { name: 'asc' },
         }),
         this.prisma.teamMember.findMany({
-          where: { isTechnician: true },
+          where: {
+            isTechnician: true,
+            isActive: true,
+            user: { isActive: true },
+            team: {
+              isActive: true,
+              department: { isActive: true },
+              ...(usuario?.role === 'department'
+                ? { departmentId: usuario.departamentoId ?? '' }
+                : {}),
+            },
+          },
           select: {
             teamId: true,
             user: { select: { id: true, username: true } },
@@ -304,7 +352,10 @@ export class IncidentsService {
   async asignar(
     idIncidencia: string,
     cambio: CambioAsignacionIncidencia,
+    usuario: UsuarioIncidencias,
   ): Promise<Incident> {
+    if (!cambio.cause?.trim())
+      throw new BadRequestException('El motivo es obligatorio');
     const id = idIncidencia.toLowerCase();
     let resultado: IncidenciaConAgregado | null;
     try {
@@ -319,7 +370,7 @@ export class IncidentsService {
           },
         });
         if (!actual) throw new NotFoundException('La incidencia no existe');
-        if (actual.status !== 'validated' && actual.status !== 'assigned') {
+        if (!['validated', 'assigned', 'reopened'].includes(actual.status)) {
           throw new ConflictException(
             'Solo se puede asignar una incidencia validada o asignada',
           );
@@ -329,6 +380,19 @@ export class IncidentsService {
           cambio.departmentId === undefined
             ? actual.departmentId
             : cambio.departmentId;
+        if (
+          !['admin', 'administrative'].includes(usuario.role) &&
+          !(
+            usuario.role === 'department' &&
+            usuario.departamentoId &&
+            usuario.departamentoId === departmentId &&
+            actual.departmentId === usuario.departamentoId
+          )
+        ) {
+          throw new ForbiddenException(
+            'Solo puede operar sobre su departamento',
+          );
+        }
         const cambioDepartamento = departmentId !== actual.departmentId;
         const teamId =
           cambio.teamId === undefined
@@ -344,10 +408,14 @@ export class IncidentsService {
               : actual.technicianId
             : cambio.technicianId;
 
+        if (!departmentId || !teamId)
+          throw new ConflictException(
+            'La asignación requiere departamento y equipo',
+          );
         if (
           departmentId &&
           !(await tx.department.findUnique({
-            where: { id: departmentId },
+            where: { id: departmentId, isActive: true },
             select: { id: true },
           }))
         ) {
@@ -355,7 +423,7 @@ export class IncidentsService {
         }
         if (teamId) {
           const team = await tx.team.findUnique({
-            where: { id: teamId },
+            where: { id: teamId, isActive: true },
             select: { departmentId: true },
           });
           if (!team) throw new BadRequestException('teamId no existe');
@@ -367,7 +435,7 @@ export class IncidentsService {
         }
         if (technicianId) {
           const user = await tx.users.findUnique({
-            where: { id: technicianId },
+            where: { id: technicianId, isActive: true },
             select: { id: true },
           });
           if (!user) throw new BadRequestException('technicianId no existe');
@@ -375,9 +443,9 @@ export class IncidentsService {
             throw new ConflictException('El técnico requiere un equipo');
           const miembro = await tx.teamMember.findUnique({
             where: { userId_teamId: { userId: technicianId, teamId } },
-            select: { isTechnician: true },
+            select: { isTechnician: true, isActive: true },
           });
-          if (!miembro?.isTechnician) {
+          if (!miembro?.isTechnician || !miembro.isActive) {
             throw new ConflictException('El técnico no pertenece al equipo');
           }
         }
@@ -390,13 +458,35 @@ export class IncidentsService {
             teamId: actual.teamId,
             technicianId: actual.technicianId,
           },
-          data: { departmentId, teamId, technicianId },
+          data: { departmentId, teamId, technicianId, status: 'assigned' },
         });
         if (actualizadas.count !== 1) {
           throw new ConflictException(
             'La asignación cambió durante la operación',
           );
         }
+        await tx.cambioAsignacion.create({
+          data: {
+            incidenciaId: id,
+            actorId: usuario.id,
+            motivo: cambio.cause.trim(),
+            departamentoAnteriorId: actual.departmentId,
+            equipoAnteriorId: actual.teamId,
+            tecnicoAnteriorId: actual.technicianId,
+            departamentoNuevoId: departmentId,
+            equipoNuevoId: teamId,
+            tecnicoNuevoId: technicianId,
+          },
+        });
+        if (actual.status !== 'assigned')
+          await tx.cambioEstado.create({
+            data: {
+              incidenciaId: id,
+              actorId: usuario.id,
+              nuevoEstado: 'assigned',
+              motivo: cambio.cause.trim(),
+            },
+          });
         return tx.incident.findUnique({
           where: { id },
           include: incluirAgregado,
@@ -406,7 +496,8 @@ export class IncidentsService {
       if (
         error instanceof BadRequestException ||
         error instanceof NotFoundException ||
-        error instanceof ConflictException
+        error instanceof ConflictException ||
+        error instanceof ForbiddenException
       )
         throw error;
       throw this.errorPersistencia('asignar la incidencia');
@@ -418,62 +509,100 @@ export class IncidentsService {
   async cambiarEstado(
     idIncidencia: string,
     entrada: CambiarEstadoIncidenciaInput,
-    idActor: string,
+    usuario: UsuarioIncidencias,
   ): Promise<Incident> {
-    if (
-      (entrada.status !== 'validated' && entrada.status !== 'rejected') ||
-      !entrada.cause.trim()
-    ) {
-      throw new BadRequestException(
-        'El estado debe ser validated o rejected y el motivo no puede estar vacío',
-      );
-    }
+    if (!entrada.cause.trim())
+      throw new BadRequestException('El motivo es obligatorio');
     const id = idIncidencia.toLowerCase();
-    const fechaCreacion = new Date();
-    const cambio = {
-      id: randomUUID(),
-      incidenciaId: id,
-      actorId: idActor.toLowerCase(),
-      nuevoEstado: entrada.status,
-      motivo: entrada.cause.trim(),
-      fechaCreacion,
-    };
-
-    let resultado: IncidenciaConAgregado | null;
     try {
-      resultado = await this.prisma.$transaction(async (tx) => {
-        const actualizadas = await tx.incident.updateMany({
-          where: { id, status: 'reported' },
+      const resultado = await this.prisma.$transaction(async (tx) => {
+        const actual = await tx.incident.findUnique({ where: { id } });
+        if (!actual) throw new NotFoundException('La incidencia no existe');
+        const destinos: Record<PrismaIncident['status'], readonly string[]> = {
+          reported: ['validated', 'rejected'],
+          validated: [],
+          rejected: [],
+          assigned: ['in_progress'],
+          in_progress: ['resolved'],
+          resolved: ['closed', 'reopened'],
+          closed: ['reopened'],
+          reopened: [],
+        };
+        if (!destinos[actual.status].includes(entrada.status))
+          throw new ConflictException('Transición de estado no permitida');
+        const administracion = ['admin', 'administrative'].includes(
+          usuario.role,
+        );
+        const departamento =
+          usuario.role === 'department' &&
+          !!usuario.departamentoId &&
+          usuario.departamentoId === actual.departmentId;
+        const tecnico =
+          usuario.id === actual.technicianId &&
+          !!usuario.equipoId &&
+          usuario.equipoId === actual.teamId &&
+          usuario.esTecnico === true;
+        const permitida = ['in_progress', 'resolved'].includes(entrada.status)
+          ? tecnico
+          : actual.status === 'reported' || actual.status === 'closed'
+            ? administracion
+            : administracion || departamento;
+        if (!permitida)
+          throw new ForbiddenException('No puede realizar esta transición');
+        const cambios = await tx.incident.updateMany({
+          where: {
+            id,
+            status: actual.status,
+            departmentId: actual.departmentId,
+            teamId: actual.teamId,
+            technicianId: actual.technicianId,
+          },
           data: { status: entrada.status },
         });
-        if (actualizadas.count === 0) {
-          const existe = await tx.incident.findUnique({
-            where: { id },
-            select: { id: true },
-          });
-          if (!existe) throw new NotFoundException('La incidencia no existe');
+        if (cambios.count !== 1)
           throw new ConflictException(
-            'Solo se puede validar o rechazar una incidencia en estado reported',
+            'La incidencia cambió durante la operación',
           );
-        }
-        await tx.cambioEstado.create({ data: cambio });
+        await tx.cambioEstado.create({
+          data: {
+            incidenciaId: id,
+            actorId: usuario.id,
+            nuevoEstado: entrada.status,
+            motivo: entrada.cause.trim(),
+          },
+        });
         return tx.incident.findUnique({
           where: { id },
           include: incluirAgregado,
         });
       });
+      if (!resultado) throw new NotFoundException('La incidencia no existe');
+      return this.serializar(resultado);
     } catch (error) {
       if (
         error instanceof BadRequestException ||
+        error instanceof ConflictException ||
         error instanceof NotFoundException ||
-        error instanceof ConflictException
-      ) {
+        error instanceof ForbiddenException
+      )
         throw error;
-      }
       throw this.errorPersistencia('cambiar el estado de la incidencia');
     }
-    if (!resultado) throw new NotFoundException('La incidencia no existe');
-    return this.serializar(resultado);
+  }
+
+  async consultarCambiosAsignacion(
+    id: string,
+    usuario: UsuarioIncidencias,
+  ): Promise<CambioAsignacionModel[]> {
+    await this.findOne(id, usuario);
+    try {
+      return await this.prisma.cambioAsignacion.findMany({
+        where: { incidenciaId: id.toLowerCase() },
+        orderBy: [{ fechaCreacion: 'asc' }, { id: 'asc' }],
+      });
+    } catch {
+      throw this.errorPersistencia('consultar el historial de asignaciones');
+    }
   }
 
   async consultarCambiosEstado(
@@ -557,7 +686,8 @@ export class IncidentsService {
       if (
         error instanceof BadRequestException ||
         error instanceof NotFoundException ||
-        error instanceof ConflictException
+        error instanceof ConflictException ||
+        error instanceof ForbiddenException
       ) {
         throw error;
       }
@@ -597,13 +727,15 @@ export class IncidentsService {
   }
 
   private serializar(incident: IncidenciaConAgregado): Incident {
+    if (!incident.location)
+      throw this.errorPersistencia('leer una incidencia sin ubicación');
     return {
       id: incident.id,
       title: incident.title,
       description: incident.description,
       civicId: incident.civicId,
       categoryId: incident.categoryId,
-      category: incident.category,
+      category: incident.categoria.name,
       urbanAssetId: incident.urbanAssetId,
       departmentId: incident.departmentId,
       teamId: incident.teamId,
@@ -612,8 +744,8 @@ export class IncidentsService {
       priority: incident.priority,
       createdAt: incident.createdAt.toISOString(),
       location: {
-        latitude: incident.location?.latitude ?? null,
-        longitude: incident.location?.longitude ?? null,
+        latitude: incident.location.latitude,
+        longitude: incident.location.longitude,
         accuracy: incident.location?.accuracy ?? null,
         createdAt: (
           incident.location?.createdAt ?? incident.createdAt
