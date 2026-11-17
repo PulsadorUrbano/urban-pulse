@@ -66,3 +66,5 @@ Las antiguas rutas de descarga de imágenes no forman parte de la API activa. La
 - [Iniciar sesión](post-auth-login/README.md): POST /auth/login.
 - [Validar sesión](get-auth-me/README.md): GET /auth/me.
 - [Emisión anterior retirada](post-auth-token/README.md): POST /auth/token, sin ruta activa.
+
+- [GET /incidents/:id/assignments](get-incidents-id-assignments/README.md): historial de asignaciones autorizado por ámbito.

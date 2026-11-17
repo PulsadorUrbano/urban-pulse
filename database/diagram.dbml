@@ -91,6 +91,7 @@ Table Team {
 
 Table TeamMember {
   indexes {
+    userId [unique]
     (userId, teamId) [pk]
   }
   isActive boolean [not null]
@@ -194,7 +195,7 @@ Ref: TeamMember.teamId > Team.id
 Ref: IncidentLocation.incidentId > Incident.id
 Ref: IncidentLocation.addressId > Address.id
 Ref: UrbanContext.locationId > IncidentLocation.incidentId
-Ref: status_changes.incidenciaId > Incident.id
+Ref: status_changes.incident_id > Incident.id
 Ref: status_changes.user_id > users.id
 Ref: priority_changes.incident_id > Incident.id
 Ref: priority_changes.user_id > users.id

@@ -109,3 +109,13 @@ Los usuarios y ciudadanos se almacenan en PostgreSQL mediante Prisma. Las contra
 El [DBML](../database/diagram.dbml) y el [SQL de referencia](docs/migrations/001_base_diagram.sql) describen el modelo de datos del proyecto.
 
 Guías: [arquitectura](../docs/architecture.md), [desarrollo](../docs/development.md), [despliegue](../docs/deployment.md), [contribución](../CONTRIBUTING.md) y [ADRs](../docs/adr/).
+
+
+### Cierre del modelo y auditoría de asignaciones
+
+La migración `20261118000000_close_model` exige categoría y ubicación y conserva el máximo de 35 caracteres del título. Mantiene los UUID del catálogo anterior y establece diez categorías controladas y quince tipos de activo urbano; las categorías históricas ajenas se conservan inactivas.
+`citizens` y `TeamMember` pueden coexistir para un usuario; un usuario solo pertenece a un equipo. `DepartmentMember` determina el ámbito del rol `department`.
+Las asignaciones requieren `cause` y resultado con departamento y equipo; se guardan con historial inmutable. `GET /incidents/:id/assignments` permite consultarlo.
+Las transiciones adicionales están implementadas con autorización por departamento o técnico asignado; las incidencias se conservan permanentemente.
+Los clientes deben enviar categoría y coordenadas al crear, y motivo al asignar. No se han adaptado los frontends en este cambio.
+La migración se detiene ante datos históricos incompatibles. No se han ejecutado migraciones contra PostgreSQL durante esta implementación.

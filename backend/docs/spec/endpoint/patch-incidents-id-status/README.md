@@ -1,23 +1,8 @@
-# PATCH /incidents/:id/status — validar o rechazar
+# PATCH /incidents/:id/status
 
-- Estado: implementado y cubierto por pruebas unitarias.
-- Última revisión: 2026-11-09.
-- Autenticación: `Authorization: Bearer <JWT>` obligatoria.
-- Roles: `admin` o `administrative` vigentes en PostgreSQL.
-
-`id` debe ser UUID. El cuerpo JSON admite exactamente `status` (`validated` o `rejected`) y `cause` (texto no vacío después de trim). `civicId` y otros campos devuelven 400; el actor se deriva del usuario autenticado.
-
-```json
-{
-  "status": "validated",
-  "cause": "Reporte comprobado"
-}
-```
-
-Solo permite la transición desde `reported`. El estado y `CambioEstado` se escriben en una misma transacción Prisma, con UUID y fecha de servidor. Responde 200 con el recurso completo; no expone historial ni actor. Errores: 400 entrada inválida; 401 JWT inválido; 403 rol no permitido; 404 incidencia ausente; 409 estado concurrente o incompatible; 503 fallo de PostgreSQL.
-
-## Referencias
-
-- [Controlador](../../../../src/incidents/incidents.controller.ts)
-- [Validación](../../../../src/incidents/cambiar-estado-incidencia.pipe.ts)
-- [Servicio](../../../../src/incidents/incidents.service.ts)
+JWT obligatorio. JSON con status y cause no vacío, sin otros campos.
+Transiciones y permisos: reported a validated/rejected por administración; assigned a in_progress y de ahí a resolved por el técnico asignado; resolved a closed/reopened por administración o departamento propio; closed a reopened por administración.
+La entrada en assigned se realiza mediante PATCH assignment, también desde reopened. rejected es terminal.
+El motivo describe la intervención al resolver. Escritura atómica con historial y control de concurrencia. 200 devuelve el recurso.
+Errores: 400 entrada inválida, 401 identidad inválida, 403 actor sin permiso, 404 ausente, 409 transición o concurrencia incompatible, 503 persistencia.
+Última revisión: 2026-11-17.

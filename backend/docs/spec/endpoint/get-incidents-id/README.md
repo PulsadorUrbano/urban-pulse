@@ -1,16 +1,6 @@
-# GET /incidents/:id — consultar una incidencia
+# GET /incidents/:id
 
-- Estado: implementado y cubierto por pruebas unitarias.
-- Última revisión: 2026-11-17.
-- Autenticación: `Authorization: Bearer <JWT>` obligatoria.
-- Roles: `civic`, `admin` y `administrative` vigentes en PostgreSQL.
-
-`id` debe ser UUID y no hay cuerpo. Un operador puede consultar cualquier incidencia. Un ciudadano solo puede consultar una incidencia cuyo `civicId` coincida con su vínculo ciudadano; una incidencia ajena responde 404, igual que una inexistente, para no revelar su existencia.
-
-La respuesta 200 usa el recurso completo documentado en [POST /incidents](../post-incidents/README.md), incluida la dirección normalizada en `location.address` cuando existe. `images` siempre es `[]` por compatibilidad temporal. Errores: 400 UUID inválido; 401 JWT inválido; 403 rol o vínculo no permitido; 404 ausente o ajena; 503 PostgreSQL no disponible.
-
-## Referencias
-
-- [Controlador](../../../../src/incidents/incidents.controller.ts)
-- [Servicio](../../../../src/incidents/incidents.service.ts)
-- [Diseño integrado](../../features/specs/2026-11-09-integrar-incidencias-jwt-prisma-sin-imagenes-design.md)
+JWT obligatorio. Administración puede consultar cualquier incidencia; department las de su departamento; team y technician las de su equipo activo. Un usuario con perfil ciudadano puede consultar sus propias incidencias independientemente de su rol municipal.
+200 devuelve el recurso, con categoría obtenida por relación y ubicación obligatoria; dirección opcional, images siempre [].
+400 UUID inválido; 401 usuario/token inválido; 403 rol o perfil inválido; 404 inexistente o fuera de ámbito; 503 persistencia.
+Última revisión: 2026-11-17.
