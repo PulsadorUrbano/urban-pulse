@@ -1,13 +1,11 @@
 {
-  "name": "frontend",
+  "name": "urbanpulse-mobile",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
-    "@expo/ui": "~58.0.22",
     "@expo/vector-icons": "^15.0.2",
     "expo": "^58.0.17",
     "expo-constants": "~58.0.13",
-    "expo-device": "~58.0.5",
     "expo-file-system": "~58.0.10",
     "expo-font": "~58.0.9",
     "expo-glass-effect": "~58.0.4",
@@ -18,10 +16,8 @@
     "expo-router": "~58.0.25",
     "expo-secure-store": "~58.0.2",
     "expo-splash-screen": "~58.0.11",
-    "expo-status-bar": "~58.0.4",
     "expo-symbols": "~58.0.4",
     "expo-system-ui": "~58.0.6",
-    "expo-web-browser": "~58.0.6",
     "nativewind": "^4.2.7",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -32,7 +28,8 @@
     "react-native-screens": "~4.30.0",
     "react-native-web": "^0.21.4",
     "react-native-worklets": "0.13.0",
-    "tailwindcss": "^3.4.19"
+    "tailwindcss": "^3.4.19",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@testing-library/react-native": "^14.1.0",
@@ -51,13 +48,16 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "mock": "json-server --watch db.json --port 3001 --host 0.0.0.0",
+    "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch"
   },
   "private": true,
   "jest": {
     "preset": "jest-expo",
+    "setupFiles": ["<rootDir>/jest.setup.ts"],
     "moduleNameMapper": {
+      "^@/assets/(.*)$": "<rootDir>/assets/$1",
       "^@/(.*)$": "<rootDir>/src/$1"
     }
   }
