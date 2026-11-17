@@ -15,7 +15,7 @@ Errores: 401 sin token válido o usuario vigente; 403 sin rol permitido; 503 si 
 
 Lee `Department`, `Team`, `TeamMember` y `users` en PostgreSQL. Este endpoint no crea ni administra el catálogo.
 
-- [Especificación](../../features/specs/2026-11-03-asignar-departamento-equipo-y-tecnico-spec.md).
-- [Plan](../../features/plans/2026-11-03-asignar-departamento-equipo-y-tecnico-plan.md).
+- [Especificación](../../features/03-11-26-asignar-departamento-equipo-y-tecnico/spec.md).
+- [Plan](../../features/03-11-26-asignar-departamento-equipo-y-tecnico/plan.md).
 - [Controlador](../../../../src/incidents/incidents.controller.ts).
 - [Servicio](../../../../src/incidents/incidents.service.ts).
