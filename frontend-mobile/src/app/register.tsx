@@ -5,28 +5,28 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  StyleSheet,
-  Text,
   TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CountryCodePicker } from '@/components/country-code-picker';
+import { FallbackNoticeCard } from '@/components/fallback-notice-card';
 import { PasswordInput } from '@/components/password-input';
+import { PrimaryButton } from '@/components/primary-button';
 import { PasswordStrengthMeter } from '@/components/password-strength-meter';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { DEFAULT_COUNTRY } from '@/constants/countries';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { MOCK_FALLBACK_NOTICE } from '@/constants/messages';
+import { MaxContentWidth } from '@/constants/theme';
 import { type RegisterSuccess, useRegister } from '@/hooks/use-register';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import type { Country } from '@/types/country';
 import type { RegisterUserInput } from '@/types/user';
+import { buildPhoneWithDialCode } from '@/utils/phone';
 import { getPasswordStrengthLevel, isEmailFormatValid } from '@/utils/password-strength';
-
-const ERROR_COLOR = '#d92d20';
 
 export default function RegisterScreen() {
   const theme = useTheme();
@@ -47,7 +47,7 @@ export default function RegisterScreen() {
 
   if (isRestoringSession) {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView className="flex-1 flex-row justify-center">
         <ActivityIndicator testID="session-restoring-indicator" />
       </ThemedView>
     );
@@ -78,7 +78,8 @@ export default function RegisterScreen() {
     if (isSubmitDisabled) return;
 
     const trimmedPhoneNumber = phoneNumber.trim();
-    const phone = trimmedPhoneNumber !== '' ? `${selectedCountry.dialCode}${trimmedPhoneNumber}` : undefined;
+    const phone =
+      trimmedPhoneNumber !== '' ? buildPhoneWithDialCode(selectedCountry.dialCode, trimmedPhoneNumber) : undefined;
 
     const input: RegisterUserInput = {
       username: username.trim(),
@@ -116,26 +117,13 @@ export default function RegisterScreen() {
 
   if (autoLoginFailedNotice) {
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <ThemedView className="flex-1 items-center justify-center gap-4 px-6">
-            <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
-              <Text className="text-center text-sm font-medium" style={{ color: ERROR_COLOR }}>
-                Tu cuenta se ha creado, pero no se pudo iniciar sesión automáticamente. Inicia sesión.
-              </Text>
-            </ThemedView>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Iniciar sesión"
-              onPress={() => router.replace('/login')}
-              className="active:opacity-70 rounded-3xl">
-              <View className="items-center justify-center rounded-3xl px-6 py-4" style={{ backgroundColor: '#ffffff' }}>
-                <ThemedText type="smallBold" style={{ color: '#000000' }}>
-                  Iniciar sesión
-                </ThemedText>
-              </View>
-            </Pressable>
-          </ThemedView>
+      <ThemedView className="flex-1 flex-row justify-center">
+        <SafeAreaView className="flex-1 px-6" style={{ maxWidth: MaxContentWidth }}>
+          <FallbackNoticeCard
+            message="Tu cuenta se ha creado, pero no se pudo iniciar sesión automáticamente. Inicia sesión."
+            buttonLabel="Iniciar sesión"
+            onPress={() => router.replace('/login')}
+          />
         </SafeAreaView>
       </ThemedView>
     );
@@ -143,42 +131,29 @@ export default function RegisterScreen() {
 
   if (pendingFallbackRegister) {
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <ThemedView className="flex-1 items-center justify-center gap-4 px-6">
-            <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
-              <Text className="text-center text-sm font-medium" style={{ color: ERROR_COLOR }}>
-                No se ha podido conectar al backend, realizando en el mock
-              </Text>
-            </ThemedView>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Continuar"
-              onPress={handleContinueAfterFallback}
-              className="active:opacity-70 rounded-3xl">
-              <View className="items-center justify-center rounded-3xl px-6 py-4" style={{ backgroundColor: '#ffffff' }}>
-                <ThemedText type="smallBold" style={{ color: '#000000' }}>
-                  Continuar
-                </ThemedText>
-              </View>
-            </Pressable>
-          </ThemedView>
+      <ThemedView className="flex-1 flex-row justify-center">
+        <SafeAreaView className="flex-1 px-6" style={{ maxWidth: MaxContentWidth }}>
+          <FallbackNoticeCard
+            message={MOCK_FALLBACK_NOTICE}
+            buttonLabel="Continuar"
+            onPress={handleContinueAfterFallback}
+          />
         </SafeAreaView>
       </ThemedView>
     );
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+    <ThemedView className="flex-1 flex-row justify-center">
+      <SafeAreaView className="flex-1 px-6" style={{ maxWidth: MaxContentWidth }}>
         <KeyboardAvoidingView
-          style={styles.keyboardAvoiding}
+          className="flex-1 justify-center gap-6"
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <ThemedView style={styles.hero}>
-            <ThemedText type="title" style={styles.centerText}>
+          <ThemedView className="items-center justify-center px-6 gap-4">
+            <ThemedText type="title" className="text-center">
               Crear cuenta
             </ThemedText>
-            <ThemedText style={styles.centerText} themeColor="textSecondary">
+            <ThemedText className="text-center" themeColor="textSecondary">
               Únete a UrbanPulse para reportar incidencias en tu ciudad.
             </ThemedText>
           </ThemedView>
@@ -258,31 +233,18 @@ export default function RegisterScreen() {
             />
 
             {visibleErrorMessage ? (
-              <ThemedText type="small" style={{ color: ERROR_COLOR }} accessibilityRole="alert">
+              <ThemedText type="small" themeColor="error" accessibilityRole="alert">
                 {visibleErrorMessage}
               </ThemedText>
             ) : null}
 
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Crear cuenta"
+            <PrimaryButton
+              label="Crear cuenta"
               accessibilityState={{ disabled: isSubmitDisabled, busy: isSubmitting }}
               disabled={isSubmitDisabled}
+              isLoading={isSubmitting}
               onPress={handleSubmit}
-              className={`rounded-3xl active:opacity-70${isSubmitDisabled ? ' opacity-70' : ''}`}>
-              {/* Botón blanco (#ffffff) con texto negro (#000000), fijo en ambos temas */}
-              <View
-                className="items-center justify-center rounded-3xl px-6 py-4"
-                style={{ backgroundColor: '#ffffff' }}>
-                {isSubmitting ? (
-                  <ActivityIndicator />
-                ) : (
-                  <ThemedText type="smallBold" style={{ color: '#000000' }}>
-                    Crear cuenta
-                  </ThemedText>
-                )}
-              </View>
-            </Pressable>
+            />
 
             <Pressable
               accessibilityRole="button"
@@ -297,30 +259,3 @@ export default function RegisterScreen() {
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    maxWidth: MaxContentWidth,
-  },
-  keyboardAvoiding: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: Spacing.four,
-  },
-  hero: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.three,
-  },
-  centerText: {
-    textAlign: 'center',
-  },
-});

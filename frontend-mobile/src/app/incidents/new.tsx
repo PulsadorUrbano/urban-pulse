@@ -1,12 +1,9 @@
 import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
-  Linking,
   Pressable,
   ScrollView,
-  Text,
   TextInput,
   View,
 } from 'react-native';
@@ -15,26 +12,18 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CategoryPicker } from '@/components/category-picker';
 import { LOCATION_TOGGLE_SIZE, LocationToggle } from '@/components/location-toggle';
 import { PhotoPicker } from '@/components/photo-picker';
+import { PrimaryButton } from '@/components/primary-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useCategories } from '@/hooks/use-categories';
 import { useCreateIncident } from '@/hooks/use-create-incident';
+import { useIncidentLocationSubmit } from '@/hooks/use-incident-location-submit';
 import { useLocationPreference } from '@/hooks/use-location-preference';
 import { usePhotoAttachment } from '@/hooks/use-photo-attachment';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
-import {
-  areLocationServicesEnabled,
-  getCurrentCoordinates,
-  requestLocationPermission,
-} from '@/services/device-location';
-import {
-  DEFAULT_INCIDENT_STATUS,
-  type CreateIncidentInput,
-  type CreatedIncident,
-} from '@/types/incident';
-import type { LocationCoordinates } from '@/types/location';
+import { DEFAULT_INCIDENT_STATUS, type CreateIncidentInput } from '@/types/incident';
 import {
   INCIDENT_DESCRIPTION_MAX_LENGTH,
   INCIDENT_TITLE_MAX_LENGTH,
@@ -70,10 +59,29 @@ export default function NewIncidentScreen() {
   const [isOtherSelected, setIsOtherSelected] = useState(false);
   const [customCategory, setCustomCategory] = useState('');
   const [validationErrors, setValidationErrors] = useState<IncidentValidationErrors>({});
-  const [createdIncident, setCreatedIncident] = useState<CreatedIncident | null>(null);
-  const [locationNotice, setLocationNotice] = useState<string | null>(null);
-  const [backendFallbackNotice, setBackendFallbackNotice] = useState<string | null>(null);
-  const [isResolvingLocation, setIsResolvingLocation] = useState(false);
+
+  // Construye el payload de categoría según la selección activa: una categoría
+  // del catálogo, una categoría personalizada ("Otros") o ninguna.
+  const buildCategoryInput = () => ({
+    categoryId: isOtherSelected ? null : selectedCategoryId,
+    category: isOtherSelected ? customCategory : null,
+  });
+
+  const {
+    isResolvingLocation,
+    locationNotice,
+    backendFallbackNotice,
+    submitErrorMessage,
+    createdIncident,
+    startSubmit,
+  } = useIncidentLocationSubmit({
+    isLocationEnabled,
+    title,
+    description,
+    ...buildCategoryInput(),
+    selectedPhotoUris,
+    submitIncident,
+  });
 
   // Sin sesión activa (y ya resuelta) esta pantalla no es alcanzable: mismo
   // guard que ya usa HomeScreen/MyIncidentsScreen. Se coloca tras llamar a
@@ -85,13 +93,6 @@ export default function NewIncidentScreen() {
   // No se permite enviar mientras se resuelve la ubicación, se persiste la
   // incidencia o se está guardando una foto adjunta.
   const isSubmitDisabled = isSubmitting || isResolvingLocation || isProcessingPhoto;
-
-  // Construye el payload de categoría según la selección activa: una categoría
-  // del catálogo, una categoría personalizada ("Otros") o ninguna.
-  const buildCategoryInput = () => ({
-    categoryId: isOtherSelected ? null : selectedCategoryId,
-    category: isOtherSelected ? customCategory : null,
-  });
 
   // Selecciona una categoría del catálogo y descarta la opción "Otros".
   const handleSelectCategory = (categoryId: string) => {
@@ -113,106 +114,6 @@ export default function NewIncidentScreen() {
     setSelectedCategoryId(null);
     setIsOtherSelected(false);
     setCustomCategory('');
-  };
-
-  // Envía la incidencia con las coordenadas indicadas (o sin ellas) y conserva los
-  // avisos asociados (ubicación) para mostrarlos en la pantalla de confirmación.
-  const submitWithCoordinates = async (
-    coordinates: LocationCoordinates | null,
-    notice: string | null = null,
-  ) => {
-    const result = await submitIncident(
-      {
-        title,
-        description,
-        ...buildCategoryInput(),
-        latitude: coordinates?.latitude ?? null,
-        longitude: coordinates?.longitude ?? null,
-        accuracy: coordinates?.accuracy ?? null,
-      },
-      selectedPhotoUris,
-    );
-
-    if (!result) {
-      return;
-    }
-
-    setLocationNotice(notice);
-    setBackendFallbackNotice(
-      result.source === 'mock'
-        ? 'No se ha podido conectar al backend, realizando en el mock'
-        : null,
-    );
-
-    setCreatedIncident(result.incident);
-  };
-
-  // Resuelve la ubicación según la preferencia, los servicios del dispositivo y
-  // los permisos, degradando a un registro sin posición cuando algo falla.
-  const resolveLocationAndSubmit = async () => {
-    if (!isLocationEnabled) {
-      await submitWithCoordinates(null);
-      return;
-    }
-
-    const isDeviceLocationEnabled = await areLocationServicesEnabled();
-    if (!isDeviceLocationEnabled) {
-      Alert.alert(
-        'Ubicación del dispositivo desactivada',
-        'La ubicación del dispositivo está desactivada. Actívala en los Ajustes para registrar la incidencia con su posición.',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Enviar sin ubicación',
-            onPress: () =>
-              void submitWithCoordinates(
-                null,
-                'La incidencia se registró sin ubicación porque la ubicación del dispositivo está desactivada.',
-              ),
-          },
-        ],
-      );
-      return;
-    }
-
-    const isPermissionGranted = await requestLocationPermission();
-    if (!isPermissionGranted) {
-      Alert.alert(
-        'Permiso de ubicación',
-        'No podemos acceder a tu ubicación. Actívala en los Ajustes para registrar la incidencia con su posición.',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Abrir Ajustes', onPress: () => void Linking.openSettings() },
-          {
-            text: 'Enviar sin ubicación',
-            onPress: () =>
-              void submitWithCoordinates(
-                null,
-                'La incidencia se registró sin ubicación porque no hay permiso de ubicación.',
-              ),
-          },
-        ],
-      );
-      return;
-    }
-
-    const coordinates = await getCurrentCoordinates();
-    if (!coordinates) {
-      await submitWithCoordinates(
-        null,
-        'No se pudo obtener la ubicación; la incidencia se registró sin posición.',
-      );
-      return;
-    }
-
-    await submitWithCoordinates(coordinates);
-  };
-
-  // Punto de entrada del envío: resuelve la ubicación antes de registrar la
-  // incidencia y libera el bloqueo al terminar, tanto si hay éxito como error.
-  const startSubmit = () => {
-    setIsResolvingLocation(true);
-    void resolveLocationAndSubmit().finally(() => setIsResolvingLocation(false));
   };
 
   // Valida el formulario y pide un único consentimiento cuando hay avisos
@@ -271,9 +172,9 @@ export default function NewIncidentScreen() {
 
             {backendFallbackNotice ? (
               <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
-                <Text className="text-center text-sm font-medium text-[#d92d20]">
+                <ThemedText type="small" themeColor="error" className="text-center">
                   {backendFallbackNotice}
-                </Text>
+                </ThemedText>
               </ThemedView>
             ) : null}
 
@@ -325,7 +226,9 @@ export default function NewIncidentScreen() {
               style={{ color: theme.text, borderColor: theme.backgroundSelected }}
             />
             {validationErrors.title ? (
-              <Text className="text-sm font-medium text-[#d92d20]">{validationErrors.title}</Text>
+              <ThemedText type="small" themeColor="error">
+                {validationErrors.title}
+              </ThemedText>
             ) : null}
           </ThemedView>
 
@@ -368,9 +271,9 @@ export default function NewIncidentScreen() {
             </ThemedView>
 
             {validationErrors.category ? (
-              <Text className="text-sm font-medium text-[#d92d20]">
+              <ThemedText type="small" themeColor="error">
                 {validationErrors.category}
-              </Text>
+              </ThemedText>
             ) : null}
           </ThemedView>
 
@@ -394,7 +297,17 @@ export default function NewIncidentScreen() {
 
           {errorMessage ? (
             <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
-              <Text className="text-sm font-medium text-[#d92d20]">{errorMessage}</Text>
+              <ThemedText type="small" themeColor="error">
+                {errorMessage}
+              </ThemedText>
+            </ThemedView>
+          ) : null}
+
+          {submitErrorMessage ? (
+            <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
+              <ThemedText type="small" themeColor="error">
+                {submitErrorMessage}
+              </ThemedText>
             </ThemedView>
           ) : null}
         </ScrollView>
@@ -411,28 +324,14 @@ export default function NewIncidentScreen() {
             // className para que el footer siga en la capa superior.
             { elevation: 10 },
           ]}>
-          <Pressable
-            accessibilityRole="button"
+          <PrimaryButton
+            label="Enviar"
             accessibilityLabel="Enviar incidencia"
             disabled={isSubmitDisabled}
+            isLoading={isSubmitting || isResolvingLocation}
             onPress={handleSubmit}
-            className={`flex-1 rounded-3xl active:opacity-70${isSubmitDisabled ? ' opacity-70' : ''}`}>
-            {/* Color final decidido: fondo blanco (#ffffff) y texto negro
-                (#000000), fijo en ambos temas (light/dark). Se usa `View` de RN
-                (no `ThemedView`) para que el fondo no dependa del tema; el
-                `ActivityIndicator` sigue visible sobre el blanco al cargando. */}
-            <View
-              className="items-center justify-center rounded-3xl px-6 py-4"
-              style={{ backgroundColor: '#ffffff' }}>
-              {isSubmitting || isResolvingLocation ? (
-                <ActivityIndicator />
-              ) : (
-                <ThemedText type="smallBold" style={{ color: '#000000' }}>
-                  Enviar
-                </ThemedText>
-              )}
-            </View>
-          </Pressable>
+            className="flex-1"
+          />
 
           {/* Toggle de ubicación dentro del footer (componente normal, sin
               posicionamiento absoluto). */}

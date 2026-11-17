@@ -1,8 +1,16 @@
 import '@/global.css';
 
-import { DarkTheme, DefaultTheme, enableLegacyHeaderAppearance, Stack, ThemeProvider } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import {
+  DarkTheme,
+  DefaultTheme,
+  enableLegacyHeaderAppearance,
+  type ErrorBoundaryProps,
+  Stack,
+  ThemeProvider,
+} from 'expo-router';
 
+import { RouteErrorFallback } from '@/components/route-error-fallback';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { SessionProvider } from '@/hooks/use-session';
 
 // Expo Router define la ruta inicial del navegador con unstable_settings (no con una prop del Stack)
@@ -16,19 +24,24 @@ export const unstable_settings = { initialRouteName: 'login' };
 // `incidents/[id].tsx` (ver docs/spec/bugs/general/24-10-26-ui-desplazada-hacia-arriba.md).
 enableLegacyHeaderAppearance();
 
+// Límite de error de Expo Router: captura los fallos de render de cualquier ruta hija
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  return <RouteErrorFallback {...props} />;
+}
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   return (
     <SessionProvider>
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="register" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="incidents/new" options={{ title: 'Registrar incidencia' }} />
-        <Stack.Screen name="incidents/[id]" options={{ title: 'Detalle de la incidencia' }} />
-      </Stack>
-    </ThemeProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="register" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="incidents/new" options={{ title: 'Registrar incidencia' }} />
+          <Stack.Screen name="incidents/[id]" options={{ title: 'Detalle de la incidencia' }} />
+        </Stack>
+      </ThemeProvider>
     </SessionProvider>
   );
 }

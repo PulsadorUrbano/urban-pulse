@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Pressable, ScrollView, Text } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { IncidentPhotoViewer } from '@/components/incident-photo-viewer';
@@ -21,9 +21,9 @@ export default function IncidentDetailScreen() {
               importar el resto del estado (carga, error, contenido). */}
           {backendFallbackNotice ? (
             <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
-              <Text className="text-center text-sm font-medium text-[#d92d20]">
+              <ThemedText type="small" themeColor="error" className="text-center">
                 {backendFallbackNotice}
-              </Text>
+              </ThemedText>
             </ThemedView>
           ) : null}
 
@@ -58,9 +58,9 @@ export default function IncidentDetailScreen() {
           {/* Error genérico (conexión o respuesta no-404): ofrece reintentar. */}
           {errorMessage && !isNotFound ? (
             <ThemedView className="items-center gap-4 py-10">
-              <Text className="text-center text-sm font-medium text-[#d92d20]">
+              <ThemedText type="small" themeColor="error" className="text-center">
                 {errorMessage}
-              </Text>
+              </ThemedText>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Reintentar"
