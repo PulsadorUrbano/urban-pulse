@@ -3,7 +3,7 @@
 - Feature afectada: registro-incidencia.
 - Rama: refactor/182-limpieza-frontend-mobile (PR #184).
 - Última actualización: 2026-11-17.
-- Estado: Corregido con verificación pendiente (prueba manual en navegador).
+- Estado: Corregido y verificado.
 - Origen: review de CodeJose21 en la PR #184 (2026-11-17, "changes requested").
 
 ## Síntoma observado
@@ -72,19 +72,38 @@ solo se aplica al hook.
 - [x] Confirmar: con `window.confirm` → `true` se registra sin ubicación y se libera el bloqueo;
   con `false` se libera sin enviar y un segundo `startSubmit()` vuelve a funcionar.
 - [x] Native sin cambios: los 28 tests anteriores del hook siguen en verde sin modificarlos.
-- [ ] Prueba manual en `pnpm run start` → web, denegando el permiso en el navegador.
+- [x] Prueba manual en `pnpm run start` → web: confirmada por la usuaria (2026-11-18).
 - [x] `pnpm expo lint` y `pnpm tsc --noEmit`: 0 errores, 0 warnings.
 - [x] `pnpm test`: 62 suites / 774 tests en verde.
 - [ ] Responder a la review en la PR #184 y pedir re-review a CodeJose21.
 
 ## Confirmación
 
-- Estado final: Corregido con verificación pendiente.
+- Estado final: Corregido y verificado (prueba manual en navegador confirmada por la usuaria el 2026-11-18).
 - Fecha de revisión: 2026-11-17.
 - Evidencia de que no reaparece: `src/__tests__/utils/confirm-action.test.ts` (15 tests: native y
   web) y el bloque `en web` de `src/__tests__/hooks/use-incident-location-submit.test.ts` (10 tests:
   permiso denegado y servicios desactivados × aceptar, cancelar, reintentar tras cancelar, sin
   `Alert`/`openSettings`, sin `window.confirm`). Hook: 38/38; suite completa: 62 suites / 774 tests.
-- Limitaciones y pendientes: falta la prueba manual en navegador y responder a la review de la
-  PR #184. `Alert.alert` en `new.tsx` e `index.tsx` sigue sin funcionar en web (anotado en
-  `bugs/todo.md`). En web, "Abrir Ajustes" no se ofrece (`window.confirm` solo tiene dos botones).
+- Limitaciones y pendientes: en web, "Abrir Ajustes" no se
+  ofrece (`window.confirm` solo tiene dos botones).
+
+## Ampliación (2026-11-18): resto de `Alert.alert` de la app
+
+Al probar en el navegador, la usuaria no podía enviar con la ubicación desactivada: el botón
+"Enviar" no hacía nada. La causa era el alcance colateral anotado arriba: `handleSubmit` en
+`src/app/incidents/new.tsx` pide "¿Enviar de todas formas?" con `Alert.alert` cuando hay avisos
+de validación (descripción vacía o corta, o ubicación desactivada), y en web eso es un no-op. Se
+amplía el fix en la misma PR, porque es la misma causa:
+
+| Acción | Archivo | Responsabilidad |
+| --- | --- | --- |
+| modificar | `src/utils/confirm-action.ts` | `confirm.style?: 'default' \| 'destructive'` (solo native) |
+| modificar | `src/app/incidents/new.tsx` | "¿Enviar de todas formas?" con `confirmAction` (`destructive`) |
+| modificar | `src/app/(tabs)/index.tsx` | "Cerrar sesión" con `confirmAction` (`destructive`) |
+| modificar | `src/__tests__/utils/confirm-action.test.ts` | +3 tests de `style` |
+| modificar | `src/__tests__/app/incidents/new-incident-screen.test.tsx` | +5 tests (web aceptar/cancelar, ubicación desactivada, validación, `destructive` en native) |
+| modificar | `src/__tests__/app/tabs/home-screen-logout.test.tsx` | +3 tests (web aceptar/cancelar, `destructive` en native) |
+
+Verificación: `pnpm tsc --noEmit` y `pnpm expo lint` con 0 errores y 0 warnings; `pnpm test` con
+62 suites / 785 tests en verde. Ya no queda ningún `Alert.alert` directo en `src/`.

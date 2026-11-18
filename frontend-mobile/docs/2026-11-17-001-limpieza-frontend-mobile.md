@@ -107,5 +107,6 @@ Planes de los cambios pedidos en las PRs #184, #158 y #162, en `docs/spec/bugs/`
 - [x] Subtarea 1: `src/utils/confirm-action.ts` (confirmación con `Alert` en native y `window.confirm` en web) y `src/__tests__/utils/confirm-action.test.ts` (15 tests).
 - [x] Subtarea 2: `src/hooks/use-incident-location-submit.ts` usa `confirmAction` en los dos diálogos de ubicación; 10 tests web nuevos en `src/__tests__/hooks/use-incident-location-submit.test.ts` (38/38).
 - [x] Verificación: `pnpm tsc --noEmit` y `pnpm expo lint` con 0 errores y 0 warnings; `pnpm test` con 62 suites / 774 tests en verde.
-- [ ] Prueba manual en navegador denegando el permiso de ubicación.
-- [ ] Commit, push, responder a la review de CodeJose21 y pedir re-review.
+- [x] Prueba manual en navegador: confirmada por la usuaria (18-11-26).
+- [x] Commit, push, responder a la review de CodeJose21 y pedir re-review.
+- [x] Ampliación (18-11-26): "¿Enviar de todas formas?" (`incidents/new.tsx`) y "Cerrar sesión" (`(tabs)/index.tsx`) también usan `confirmAction`; en web el botón "Enviar" quedaba muerto con avisos de validación. +11 tests; `pnpm test` con 62 suites / 785 tests en verde, lint y typecheck limpios.
