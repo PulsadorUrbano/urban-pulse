@@ -1,6 +1,6 @@
 import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet } from 'react-native';
+import { Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LogoutButton } from '@/components/logout-button';
@@ -9,13 +9,8 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useSession } from '@/hooks/use-session';
-
-// Genera los saludos posibles para el usuario
-const buildGreetings = (name: string): string[] => [
-  `¡Estás de vuelta, ${name}!`,
-  `¿Alguna incidencia que reportar, ${name}?`,
-  `Hola, ${name}`,
-];
+import { confirmAction } from '@/utils/confirm-action';
+import { buildGreetings } from '@/utils/greetings';
 
 export default function HomeScreen() {
   const { user, signOut } = useSession();
@@ -39,18 +34,29 @@ export default function HomeScreen() {
 
   // Pide confirmación antes de cerrar sesión para evitar cierres accidentales.
   const handleLogoutPress = () => {
-    Alert.alert('Cerrar sesión', '¿Seguro que quieres cerrar sesión?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Cerrar sesión', style: 'destructive', onPress: handleConfirmLogout },
-    ]);
+    // En web se usa window.confirm porque Alert.alert es un no-op en react-native-web
+    confirmAction({
+      title: 'Cerrar sesión',
+      message: '¿Seguro que quieres cerrar sesión?',
+      cancel: { text: 'Cancelar', onPress: () => {} },
+      confirm: {
+        text: 'Cerrar sesión',
+        style: 'destructive',
+        onPress: () => {
+          void handleConfirmLogout();
+        },
+      },
+    });
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.hero}>
-          <TypewriterText type="serifTitle" text={greeting} style={styles.centerText} />
-          <ThemedText type="default" themeColor="textSecondary" style={styles.centerText}>
+    <ThemedView className="flex-1 flex-row justify-center">
+      <SafeAreaView
+        className="flex-1 items-center gap-4 px-6"
+        style={{ paddingBottom: BottomTabInset + Spacing.three, maxWidth: MaxContentWidth }}>
+        <ThemedView className="flex-1 items-center justify-center gap-4 px-6">
+          <TypewriterText type="serifTitle" text={greeting} className="text-center" />
+          <ThemedText type="default" themeColor="textSecondary" className="text-center">
             UrbanPulse
           </ThemedText>
         </ThemedView>
@@ -59,8 +65,8 @@ export default function HomeScreen() {
           accessibilityRole="button"
           accessibilityLabel="Registrar incidencia"
           onPress={() => router.push('/incidents/new')}
-          style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
-          <ThemedView type="backgroundElement" style={styles.buttonInner}>
+          className="self-stretch rounded-3xl active:opacity-70">
+          <ThemedView type="backgroundElement" className="items-center justify-center rounded-3xl px-6 py-4">
             <ThemedText type="smallBold">Registrar incidencia</ThemedText>
           </ThemedView>
         </Pressable>
@@ -68,56 +74,17 @@ export default function HomeScreen() {
 
       <LogoutButton
         onPress={handleLogoutPress}
-        style={[
-          styles.logoutButton,
-          { top: insets.top + Spacing.two, left: insets.left + Spacing.three },
-        ]}
+        style={{
+          position: 'absolute',
+          zIndex: 10,
+          // Tailwind/NativeWind no dispone de utility para `elevation`
+          // (sombra en Android); se mantiene inline junto a la posición,
+          // que depende de los insets de la safe area.
+          elevation: 10,
+          top: insets.top + Spacing.two,
+          left: insets.left + Spacing.three,
+        }}
       />
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  hero: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.three,
-  },
-  centerText: {
-    textAlign: 'center',
-  },
-  button: {
-    alignSelf: 'stretch',
-    borderRadius: Spacing.four,
-  },
-  buttonInner: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.four,
-    borderRadius: Spacing.four,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  logoutButton: {
-    position: 'absolute',
-    zIndex: 10,
-    elevation: 10,
-  },
-});

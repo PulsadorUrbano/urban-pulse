@@ -1,7 +1,7 @@
 import { API_BASE_URL } from '@/constants/config';
 import type { Civic, CreateCivicInput } from '@/types/civic';
 
-import { RequestTimeoutError, fetchWithTimeout } from './http';
+import { fetchWithTimeout, toConnectionErrorMessage } from './http';
 
 export const CIVICS_ENDPOINT = `${API_BASE_URL}/civics`;
 
@@ -24,14 +24,12 @@ export async function createCivic(input: CreateCivicInput): Promise<Civic> {
       body: JSON.stringify(payload),
     });
   } catch (error) {
-    if (error instanceof RequestTimeoutError) {
-      throw new Error(
-        'El servidor tardó demasiado en responder al guardar el ciudadano. Comprueba que el servidor mock (npm run mock) esté activo y sea accesible desde tu dispositivo.',
-      );
-    }
-
     throw new Error(
-      'No se pudo conectar con el servidor para guardar el ciudadano. Revisa tu conexión e inténtalo de nuevo.',
+      toConnectionErrorMessage(
+        error,
+        'El servidor tardó demasiado en responder al guardar el ciudadano. Comprueba que el servidor mock (pnpm run mock) esté activo y sea accesible desde tu dispositivo.',
+        'No se pudo conectar con el servidor para guardar el ciudadano. Revisa tu conexión e inténtalo de nuevo.',
+      ),
     );
   }
 

@@ -18,13 +18,6 @@ import type { SessionUser } from '@/types/user';
 // presentacionales (`IncidentListItem`, `IncidentStatusBadge`) son reales.
 // ---------------------------------------------------------------------------
 
-// El tema importa `global.css` (Tailwind) que Jest no puede transformar;
-// se sustituye por un módulo vacío solo en el entorno de test.
-jest.mock('@/global.css', () => ({}));
-
-// Evita cargar la fuente del icono en el entorno de test.
-jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');
-
 // `Redirect` se sustituye por un stub que pinta el `href` recibido, para
 // distinguir "se redirigió a /login" por contenido visible.
 jest.mock('expo-router', () => {

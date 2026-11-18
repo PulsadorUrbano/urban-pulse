@@ -249,9 +249,9 @@ describe('lockMessageFor', () => {
 });
 
 describe('persistencia del estado de bloqueo (SecureStore)', () => {
-  const getItemAsyncMock = SecureStore.getItemAsync as jest.Mock;
-  const setItemAsyncMock = SecureStore.setItemAsync as jest.Mock;
-  const deleteItemAsyncMock = SecureStore.deleteItemAsync as jest.Mock;
+  const getItemAsyncMock = jest.mocked(SecureStore.getItemAsync);
+  const setItemAsyncMock = jest.mocked(SecureStore.setItemAsync);
+  const deleteItemAsyncMock = jest.mocked(SecureStore.deleteItemAsync);
 
   beforeEach(() => {
     getItemAsyncMock.mockReset();

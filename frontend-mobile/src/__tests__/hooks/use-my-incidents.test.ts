@@ -9,7 +9,7 @@ jest.mock('@/services/incident.service', () => ({
   fetchMyIncidents: jest.fn(),
 }));
 
-const mockedFetchMyIncidents = fetchMyIncidents as jest.MockedFunction<typeof fetchMyIncidents>;
+const mockedFetchMyIncidents = jest.mocked(fetchMyIncidents);
 
 const BACKEND_FALLBACK_NOTICE =
   'No se ha podido conectar al backend, mostrando los datos del mock.';
@@ -254,5 +254,79 @@ describe('useMyIncidents', () => {
 
     expect(consoleErrorSpy).not.toHaveBeenCalled();
     consoleErrorSpy.mockRestore();
+  });
+
+  it('al pasar civicId de null a un valor, isLoading es true antes de resolver la petición', async () => {
+    const deferredLoad = createDeferred<FetchMyIncidentsResolution>();
+    mockedFetchMyIncidents.mockReturnValueOnce(deferredLoad.promise);
+
+    const { result, rerender } = await renderHook(
+      ({ civicId }: { civicId: string | null }) => useMyIncidents(civicId),
+      { initialProps: { civicId: null as string | null } },
+    );
+    await flushPendingMicrotasks();
+    expect(result.current.isLoading).toBe(false);
+
+    await act(() => {
+      rerender({ civicId: 'civic-1' });
+    });
+
+    expect(result.current.isLoading).toBe(true);
+
+    await act(async () => {
+      deferredLoad.resolve({ incidents: incidentsFixture, source: 'backend' });
+    });
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.incidents).toEqual(incidentsFixture);
+  });
+
+  it('una respuesta antigua tras cambiar civicId no pisa el resultado de la petición nueva', async () => {
+    const firstLoad = createDeferred<FetchMyIncidentsResolution>();
+    const secondLoad = createDeferred<FetchMyIncidentsResolution>();
+    mockedFetchMyIncidents
+      .mockReturnValueOnce(firstLoad.promise)
+      .mockReturnValueOnce(secondLoad.promise);
+
+    const { result, rerender } = await renderHook(
+      ({ civicId }: { civicId: string | null }) => useMyIncidents(civicId),
+      { initialProps: { civicId: 'civic-1' as string | null } },
+    );
+    await act(() => {
+      rerender({ civicId: 'civic-2' });
+    });
+
+    await act(async () => {
+      secondLoad.resolve({ incidents: [incidentsFixture[1]], source: 'backend' });
+    });
+    await act(async () => {
+      firstLoad.resolve({ incidents: incidentsFixture, source: 'mock' });
+    });
+
+    expect(result.current.incidents).toEqual([incidentsFixture[1]]);
+    expect(result.current.backendFallbackNotice).toBeNull();
+  });
+
+  it('una respuesta antigua tras reload() no pisa el resultado de la recarga', async () => {
+    const firstLoad = createDeferred<FetchMyIncidentsResolution>();
+    const secondLoad = createDeferred<FetchMyIncidentsResolution>();
+    mockedFetchMyIncidents
+      .mockReturnValueOnce(firstLoad.promise)
+      .mockReturnValueOnce(secondLoad.promise);
+
+    const { result } = await renderHook(() => useMyIncidents('civic-1'));
+    await act(() => {
+      result.current.reload();
+    });
+
+    await act(async () => {
+      secondLoad.resolve({ incidents: [incidentsFixture[1]], source: 'backend' });
+    });
+    await act(async () => {
+      firstLoad.resolve({ incidents: incidentsFixture, source: 'backend' });
+    });
+
+    expect(result.current.incidents).toEqual([incidentsFixture[1]]);
+    expect(result.current.isLoading).toBe(false);
   });
 });

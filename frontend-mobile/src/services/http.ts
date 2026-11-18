@@ -49,6 +49,26 @@ export function extractBackendErrorMessage(rawBody: string): string | null {
   return null;
 }
 
+// Construye el mensaje a mostrar en la UI cuando una petición no llega a
+// obtener respuesta (timeout o fallo de red/conexión): distingue ambos casos
+// porque un timeout sugiere "el servidor mock/backend no está levantado",
+// mientras que un fallo de red genérico sugiere "revisa tu conexión". Los dos
+// mensajes de dominio se reciben por parámetro porque este patrón se repite,
+// con variaciones de texto, en varios servicios (auth, incident, category,
+// civic, image); quien la invoque decide si lanza el resultado como Error o
+// lo usa solo como texto informativo (p. ej. para un aviso de fallback).
+export function toConnectionErrorMessage(
+  error: unknown,
+  timeoutMessage: string,
+  connectionMessage: string,
+): string {
+  if (error instanceof RequestTimeoutError) {
+    return timeoutMessage;
+  }
+
+  return connectionMessage;
+}
+
 // Construye el mensaje de error a mostrar en la UI cuando el backend
 // responde pero rechaza la petición: incluye el motivo real cuando el
 // cuerpo de la respuesta lo trae, y conserva un log en consola para depurar

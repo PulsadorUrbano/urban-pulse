@@ -1,6 +1,6 @@
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { IncidentListItem } from '@/components/incident-list-item';
@@ -60,9 +60,9 @@ export default function MyIncidentsScreen() {
 
           {backendFallbackNotice ? (
             <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
-              <Text className="text-center text-sm font-medium text-[#d92d20]">
+              <ThemedText type="small" themeColor="error" className="text-center">
                 {backendFallbackNotice}
-              </Text>
+              </ThemedText>
             </ThemedView>
           ) : null}
 
@@ -72,9 +72,9 @@ export default function MyIncidentsScreen() {
             </ThemedView>
           ) : errorMessage ? (
             <ThemedView className="flex-1 items-center justify-center gap-4">
-              <Text className="text-center text-sm font-medium text-[#d92d20]">
+              <ThemedText type="small" themeColor="error" className="text-center">
                 {errorMessage}
-              </Text>
+              </ThemedText>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Reintentar"

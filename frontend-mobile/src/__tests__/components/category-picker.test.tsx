@@ -1,12 +1,13 @@
 /// <reference types="jest" />
 import { render, screen, userEvent } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
-import { CategoryPicker, type CategoryPickerProps } from '@/components/category-picker';
+import {
+  CategoryPicker,
+  MAX_CUSTOM_CATEGORY_LENGTH,
+  type CategoryPickerProps,
+} from '@/components/category-picker';
 import type { Category } from '@/types/category';
-
-// El tema importa `global.css` (Tailwind) que Jest no puede transformar;
-// se sustituye por un módulo vacío solo en el entorno de test.
-jest.mock('@/global.css', () => ({}));
 
 const categories: Category[] = [
   { id: '1', name: 'Transporte' },
@@ -89,6 +90,38 @@ describe('CategoryPicker', () => {
     await user.press(saveButton);
 
     expect(props.onSelectOther).toHaveBeenCalledWith('Vallado caído');
+  });
+
+  it('el TextInput de "Otros" limita la longitud con MAX_CUSTOM_CATEGORY_LENGTH (15)', async () => {
+    const user = userEvent.setup();
+    await renderCategoryPicker();
+
+    await user.press(screen.getByRole('button', { name: 'Añadir categoría' }));
+    await user.press(screen.getByRole('button', { name: 'Categoría Otros' }));
+
+    expect(MAX_CUSTOM_CATEGORY_LENGTH).toBe(15);
+    expect(screen.getByLabelText('Categoría personalizada')).toHaveProp(
+      'maxLength',
+      MAX_CUSTOM_CATEGORY_LENGTH,
+    );
+  });
+
+  it('con muchas categorías la hoja acota su altura y "Otros" sigue accesible fuera de la lista', async () => {
+    const manyCategories: Category[] = Array.from({ length: 30 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Categoría ${index + 1}`,
+    }));
+    const user = userEvent.setup();
+    await renderCategoryPicker({ categories: manyCategories });
+
+    await user.press(screen.getByRole('button', { name: 'Añadir categoría' }));
+
+    // "Otros" está fuera del FlatList, por lo que no depende del scroll de la lista.
+    expect(screen.getByRole('button', { name: 'Categoría Otros' })).toBeOnTheScreen();
+    const sheetStyle = StyleSheet.flatten(
+      screen.getByText('Elige una categoría').parent?.props.style,
+    );
+    expect(sheetStyle.maxHeight).toBeGreaterThan(0);
   });
 
   it('con una categoría seleccionada muestra su nombre y "Quitar categoría" llama a onClear', async () => {

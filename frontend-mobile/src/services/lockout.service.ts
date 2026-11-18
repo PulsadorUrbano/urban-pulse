@@ -102,7 +102,6 @@ export async function saveLockoutState(state: LockoutState): Promise<void> {
 }
 
 // Un login correcto limpia todo el estado de bloqueo.
-// TODO futuro: el cambio de contraseña verificado debe invocar `resetLockout()` para levantar el bloqueo.
 export async function resetLockout(): Promise<void> {
   await SecureStore.deleteItemAsync(LOCKOUT_STORAGE_KEY);
 }

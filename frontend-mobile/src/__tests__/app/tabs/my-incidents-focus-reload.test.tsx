@@ -20,10 +20,6 @@ import type { SessionUser } from '@/types/user';
 // dispara el callback registrado para simular el foco inicial y los reenfoques.
 // ---------------------------------------------------------------------------
 
-jest.mock('@/global.css', () => ({}));
-
-jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');
-
 jest.mock('expo-router', () => {
   const mockReact = jest.requireActual<typeof React>('react');
   const { Text: MockText } = jest.requireActual<{ Text: typeof Text }>('react-native');

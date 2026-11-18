@@ -16,14 +16,6 @@ import type { CreatedIncidentImage, IncidentDetail } from '@/types/incident';
 // fijar cada escenario sin ejercitar el fetch real.
 // ---------------------------------------------------------------------------
 
-// El tema importa `global.css` (Tailwind) que Jest no puede transformar;
-// se sustituye por un módulo vacío solo en el entorno de test.
-jest.mock('@/global.css', () => ({}));
-
-// Evita cargar la fuente del icono en el entorno de test (mismo patrón
-// que `new-incident-screen.test.tsx`).
-jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');
-
 // `expo-image` renderiza una vista nativa que RNTL no considera accesible, por lo
 // que `getAllByRole('image')` no la encontraría. Se sustituye por un `View` host
 // que reenvía las props y se marca como accesible (mismo patrón que

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { CreateIncidentInput } from '@/types/incident';
 
 export const INCIDENT_TITLE_MIN_LENGTH = 4;
@@ -9,6 +10,47 @@ export interface IncidentValidationErrors {
   title?: string;
   category?: string;
 }
+
+// Esquema del título: normaliza con trim() y comprueba, por orden de prioridad,
+// vacío > muy corto > muy largo.
+const titleSchema = z
+  .string()
+  .trim()
+  .superRefine((value, ctx) => {
+    if (value.length === 0) {
+      ctx.addIssue({ code: 'custom', message: 'El título es obligatorio.' });
+    } else if (value.length < INCIDENT_TITLE_MIN_LENGTH) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `El título debe tener al menos ${INCIDENT_TITLE_MIN_LENGTH} caracteres.`,
+      });
+    } else if (value.length > INCIDENT_TITLE_MAX_LENGTH) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `El título no puede superar los ${INCIDENT_TITLE_MAX_LENGTH} caracteres.`,
+      });
+    }
+  });
+
+// Esquema de la categoría personalizada: es opcional y puede ser null, pero si
+// se envía un valor no puede quedar vacío tras el trim().
+const categorySchema = z
+  .string()
+  .nullable()
+  .optional()
+  .superRefine((value, ctx) => {
+    if (value != null && value.trim().length === 0) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Escribe una categoría o quita la selección de "Otros".',
+      });
+    }
+  });
+
+const incidentValidationSchema = z.object({
+  title: titleSchema,
+  category: categorySchema,
+});
 
 export type IncidentDescriptionQuality = 'empty' | 'too_short' | 'ok';
 
@@ -28,20 +70,28 @@ export interface IncidentWarningInput {
 // Solo el título es obligatorio; la descripción y la categoría son opcionales,
 // aunque si se envía una categoría personalizada no puede quedar vacía.
 // Es una función pura: no muta la entrada ni produce efectos secundarios.
+// Traduce el resultado de los esquemas Zod a IncidentValidationErrors,
+// conservando solo el primer error de cada campo.
 export function validateIncidentInput(input: CreateIncidentInput): IncidentValidationErrors {
-  const errors: IncidentValidationErrors = {};
-  const title = input.title.trim();
+  const result = incidentValidationSchema.safeParse({
+    title: input.title,
+    category: input.category,
+  });
 
-  if (title.length === 0) {
-    errors.title = 'El título es obligatorio.';
-  } else if (title.length < INCIDENT_TITLE_MIN_LENGTH) {
-    errors.title = `El título debe tener al menos ${INCIDENT_TITLE_MIN_LENGTH} caracteres.`;
-  } else if (title.length > INCIDENT_TITLE_MAX_LENGTH) {
-    errors.title = `El título no puede superar los ${INCIDENT_TITLE_MAX_LENGTH} caracteres.`;
+  if (result.success) {
+    return {};
   }
 
-  if (input.category != null && input.category.trim().length === 0) {
-    errors.category = 'Escribe una categoría o quita la selección de "Otros".';
+  const errors: IncidentValidationErrors = {};
+
+  for (const issue of result.error.issues) {
+    const field = issue.path[0];
+
+    if (field === 'title' && errors.title === undefined) {
+      errors.title = issue.message;
+    } else if (field === 'category' && errors.category === undefined) {
+      errors.category = issue.message;
+    }
   }
 
   return errors;

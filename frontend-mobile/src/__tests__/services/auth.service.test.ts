@@ -106,7 +106,7 @@ describe('login', () => {
         .mockResolvedValueOnce(jsonResponse({ accessToken: 'jwt-real' }))
         .mockResolvedValueOnce(jsonResponse(backendUserDto));
 
-      const result = await login({ username_email: 'ana_garcia', password: 'Secreta123' });
+      const result = await login({ usernameOrEmail: 'ana_garcia', password: 'Secreta123' });
 
       expect(result).toEqual({
         user: expectedBackendUser,
@@ -134,7 +134,7 @@ describe('login', () => {
         .mockResolvedValueOnce(jsonResponse({ accessToken: 'jwt-real' }))
         .mockResolvedValueOnce(jsonResponse(backendUserDto));
 
-      await login({ username_email: '   ana_garcia  ', password: 'Secreta123' });
+      await login({ usernameOrEmail: '   ana_garcia  ', password: 'Secreta123' });
 
       const [, loginInit] = fetchWithTimeoutMock.mock.calls[0];
       expect(JSON.parse(loginInit?.body as string).usernameOrEmail).toBe('ana_garcia');
@@ -143,7 +143,7 @@ describe('login', () => {
     it('401 en /auth/login lanza InvalidCredentialsError sin caer al mock', async () => {
       fetchWithTimeoutMock.mockResolvedValueOnce(jsonResponse({ message: 'Usuario o contraseña incorrectos' }, 401));
 
-      const error = await captureRejection(login({ username_email: 'ana_garcia', password: 'mal' }));
+      const error = await captureRejection(login({ usernameOrEmail: 'ana_garcia', password: 'mal' }));
 
       expect(error).toBeInstanceOf(InvalidCredentialsError);
       expect((error as Error).message).toBe('El usuario o contraseña no son correctos, inténtelo de nuevo.');
@@ -153,7 +153,7 @@ describe('login', () => {
     it('un !ok distinto de 401 en /auth/login lanza Error con el mensaje del backend, sin caer al mock', async () => {
       fetchWithTimeoutMock.mockResolvedValueOnce(jsonResponse({ message: 'Campo no permitido: role' }, 400));
 
-      const error = await captureRejection(login({ username_email: 'ana_garcia', password: 'Secreta123' }));
+      const error = await captureRejection(login({ usernameOrEmail: 'ana_garcia', password: 'Secreta123' }));
 
       expect(error).not.toBeInstanceOf(InvalidCredentialsError);
       expect((error as Error).message).toBe(
@@ -168,7 +168,7 @@ describe('login', () => {
         .mockResolvedValueOnce(jsonResponse({}, 401))
         .mockResolvedValueOnce(jsonResponse([ana]));
 
-      const result = await login({ username_email: 'ana_garcia', password: 'Secreta123' });
+      const result = await login({ usernameOrEmail: 'ana_garcia', password: 'Secreta123' });
 
       expect(result).toEqual({ user: ana, token: mockTokenFixture, source: 'mock' });
       expect(simulateTokenMock).toHaveBeenCalledWith(ana.id);
@@ -180,7 +180,7 @@ describe('login', () => {
         .mockRejectedValueOnce(new TypeError('Network request failed'))
         .mockResolvedValueOnce(jsonResponse([ana]));
 
-      const result = await login({ username_email: 'ana_garcia', password: 'Secreta123' });
+      const result = await login({ usernameOrEmail: 'ana_garcia', password: 'Secreta123' });
 
       expect(result.source).toBe('mock');
     });
@@ -192,7 +192,7 @@ describe('login', () => {
         .mockRejectedValueOnce(new TypeError('Network request failed'))
         .mockResolvedValueOnce(jsonResponse([ana]));
 
-      const result = await login({ username_email: 'ana_garcia', password: 'Secreta123' });
+      const result = await login({ usernameOrEmail: 'ana_garcia', password: 'Secreta123' });
 
       expect(result).toEqual({ user: ana, token: mockTokenFixture, source: 'mock' });
       expect(fetchWithTimeoutMock.mock.calls[1][0]).toBe(`${USERS_ENDPOINT}?username=ana_garcia`);
@@ -204,7 +204,7 @@ describe('login', () => {
         .mockResolvedValueOnce(jsonResponse([]))
         .mockResolvedValueOnce(jsonResponse([ana]));
 
-      const result = await login({ username_email: 'ana@example.com', password: 'Secreta123' });
+      const result = await login({ usernameOrEmail: 'ana@example.com', password: 'Secreta123' });
 
       expect(result.user).toEqual(ana);
       expect(fetchWithTimeoutMock.mock.calls[1][0]).toBe(`${USERS_ENDPOINT}?username=ana%40example.com`);
@@ -216,7 +216,7 @@ describe('login', () => {
         .mockRejectedValueOnce(new TypeError('Network request failed'))
         .mockResolvedValueOnce(jsonResponse([ana]));
 
-      const error = await captureRejection(login({ username_email: 'ana_garcia', password: 'otra-contraseña' }));
+      const error = await captureRejection(login({ usernameOrEmail: 'ana_garcia', password: 'otra-contraseña' }));
 
       expect(error).toBeInstanceOf(InvalidCredentialsError);
       expect((error as Error).message).toBe('El usuario o contraseña no son correctos, inténtelo de nuevo.');
@@ -228,7 +228,7 @@ describe('login', () => {
         .mockResolvedValueOnce(jsonResponse([]))
         .mockResolvedValueOnce(jsonResponse([]));
 
-      const error = await captureRejection(login({ username_email: 'fantasma', password: 'cualquiera' }));
+      const error = await captureRejection(login({ usernameOrEmail: 'fantasma', password: 'cualquiera' }));
 
       expect(error).toBeInstanceOf(InvalidCredentialsError);
     });
@@ -238,7 +238,7 @@ describe('login', () => {
         .mockRejectedValueOnce(new TypeError('Network request failed'))
         .mockResolvedValueOnce(jsonResponse({}, 500));
 
-      const error = await captureRejection(login({ username_email: 'ana_garcia', password: 'Secreta123' }));
+      const error = await captureRejection(login({ usernameOrEmail: 'ana_garcia', password: 'Secreta123' }));
 
       expect(error).not.toBeInstanceOf(InvalidCredentialsError);
       expect((error as Error).message).toBe('No se pudo iniciar sesión. Inténtalo de nuevo más tarde.');
@@ -249,7 +249,7 @@ describe('login', () => {
         .mockRejectedValueOnce(new TypeError('Network request failed'))
         .mockRejectedValueOnce(new RequestTimeoutError());
 
-      const error = await captureRejection(login({ username_email: 'ana_garcia', password: 'Secreta123' }));
+      const error = await captureRejection(login({ usernameOrEmail: 'ana_garcia', password: 'Secreta123' }));
 
       expect(error).not.toBeInstanceOf(InvalidCredentialsError);
       expect((error as Error).message).toContain('El servidor tardó demasiado en responder.');

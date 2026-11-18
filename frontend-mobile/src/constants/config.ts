@@ -33,7 +33,7 @@ function resolveApiBaseUrl(): string {
     const isTunnelHost = devServerHost.includes('exp.direct') || devServerHost.includes('ngrok');
     if (__DEV__ && isTunnelHost) {
       console.warn(
-        `[config] El dev server está en modo túnel (${devServerHost}). El servidor mock (puerto ${MOCK_SERVER_PORT}) no será accesible desde el dispositivo: usa LAN (npm run start) o define EXPO_PUBLIC_API_URL.`,
+        `[config] El dev server está en modo túnel (${devServerHost}). El servidor mock (puerto ${MOCK_SERVER_PORT}) no será accesible desde el dispositivo: usa LAN (pnpm run start) o define EXPO_PUBLIC_API_URL.`,
       );
     }
 
@@ -44,7 +44,7 @@ function resolveApiBaseUrl(): string {
 }
 
 /**
- * URL base del backend NestJS (usada para solicitar el token).
+ * URL base del backend NestJS (creación y consulta de incidencias y categorías).
  *
  * Prioridad: `EXPO_PUBLIC_BACKEND_URL` (tal cual) > host del dev server de Metro
  * con el puerto del backend > `localhost` como último recurso.
@@ -69,4 +69,5 @@ export const BACKEND_API_URL = resolveBackendApiUrl();
 // Registro de depuración para verificar a qué host apunta la app en desarrollo.
 if (__DEV__) {
   console.log('[config] API_BASE_URL =', API_BASE_URL);
+  console.log('[config] BACKEND_API_URL =', BACKEND_API_URL);
 }

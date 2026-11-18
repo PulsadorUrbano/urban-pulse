@@ -5,23 +5,22 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  StyleSheet,
-  Text,
   TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FallbackNoticeCard } from '@/components/fallback-notice-card';
 import { PasswordInput } from '@/components/password-input';
+import { PrimaryButton } from '@/components/primary-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { MOCK_FALLBACK_NOTICE } from '@/constants/messages';
+import { MaxContentWidth } from '@/constants/theme';
 import { type LoginSuccess, useLogin } from '@/hooks/use-login';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import type { LoginUserInput } from '@/types/user';
-
-const ERROR_COLOR = '#d92d20';
 
 export default function LoginScreen() {
   const theme = useTheme();
@@ -38,7 +37,7 @@ export default function LoginScreen() {
 
   if (isRestoringSession) {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView className="flex-1 flex-row justify-center">
         <ActivityIndicator testID="session-restoring-indicator" />
       </ThemedView>
     );
@@ -60,7 +59,7 @@ export default function LoginScreen() {
   const handleSubmit = async () => {
     if (isSubmitDisabled) return;
     const input: LoginUserInput = {
-      username_email: usernameOrEmail.trim(),
+      usernameOrEmail: usernameOrEmail.trim(),
       password,
     };
     const loginResult = await submitLogin(input);
@@ -87,42 +86,29 @@ export default function LoginScreen() {
   // confirme, momento en el que se llama a signIn y se navega.
   if (pendingFallbackLogin) {
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <ThemedView className="flex-1 items-center justify-center gap-4 px-6">
-            <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
-              <Text className="text-center text-sm font-medium" style={{ color: ERROR_COLOR }}>
-                No se ha podido conectar al backend, realizando en el mock
-              </Text>
-            </ThemedView>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Continuar"
-              onPress={handleContinueAfterFallback}
-              className="active:opacity-70 rounded-3xl">
-              <View className="items-center justify-center rounded-3xl px-6 py-4" style={{ backgroundColor: '#ffffff' }}>
-                <ThemedText type="smallBold" style={{ color: '#000000' }}>
-                  Continuar
-                </ThemedText>
-              </View>
-            </Pressable>
-          </ThemedView>
+      <ThemedView className="flex-1 flex-row justify-center">
+        <SafeAreaView className="flex-1 px-6" style={{ maxWidth: MaxContentWidth }}>
+          <FallbackNoticeCard
+            message={MOCK_FALLBACK_NOTICE}
+            buttonLabel="Continuar"
+            onPress={handleContinueAfterFallback}
+          />
         </SafeAreaView>
       </ThemedView>
     );
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+    <ThemedView className="flex-1 flex-row justify-center">
+      <SafeAreaView className="flex-1 px-6" style={{ maxWidth: MaxContentWidth }}>
         <KeyboardAvoidingView
-          style={styles.keyboardAvoiding}
+          className="flex-1 justify-center gap-6"
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <ThemedView style={styles.hero}>
-            <ThemedText type="title" style={styles.centerText}>
+          <ThemedView className="items-center justify-center px-6 gap-4">
+            <ThemedText type="title" className="text-center">
               UrbanPulse
             </ThemedText>
-            <ThemedText style={styles.centerText} themeColor="textSecondary">
+            <ThemedText className="text-center" themeColor="textSecondary">
               Reporta incidencias en tu ciudad y colabora en mantenerla en buen estado.
             </ThemedText>
           </ThemedView>
@@ -153,13 +139,17 @@ export default function LoginScreen() {
               accessibilityLabel="Contraseña"
             />
 
-            {/* TODO futuro: recuperación de contraseña */}
+            {/* Funcionalidad aún no implementada: se deshabilita visualmente en
+                lugar de dejar un onPress no-op silencioso (ver TODO futuro de
+                recuperación de contraseña). */}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Has olvidado tu contraseña"
-              onPress={() => {}}
-              className="self-start active:opacity-70">
-              <ThemedText type="link">¿Has olvidado tu contraseña?</ThemedText>
+              accessibilityHint="Próximamente disponible"
+              accessibilityState={{ disabled: true }}
+              disabled
+              className="self-start opacity-50">
+              <ThemedText type="link">¿Has olvidado tu contraseña? (Próximamente)</ThemedText>
             </Pressable>
 
             <Pressable
@@ -171,61 +161,21 @@ export default function LoginScreen() {
             </Pressable>
 
             {visibleErrorMessage ? (
-              <ThemedText type="small" style={{ color: ERROR_COLOR }} accessibilityRole="alert">
+              <ThemedText type="small" themeColor="error" accessibilityRole="alert">
                 {visibleErrorMessage}
               </ThemedText>
             ) : null}
 
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Iniciar sesión"
+            <PrimaryButton
+              label="Iniciar sesión"
               accessibilityState={{ disabled: isSubmitDisabled, busy: isSubmitting }}
               disabled={isSubmitDisabled}
+              isLoading={isSubmitting}
               onPress={handleSubmit}
-              className={`rounded-3xl active:opacity-70${isSubmitDisabled ? ' opacity-70' : ''}`}>
-              {/* Botón blanco (#ffffff) con texto negro (#000000), fijo en ambos temas */}
-              <View
-                className="items-center justify-center rounded-3xl px-6 py-4"
-                style={{ backgroundColor: '#ffffff' }}>
-                {isSubmitting ? (
-                  <ActivityIndicator />
-                ) : (
-                  <ThemedText type="smallBold" style={{ color: '#000000' }}>
-                    Iniciar sesión
-                  </ThemedText>
-                )}
-              </View>
-            </Pressable>
+            />
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    maxWidth: MaxContentWidth,
-  },
-  keyboardAvoiding: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: Spacing.four,
-  },
-  hero: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.three,
-  },
-  centerText: {
-    textAlign: 'center',
-  },
-});

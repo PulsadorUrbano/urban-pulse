@@ -17,9 +17,6 @@ import type { User } from '@/types/user';
 // patrón que `register-screen.test.tsx`.
 // ---------------------------------------------------------------------------
 
-jest.mock('@/global.css', () => ({}));
-jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');
-
 jest.mock('expo-router', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const mockReact = require('react');

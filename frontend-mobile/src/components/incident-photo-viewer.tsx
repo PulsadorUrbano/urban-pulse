@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
-import { FlatList, useWindowDimensions, View } from 'react-native';
+import { useState } from 'react';
+import { FlatList, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -9,12 +10,11 @@ export interface IncidentPhotoViewerProps {
   images: CreatedIncidentImage[];
 }
 
-// Alto fijo de cada página del visor. El ancho de cada página se calcula a
-// partir del ancho de la ventana (`useWindowDimensions`) para que
-// `pagingEnabled` encaje con el ancho visible en móvil; en web, dentro de un
-// contenedor limitado por `MaxContentWidth`, el paginado puede quedar
-// ligeramente desalineado en pantallas muy anchas (decisión menor del dev,
-// sin impacto en móvil que es el caso de uso principal).
+// Alto fijo de cada página del visor. El ancho de cada página es el ancho real
+// del contenedor, medido con `onLayout`, para que `pagingEnabled` encaje con el
+// ancho visible también en web (contenedor limitado por `MaxContentWidth`).
+// Hasta que llega la primera medición se usa el ancho de la ventana, de modo que
+// la lista se pinta desde el primer render (sin parpadeo) y se corrige sola.
 const VIEWER_HEIGHT = 240;
 
 // Visor horizontal de fotos de una incidencia (detalle, solo lectura).
@@ -22,6 +22,13 @@ const VIEWER_HEIGHT = 240;
 // (`images[].url`) y no depende de sesión, red ni navegación.
 export function IncidentPhotoViewer({ images }: IncidentPhotoViewerProps) {
   const { width: windowWidth } = useWindowDimensions();
+  // Ancho medido del contenedor; 0 hasta el primer layout.
+  const [measuredWidth, setMeasuredWidth] = useState(0);
+  const pageWidth = measuredWidth > 0 ? measuredWidth : windowWidth;
+
+  const handleContainerLayout = (event: LayoutChangeEvent) => {
+    setMeasuredWidth(event.nativeEvent.layout.width);
+  };
 
   // Sin fotos adjuntas: placeholder discreto en vez de `null`, para dejar
   // explícito al usuario que la incidencia no tiene imágenes (mismo criterio
@@ -38,7 +45,7 @@ export function IncidentPhotoViewer({ images }: IncidentPhotoViewerProps) {
   }
 
   return (
-    <View style={{ height: VIEWER_HEIGHT }}>
+    <View testID="incident-photo-viewer" style={{ height: VIEWER_HEIGHT }} onLayout={handleContainerLayout}>
       <FlatList
         horizontal
         pagingEnabled
@@ -51,7 +58,7 @@ export function IncidentPhotoViewer({ images }: IncidentPhotoViewerProps) {
             accessibilityRole="image"
             accessibilityLabel="Foto de la incidencia"
             contentFit="cover"
-            style={{ width: windowWidth, height: VIEWER_HEIGHT }}
+            style={{ width: pageWidth, height: VIEWER_HEIGHT }}
           />
         )}
       />

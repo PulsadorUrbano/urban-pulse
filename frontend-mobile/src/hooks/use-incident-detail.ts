@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
+import { BACKEND_FALLBACK_NOTICE } from '@/constants/messages';
 import { IncidentNotFoundError, fetchIncidentById } from '@/services/incident.service';
 import type { IncidentDetail } from '@/types/incident';
 
@@ -12,12 +13,9 @@ export interface UseIncidentDetailResult {
   reload: () => void;
 }
 
-// Aviso exacto a mostrar cuando la respuesta viene del mock en lugar del backend real.
-const BACKEND_FALLBACK_NOTICE = 'No se ha podido conectar al backend, mostrando los datos del mock.';
-
 // Carga el detalle de una incidencia por `id` al montar (y cuando `id` cambie o
 // se llame a `reload`), siguiendo el mismo patrón que `useCategories`/
-// `useMyIncidents` (`isMountedRef`, `reloadToken`).
+// `useMyIncidents` (bandera `isActive` por ejecución, `reloadToken`).
 export function useIncidentDetail(id: string): UseIncidentDetailResult {
   const [incident, setIncident] = useState<IncidentDetail | null>(null);
   // La primera carga arranca al montar, por eso el estado inicial es cargando.
@@ -27,24 +25,23 @@ export function useIncidentDetail(id: string): UseIncidentDetailResult {
   const [backendFallbackNotice, setBackendFallbackNotice] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
-  // Evita actualizar el estado si el componente se desmontó durante la carga.
-  const isMountedRef = useRef(true);
-
   // La carga se resuelve en los callbacks de la promesa (asíncronos), de modo
   // que el efecto no ejecuta setState de forma síncrona.
   useEffect(() => {
-    isMountedRef.current = true;
+    // Bandera propia de esta ejecución: si cambia `id`, se recarga o se desmonta,
+    // el cleanup la apaga y la respuesta antigua no pisa a la nueva.
+    let isActive = true;
 
     fetchIncidentById(id)
       .then((result) => {
-        if (!isMountedRef.current) return;
+        if (!isActive) return;
         setIncident(result.incident);
         setIsNotFound(false);
         setErrorMessage(null);
         setBackendFallbackNotice(result.source === 'mock' ? BACKEND_FALLBACK_NOTICE : null);
       })
       .catch((error: unknown) => {
-        if (!isMountedRef.current) return;
+        if (!isActive) return;
         setIncident(null);
         if (error instanceof IncidentNotFoundError) {
           // Se evita mostrar dos mensajes de error a la vez: el estado "no
@@ -61,13 +58,13 @@ export function useIncidentDetail(id: string): UseIncidentDetailResult {
         }
       })
       .finally(() => {
-        if (isMountedRef.current) {
+        if (isActive) {
           setIsLoading(false);
         }
       });
 
     return () => {
-      isMountedRef.current = false;
+      isActive = false;
     };
   }, [id, reloadToken]);
 
