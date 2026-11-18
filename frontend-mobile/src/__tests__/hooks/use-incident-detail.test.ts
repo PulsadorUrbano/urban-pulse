@@ -358,4 +358,156 @@ describe('useIncidentDetail', () => {
 
     expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
+
+  describe('regresión: respuestas antiguas no pisan el estado actual (condición de carrera)', () => {
+    const NEWER_INCIDENT: IncidentDetail = {
+      ...incidentFixture,
+      id: '43',
+      title: 'Farola fundida en el parque',
+    };
+
+    // Vacía los microtasks pendientes dentro de act para que los setState se apliquen.
+    async function flushPendingMicrotasks(): Promise<void> {
+      await act(async () => {
+        await Promise.resolve();
+      });
+    }
+
+    it('tras pasar a accessToken null, una respuesta antigua con datos no sustituye el error de sesión', async () => {
+      const staleLoad = createDeferred<FetchIncidentDetailResult>();
+      mockedFetchIncidentById.mockReturnValueOnce(staleLoad.promise);
+
+      const { result, rerender } = await renderHook(
+        ({ accessToken }: { accessToken: string | null }) => useIncidentDetail('42', accessToken),
+        { initialProps: { accessToken: TEST_ACCESS_TOKEN as string | null } },
+      );
+
+      expect(mockedFetchIncidentById).toHaveBeenCalledTimes(1);
+
+      await act(() => {
+        rerender({ accessToken: null });
+      });
+
+      await waitFor(() => {
+        expect(result.current.errorMessage).toBe(MISSING_SESSION_MESSAGE);
+      });
+      expect(result.current.isLoading).toBe(false);
+
+      await act(async () => {
+        staleLoad.resolve(backendResultFixture);
+        await staleLoad.promise;
+      });
+      await flushPendingMicrotasks();
+
+      expect(result.current.errorMessage).toBe(MISSING_SESSION_MESSAGE);
+      expect(result.current.incident).toBeNull();
+      expect(result.current.isNotFound).toBe(false);
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    it('tras pasar a accessToken null, una respuesta antigua rechazada conserva el error de sesión', async () => {
+      const staleLoad = createDeferred<FetchIncidentDetailResult>();
+      mockedFetchIncidentById.mockReturnValueOnce(staleLoad.promise);
+
+      const { result, rerender } = await renderHook(
+        ({ accessToken }: { accessToken: string | null }) => useIncidentDetail('42', accessToken),
+        { initialProps: { accessToken: TEST_ACCESS_TOKEN as string | null } },
+      );
+
+      await act(() => {
+        rerender({ accessToken: null });
+      });
+
+      await waitFor(() => {
+        expect(result.current.errorMessage).toBe(MISSING_SESSION_MESSAGE);
+      });
+
+      await act(async () => {
+        staleLoad.reject(new Error('Fallo de la sesión antigua.'));
+        await staleLoad.promise.catch(() => undefined);
+      });
+      await flushPendingMicrotasks();
+
+      expect(result.current.errorMessage).toBe(MISSING_SESSION_MESSAGE);
+      expect(result.current.incident).toBeNull();
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    it('al cambiar id, una respuesta antigua que llega después no sustituye el detalle de la nueva incidencia', async () => {
+      const staleLoad = createDeferred<FetchIncidentDetailResult>();
+      const currentLoad = createDeferred<FetchIncidentDetailResult>();
+      mockedFetchIncidentById
+        .mockReturnValueOnce(staleLoad.promise)
+        .mockReturnValueOnce(currentLoad.promise);
+
+      const { result, rerender } = await renderHook(
+        ({ id }: { id: string }) => useIncidentDetail(id, TEST_ACCESS_TOKEN),
+        { initialProps: { id: '42' } },
+      );
+
+      await act(() => {
+        rerender({ id: '43' });
+      });
+
+      expect(mockedFetchIncidentById).toHaveBeenCalledTimes(2);
+      expect(mockedFetchIncidentById).toHaveBeenLastCalledWith('43', TEST_ACCESS_TOKEN);
+
+      await act(async () => {
+        currentLoad.resolve({ incident: NEWER_INCIDENT, source: 'mock' });
+        await currentLoad.promise;
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+      expect(result.current.incident).toEqual(NEWER_INCIDENT);
+
+      await act(async () => {
+        staleLoad.resolve(backendResultFixture);
+        await staleLoad.promise;
+      });
+      await flushPendingMicrotasks();
+
+      expect(result.current.incident).toEqual(NEWER_INCIDENT);
+      expect(result.current.backendFallbackNotice).toBe(MOCK_FALLBACK_NOTICE);
+      expect(result.current.errorMessage).toBeNull();
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    it('en reload(), una respuesta antigua que llega después no sustituye la respuesta de la recarga', async () => {
+      const staleLoad = createDeferred<FetchIncidentDetailResult>();
+      const reloadLoad = createDeferred<FetchIncidentDetailResult>();
+      mockedFetchIncidentById
+        .mockReturnValueOnce(staleLoad.promise)
+        .mockReturnValueOnce(reloadLoad.promise);
+
+      const { result } = await renderHook(() => useIncidentDetail('42', TEST_ACCESS_TOKEN));
+
+      await act(() => {
+        result.current.reload();
+      });
+
+      expect(mockedFetchIncidentById).toHaveBeenCalledTimes(2);
+
+      await act(async () => {
+        reloadLoad.resolve({ incident: NEWER_INCIDENT, source: 'mock' });
+        await reloadLoad.promise;
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+      expect(result.current.incident).toEqual(NEWER_INCIDENT);
+
+      await act(async () => {
+        staleLoad.resolve(backendResultFixture);
+        await staleLoad.promise;
+      });
+      await flushPendingMicrotasks();
+
+      expect(result.current.incident).toEqual(NEWER_INCIDENT);
+      expect(result.current.backendFallbackNotice).toBe(MOCK_FALLBACK_NOTICE);
+      expect(result.current.isLoading).toBe(false);
+    });
+  });
 });

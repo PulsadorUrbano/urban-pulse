@@ -321,4 +321,102 @@ describe('useMyIncidents', () => {
     expect(consoleErrorSpy).not.toHaveBeenCalled();
     consoleErrorSpy.mockRestore();
   });
+
+  describe('regresión: respuestas antiguas no pisan el estado actual (condición de carrera)', () => {
+    it('tras pasar a accessToken null, una respuesta antigua con datos no sustituye el error de sesión ni rellena incidents', async () => {
+      const staleLoad = createDeferred<FetchMyIncidentsResolution>();
+      mockedFetchMyIncidents.mockReturnValueOnce(staleLoad.promise);
+
+      const { result, rerender } = await renderHook(
+        ({ accessToken }: { accessToken: string | null }) => useMyIncidents('civic-1', accessToken),
+        { initialProps: { accessToken: TEST_ACCESS_TOKEN as string | null } },
+      );
+
+      expect(mockedFetchMyIncidents).toHaveBeenCalledTimes(1);
+
+      await act(() => {
+        rerender({ accessToken: null });
+      });
+
+      await waitFor(() => {
+        expect(result.current.errorMessage).toBe(MISSING_SESSION_MESSAGE);
+      });
+      expect(result.current.isLoading).toBe(false);
+
+      await act(async () => {
+        staleLoad.resolve({ incidents: incidentsFixture, source: 'backend' });
+        await staleLoad.promise;
+      });
+      await flushPendingMicrotasks();
+
+      expect(result.current.errorMessage).toBe(MISSING_SESSION_MESSAGE);
+      expect(result.current.incidents).toEqual([]);
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    it('tras pasar a accessToken null, una respuesta antigua rechazada conserva el error de sesión', async () => {
+      const staleLoad = createDeferred<FetchMyIncidentsResolution>();
+      mockedFetchMyIncidents.mockReturnValueOnce(staleLoad.promise);
+
+      const { result, rerender } = await renderHook(
+        ({ accessToken }: { accessToken: string | null }) => useMyIncidents('civic-1', accessToken),
+        { initialProps: { accessToken: TEST_ACCESS_TOKEN as string | null } },
+      );
+
+      await act(() => {
+        rerender({ accessToken: null });
+      });
+
+      await waitFor(() => {
+        expect(result.current.errorMessage).toBe(MISSING_SESSION_MESSAGE);
+      });
+
+      await act(async () => {
+        staleLoad.reject(new Error('Fallo de la sesión antigua.'));
+        await staleLoad.promise.catch(() => undefined);
+      });
+      await flushPendingMicrotasks();
+
+      expect(result.current.errorMessage).toBe(MISSING_SESSION_MESSAGE);
+      expect(result.current.incidents).toEqual([]);
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    it('en reload(), una respuesta antigua que llega después no sustituye las incidencias de la recarga', async () => {
+      const staleLoad = createDeferred<FetchMyIncidentsResolution>();
+      const reloadLoad = createDeferred<FetchMyIncidentsResolution>();
+      mockedFetchMyIncidents
+        .mockReturnValueOnce(staleLoad.promise)
+        .mockReturnValueOnce(reloadLoad.promise);
+
+      const { result } = await renderHook(() => useMyIncidents('civic-1', TEST_ACCESS_TOKEN));
+
+      await act(() => {
+        result.current.reload();
+      });
+
+      expect(mockedFetchMyIncidents).toHaveBeenCalledTimes(2);
+
+      await act(async () => {
+        reloadLoad.resolve({ incidents: incidentsFixture, source: 'backend' });
+        await reloadLoad.promise;
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+      expect(result.current.incidents).toEqual(incidentsFixture);
+
+      await act(async () => {
+        staleLoad.resolve({ incidents: [], source: 'mock' });
+        await staleLoad.promise;
+      });
+      await flushPendingMicrotasks();
+
+      expect(result.current.incidents).toEqual(incidentsFixture);
+      expect(result.current.backendFallbackNotice).toBeNull();
+      expect(result.current.errorMessage).toBeNull();
+      expect(result.current.isLoading).toBe(false);
+    });
+  });
 });

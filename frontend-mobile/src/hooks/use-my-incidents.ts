@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { fetchMyIncidents } from '@/services/incident.service';
 import type { IncidentSummary } from '@/types/incident';
@@ -31,23 +31,21 @@ export function useMyIncidents(
   const [backendFallbackNotice, setBackendFallbackNotice] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
-  // Evita actualizar el estado si el componente se desmontó durante la carga.
-  const isMountedRef = useRef(true);
-
   useEffect(() => {
-    isMountedRef.current = true;
+    // Bandera propia de esta ejecución: si cambian las dependencias, se recarga o se desmonta, el cleanup la apaga y la respuesta antigua no pisa a la nueva.
+    let isActive = true;
 
     if (civicId === null) {
       // Sesión aún no resuelta: no hay ciudadano con el que pedir incidencias.
       // Se difiere a un microtask (igual que los callbacks de la promesa de
       // abajo) para no llamar a setState de forma síncrona dentro del efecto.
       Promise.resolve().then(() => {
-        if (!isMountedRef.current) return;
+        if (!isActive) return;
         setIsLoading(false);
         setIncidents([]);
       });
       return () => {
-        isMountedRef.current = false;
+        isActive = false;
       };
     }
 
@@ -56,25 +54,25 @@ export function useMyIncidents(
       // un autoLoginFailed): no se intenta la petición real, igual que el
       // guard equivalente de `useIncidentDetail`.
       Promise.resolve().then(() => {
-        if (!isMountedRef.current) return;
+        if (!isActive) return;
         setIncidents([]);
         setErrorMessage('No se pudo identificar tu sesión. Vuelve a iniciar sesión.');
         setIsLoading(false);
       });
       return () => {
-        isMountedRef.current = false;
+        isActive = false;
       };
     }
 
     fetchMyIncidents(civicId, accessToken)
       .then((result) => {
-        if (!isMountedRef.current) return;
+        if (!isActive) return;
         setIncidents(result.incidents);
         setErrorMessage(null);
         setBackendFallbackNotice(result.source === 'mock' ? BACKEND_FALLBACK_NOTICE : null);
       })
       .catch((error: unknown) => {
-        if (!isMountedRef.current) return;
+        if (!isActive) return;
         // Se conserva el listado previo: un error de recarga no debe vaciar
         // lo que ya se había mostrado correctamente.
         setErrorMessage(
@@ -84,13 +82,13 @@ export function useMyIncidents(
         );
       })
       .finally(() => {
-        if (isMountedRef.current) {
+        if (isActive) {
           setIsLoading(false);
         }
       });
 
     return () => {
-      isMountedRef.current = false;
+      isActive = false;
     };
   }, [civicId, accessToken, reloadToken]);
 
