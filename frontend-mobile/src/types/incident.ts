@@ -1,3 +1,5 @@
+import type { AuthToken } from './token';
+
 export type IncidentStatus =
   | 'reported'
   | 'rejected'
@@ -12,17 +14,32 @@ export const DEFAULT_INCIDENT_STATUS: IncidentStatus = 'reported';
 
 export type IncidentPriority = 'low' | 'medium' | 'high' | 'urgent';
 
+// Datos del formulario necesarios para crear una incidencia. Según el contrato
+// de la PR #185 del backend, la categoría (del catálogo activo) y las
+// coordenadas son obligatorias; ya no se admiten categorías de texto libre.
 export interface CreateIncidentInput {
   title: string;
   description: string;
-  categoryId?: string | null;
-  category?: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
-  accuracy?: number | null;
+  categoryId: string;
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
 }
 
-// Payload que el front envía al mock (json-server) al crear una incidencia
+// Cuerpo JSON de POST /incidents en el backend real. El ciudadano se deriva
+// del JWT, por eso no viaja `civicId`; las fotos se suben después por separado.
+export interface BackendCreateIncidentPayload {
+  title: string;
+  description?: string;
+  categoryId: string;
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+}
+
+// Payload que el front envía al mock (json-server) al crear una incidencia.
+// El mock no tiene autenticación, así que conserva `civicId` para poder
+// filtrar después las incidencias propias.
 export interface IncidentPayload {
   title: string;
   description: string;
@@ -79,9 +96,29 @@ export interface CreatedIncident extends IncidentBase {
 // Origen de la incidencia creada: backend real o simulación en el mock
 export type IncidentSource = 'backend' | 'mock';
 
+// Autor de la incidencia según la sesión activa: `civicId` se usa en el mock
+// (sin autenticación) y `token` autentica la petición contra el backend real.
+export interface IncidentAuthor {
+  civicId: string;
+  token: AuthToken | null;
+}
+
+// Resultado de subir las fotos de una incidencia ya creada. La subida nunca
+// relanza la creación: si falla, se informa en `errorMessage` y se conservan
+// en `pendingImageUris` las fotos que faltan para poder reintentar solo eso.
+export interface UploadIncidentImagesResult {
+  images: CreatedIncidentImage[];
+  pendingImageUris: string[];
+  errorMessage: string | null;
+}
+
 export interface CreateIncidentResult {
   incident: CreatedIncident;
   source: IncidentSource;
+  // Fotos que no se pudieron subir (vacío si todo fue bien o no había fotos).
+  pendingImageUris: string[];
+  // Motivo del fallo de la subida de fotos, o null si no hubo fallo.
+  imagesUploadErrorMessage: string | null;
 }
 
 // Resumen de una incidencia tal como lo devuelve el listado GET /incidents?civicId=...

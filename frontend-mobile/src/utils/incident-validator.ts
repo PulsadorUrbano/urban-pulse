@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import type { CreateIncidentInput } from '@/types/incident';
 
 export const INCIDENT_TITLE_MIN_LENGTH = 4;
 export const INCIDENT_TITLE_MAX_LENGTH = 35;
@@ -8,7 +7,18 @@ export const INCIDENT_DESCRIPTION_MAX_LENGTH = 1000;
 
 export interface IncidentValidationErrors {
   title?: string;
+  description?: string;
   category?: string;
+  location?: string;
+}
+
+// Valores del formulario que se validan antes de enviar. La categoría debe
+// venir del catálogo activo y la ubicación es obligatoria (contrato PR #185).
+export interface IncidentFormValues {
+  title: string;
+  description: string;
+  categoryId: string | null;
+  isLocationEnabled: boolean;
 }
 
 // Esquema del título: normaliza con trim() y comprueba, por orden de prioridad,
@@ -32,29 +42,52 @@ const titleSchema = z
     }
   });
 
-// Esquema de la categoría personalizada: es opcional y puede ser null, pero si
-// se envía un valor no puede quedar vacío tras el trim().
-const categorySchema = z
+// Esquema de la descripción: es opcional (puede quedar vacía), pero si se
+// escribe debe tener al menos INCIDENT_DESCRIPTION_MIN_LENGTH caracteres,
+// porque el backend rechaza descripciones más cortas.
+const descriptionSchema = z
   .string()
-  .nullable()
-  .optional()
+  .trim()
   .superRefine((value, ctx) => {
-    if (value != null && value.trim().length === 0) {
+    if (value.length > 0 && value.length < INCIDENT_DESCRIPTION_MIN_LENGTH) {
       ctx.addIssue({
         code: 'custom',
-        message: 'Escribe una categoría o quita la selección de "Otros".',
+        message: `La descripción debe tener al menos ${INCIDENT_DESCRIPTION_MIN_LENGTH} caracteres o quedar vacía.`,
       });
     }
   });
 
+// Esquema de la categoría: obligatoria y siempre del catálogo (por id).
+const categorySchema = z
+  .string()
+  .nullable()
+  .superRefine((value, ctx) => {
+    if (value == null || value.trim().length === 0) {
+      ctx.addIssue({ code: 'custom', message: 'Elige una categoría del catálogo.' });
+    }
+  });
+
+// Esquema de la ubicación: el interruptor debe estar activado para enviar.
+const locationSchema = z.boolean().superRefine((value, ctx) => {
+  if (!value) {
+    ctx.addIssue({
+      code: 'custom',
+      message:
+        'La ubicación es obligatoria para registrar la incidencia. Actívala e inténtalo de nuevo.',
+    });
+  }
+});
+
 const incidentValidationSchema = z.object({
   title: titleSchema,
+  description: descriptionSchema,
   category: categorySchema,
+  location: locationSchema,
 });
 
 export type IncidentDescriptionQuality = 'empty' | 'too_short' | 'ok';
 
-export type IncidentWarningCode = 'description-empty' | 'description-too-short' | 'location-disabled';
+export type IncidentWarningCode = 'description-empty';
 
 export interface IncidentWarning {
   code: IncidentWarningCode;
@@ -63,19 +96,20 @@ export interface IncidentWarning {
 
 export interface IncidentWarningInput {
   description: string;
-  isLocationEnabled: boolean;
 }
 
-// Valida los campos obligatorios normalizando los valores con trim().
-// Solo el título es obligatorio; la descripción y la categoría son opcionales,
-// aunque si se envía una categoría personalizada no puede quedar vacía.
+// Valida el formulario normalizando los valores con trim(). Título, categoría
+// del catálogo y ubicación son obligatorios; la descripción es opcional, pero
+// si se escribe debe alcanzar la longitud mínima.
 // Es una función pura: no muta la entrada ni produce efectos secundarios.
 // Traduce el resultado de los esquemas Zod a IncidentValidationErrors,
 // conservando solo el primer error de cada campo.
-export function validateIncidentInput(input: CreateIncidentInput): IncidentValidationErrors {
+export function validateIncidentInput(input: IncidentFormValues): IncidentValidationErrors {
   const result = incidentValidationSchema.safeParse({
     title: input.title,
-    category: input.category,
+    description: input.description,
+    category: input.categoryId,
+    location: input.isLocationEnabled,
   });
 
   if (result.success) {
@@ -87,10 +121,11 @@ export function validateIncidentInput(input: CreateIncidentInput): IncidentValid
   for (const issue of result.error.issues) {
     const field = issue.path[0];
 
-    if (field === 'title' && errors.title === undefined) {
-      errors.title = issue.message;
-    } else if (field === 'category' && errors.category === undefined) {
-      errors.category = issue.message;
+    if (
+      (field === 'title' || field === 'description' || field === 'category' || field === 'location') &&
+      errors[field] === undefined
+    ) {
+      errors[field] = issue.message;
     }
   }
 
@@ -112,30 +147,17 @@ export function getDescriptionQuality(description: string): IncidentDescriptionQ
   return 'ok';
 }
 
-// Reúne los avisos no bloqueantes del formulario: calidad de la descripción y
-// ubicación desactivada. Devuelve una lista vacía cuando no hay nada que avisar.
+// Reúne los avisos no bloqueantes del formulario: solo la descripción vacía
+// (una descripción corta o la ubicación desactivada ya son errores de
+// validación). Devuelve una lista vacía cuando no hay nada que avisar.
 export function getIncidentWarnings(input: IncidentWarningInput): IncidentWarning[] {
   const warnings: IncidentWarning[] = [];
-  const descriptionQuality = getDescriptionQuality(input.description);
 
-  if (descriptionQuality === 'empty') {
+  if (getDescriptionQuality(input.description) === 'empty') {
     warnings.push({
       code: 'description-empty',
       message:
         'No has añadido una descripción. Es recomendable añadir una para que el sistema de incidencias mejore.',
-    });
-  } else if (descriptionQuality === 'too_short') {
-    warnings.push({
-      code: 'description-too-short',
-      message:
-        'La descripción es muy corta. Añadir más detalle ayuda a que el sistema de incidencias mejore.',
-    });
-  }
-
-  if (!input.isLocationEnabled) {
-    warnings.push({
-      code: 'location-disabled',
-      message: 'La ubicación está desactivada. Si la envías así, no se podrá localizar la incidencia.',
     });
   }
 
@@ -144,5 +166,5 @@ export function getIncidentWarnings(input: IncidentWarningInput): IncidentWarnin
 
 // Indica si el resultado de la validación contiene al menos un error.
 export function hasValidationErrors(errors: IncidentValidationErrors): boolean {
-  return Boolean(errors.title) || Boolean(errors.category);
+  return Boolean(errors.title || errors.description || errors.category || errors.location);
 }
