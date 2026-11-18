@@ -19,6 +19,8 @@
 - [x] ~~Categoría personalizada sin límite de caracteres (12-10-26)~~: `maxLength` de 15 en el `TextInput` de la categoría personalizada de `src/components/category-picker.tsx`. Resuelto en el repaso final, ver `refactor/independent/17-11-26-limpieza-frontend-mobile-repaso-final.md`.
 - [x] ~~Posible doble envío al continuar sin ubicación desde el aviso (17-11-26)~~: `isSubmittingRef` en `useIncidentLocationSubmit` bloquea hasta que termina el envío lanzado desde el `Alert`; se libera con Cancelar, Abrir Ajustes y `onDismiss`. Resuelto en el repaso final, ver `refactor/independent/17-11-26-limpieza-frontend-mobile-repaso-final.md`.
 - [x] ~~Rechazos no capturados en el flujo de ubicación (17-11-26)~~: todas las promesas del flujo capturan el error y exponen `submitErrorMessage`, que la pantalla muestra. Resuelto en el repaso final, ver `refactor/independent/17-11-26-limpieza-frontend-mobile-repaso-final.md`.
+- [x] ~~Envío bloqueado en web al denegar la ubicación — PR #184 (17-11-26)~~: nuevo `src/utils/confirm-action.ts` (`Alert` en native, `window.confirm` en web) usado en los dos diálogos de `useIncidentLocationSubmit`; el bloqueo se libera siempre. Ver `bugs/registro-incidencia/17-11-26-envio-bloqueado-en-web-sin-ubicacion.md`.
+- [ ] Fotos descartadas sin aviso al registrar en el backend real — PR #158 (17-11-26): `POST /incidents` (JSON) no admite imágenes y la UI confirma el éxito igualmente. Plan en `bugs/general/17-11-26-review-pr-158-token-y-fotos.md`.
 
 ## General
 
@@ -26,6 +28,8 @@
 
 - [x] ~~UI desplazada hacia arriba, contenido superior oculto salvo scroll manual (24-10-26)~~: corregido con `enableLegacyHeaderAppearance()` en `src/app/_layout.tsx` (causa raíz: header nativo translúcido/absoluto por defecto en iOS 26+ con Liquid Glass en `incidents/new.tsx` e `incidents/[id].tsx`). Verificado por código/tests/lint/typecheck, ver `bugs/general/24-10-26-ui-desplazada-hacia-arriba.md`. Pendiente: confirmación visual de la usuaria en dispositivo iOS real, y `src/app/(tabs)/my-incidents.tsx` sigue sin diagnosticar (no tiene header nativo, no se encontró causa de código ahí; a reproducir si el síntoma persiste tras este fix).
 - [x] ~~`ThemedView` con props `lightColor`/`darkColor` sin efecto (17-11-26)~~: eliminadas las props de la interfaz de `src/components/themed-view.tsx`. Resuelto en el repaso final, ver `refactor/independent/17-11-26-limpieza-frontend-mobile-repaso-final.md`.
+- [ ] Respuesta antigua restaura datos tras retirar el token — PR #158 (17-11-26): `useIncidentDetail` y `useMyIncidents` comparten `isMountedRef` entre ejecuciones del efecto. Plan en `bugs/general/17-11-26-review-pr-158-token-y-fotos.md`.
+- [ ] `Alert.alert` sin efecto en web en `(tabs)/index.tsx` (cerrar sesión) e `incidents/new.tsx` ("¿Enviar de todas formas?") (17-11-26): hallado al revisar la PR #184; no bloquea la UI, pero la acción nunca se ejecuta en web.
 
 ## Login
 

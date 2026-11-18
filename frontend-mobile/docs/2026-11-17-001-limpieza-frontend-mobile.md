@@ -93,3 +93,19 @@ Documentación actualizada en este repaso: `CLAUDE.md` (tests en kebab-case, `Er
 - [x] Empezar la implementación por `17-11-26-limpieza-frontend-mobile-alta.md`, paso a paso, confirmando con el usuario los puntos marcados como "a confirmar" (regeneración de `db.json`, convención de nombres de archivo).
 - [x] Tras cerrar la fase alta y la fase media, continuar con la fase baja, siguiendo el mismo documento como checklist vivo (marcar cada paso al completarlo y rellenar la sección "Confirmación" de cada documento al terminar su fase).
 - [x] Verificación manual en dispositivo/Expo Go real (diferida en las 3 fases, confirmada por la usuaria tras el repaso final): flujo de creación de incidencia con ubicación (con/sin GPS, con/sin permiso) de la fase alta; modal de categorías y avisos de fallback a mock de la fase media; botón de "recuperar contraseña" deshabilitado y modo oscuro de `incident-list-item.tsx` de la fase baja. Ninguna está cubierta por el `compiler`.
+
+## Reviews de las PRs abiertas (17-11-26)
+
+Planes de los cambios pedidos en las PRs #184, #158 y #162, en `docs/spec/bugs/`:
+
+- `registro-incidencia/17-11-26-envio-bloqueado-en-web-sin-ubicacion.md` (PR #184).
+- `general/17-11-26-review-pr-158-token-y-fotos.md` (PR #158). Orden acordado: después de mergear #184, rebasar `fix/token` y reutilizar `confirm-action`.
+- `general/17-11-26-review-pr-162-workflow-ci.md` (PR #162). Sin cambios de código; la descripción se deja como está y solo falta la re-review.
+
+### Fix PR #184: envío bloqueado en web
+
+- [x] Subtarea 1: `src/utils/confirm-action.ts` (confirmación con `Alert` en native y `window.confirm` en web) y `src/__tests__/utils/confirm-action.test.ts` (15 tests).
+- [x] Subtarea 2: `src/hooks/use-incident-location-submit.ts` usa `confirmAction` en los dos diálogos de ubicación; 10 tests web nuevos en `src/__tests__/hooks/use-incident-location-submit.test.ts` (38/38).
+- [x] Verificación: `pnpm tsc --noEmit` y `pnpm expo lint` con 0 errores y 0 warnings; `pnpm test` con 62 suites / 774 tests en verde.
+- [ ] Prueba manual en navegador denegando el permiso de ubicación.
+- [ ] Commit, push, responder a la review de CodeJose21 y pedir re-review.
