@@ -71,6 +71,45 @@ describe('IncidentsService', () => {
     await module.close();
   });
 
+  it('no concede una incidencia sin asignar a un departamento sin pertenencia', async () => {
+    const module = await crearServicio();
+    const created = await service.create(input);
+    await expect(
+      service.findOne(created.id, {
+        id: randomUUID(),
+        role: 'department',
+        ciudadanoId: null,
+        departamentoId: null,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    await module.close();
+  });
+
+  it('limita el acceso por equipo a sus roles y conserva el acceso ciudadano propio', async () => {
+    const module = await crearServicio();
+    const created = await service.create(input);
+    const teamId = randomUUID();
+    prisma.incidencias[0].teamId = teamId;
+
+    await expect(
+      service.findOne(created.id, {
+        id: randomUUID(),
+        role: 'civic',
+        ciudadanoId: randomUUID(),
+        equipoId: teamId,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      service.findOne(created.id, {
+        id: randomUUID(),
+        role: 'technician',
+        ciudadanoId: null,
+        equipoId: teamId,
+      }),
+    ).resolves.toMatchObject({ id: created.id });
+    await module.close();
+  });
+
   it('rechaza una incidencia sin ubicación y no escribe filas', async () => {
     const module = await crearServicio();
     await expect(

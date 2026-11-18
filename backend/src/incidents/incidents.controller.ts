@@ -619,7 +619,6 @@ export class IncidentsController {
     'department',
     'team',
     'technician',
-    'analyst',
   ])
   @ApiOperation({
     summary: 'Consultar una incidencia por identificador',

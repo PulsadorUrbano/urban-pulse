@@ -3,31 +3,55 @@ DO $$ BEGIN
  IF EXISTS (SELECT 1 FROM "Incident" WHERE "categoryId" IS NULL) THEN RAISE EXCEPTION 'Completar categorías antes de migrar'; END IF;
  IF EXISTS (SELECT 1 FROM "Incident" i WHERE NOT EXISTS (SELECT 1 FROM "IncidentLocation" l WHERE l."incidentId"=i.id)) THEN RAISE EXCEPTION 'Completar ubicaciones antes de migrar'; END IF;
  IF EXISTS (SELECT 1 FROM "TeamMember" GROUP BY "userId" HAVING count(*)>1) THEN RAISE EXCEPTION 'Resolver usuarios con varios equipos antes de migrar'; END IF;
+ IF EXISTS (SELECT 1 FROM "Incident" WHERE
+   (status IN ('assigned','in_progress','resolved','closed') AND ("departmentId" IS NULL OR "teamId" IS NULL))
+   OR (status IN ('in_progress','resolved') AND "technicianId" IS NULL)
+ ) THEN RAISE EXCEPTION 'Corregir estados sin asignación completa antes de migrar'; END IF;
 END $$;
 ALTER TABLE "Incident" ALTER COLUMN "categoryId" SET NOT NULL;
 ALTER TABLE "Incident" DROP COLUMN "category";
 ALTER TABLE "Category" ADD COLUMN "code" TEXT, ADD COLUMN "isActive" BOOLEAN NOT NULL DEFAULT true;
 UPDATE "Category" SET "code"='legacy_' || replace(id::text,'-',''), "isActive"=false;
-UPDATE "Category" SET "code"='alumbrado', "name"='Alumbrado público', "normalizedName"=lower('Alumbrado público'), "isActive"=true WHERE "normalizedName"=lower('Iluminación');
-INSERT INTO "Category" (id,name,"normalizedName",code,"isActive") SELECT gen_random_uuid(),'Alumbrado público',lower('Alumbrado público'),'alumbrado',true WHERE NOT EXISTS (SELECT 1 FROM "Category" WHERE code='alumbrado');
-UPDATE "Category" SET "code"='limpieza', "name"='Limpieza viaria', "normalizedName"=lower('Limpieza viaria'), "isActive"=true WHERE "normalizedName"=lower('Limpieza');
-INSERT INTO "Category" (id,name,"normalizedName",code,"isActive") SELECT gen_random_uuid(),'Limpieza viaria',lower('Limpieza viaria'),'limpieza',true WHERE NOT EXISTS (SELECT 1 FROM "Category" WHERE code='limpieza');
-UPDATE "Category" SET "code"='residuos', "name"='Residuos y recogida', "normalizedName"=lower('Residuos y recogida'), "isActive"=true WHERE "normalizedName"=lower('Residuos y recogida');
-INSERT INTO "Category" (id,name,"normalizedName",code,"isActive") SELECT gen_random_uuid(),'Residuos y recogida',lower('Residuos y recogida'),'residuos',true WHERE NOT EXISTS (SELECT 1 FROM "Category" WHERE code='residuos');
-UPDATE "Category" SET "code"='pavimentos', "name"='Aceras y calzadas', "normalizedName"=lower('Aceras y calzadas'), "isActive"=true WHERE "normalizedName"=lower('Vía pública');
-INSERT INTO "Category" (id,name,"normalizedName",code,"isActive") SELECT gen_random_uuid(),'Aceras y calzadas',lower('Aceras y calzadas'),'pavimentos',true WHERE NOT EXISTS (SELECT 1 FROM "Category" WHERE code='pavimentos');
-UPDATE "Category" SET "code"='accesibilidad', "name"='Accesibilidad', "normalizedName"=lower('Accesibilidad'), "isActive"=true WHERE "normalizedName"=lower('Accesibilidad');
-INSERT INTO "Category" (id,name,"normalizedName",code,"isActive") SELECT gen_random_uuid(),'Accesibilidad',lower('Accesibilidad'),'accesibilidad',true WHERE NOT EXISTS (SELECT 1 FROM "Category" WHERE code='accesibilidad');
-UPDATE "Category" SET "code"='senalizacion', "name"='Señalización y regulación del tráfico', "normalizedName"=lower('Señalización y regulación del tráfico'), "isActive"=true WHERE "normalizedName"=lower('Movilidad');
-INSERT INTO "Category" (id,name,"normalizedName",code,"isActive") SELECT gen_random_uuid(),'Señalización y regulación del tráfico',lower('Señalización y regulación del tráfico'),'senalizacion',true WHERE NOT EXISTS (SELECT 1 FROM "Category" WHERE code='senalizacion');
-UPDATE "Category" SET "code"='zonas_verdes', "name"='Parques y zonas verdes', "normalizedName"=lower('Parques y zonas verdes'), "isActive"=true WHERE "normalizedName"=lower('Zonas verdes');
-INSERT INTO "Category" (id,name,"normalizedName",code,"isActive") SELECT gen_random_uuid(),'Parques y zonas verdes',lower('Parques y zonas verdes'),'zonas_verdes',true WHERE NOT EXISTS (SELECT 1 FROM "Category" WHERE code='zonas_verdes');
-UPDATE "Category" SET "code"='mobiliario', "name"='Mobiliario urbano', "normalizedName"=lower('Mobiliario urbano'), "isActive"=true WHERE "normalizedName"=lower('Mobiliario urbano');
-INSERT INTO "Category" (id,name,"normalizedName",code,"isActive") SELECT gen_random_uuid(),'Mobiliario urbano',lower('Mobiliario urbano'),'mobiliario',true WHERE NOT EXISTS (SELECT 1 FROM "Category" WHERE code='mobiliario');
-UPDATE "Category" SET "code"='agua_saneamiento', "name"='Agua y saneamiento', "normalizedName"=lower('Agua y saneamiento'), "isActive"=true WHERE "normalizedName"=lower('Agua y saneamiento');
-INSERT INTO "Category" (id,name,"normalizedName",code,"isActive") SELECT gen_random_uuid(),'Agua y saneamiento',lower('Agua y saneamiento'),'agua_saneamiento',true WHERE NOT EXISTS (SELECT 1 FROM "Category" WHERE code='agua_saneamiento');
-UPDATE "Category" SET "code"='otros', "name"='Otras incidencias', "normalizedName"=lower('Otras incidencias'), "isActive"=true WHERE "normalizedName"=lower('Otras incidencias');
-INSERT INTO "Category" (id,name,"normalizedName",code,"isActive") SELECT gen_random_uuid(),'Otras incidencias',lower('Otras incidencias'),'otros',true WHERE NOT EXISTS (SELECT 1 FROM "Category" WHERE code='otros');
+-- Renombrar un alias solo si el nombre canónico no existe ya. Así se conserva
+-- su UUID cuando es posible y no choca con una categoría histórica homónima.
+UPDATE "Category" c
+SET "code" = v.code, "name" = v.name, "normalizedName" = lower(v.name), "isActive" = true
+FROM (VALUES
+ ('alumbrado', 'Alumbrado público', 'Iluminación'),
+ ('limpieza', 'Limpieza viaria', 'Limpieza'),
+ ('residuos', 'Residuos y recogida', 'Residuos y recogida'),
+ ('pavimentos', 'Aceras y calzadas', 'Vía pública'),
+ ('accesibilidad', 'Accesibilidad', 'Accesibilidad'),
+ ('senalizacion', 'Señalización y regulación del tráfico', 'Movilidad'),
+ ('zonas_verdes', 'Parques y zonas verdes', 'Zonas verdes'),
+ ('mobiliario', 'Mobiliario urbano', 'Mobiliario urbano'),
+ ('agua_saneamiento', 'Agua y saneamiento', 'Agua y saneamiento'),
+ ('otros', 'Otras incidencias', 'Otras incidencias')
+) AS v(code, name, old_name)
+WHERE c."normalizedName" = lower(v.old_name)
+  AND NOT EXISTS (
+    SELECT 1 FROM "Category" existente
+    WHERE existente."normalizedName" = lower(v.name) AND existente.id <> c.id
+  );
+
+-- Activar la categoría canónica ya presente o crearla si no existe.
+INSERT INTO "Category" (id, name, "normalizedName", code, "isActive")
+SELECT gen_random_uuid(), v.name, lower(v.name), v.code, true
+FROM (VALUES
+ ('alumbrado', 'Alumbrado público'),
+ ('limpieza', 'Limpieza viaria'),
+ ('residuos', 'Residuos y recogida'),
+ ('pavimentos', 'Aceras y calzadas'),
+ ('accesibilidad', 'Accesibilidad'),
+ ('senalizacion', 'Señalización y regulación del tráfico'),
+ ('zonas_verdes', 'Parques y zonas verdes'),
+ ('mobiliario', 'Mobiliario urbano'),
+ ('agua_saneamiento', 'Agua y saneamiento'),
+ ('otros', 'Otras incidencias')
+) AS v(code, name)
+WHERE true
+ON CONFLICT ("normalizedName") DO UPDATE
+SET code = EXCLUDED.code, "name" = EXCLUDED.name, "isActive" = true;
 ALTER TABLE "Category" ALTER COLUMN code SET NOT NULL;
 CREATE UNIQUE INDEX "Category_code_key" ON "Category"(code);
 ALTER TABLE users ADD COLUMN "isActive" BOOLEAN NOT NULL DEFAULT true;

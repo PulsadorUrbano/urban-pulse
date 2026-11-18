@@ -250,6 +250,19 @@ describe('IncidentsController autenticado', () => {
         'department',
       ]);
     }
+
+    const detalle = Object.getOwnPropertyDescriptor(
+      IncidentsController.prototype,
+      'findOne',
+    )?.value;
+    expect(Reflect.getMetadata('rolesIncidencias', detalle)).toEqual([
+      'civic',
+      'admin',
+      'administrative',
+      'department',
+      'team',
+      'technician',
+    ]);
   });
 
   it('expone la ruta protegida de fotos y las añade solo al ciudadano vinculado', async () => {

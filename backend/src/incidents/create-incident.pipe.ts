@@ -62,7 +62,7 @@ export class CreateIncidentPipe implements PipeTransform<
       this.uuid(value.categoryId, 'categoryId');
     }
 
-    // latitud y longitud ahora son opcionales; solo se validan si llegan
+    // La presencia se comprueba arriba; estos límites validan los valores recibidos.
     const latitude =
       value.latitude === undefined
         ? undefined

@@ -280,9 +280,14 @@ export class IncidentsService {
       incident.civicId !== usuario.ciudadanoId?.toLowerCase() &&
       !(
         usuario.role === 'department' &&
+        usuario.departamentoId &&
         incident.departmentId === usuario.departamentoId
       ) &&
-      !(incident.teamId && incident.teamId === usuario.equipoId)
+      !(
+        ['team', 'technician'].includes(usuario.role) &&
+        incident.teamId &&
+        incident.teamId === usuario.equipoId
+      )
     ) {
       throw new NotFoundException('La incidencia no existe');
     }
