@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 import { act, renderHook, waitFor } from '@testing-library/react-native';
-import { Alert, type AlertButton, Linking } from 'react-native';
+import { Alert, type AlertButton, Linking, Platform } from 'react-native';
 
 import {
   useIncidentLocationSubmit,
@@ -693,5 +693,177 @@ describe('useIncidentLocationSubmit', () => {
       expect(result.current.isResolvingLocation).toBe(false);
       expect(result.current.createdIncident).toBeNull();
     });
+  });
+
+  describe('en web (Platform.OS = web)', () => {
+    // Escenarios de ubicación bloqueada. En web ambos diálogos pasan por window.confirm.
+    const webBlockedLocationScenarios: {
+      name: string;
+      arrangeBlockedLocation: () => void;
+      expectedAlertTitle: string;
+      expectedNoLocationNotice: string;
+    }[] = [
+      {
+        name: 'permiso denegado',
+        arrangeBlockedLocation: () => mockedRequestLocationPermission.mockResolvedValue(false),
+        expectedAlertTitle: PERMISSION_ALERT_TITLE,
+        expectedNoLocationNotice: NO_LOCATION_PERMISSION_NOTICE,
+      },
+      {
+        name: 'servicios de ubicación desactivados',
+        arrangeBlockedLocation: () => mockedAreLocationServicesEnabled.mockResolvedValue(false),
+        expectedAlertTitle: DEVICE_OFF_ALERT_TITLE,
+        expectedNoLocationNotice: NO_LOCATION_DEVICE_OFF_NOTICE,
+      },
+    ];
+
+    // Descriptores originales para restaurarlos en afterEach.
+    let originalPlatformOsDescriptor: PropertyDescriptor | undefined;
+    let originalWindowDescriptor: PropertyDescriptor | undefined;
+    let originalWindowConfirmDescriptor: PropertyDescriptor | undefined;
+    let windowConfirmMock: jest.Mock<boolean, [string]>;
+
+    beforeEach(() => {
+      originalPlatformOsDescriptor = Object.getOwnPropertyDescriptor(Platform, 'OS');
+      Object.defineProperty(Platform, 'OS', {
+        configurable: true,
+        enumerable: true,
+        get: () => 'web',
+      });
+
+      originalWindowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+      if (typeof globalThis.window === 'undefined') {
+        Object.defineProperty(globalThis, 'window', {
+          configurable: true,
+          writable: true,
+          value: globalThis,
+        });
+      }
+      originalWindowConfirmDescriptor = Object.getOwnPropertyDescriptor(globalThis.window, 'confirm');
+      windowConfirmMock = jest.fn<boolean, [string]>().mockReturnValue(false);
+      Object.defineProperty(globalThis.window, 'confirm', {
+        configurable: true,
+        writable: true,
+        value: windowConfirmMock,
+      });
+    });
+
+    afterEach(() => {
+      if (originalPlatformOsDescriptor) {
+        Object.defineProperty(Platform, 'OS', originalPlatformOsDescriptor);
+      }
+
+      if (originalWindowConfirmDescriptor) {
+        Object.defineProperty(globalThis.window, 'confirm', originalWindowConfirmDescriptor);
+      } else {
+        delete (globalThis.window as unknown as { confirm?: unknown }).confirm;
+      }
+
+      if (originalWindowDescriptor) {
+        Object.defineProperty(globalThis, 'window', originalWindowDescriptor);
+      } else {
+        delete (globalThis as unknown as { window?: unknown }).window;
+      }
+    });
+
+    describe.each(webBlockedLocationScenarios)(
+      'cuando $name',
+      ({ arrangeBlockedLocation, expectedAlertTitle, expectedNoLocationNotice }) => {
+        it('con window.confirm en true envía sin ubicación con el notice correcto y libera el bloqueo', async () => {
+          arrangeBlockedLocation();
+          windowConfirmMock.mockReturnValue(true);
+          const params = buildParams();
+          const { result } = await renderHook(() => useIncidentLocationSubmit(params));
+
+          await act(async () => {
+            result.current.startSubmit();
+          });
+
+          await waitFor(() => expect(result.current.createdIncident).toEqual(createdIncident));
+          await waitFor(() => expect(result.current.isResolvingLocation).toBe(false));
+          expect(windowConfirmMock).toHaveBeenCalledTimes(1);
+          expect(windowConfirmMock).toHaveBeenCalledWith(expect.stringContaining(expectedAlertTitle));
+          expect(params.submitIncident).toHaveBeenCalledTimes(1);
+          expect(params.submitIncident).toHaveBeenCalledWith(expectedNoLocationInput, selectedPhotoUris);
+          expect(result.current.locationNotice).toBe(expectedNoLocationNotice);
+        });
+
+        it('con window.confirm en false no envía la incidencia y libera el bloqueo', async () => {
+          arrangeBlockedLocation();
+          windowConfirmMock.mockReturnValue(false);
+          const params = buildParams();
+          const { result } = await renderHook(() => useIncidentLocationSubmit(params));
+
+          await act(async () => {
+            result.current.startSubmit();
+          });
+
+          await waitFor(() => expect(windowConfirmMock).toHaveBeenCalledTimes(1));
+          await waitFor(() => expect(result.current.isResolvingLocation).toBe(false));
+          expect(params.submitIncident).not.toHaveBeenCalled();
+          expect(result.current.createdIncident).toBeNull();
+          expect(result.current.locationNotice).toBeNull();
+        });
+
+        it('tras cancelar con window.confirm en false, un segundo startSubmit vuelve a mostrar la confirmación', async () => {
+          arrangeBlockedLocation();
+          windowConfirmMock.mockReturnValueOnce(false).mockReturnValueOnce(true);
+          const params = buildParams();
+          const { result } = await renderHook(() => useIncidentLocationSubmit(params));
+
+          await act(async () => {
+            result.current.startSubmit();
+          });
+          await waitFor(() => expect(windowConfirmMock).toHaveBeenCalledTimes(1));
+          await waitFor(() => expect(result.current.isResolvingLocation).toBe(false));
+
+          await act(async () => {
+            result.current.startSubmit();
+          });
+          await waitFor(() => expect(windowConfirmMock).toHaveBeenCalledTimes(2));
+          await waitFor(() => expect(result.current.createdIncident).toEqual(createdIncident));
+          await waitFor(() => expect(result.current.isResolvingLocation).toBe(false));
+          expect(params.submitIncident).toHaveBeenCalledTimes(1);
+          expect(params.submitIncident).toHaveBeenCalledWith(expectedNoLocationInput, selectedPhotoUris);
+        });
+
+        it('no llama a Alert.alert ni a Linking.openSettings', async () => {
+          arrangeBlockedLocation();
+          windowConfirmMock.mockReturnValue(false);
+          const params = buildParams();
+          const { result } = await renderHook(() => useIncidentLocationSubmit(params));
+
+          await act(async () => {
+            result.current.startSubmit();
+          });
+
+          await waitFor(() => expect(windowConfirmMock).toHaveBeenCalledTimes(1));
+          await waitFor(() => expect(result.current.isResolvingLocation).toBe(false));
+          expect(alertSpy).not.toHaveBeenCalled();
+          expect(openSettingsSpy).not.toHaveBeenCalled();
+        });
+
+        it('con window.confirm indefinido libera el bloqueo sin enviar la incidencia', async () => {
+          arrangeBlockedLocation();
+          Object.defineProperty(globalThis.window, 'confirm', {
+            configurable: true,
+            writable: true,
+            value: undefined,
+          });
+          const params = buildParams();
+          const { result } = await renderHook(() => useIncidentLocationSubmit(params));
+
+          await act(async () => {
+            result.current.startSubmit();
+          });
+
+          await waitFor(() => expect(result.current.isResolvingLocation).toBe(false));
+          expect(params.submitIncident).not.toHaveBeenCalled();
+          expect(result.current.createdIncident).toBeNull();
+          expect(alertSpy).not.toHaveBeenCalled();
+          expect(openSettingsSpy).not.toHaveBeenCalled();
+        });
+      },
+    );
   });
 });

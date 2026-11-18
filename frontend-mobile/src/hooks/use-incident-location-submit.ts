@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Alert, Linking } from 'react-native';
+import { Linking } from 'react-native';
 
 import { MOCK_FALLBACK_NOTICE } from '@/constants/messages';
 import {
@@ -9,6 +9,7 @@ import {
 } from '@/services/device-location';
 import type { CreateIncidentInput, CreateIncidentResult, CreatedIncident } from '@/types/incident';
 import type { LocationCoordinates } from '@/types/location';
+import { confirmAction } from '@/utils/confirm-action';
 
 export interface UseIncidentLocationSubmitParams {
   isLocationEnabled: boolean;
@@ -24,7 +25,7 @@ export interface UseIncidentLocationSubmitParams {
 }
 
 export interface UseIncidentLocationSubmitResult {
-  // `true` mientras hay un envío en curso: resolución de ubicación, Alert a la
+  // `true` mientras hay un envío en curso: resolución de ubicación, diálogo de confirmación a la
   // espera de respuesta de la usuaria o petición de registro.
   isResolvingLocation: boolean;
   // Aviso sobre la ubicación (o su ausencia) de la incidencia registrada.
@@ -114,7 +115,7 @@ export function useIncidentLocationSubmit(
     setCreatedIncident(result.incident);
   };
 
-  // Envío lanzado desde un botón del Alert: mantiene el bloqueo hasta que
+  // Envío lanzado desde un botón del diálogo de confirmación: mantiene el bloqueo hasta que
   // termina, captura los errores y libera el bloqueo al final.
   const submitFromAlert = (notice: string) => {
     setSubmitErrorMessage(null);
@@ -123,13 +124,10 @@ export function useIncidentLocationSubmit(
       .finally(releaseSubmit);
   };
 
-  // Opciones comunes de los Alert: si se descarta sin pulsar botón (Android),
-  // se libera el bloqueo igual que con "Cancelar".
-  const alertOptions = { cancelable: true, onDismiss: releaseSubmit };
-
   // Resuelve la ubicación según la preferencia, los servicios del dispositivo y
   // los permisos. Devuelve `true` si ya terminó el envío y se puede liberar el
-  // bloqueo, o `false` si queda un Alert abierto que lo libera por su cuenta.
+  // bloqueo, o `false` si queda un diálogo de confirmación abierto que lo libera por
+  // su cuenta (en web el diálogo es síncrono, en native es asíncrono).
   const resolveLocationAndSubmit = async (): Promise<boolean> => {
     if (!isLocationEnabled) {
       await submitWithCoordinates(null);
@@ -138,31 +136,30 @@ export function useIncidentLocationSubmit(
 
     const isDeviceLocationEnabled = await areLocationServicesEnabled();
     if (!isDeviceLocationEnabled) {
-      Alert.alert(
-        'Ubicación del dispositivo desactivada',
-        'La ubicación del dispositivo está desactivada. Actívala en los Ajustes para registrar la incidencia con su posición.',
-        [
-          { text: 'Cancelar', style: 'cancel', onPress: releaseSubmit },
-          {
-            text: 'Enviar sin ubicación',
-            onPress: () =>
-              submitFromAlert(
-                'La incidencia se registró sin ubicación porque la ubicación del dispositivo está desactivada.',
-              ),
-          },
-        ],
-        alertOptions,
-      );
+      confirmAction({
+        title: 'Ubicación del dispositivo desactivada',
+        message:
+          'La ubicación del dispositivo está desactivada. Actívala en los Ajustes para registrar la incidencia con su posición.',
+        cancel: { text: 'Cancelar', onPress: releaseSubmit },
+        confirm: {
+          text: 'Enviar sin ubicación',
+          onPress: () =>
+            submitFromAlert(
+              'La incidencia se registró sin ubicación porque la ubicación del dispositivo está desactivada.',
+            ),
+        },
+      });
       return false;
     }
 
     const isPermissionGranted = await requestLocationPermission();
     if (!isPermissionGranted) {
-      Alert.alert(
-        'Permiso de ubicación',
-        'No podemos acceder a tu ubicación. Actívala en los Ajustes para registrar la incidencia con su posición.',
-        [
-          { text: 'Cancelar', style: 'cancel', onPress: releaseSubmit },
+      confirmAction({
+        title: 'Permiso de ubicación',
+        message:
+          'No podemos acceder a tu ubicación. Actívala en los Ajustes para registrar la incidencia con su posición.',
+        cancel: { text: 'Cancelar', onPress: releaseSubmit },
+        nativeOnlyOptions: [
           {
             text: 'Abrir Ajustes',
             onPress: () => {
@@ -171,16 +168,15 @@ export function useIncidentLocationSubmit(
               Linking.openSettings().catch(reportSubmitFailure);
             },
           },
-          {
-            text: 'Enviar sin ubicación',
-            onPress: () =>
-              submitFromAlert(
-                'La incidencia se registró sin ubicación porque no hay permiso de ubicación.',
-              ),
-          },
         ],
-        alertOptions,
-      );
+        confirm: {
+          text: 'Enviar sin ubicación',
+          onPress: () =>
+            submitFromAlert(
+              'La incidencia se registró sin ubicación porque no hay permiso de ubicación.',
+            ),
+        },
+      });
       return false;
     }
 
@@ -199,7 +195,7 @@ export function useIncidentLocationSubmit(
 
   // Punto de entrada del envío: ignora llamadas mientras haya un envío o una
   // resolución en curso y libera el bloqueo al terminar (éxito o error). Si
-  // queda un Alert abierto, el bloqueo lo libera el propio Alert.
+  // queda un diálogo de confirmación abierto, el bloqueo lo libera el propio diálogo.
   const startSubmit = () => {
     if (isSubmittingRef.current) return;
 
