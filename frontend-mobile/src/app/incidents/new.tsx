@@ -1,7 +1,6 @@
 import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
 import {
-  Alert,
   Pressable,
   ScrollView,
   TextInput,
@@ -24,6 +23,7 @@ import { usePhotoAttachment } from '@/hooks/use-photo-attachment';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
 import { DEFAULT_INCIDENT_STATUS, type CreateIncidentInput } from '@/types/incident';
+import { confirmAction } from '@/utils/confirm-action';
 import {
   INCIDENT_DESCRIPTION_MAX_LENGTH,
   INCIDENT_TITLE_MAX_LENGTH,
@@ -140,14 +140,13 @@ export default function NewIncidentScreen() {
 
     const warningsMessage = warnings.map((warning) => `• ${warning.message}`).join('\n\n');
 
-    Alert.alert('¿Enviar de todas formas?', warningsMessage, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Enviar de todas formas',
-        style: 'destructive',
-        onPress: startSubmit,
-      },
-    ]);
+    // En web se usa window.confirm porque Alert.alert es un no-op en react-native-web
+    confirmAction({
+      title: '¿Enviar de todas formas?',
+      message: warningsMessage,
+      cancel: { text: 'Cancelar', onPress: () => {} },
+      confirm: { text: 'Enviar de todas formas', style: 'destructive', onPress: startSubmit },
+    });
   };
 
   // Estado de confirmación: se muestra tras un registro correcto.

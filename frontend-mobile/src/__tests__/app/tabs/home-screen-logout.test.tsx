@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 import { useEffect, useState, type ReactNode } from 'react';
-import { Alert, type AlertButton } from 'react-native';
+import { Alert, type AlertButton, Platform } from 'react-native';
 import {
   act,
   cleanup,
@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 
 import HomeScreen from '@/app/(tabs)/index';
 import { SessionProvider, useSession } from '@/hooks/use-session';
+import { clearSessionUser } from '@/services/session-user-storage.service';
 import { clearToken } from '@/services/token-storage.service';
 import type { User } from '@/types/user';
 
@@ -203,5 +204,108 @@ describe('HomeScreen: cierre de sesión', () => {
 
     expect(mockedClearToken).toHaveBeenCalledTimes(1);
     expect(router.replace).toHaveBeenCalledWith('/login');
+  });
+
+  describe('cierre de sesión en web y native', () => {
+    // Descriptores originales para restaurarlos en afterEach.
+    let originalPlatformOsDescriptor: PropertyDescriptor | undefined;
+    let originalWindowDescriptor: PropertyDescriptor | undefined;
+    let originalWindowConfirmDescriptor: PropertyDescriptor | undefined;
+    let windowConfirmMock: jest.Mock<boolean, [string]>;
+
+    describe('en web (Platform.OS = web)', () => {
+      beforeEach(() => {
+        originalPlatformOsDescriptor = Object.getOwnPropertyDescriptor(Platform, 'OS');
+        Object.defineProperty(Platform, 'OS', {
+          configurable: true,
+          enumerable: true,
+          get: () => 'web',
+        });
+
+        originalWindowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+        if (typeof globalThis.window === 'undefined') {
+          Object.defineProperty(globalThis, 'window', {
+            configurable: true,
+            writable: true,
+            value: globalThis,
+          });
+        }
+        originalWindowConfirmDescriptor = Object.getOwnPropertyDescriptor(globalThis.window, 'confirm');
+        windowConfirmMock = jest.fn<boolean, [string]>().mockReturnValue(false);
+        Object.defineProperty(globalThis.window, 'confirm', {
+          configurable: true,
+          writable: true,
+          value: windowConfirmMock,
+        });
+
+        jest.mocked(clearSessionUser).mockClear();
+      });
+
+      afterEach(() => {
+        if (originalPlatformOsDescriptor) {
+          Object.defineProperty(Platform, 'OS', originalPlatformOsDescriptor);
+        }
+
+        if (originalWindowConfirmDescriptor) {
+          Object.defineProperty(globalThis.window, 'confirm', originalWindowConfirmDescriptor);
+        } else {
+          delete (globalThis.window as unknown as { confirm?: unknown }).confirm;
+        }
+
+        if (originalWindowDescriptor) {
+          Object.defineProperty(globalThis, 'window', originalWindowDescriptor);
+        } else {
+          delete (globalThis as unknown as { window?: unknown }).window;
+        }
+      });
+
+      it('con window.confirm aceptado cierra sesión y navega a /login sin usar Alert', async () => {
+        windowConfirmMock.mockReturnValue(true);
+        const user = userEvent.setup();
+        await renderHomeScreenWithActiveSession();
+
+        await user.press(screen.getByLabelText('Cerrar sesión'));
+
+        await waitFor(() => {
+          expect(router.replace).toHaveBeenCalledTimes(1);
+        });
+        expect(windowConfirmMock).toHaveBeenCalledWith(
+          expect.stringContaining('¿Seguro que quieres cerrar sesión?'),
+        );
+        // signOut de SessionProvider limpia el token y la sesión persistida.
+        expect(mockedClearToken).toHaveBeenCalledTimes(1);
+        expect(jest.mocked(clearSessionUser)).toHaveBeenCalledTimes(1);
+        expect(router.replace).toHaveBeenCalledWith('/login');
+        expect(alertSpy).not.toHaveBeenCalled();
+      });
+
+      it('con window.confirm rechazado no cierra sesión, no navega y mantiene la pantalla', async () => {
+        windowConfirmMock.mockReturnValue(false);
+        const user = userEvent.setup();
+        await renderHomeScreenWithActiveSession();
+
+        await user.press(screen.getByLabelText('Cerrar sesión'));
+
+        expect(windowConfirmMock).toHaveBeenCalledTimes(1);
+        expect(mockedClearToken).not.toHaveBeenCalled();
+        expect(jest.mocked(clearSessionUser)).not.toHaveBeenCalled();
+        expect(router.replace).not.toHaveBeenCalled();
+        expect(screen.getByLabelText(registerIncidentButtonLabel)).toBeOnTheScreen();
+      });
+    });
+
+    describe('en native (Platform.OS = ios)', () => {
+      it('el botón "Cerrar sesión" del Alert lleva style destructive', async () => {
+        const user = userEvent.setup();
+        await renderHomeScreenWithActiveSession();
+
+        await user.press(screen.getByLabelText('Cerrar sesión'));
+
+        const alertButtons = alertSpy.mock.calls.at(-1)?.[2] as AlertButton[] | undefined;
+        expect(alertButtons?.find((button) => button.text === 'Cerrar sesión')).toEqual(
+          expect.objectContaining({ style: 'destructive' }),
+        );
+      });
+    });
   });
 });

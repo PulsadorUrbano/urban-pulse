@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import { Alert, type AlertButton, Text } from 'react-native';
+import { Alert, type AlertButton, Platform, Text } from 'react-native';
 import { act, render, screen, userEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import React from 'react';
@@ -665,6 +665,145 @@ describe('NewIncidentScreen', () => {
         SESSION_CIVIC_ID,
         [],
       );
+    });
+  });
+
+  describe('avisos de validación al pulsar "Enviar"', () => {
+    // Descriptores originales para restaurarlos en afterEach.
+    let originalPlatformOsDescriptor: PropertyDescriptor | undefined;
+    let originalWindowDescriptor: PropertyDescriptor | undefined;
+    let originalWindowConfirmDescriptor: PropertyDescriptor | undefined;
+    let windowConfirmMock: jest.Mock<boolean, [string]>;
+
+    // Rellena solo el título: la descripción vacía dispara el aviso "description-empty".
+    async function fillTitleOnly(user: ReturnType<typeof userEvent.setup>) {
+      await user.type(screen.getByLabelText('Título de la incidencia'), incidentTitle);
+    }
+
+    describe('en web (Platform.OS = web)', () => {
+      beforeEach(() => {
+        originalPlatformOsDescriptor = Object.getOwnPropertyDescriptor(Platform, 'OS');
+        Object.defineProperty(Platform, 'OS', {
+          configurable: true,
+          enumerable: true,
+          get: () => 'web',
+        });
+
+        originalWindowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+        if (typeof globalThis.window === 'undefined') {
+          Object.defineProperty(globalThis, 'window', {
+            configurable: true,
+            writable: true,
+            value: globalThis,
+          });
+        }
+        originalWindowConfirmDescriptor = Object.getOwnPropertyDescriptor(globalThis.window, 'confirm');
+        windowConfirmMock = jest.fn<boolean, [string]>().mockReturnValue(false);
+        Object.defineProperty(globalThis.window, 'confirm', {
+          configurable: true,
+          writable: true,
+          value: windowConfirmMock,
+        });
+      });
+
+      afterEach(() => {
+        if (originalPlatformOsDescriptor) {
+          Object.defineProperty(Platform, 'OS', originalPlatformOsDescriptor);
+        }
+
+        if (originalWindowConfirmDescriptor) {
+          Object.defineProperty(globalThis.window, 'confirm', originalWindowConfirmDescriptor);
+        } else {
+          delete (globalThis.window as unknown as { confirm?: unknown }).confirm;
+        }
+
+        if (originalWindowDescriptor) {
+          Object.defineProperty(globalThis, 'window', originalWindowDescriptor);
+        } else {
+          delete (globalThis as unknown as { window?: unknown }).window;
+        }
+      });
+
+      it('con window.confirm aceptado envía la incidencia tras el aviso de descripción vacía', async () => {
+        windowConfirmMock.mockReturnValue(true);
+        const user = userEvent.setup();
+        await renderScreen();
+
+        await fillTitleOnly(user);
+        await user.press(screen.getByLabelText('Enviar incidencia'));
+
+        expect(windowConfirmMock).toHaveBeenCalledTimes(1);
+        expect(windowConfirmMock).toHaveBeenCalledWith(
+          expect.stringContaining('¿Enviar de todas formas?'),
+        );
+        expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+        expect(mockedCreateIncident).toHaveBeenCalledTimes(1);
+        expect(mockedCreateIncident).toHaveBeenCalledWith(
+          expect.objectContaining({ title: incidentTitle, description: '' }),
+          SESSION_CIVIC_ID,
+          [],
+        );
+      });
+
+      it('con window.confirm rechazado no envía y se mantiene en el formulario', async () => {
+        windowConfirmMock.mockReturnValue(false);
+        const user = userEvent.setup();
+        await renderScreen();
+
+        await fillTitleOnly(user);
+        await user.press(screen.getByLabelText('Enviar incidencia'));
+
+        expect(windowConfirmMock).toHaveBeenCalledTimes(1);
+        expect(mockedCreateIncident).not.toHaveBeenCalled();
+        expect(screen.queryByText('Incidencia registrada')).not.toBeOnTheScreen();
+        expect(screen.getByLabelText('Enviar incidencia')).toBeOnTheScreen();
+      });
+
+      it('con la ubicación desactivada y window.confirm aceptado envía sin coordenadas y muestra el aviso de ubicación', async () => {
+        windowConfirmMock.mockReturnValue(true);
+        const user = userEvent.setup();
+        await renderScreen();
+
+        await user.press(screen.getByLabelText('Desactivar ubicación'));
+        await fillTitleOnly(user);
+        await user.press(screen.getByLabelText('Enviar incidencia'));
+
+        expect(windowConfirmMock).toHaveBeenCalledWith(
+          expect.stringContaining('La ubicación está desactivada'),
+        );
+        expect(await screen.findByText('Incidencia registrada')).toBeOnTheScreen();
+        expect(mockedCreateIncident).toHaveBeenCalledWith(
+          { ...expectedNoLocationSubmission, description: '' },
+          SESSION_CIVIC_ID,
+          [],
+        );
+      });
+
+      it('con el título vacío muestra el error de validación sin pedir confirmación', async () => {
+        const user = userEvent.setup();
+        await renderScreen();
+
+        await user.press(screen.getByLabelText('Enviar incidencia'));
+
+        expect(windowConfirmMock).not.toHaveBeenCalled();
+        expect(mockedCreateIncident).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('en native (Platform.OS = ios)', () => {
+      it('el botón "Enviar de todas formas" del Alert lleva style destructive', async () => {
+        const user = userEvent.setup();
+        await renderScreen();
+
+        await fillTitleOnly(user);
+        await user.press(screen.getByLabelText('Enviar incidencia'));
+
+        expect(alertSpy).toHaveBeenCalledTimes(1);
+        const alertButtons = alertSpy.mock.calls.at(-1)?.[2] as AlertButton[] | undefined;
+        expect(alertButtons?.find((button) => button.text === 'Enviar de todas formas')).toEqual(
+          expect.objectContaining({ style: 'destructive' }),
+        );
+      });
     });
   });
 });

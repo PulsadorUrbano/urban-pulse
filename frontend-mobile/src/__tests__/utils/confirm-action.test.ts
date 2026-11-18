@@ -248,4 +248,43 @@ describe('confirmAction', () => {
       expect(params.confirm.onPress).not.toHaveBeenCalled();
     });
   });
+
+  describe('estilo del botón de confirmar en native', () => {
+    beforeEach(() => {
+      setPlatformOs('ios');
+    });
+
+    it('pasa style "destructive" al botón de confirmar', () => {
+      const params = buildConfirmParams({
+        confirm: { text: 'Cerrar sesión', style: 'destructive', onPress: jest.fn() },
+      });
+
+      confirmAction(params);
+
+      const alertButtons = alertSpy.mock.calls[0][2] as { text: string; style?: string }[];
+      expect(alertButtons.at(-1)).toEqual({
+        text: 'Cerrar sesión',
+        style: 'destructive',
+        onPress: params.confirm.onPress,
+      });
+    });
+
+    it('pasa style "default" al botón de confirmar cuando se indica', () => {
+      const params = buildConfirmParams({
+        confirm: { text: 'Continuar', style: 'default', onPress: jest.fn() },
+      });
+
+      confirmAction(params);
+
+      const alertButtons = alertSpy.mock.calls[0][2] as { text: string; style?: string }[];
+      expect(alertButtons.at(-1)?.style).toBe('default');
+    });
+
+    it('no incluye la clave style en el botón de confirmar cuando no se indica', () => {
+      confirmAction(buildConfirmParams());
+
+      const alertButtons = alertSpy.mock.calls[0][2] as { text: string }[];
+      expect(alertButtons.at(-1)).not.toHaveProperty('style');
+    });
+  });
 });

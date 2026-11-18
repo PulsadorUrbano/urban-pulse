@@ -5,12 +5,17 @@ export interface ConfirmActionOption {
   onPress: () => void;
 }
 
+export interface ConfirmActionConfirmOption extends ConfirmActionOption {
+  // Solo native: p. ej. 'destructive' para acciones irreversibles; en web se ignora
+  style?: 'default' | 'destructive';
+}
+
 export interface ConfirmActionParams {
   title: string;
   message: string;
   // También se ejecuta al descartar el diálogo
   cancel: ConfirmActionOption;
-  confirm: ConfirmActionOption;
+  confirm: ConfirmActionConfirmOption;
   // Botones adicionales solo para native (p. ej. "Abrir Ajustes"); en web se omiten
   nativeOnlyOptions?: ConfirmActionOption[];
 }
@@ -36,7 +41,11 @@ export function confirmAction({
           text: option.text,
           onPress: option.onPress,
         })),
-        { text: confirm.text, onPress: confirm.onPress },
+        {
+          text: confirm.text,
+          onPress: confirm.onPress,
+          ...(confirm.style ? { style: confirm.style } : {}),
+        },
       ],
       { cancelable: true, onDismiss: cancel.onPress },
     );

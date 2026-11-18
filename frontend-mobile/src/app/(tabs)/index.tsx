@@ -1,6 +1,6 @@
 import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable } from 'react-native';
+import { Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LogoutButton } from '@/components/logout-button';
@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useSession } from '@/hooks/use-session';
+import { confirmAction } from '@/utils/confirm-action';
 import { buildGreetings } from '@/utils/greetings';
 
 export default function HomeScreen() {
@@ -33,10 +34,19 @@ export default function HomeScreen() {
 
   // Pide confirmación antes de cerrar sesión para evitar cierres accidentales.
   const handleLogoutPress = () => {
-    Alert.alert('Cerrar sesión', '¿Seguro que quieres cerrar sesión?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Cerrar sesión', style: 'destructive', onPress: handleConfirmLogout },
-    ]);
+    // En web se usa window.confirm porque Alert.alert es un no-op en react-native-web
+    confirmAction({
+      title: 'Cerrar sesión',
+      message: '¿Seguro que quieres cerrar sesión?',
+      cancel: { text: 'Cancelar', onPress: () => {} },
+      confirm: {
+        text: 'Cerrar sesión',
+        style: 'destructive',
+        onPress: () => {
+          void handleConfirmLogout();
+        },
+      },
+    });
   };
 
   return (
