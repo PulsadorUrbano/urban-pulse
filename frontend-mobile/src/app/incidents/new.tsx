@@ -22,7 +22,7 @@ import { useLocationPreference } from '@/hooks/use-location-preference';
 import { usePhotoAttachment } from '@/hooks/use-photo-attachment';
 import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
-import { DEFAULT_INCIDENT_STATUS, type CreateIncidentInput } from '@/types/incident';
+import { DEFAULT_INCIDENT_STATUS } from '@/types/incident';
 import { confirmAction } from '@/utils/confirm-action';
 import {
   INCIDENT_DESCRIPTION_MAX_LENGTH,
@@ -36,8 +36,11 @@ import {
 export default function NewIncidentScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { user, isRestoringSession } = useSession();
-  const { isSubmitting, errorMessage, submitIncident } = useCreateIncident(user?.civicId ?? null);
+  const { user, token, isRestoringSession } = useSession();
+  const { isSubmitting, errorMessage, submitIncident, uploadPendingImages } = useCreateIncident(
+    user?.civicId ?? null,
+    token,
+  );
   const { isLocationEnabled, toggleLocation } = useLocationPreference();
   const {
     selectedPhotoUris,
@@ -56,31 +59,25 @@ export default function NewIncidentScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const [isOtherSelected, setIsOtherSelected] = useState(false);
-  const [customCategory, setCustomCategory] = useState('');
   const [validationErrors, setValidationErrors] = useState<IncidentValidationErrors>({});
-
-  // Construye el payload de categoría según la selección activa: una categoría
-  // del catálogo, una categoría personalizada ("Otros") o ninguna.
-  const buildCategoryInput = () => ({
-    categoryId: isOtherSelected ? null : selectedCategoryId,
-    category: isOtherSelected ? customCategory : null,
-  });
 
   const {
     isResolvingLocation,
-    locationNotice,
     backendFallbackNotice,
     submitErrorMessage,
     createdIncident,
+    imagesUploadErrorMessage,
+    isRetryingImageUpload,
     startSubmit,
+    retryImageUpload,
   } = useIncidentLocationSubmit({
     isLocationEnabled,
     title,
     description,
-    ...buildCategoryInput(),
+    categoryId: selectedCategoryId,
     selectedPhotoUris,
     submitIncident,
+    uploadPendingImages,
   });
 
   // Sin sesión activa (y ya resuelta) esta pantalla no es alcanzable: mismo
@@ -94,45 +91,32 @@ export default function NewIncidentScreen() {
   // incidencia o se está guardando una foto adjunta.
   const isSubmitDisabled = isSubmitting || isResolvingLocation || isProcessingPhoto;
 
-  // Selecciona una categoría del catálogo y descarta la opción "Otros".
+  // Selecciona una categoría del catálogo.
   const handleSelectCategory = (categoryId: string) => {
     setSelectedCategoryId(categoryId);
-    setIsOtherSelected(false);
-    setCustomCategory('');
   };
 
-  // Activa la categoría personalizada con el texto recibido del picker y limpia
-  // la categoría del catálogo.
-  const handleSelectOther = (customCategory: string) => {
-    setIsOtherSelected(true);
-    setSelectedCategoryId(null);
-    setCustomCategory(customCategory);
-  };
-
-  // Deselecciona cualquier categoría dejando el campo opcional vacío.
+  // Deselecciona la categoría (es obligatoria: el envío se bloqueará sin ella).
   const clearCategory = () => {
     setSelectedCategoryId(null);
-    setIsOtherSelected(false);
-    setCustomCategory('');
   };
 
-  // Valida el formulario y pide un único consentimiento cuando hay avisos
-  // (descripción o ubicación); sin avisos, inicia el envío directamente.
+  // Valida el formulario (título, descripción, categoría y ubicación) y pide un
+  // único consentimiento si falta la descripción; sin avisos, envía directamente.
   const handleSubmit = () => {
-    const input: CreateIncidentInput = {
+    const errors = validateIncidentInput({
       title,
       description,
-      ...buildCategoryInput(),
-    };
-
-    const errors = validateIncidentInput(input);
+      categoryId: selectedCategoryId,
+      isLocationEnabled,
+    });
     setValidationErrors(errors);
 
     if (hasValidationErrors(errors)) {
       return;
     }
 
-    const warnings = getIncidentWarnings({ description, isLocationEnabled });
+    const warnings = getIncidentWarnings({ description });
     if (warnings.length === 0) {
       startSubmit();
       return;
@@ -163,10 +147,19 @@ export default function NewIncidentScreen() {
               <ThemedText type="smallBold">{DEFAULT_INCIDENT_STATUS}</ThemedText>.
             </ThemedText>
 
-            {locationNotice ? (
-              <ThemedText type="small" themeColor="textSecondary" className="text-center">
-                {locationNotice}
-              </ThemedText>
+            {imagesUploadErrorMessage ? (
+              <ThemedView type="backgroundElement" className="w-full gap-2 rounded-2xl px-4 py-2">
+                <ThemedText type="small" themeColor="error" className="text-center">
+                  {imagesUploadErrorMessage}
+                </ThemedText>
+                <PrimaryButton
+                  label="Reintentar subida de fotos"
+                  accessibilityLabel="Reintentar subida de fotos"
+                  disabled={isRetryingImageUpload}
+                  isLoading={isRetryingImageUpload}
+                  onPress={retryImageUpload}
+                />
+              </ThemedView>
             ) : null}
 
             {backendFallbackNotice ? (
@@ -208,8 +201,8 @@ export default function NewIncidentScreen() {
           }}
           keyboardShouldPersistTaps="handled">
           <ThemedText type="small" themeColor="textSecondary">
-            Describe la incidencia urbana. El título es obligatorio y la descripción es opcional,
-            aunque recomendable.
+            Describe la incidencia urbana. El título, la categoría y la ubicación son
+            obligatorios; la descripción es opcional, aunque recomendable.
           </ThemedText>
 
           <ThemedView className="gap-2">
@@ -259,15 +252,19 @@ export default function NewIncidentScreen() {
                 <CategoryPicker
                   categories={categories}
                   selectedCategoryId={selectedCategoryId}
-                  customCategory={customCategory}
                   isLoading={isCategoriesLoading}
                   errorMessage={categoriesErrorMessage}
                   onSelectCategory={handleSelectCategory}
-                  onSelectOther={handleSelectOther}
                   onClear={clearCategory}
                 />
               </View>
             </ThemedView>
+
+            {validationErrors.description ? (
+              <ThemedText type="small" themeColor="error">
+                {validationErrors.description}
+              </ThemedText>
+            ) : null}
 
             {validationErrors.category ? (
               <ThemedText type="small" themeColor="error">
@@ -293,6 +290,14 @@ export default function NewIncidentScreen() {
               disabled={isSubmitting || isResolvingLocation}
             />
           </ThemedView>
+
+          {validationErrors.location ? (
+            <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
+              <ThemedText type="small" themeColor="error">
+                {validationErrors.location}
+              </ThemedText>
+            </ThemedView>
+          ) : null}
 
           {errorMessage ? (
             <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
