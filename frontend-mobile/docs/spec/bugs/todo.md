@@ -20,7 +20,7 @@
 - [x] ~~Posible doble envío al continuar sin ubicación desde el aviso (17-11-26)~~: `isSubmittingRef` en `useIncidentLocationSubmit` bloquea hasta que termina el envío lanzado desde el `Alert`; se libera con Cancelar, Abrir Ajustes y `onDismiss`. Resuelto en el repaso final, ver `refactor/independent/17-11-26-limpieza-frontend-mobile-repaso-final.md`.
 - [x] ~~Rechazos no capturados en el flujo de ubicación (17-11-26)~~: todas las promesas del flujo capturan el error y exponen `submitErrorMessage`, que la pantalla muestra. Resuelto en el repaso final, ver `refactor/independent/17-11-26-limpieza-frontend-mobile-repaso-final.md`.
 - [x] ~~Envío bloqueado en web al denegar la ubicación — PR #184 (17-11-26)~~: nuevo `src/utils/confirm-action.ts` (`Alert` en native, `window.confirm` en web) usado en los dos diálogos de `useIncidentLocationSubmit`; el bloqueo se libera siempre. Ver `bugs/registro-incidencia/17-11-26-envio-bloqueado-en-web-sin-ubicacion.md`.
-- [ ] Fotos descartadas sin aviso al registrar en el backend real — PR #158 (17-11-26): `POST /incidents` (JSON) no admite imágenes y la UI confirma el éxito igualmente. Plan en `bugs/general/17-11-26-review-pr-158-token-y-fotos.md`.
+- [x] ~~Fotos descartadas sin aviso al registrar en el backend real — PR #158 (17-11-26)~~: las fotos se suben ahora por separado a `POST /incidents/:id/images` tras crear la incidencia; si fallan, la confirmación lo avisa y permite reintentar solo la subida. Resuelto en la issue #191, ver `refactor/registro-incidencia/18-11-26-contrato-incidencias-pr-185.md`.
 
 ## General
 
