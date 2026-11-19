@@ -1,0 +1,70 @@
+import { STATUS_FILTER_OPTIONS } from '../constants/incident-labels';
+import type {
+  IncidentListFilters,
+  IncidentSortOrder,
+  IncidentStatusFilter,
+  IncidentSummary,
+} from '../types/incident';
+
+export const DEFAULT_INCIDENT_FILTERS: IncidentListFilters = {
+  status: 'all',
+  order: 'newest',
+  from: null,
+  to: null,
+};
+
+export function parseStatusFilter(value: string): IncidentStatusFilter {
+  return STATUS_FILTER_OPTIONS.find((status) => status === value) ?? 'all';
+}
+
+export function parseSortOrder(value: string): IncidentSortOrder {
+  return value === 'oldest' ? 'oldest' : 'newest';
+}
+
+export function hasActiveFilters(filters: IncidentListFilters): boolean {
+  return filters.status !== 'all' || filters.order !== 'newest' || filters.from !== null || filters.to !== null;
+}
+
+// Límites del rango en milisegundos. Si `from` es posterior a `to` se intercambian, así el rango nunca queda vacío
+// por el orden en que se rellenan los calendarios.
+function rangeBounds({ from, to }: IncidentListFilters): { start: number; end: number } {
+  const [first, last] = from && to && from > to ? [to, from] : [from, to];
+  return {
+    start: first ? new Date(`${first}T00:00:00`).getTime() : Number.NEGATIVE_INFINITY,
+    end: last ? new Date(`${last}T23:59:59.999`).getTime() : Number.POSITIVE_INFINITY,
+  };
+}
+
+function timeOf(incident: IncidentSummary): number {
+  return new Date(incident.createdAt).getTime();
+}
+
+// Filtra por estado y rango de días y ordena por fecha de creación; a igual fecha, por id para que el orden sea estable.
+export function applyIncidentFilters(
+  items: readonly IncidentSummary[],
+  filters: IncidentListFilters,
+): IncidentSummary[] {
+  const { start, end } = rangeBounds(filters);
+  const direction = filters.order === 'newest' ? -1 : 1;
+  return items
+    .filter((incident) => filters.status === 'all' || incident.status === filters.status)
+    .filter((incident) => {
+      const time = timeOf(incident);
+      return time >= start && time <= end;
+    })
+    .sort((a, b) => direction * (timeOf(a) - timeOf(b)) || a.id.localeCompare(b.id));
+}
+
+// Indica si el resultado puede estar incompleto porque quedan páginas sin cargar. El backend devuelve las
+// incidencias de más reciente a más antigua, así que si ya se cargó alguna anterior al inicio del rango,
+// todas las del rango están en memoria y el resultado es completo.
+export function isFilterResultPartial(
+  items: readonly IncidentSummary[],
+  filters: IncidentListFilters,
+  hasMore: boolean,
+): boolean {
+  if (!hasMore || !hasActiveFilters(filters)) return false;
+  const { start } = rangeBounds(filters);
+  const rangeLoaded = Number.isFinite(start) && items.some((incident) => timeOf(incident) < start);
+  return !rangeLoaded;
+}
