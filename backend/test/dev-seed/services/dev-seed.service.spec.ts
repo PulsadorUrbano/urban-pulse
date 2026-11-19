@@ -11,13 +11,13 @@ import {
 import type { PrismaService } from '../../../src/prisma/prisma.service.js';
 
 describe('DevSeedService', () => {
-  let prisma: { users: { upsert: ReturnType<typeof vi.fn> } };
+  let prisma: { user: { upsert: ReturnType<typeof vi.fn> } };
   let config: { get: ReturnType<typeof vi.fn> };
   let logSpy: ReturnType<typeof vi.spyOn>;
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    prisma = { users: { upsert: vi.fn().mockResolvedValue({}) } };
+    prisma = { user: { upsert: vi.fn().mockResolvedValue({}) } };
     config = { get: vi.fn() };
     logSpy = vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
     warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
@@ -39,16 +39,16 @@ describe('DevSeedService', () => {
 
     await crearServicio().onModuleInit();
 
-    expect(prisma.users.upsert).not.toHaveBeenCalled();
+    expect(prisma.user.upsert).not.toHaveBeenCalled();
   });
 
-  it('crea el admin y un ciudadano civic con contraseña hasheada en development', async () => {
+  it('crea el admin y un ciudadano civic con contrase�a hasheada en development', async () => {
     config.get.mockReturnValue('development');
 
     await crearServicio().onModuleInit();
 
-    expect(prisma.users.upsert).toHaveBeenCalledTimes(2);
-    const [admin, ciudadano] = prisma.users.upsert.mock.calls.map((call) => call[0]);
+    expect(prisma.user.upsert).toHaveBeenCalledTimes(2);
+    const [admin, ciudadano] = prisma.user.upsert.mock.calls.map((call) => call[0]);
     expect(admin.where).toEqual({ id: DEV_ADMIN_ID });
     expect(admin.create.role).toBe('admin');
     expect(ciudadano.where).toEqual({ id: DEV_CITIZEN_ID });
@@ -63,7 +63,7 @@ describe('DevSeedService', () => {
 
   it('registra un aviso y no lanza error si la base de datos falla', async () => {
     config.get.mockReturnValue('development');
-    prisma.users.upsert.mockRejectedValue(new Error('sin conexión'));
+    prisma.user.upsert.mockRejectedValue(new Error('sin conexi�n'));
 
     await expect(crearServicio().onModuleInit()).resolves.toBeUndefined();
     expect(warnSpy).toHaveBeenCalled();

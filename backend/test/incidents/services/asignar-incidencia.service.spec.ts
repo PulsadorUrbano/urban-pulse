@@ -79,7 +79,7 @@ function preparar() {
             : null,
       ),
     },
-    users: {
+    user: {
       findUnique: vi.fn(async ({ where }: { where: { id: string } }) =>
         where.id === tecnico ? { id: tecnico } : null,
       ),
@@ -104,8 +104,8 @@ function preparar() {
   return { fila, servicio, updateMany, prisma };
 }
 
-describe('Asignación de incidencias', () => {
-  it('cambiar departamento limpia equipo y técnico; se admite solo departamento', async () => {
+describe('Asignaci�n de incidencias', () => {
+  it('cambiar departamento limpia equipo y t�cnico; se admite solo departamento', async () => {
     const { servicio, fila } = preparar();
     const respuesta = await servicio.asignar(fila.id, {
       departmentId: otroDepartamento,
@@ -123,7 +123,7 @@ describe('Asignación de incidencias', () => {
     });
   });
 
-  it('quitar equipo limpia técnico y cambiar solo técnico conserva superiores', async () => {
+  it('quitar equipo limpia t�cnico y cambiar solo t�cnico conserva superiores', async () => {
     const primero = preparar();
     expect(
       await primero.servicio.asignar(primero.fila.id, { teamId: null }),
@@ -144,7 +144,7 @@ describe('Asignación de incidencias', () => {
     });
   });
 
-  it('cambiar equipo dentro del mismo departamento limpia técnico', async () => {
+  it('cambiar equipo dentro del mismo departamento limpia t�cnico', async () => {
     const { servicio, fila } = preparar();
     await expect(
       servicio.asignar(fila.id, { teamId: equipoHermano }),
@@ -155,7 +155,7 @@ describe('Asignación de incidencias', () => {
     });
   });
 
-  it('rechaza jerarquía cruzada e ID ausente sin escribir', async () => {
+  it('rechaza jerarqu�a cruzada e ID ausente sin escribir', async () => {
     const { servicio, fila, updateMany } = preparar();
     await expect(
       servicio.asignar(fila.id, { teamId: otroEquipo }),
@@ -168,7 +168,7 @@ describe('Asignación de incidencias', () => {
     expect(updateMany).not.toHaveBeenCalled();
   });
 
-  it('sustituye la cadena completa en una petición', async () => {
+  it('sustituye la cadena completa en una petici�n', async () => {
     const { servicio, fila } = preparar();
     const respuesta = await servicio.asignar(fila.id, {
       departmentId: otroDepartamento,
@@ -195,7 +195,7 @@ describe('Asignación de incidencias', () => {
     expect(fila).toEqual(anterior);
   });
 
-  it('rechaza estados no editables e ID de técnico desconocido', async () => {
+  it('rechaza estados no editables e ID de t�cnico desconocido', async () => {
     const { servicio, fila, updateMany } = preparar();
     fila.status = 'reported';
     await expect(
@@ -210,10 +210,10 @@ describe('Asignación de incidencias', () => {
     expect(updateMany).not.toHaveBeenCalled();
   });
 
-  it('consulta opciones de asignación sin datos ficticios', async () => {
+  it('consulta opciones de asignaci�n sin datos ficticios', async () => {
     const { servicio, prisma } = preparar();
     Object.assign(prisma.department, {
-      findMany: vi.fn().mockResolvedValue([{ id: departamento, name: 'Vías' }]),
+      findMany: vi.fn().mockResolvedValue([{ id: departamento, name: 'V�as' }]),
     });
     Object.assign(prisma.team, {
       findMany: vi
@@ -230,13 +230,13 @@ describe('Asignación de incidencias', () => {
         ]),
     });
     await expect(servicio.opcionesAsignacion()).resolves.toEqual({
-      departments: [{ id: departamento, name: 'Vías' }],
+      departments: [{ id: departamento, name: 'V�as' }],
       teams: [{ id: equipo, name: 'Alumbrado', departmentId: departamento }],
       technicians: [{ id: tecnico, name: 'Ana', teamId: equipo }],
     });
   });
 
-  it('rechaza asignar técnico sin equipo y conserva la incidencia', async () => {
+  it('rechaza asignar t�cnico sin equipo y conserva la incidencia', async () => {
     const { servicio, fila, updateMany } = preparar();
     fila.teamId = null;
     fila.technicianId = null;
@@ -264,7 +264,7 @@ describe('Asignación de incidencias', () => {
     expect(fila.teamId).toBe(otroEquipo);
   });
 
-  it('traduce un fallo transaccional y conserva la asignación anterior', async () => {
+  it('traduce un fallo transaccional y conserva la asignaci�n anterior', async () => {
     const { servicio, fila, prisma } = preparar();
     const anterior = { ...fila };
     prisma.$transaction = async (

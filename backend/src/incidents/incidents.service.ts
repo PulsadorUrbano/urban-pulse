@@ -70,7 +70,7 @@ export class IncidentsService {
         tx.incident.create({ data: datos, include: incluirAgregado }),
       );
     } catch {
-      // Un fallo de commit puede dejar la transacción confirmada. Consultar antes de informar del error.
+      // Un fallo de commit puede dejar la transacci�n confirmada. Consultar antes de informar del error.
       try {
         const existente = await this.prisma.incident.findUnique({
           where: { id },
@@ -79,7 +79,7 @@ export class IncidentsService {
         if (existente) return this.serializar(existente);
       } catch {
         this.logger.error(
-          `No se pudo conciliar el resultado de creación de la incidencia ${id}.`,
+          `No se pudo conciliar el resultado de creaci�n de la incidencia ${id}.`,
         );
         throw this.errorPersistencia('crear la incidencia');
       }
@@ -224,7 +224,7 @@ export class IncidentsService {
         })),
       };
     } catch {
-      throw this.errorPersistencia('consultar las opciones de asignación');
+      throw this.errorPersistencia('consultar las opciones de asignaci�n');
     }
   }
 
@@ -293,19 +293,19 @@ export class IncidentsService {
           }
         }
         if (technicianId) {
-          const user = await tx.users.findUnique({
+          const user = await tx.user.findUnique({
             where: { id: technicianId },
             select: { id: true },
           });
           if (!user) throw new BadRequestException('technicianId no existe');
           if (!teamId)
-            throw new ConflictException('El técnico requiere un equipo');
+            throw new ConflictException('El t�cnico requiere un equipo');
           const miembro = await tx.teamMember.findUnique({
             where: { userId_teamId: { userId: technicianId, teamId } },
             select: { isTechnician: true },
           });
           if (!miembro?.isTechnician) {
-            throw new ConflictException('El técnico no pertenece al equipo');
+            throw new ConflictException('El t�cnico no pertenece al equipo');
           }
         }
 
@@ -321,7 +321,7 @@ export class IncidentsService {
         });
         if (actualizadas.count !== 1) {
           throw new ConflictException(
-            'La asignación cambió durante la operación',
+            'La asignaci�n cambi� durante la operaci�n',
           );
         }
         return tx.incident.findUnique({
@@ -352,7 +352,7 @@ export class IncidentsService {
       !entrada.cause.trim()
     ) {
       throw new BadRequestException(
-        'El estado debe ser validated o rejected y el motivo no puede estar vacío',
+        'El estado debe ser validated o rejected y el motivo no puede estar vac�o',
       );
     }
     const id = idIncidencia.toLowerCase();
@@ -427,7 +427,7 @@ export class IncidentsService {
       !entrada.cause.trim()
     ) {
       throw new BadRequestException(
-        'La prioridad debe ser Baja (low), Media (medium) o Alta (high) y el motivo no puede estar vacío',
+        'La prioridad debe ser Baja (low), Media (medium) o Alta (high) y el motivo no puede estar vac�o',
       );
     }
     const id = idIncidencia.toLowerCase();
@@ -537,7 +537,7 @@ export class IncidentsService {
   private errorPersistencia(operacion: string): ServiceUnavailableException {
     this.logger.error(`No se pudo ${operacion} en PostgreSQL.`);
     return new ServiceUnavailableException(
-      'El almacenamiento de incidencias no está disponible.',
+      'El almacenamiento de incidencias no est� disponible.',
     );
   }
 }

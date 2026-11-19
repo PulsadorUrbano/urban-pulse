@@ -35,11 +35,11 @@ export class AccesoIncidenciasGuard implements CanActivate {
     );
     if (!roles?.length) {
       throw new ForbiddenException(
-        'Esta operación no tiene permisos definidos',
+        'Esta operaci�n no tiene permisos definidos',
       );
     }
 
-    const usuario = await this.prisma.users.findUnique({
+    const usuario = await this.prisma.user.findUnique({
       where: { id: request.user.userId.toLowerCase() },
       select: { id: true, role: true, citizen: { select: { user_id: true } } },
     });
@@ -51,7 +51,7 @@ export class AccesoIncidenciasGuard implements CanActivate {
       (usuario.role === 'civic' && !usuario.citizen)
     ) {
       throw new ForbiddenException(
-        'El usuario no tiene permiso para esta operación',
+        'El usuario no tiene permiso para esta operaci�n',
       );
     }
 

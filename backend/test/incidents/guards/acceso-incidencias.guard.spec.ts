@@ -39,7 +39,7 @@ function contexto(
 }
 
 describe('Acceso a incidencias con identidad actual', () => {
-  const prisma = { users: { findUnique: vi.fn() } };
+  const prisma = { user: { findUnique: vi.fn() } };
   const guard = new AccesoIncidenciasGuard(
     prisma as unknown as PrismaService,
     new Reflector(),
@@ -47,18 +47,18 @@ describe('Acceso a incidencias con identidad actual', () => {
 
   beforeEach(() => vi.resetAllMocks());
 
-  it('rechaza una petición que no pasó la validación JWT', async () => {
+  it('rechaza una petici�n que no pas� la validaci�n JWT', async () => {
     const { context, request } = contexto(['admin']);
     delete request.user;
     await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
       UnauthorizedException,
     );
     expect(request.usuarioIncidencias).toBeUndefined();
-    expect(prisma.users.findUnique).not.toHaveBeenCalled();
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
 
   it('rechaza usuarios eliminados', async () => {
-    prisma.users.findUnique.mockResolvedValue(null);
+    prisma.user.findUnique.mockResolvedValue(null);
     const { context, request } = contexto(['admin']);
     await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
       UnauthorizedException,
@@ -67,7 +67,7 @@ describe('Acceso a incidencias con identidad actual', () => {
   });
 
   it('deniega por defecto sin metadata de roles', async () => {
-    prisma.users.findUnique.mockResolvedValue({
+    prisma.user.findUnique.mockResolvedValue({
       id,
       role: 'admin',
       citizen: null,
@@ -80,7 +80,7 @@ describe('Acceso a incidencias con identidad actual', () => {
   it.each(Object.values(profile_role))(
     'usa el rol actual %s de PostgreSQL, no el rol antiguo del JWT',
     async (role) => {
-      prisma.users.findUnique.mockResolvedValue({ id, role, citizen: null });
+      prisma.user.findUnique.mockResolvedValue({ id, role, citizen: null });
       const { context, request } = contexto(['admin', 'administrative']);
       if (role === 'admin' || role === 'administrative') {
         await expect(guard.canActivate(context)).resolves.toBe(true);
@@ -98,7 +98,7 @@ describe('Acceso a incidencias con identidad actual', () => {
   );
 
   it('vincula al ciudadano real aunque el token conserve un rol antiguo', async () => {
-    prisma.users.findUnique.mockResolvedValue({
+    prisma.user.findUnique.mockResolvedValue({
       id,
       role: 'civic',
       citizen: { user_id: id },
@@ -112,8 +112,8 @@ describe('Acceso a incidencias con identidad actual', () => {
     });
   });
 
-  it('rechaza un ciudadano sin relación citizens', async () => {
-    prisma.users.findUnique.mockResolvedValue({
+  it('rechaza un ciudadano sin perfil ciudadano', async () => {
+    prisma.user.findUnique.mockResolvedValue({
       id,
       role: 'civic',
       citizen: null,
@@ -127,7 +127,7 @@ describe('Acceso a incidencias con identidad actual', () => {
 
   it('propaga el fallo de DB sin publicar una identidad', async () => {
     const error = new Error('DB no disponible');
-    prisma.users.findUnique.mockRejectedValue(error);
+    prisma.user.findUnique.mockRejectedValue(error);
     const { context, request } = contexto(['admin']);
     await expect(guard.canActivate(context)).rejects.toBe(error);
     expect(request.usuarioIncidencias).toBeUndefined();

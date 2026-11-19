@@ -11,12 +11,12 @@ const ID_CIUDADANO = '8d2f6a4e-1b3c-4d5e-9f70-a1b2c3d4e5f6';
 
 describe('AuthService', () => {
   let prisma: {
-    users: {
+    user: {
       create: ReturnType<typeof vi.fn>;
       findFirst: ReturnType<typeof vi.fn>;
       findUnique: ReturnType<typeof vi.fn>;
     };
-    citizens: { create: ReturnType<typeof vi.fn> };
+    citizen: { create: ReturnType<typeof vi.fn> };
     $transaction: ReturnType<typeof vi.fn>;
   };
   let jwt: JwtService;
@@ -24,12 +24,12 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     prisma = {
-      users: {
+      user: {
         create: vi.fn(),
         findFirst: vi.fn(),
         findUnique: vi.fn(),
       },
-      citizens: { create: vi.fn() },
+      citizen: { create: vi.fn() },
       $transaction: vi.fn(),
     };
     prisma.$transaction.mockImplementation(
@@ -50,8 +50,8 @@ describe('AuthService', () => {
       phone: '+34612345678',
     };
 
-    it('crea el usuario civic con contraseña hasheada y su registro de ciudadano', async () => {
-      prisma.users.create.mockResolvedValue({
+    it('crea el usuario civic con contrase�a hasheada y su registro de ciudadano', async () => {
+      prisma.user.create.mockResolvedValue({
         id: ID_CIUDADANO,
         username: entrada.username,
         email: entrada.email,
@@ -61,11 +61,11 @@ describe('AuthService', () => {
 
       const resultado = await service.registrarCiudadano(entrada);
 
-      const datosUsuario = prisma.users.create.mock.calls[0][0].data;
+      const datosUsuario = prisma.user.create.mock.calls[0][0].data;
       expect(datosUsuario.role).toBe('civic');
       expect(datosUsuario.password).not.toBe(entrada.password);
       expect(await compare(entrada.password, datosUsuario.password)).toBe(true);
-      expect(prisma.citizens.create).toHaveBeenCalledWith({
+      expect(prisma.citizen.create).toHaveBeenCalledWith({
         data: { user_id: ID_CIUDADANO, phone: '+34612345678' },
       });
       expect(resultado).toEqual({
@@ -79,7 +79,7 @@ describe('AuthService', () => {
     });
 
     it('guarda phone como null cuando no se indica', async () => {
-      prisma.users.create.mockResolvedValue({
+      prisma.user.create.mockResolvedValue({
         id: ID_CIUDADANO,
         username: entrada.username,
         email: entrada.email,
@@ -92,35 +92,35 @@ describe('AuthService', () => {
         phone: undefined,
       });
 
-      expect(prisma.citizens.create).toHaveBeenCalledWith({
+      expect(prisma.citizen.create).toHaveBeenCalledWith({
         data: { user_id: ID_CIUDADANO, phone: null },
       });
       expect(resultado.phone).toBeNull();
     });
 
-    it('responde con conflicto cuando la base de datos rechaza un valor único duplicado', async () => {
-      prisma.users.create.mockRejectedValue(
+    it('responde con conflicto cuando la base de datos rechaza un valor �nico duplicado', async () => {
+      prisma.user.create.mockRejectedValue(
         Object.assign(new Error('Unique constraint failed'), { code: 'P2002' }),
       );
 
       await expect(service.registrarCiudadano(entrada)).rejects.toBeInstanceOf(
         ConflictException,
       );
-      expect(prisma.citizens.create).not.toHaveBeenCalled();
+      expect(prisma.citizen.create).not.toHaveBeenCalled();
     });
 
     it('propaga errores que no son de unicidad', async () => {
-      prisma.users.create.mockRejectedValue(new Error('conexión perdida'));
+      prisma.user.create.mockRejectedValue(new Error('conexi�n perdida'));
 
       await expect(service.registrarCiudadano(entrada)).rejects.toThrow(
-        'conexión perdida',
+        'conexi�n perdida',
       );
     });
   });
 
   describe('login', () => {
-    it('devuelve un JWT con las claims del usuario cuando las credenciales son válidas', async () => {
-      prisma.users.findFirst.mockResolvedValue({
+    it('devuelve un JWT con las claims del usuario cuando las credenciales son v�lidas', async () => {
+      prisma.user.findFirst.mockResolvedValue({
         id: ID_CIUDADANO,
         username: 'ciudadano',
         role: 'civic',
@@ -138,12 +138,12 @@ describe('AuthService', () => {
       });
     });
 
-    it('busca por email en minúsculas cuando el identificador contiene una arroba', async () => {
-      prisma.users.findFirst.mockResolvedValue(null);
+    it('busca por email en min�sculas cuando el identificador contiene una arroba', async () => {
+      prisma.user.findFirst.mockResolvedValue(null);
 
       await service.login('Ciudadano@Example.com', 'x').catch(() => undefined);
 
-      expect(prisma.users.findFirst).toHaveBeenCalledWith(
+      expect(prisma.user.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
             OR: [
@@ -155,8 +155,8 @@ describe('AuthService', () => {
       );
     });
 
-    it('rechaza una contraseña incorrecta con el mensaje genérico', async () => {
-      prisma.users.findFirst.mockResolvedValue({
+    it('rechaza una contrase�a incorrecta con el mensaje gen�rico', async () => {
+      prisma.user.findFirst.mockResolvedValue({
         id: ID_CIUDADANO,
         username: 'ciudadano',
         role: 'civic',
@@ -164,15 +164,15 @@ describe('AuthService', () => {
       });
 
       await expect(service.login('ciudadano', 'otra')).rejects.toThrow(
-        new UnauthorizedException('Usuario o contraseña incorrectos'),
+        new UnauthorizedException('Usuario o contrase�a incorrectos'),
       );
     });
 
-    it('rechaza un usuario inexistente con el mismo mensaje genérico', async () => {
-      prisma.users.findFirst.mockResolvedValue(null);
+    it('rechaza un usuario inexistente con el mismo mensaje gen�rico', async () => {
+      prisma.user.findFirst.mockResolvedValue(null);
 
       await expect(service.login('nadie', 'clave')).rejects.toThrow(
-        new UnauthorizedException('Usuario o contraseña incorrectos'),
+        new UnauthorizedException('Usuario o contrase�a incorrectos'),
       );
     });
   });
@@ -185,8 +185,8 @@ describe('AuthService', () => {
       role: 'civic',
     };
 
-    it('devuelve los datos actuales del usuario, incluido el teléfono', async () => {
-      prisma.users.findUnique.mockResolvedValue({
+    it('devuelve los datos actuales del usuario, incluido el tel�fono', async () => {
+      prisma.user.findUnique.mockResolvedValue({
         id: ID_CIUDADANO,
         username: 'ciudadano',
         email: 'ciudadano@example.com',
@@ -204,7 +204,7 @@ describe('AuthService', () => {
     });
 
     it('responde 401 cuando el usuario del token ya no existe', async () => {
-      prisma.users.findUnique.mockResolvedValue(null);
+      prisma.user.findUnique.mockResolvedValue(null);
 
       await expect(
         service.obtenerUsuarioActual(payload),
@@ -214,9 +214,9 @@ describe('AuthService', () => {
 
   afterEach(() => vi.restoreAllMocks());
   it.each(['persona', 'Persona@Example.com'])(
-    'emite token con identidad pública y una hora de vida para %s',
+    'emite token con identidad p�blica y una hora de vida para %s',
     async (identificador) => {
-      prisma.users.findFirst.mockResolvedValue({
+      prisma.user.findFirst.mockResolvedValue({
         id: ID_CIUDADANO,
         username: 'persona',
         role: 'civic',
@@ -241,16 +241,16 @@ describe('AuthService', () => {
         role: 'civic',
       });
       expect(claims.exp - claims.iat).toBe(3600);
-      expect(prisma.users.create).not.toHaveBeenCalled();
+      expect(prisma.user.create).not.toHaveBeenCalled();
     },
   );
   it('propaga el fallo de base de datos sin devolver credenciales ficticias', async () => {
     const fallo = new Error('DB no disponible');
-    prisma.users.findFirst.mockRejectedValue(fallo);
+    prisma.user.findFirst.mockRejectedValue(fallo);
     await expect(service.login('persona', 'clave')).rejects.toBe(fallo);
   });
   it('propaga un fallo de firma sin emitir token de respaldo', async () => {
-    prisma.users.findFirst.mockResolvedValue({
+    prisma.user.findFirst.mockResolvedValue({
       id: ID_CIUDADANO,
       username: 'persona',
       role: 'civic',
@@ -261,7 +261,7 @@ describe('AuthService', () => {
     await expect(service.login('persona', 'clave')).rejects.toBe(fallo);
   });
   it('me devuelve el perfil actual, no el rol o nombre antiguo del JWT', async () => {
-    prisma.users.findUnique.mockResolvedValue({
+    prisma.user.findUnique.mockResolvedValue({
       id: ID_CIUDADANO,
       username: 'nombre.actual',
       email: 'actual@example.com',
@@ -284,7 +284,7 @@ describe('AuthService', () => {
   });
   it('me propaga el fallo de DB sin inventar un usuario', async () => {
     const fallo = new Error('DB no disponible');
-    prisma.users.findUnique.mockRejectedValue(fallo);
+    prisma.user.findUnique.mockRejectedValue(fallo);
     await expect(
       service.obtenerUsuarioActual({
         sub: ID_CIUDADANO,
