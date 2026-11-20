@@ -7,7 +7,14 @@ const entrada = {
 };
 describe('Validación del cambio de estado', () => {
   const pipe = new CambiarEstadoIncidenciaPipe();
-  it.each(['validated', 'rejected'])(
+  it.each([
+    'validated',
+    'rejected',
+    'in_progress',
+    'resolved',
+    'reopened',
+    'closed',
+  ])(
     'acepta %s y normaliza el motivo',
     async (status) => {
       expect(await pipe.transform({ ...entrada, status })).toEqual({
@@ -29,6 +36,7 @@ describe('Validación del cambio de estado', () => {
     { ...entrada, status: 'reported' },
     { ...entrada, status: 'VALIDATED' },
     { ...entrada, status: [] },
+    { ...entrada, status: ['validated'] },
     { ...entrada, cause: undefined },
     { ...entrada, cause: null },
     { ...entrada, cause: '' },
