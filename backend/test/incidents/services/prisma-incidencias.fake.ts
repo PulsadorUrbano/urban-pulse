@@ -172,7 +172,7 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
     if (!incident) return null;
     return {
       ...clonar(incident),
-      categoria: { name: 'Iluminación' },
+      categoria: incident.categoryId ? { name: 'Iluminación' } : null,
       location: clonar(
         ubicaciones.find((row) => String(row.incidentId) === id) ?? null,
       ),

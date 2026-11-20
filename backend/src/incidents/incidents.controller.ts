@@ -98,8 +98,8 @@ const incidentSchema = {
     title: { type: 'string' },
     description: { type: 'string', nullable: true },
     civicId: { type: 'string', format: 'uuid' },
-    categoryId: { type: 'string', format: 'uuid' },
-    category: { type: 'string' },
+    categoryId: { type: 'string', format: 'uuid', nullable: true },
+    category: { type: 'string', nullable: true },
     urbanAssetId: { type: 'string', format: 'uuid', nullable: true },
     location: {
       type: 'object',
@@ -324,10 +324,9 @@ export class IncidentsController {
       type: 'object',
       additionalProperties: false,
       required: ['title', 'latitude', 'longitude'],
-      anyOf: [{ required: ['categoryId'] }, { required: ['category'] }],
       properties: {
         title: { type: 'string', minLength: 4, maxLength: 35 },
-        description: { type: 'string', minLength: 10 },
+        description: { type: 'string' },
         categoryId: { type: 'string', format: 'uuid' },
         category: { type: 'string' },
         latitude: { type: 'number', minimum: -90, maximum: 90 },

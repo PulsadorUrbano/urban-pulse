@@ -34,8 +34,8 @@ export interface Incident {
   title: string;
   description: string | null;
   civicId: string;
-  categoryId: string;
-  category: string;
+  categoryId: string | null;
+  category: string | null;
   urbanAssetId: string | null;
   departmentId: string | null;
   teamId: string | null;

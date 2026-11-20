@@ -44,9 +44,6 @@ BEGIN
     IF EXISTS (SELECT 1 FROM "Incident" WHERE char_length("title") NOT BETWEEN 4 AND 35) THEN
         RAISE EXCEPTION 'Hay títulos fuera del límite de 4 a 35 caracteres';
     END IF;
-    IF EXISTS (SELECT 1 FROM "Incident" WHERE "description" IS NOT NULL AND char_length("description") < 10) THEN
-        RAISE EXCEPTION 'Hay descripciones con menos de 10 caracteres';
-    END IF;
     IF EXISTS (SELECT 1 FROM "priority_changes" WHERE ("is_manual" AND "user_id" IS NULL) OR (NOT "is_manual" AND "user_id" IS NOT NULL)) THEN
         RAISE EXCEPTION 'Hay cambios de prioridad con origen y usuario incompatibles';
     END IF;
@@ -206,8 +203,6 @@ ALTER TABLE "Incident" ADD CONSTRAINT "Incident_assignment_levels_check"
        AND ("technicianId" IS NULL OR "teamId" IS NOT NULL));
 ALTER TABLE "Incident" ADD CONSTRAINT "Incident_title_length_check"
     CHECK (char_length("title") BETWEEN 4 AND 35);
-ALTER TABLE "Incident" ADD CONSTRAINT "Incident_description_length_check"
-    CHECK ("description" IS NULL OR char_length("description") >= 10);
 ALTER TABLE "IncidentLocation" ADD CONSTRAINT "IncidentLocation_coordinates_check"
     CHECK ("latitude" BETWEEN -90 AND 90 AND "longitude" BETWEEN -180 AND 180
        AND ("accuracy" IS NULL OR "accuracy" >= 0));

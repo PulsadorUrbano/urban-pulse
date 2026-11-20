@@ -50,8 +50,8 @@ model Incident {
   description       String?
   civicId           String             @db.Uuid
   civic             citizens           @relation(fields: [civicId], references: [user_id], onDelete: Restrict)
-  categoryId        String             @db.Uuid
-  categoria         Category           @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  categoryId        String?            @db.Uuid
+  categoria         Category?          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   urbanAssetId      String?            @db.Uuid
   urbanAsset        UrbanAsset?        @relation(fields: [urbanAssetId], references: [id], onDelete: Restrict)
   departmentId      String?            @db.Uuid

@@ -2,9 +2,9 @@
 
 ## Decisiones
 
-Categoría y ubicación obligatorias; título de 4 a 35 caracteres. Dirección opcional.
+Ubicación obligatoria y título de 4 a 35 caracteres. Categoría, dirección y descripción opcionales. La descripción no tiene longitud mínima.
 La categoría solo se almacena mediante FK; el nombre de la respuesta se obtiene de la relación.
-El catálogo es controlado: no se crean categorías desde reportes. Se resuelve por UUID o nombre normalizado activo.
+El catálogo es controlado. Si se indica una categoría, se resuelve por UUID o nombre normalizado activo. Las incidencias sin categoría guardan la FK nula.
 Categorías con códigos estables: alumbrado, limpieza, residuos, pavimentos, accesibilidad, senalizacion, zonas_verdes, mobiliario, agua_saneamiento y otros.
 Los nombres anteriores se migran conservando sus UUID; las categorías históricas ajenas al catálogo se conservan inactivas.
 UrbanAsset representa un tipo de elemento, sin ubicación ni inventario individual. Sigue siendo opcional.
@@ -44,7 +44,7 @@ Las incidencias se conservan permanentemente. Los historiales son inmutables; no
 
 ## Migración y límites
 
-20261118000000_close_model se aplica después de model_integrity. Se detiene ante categorías o ubicaciones ausentes y usuarios con varios equipos. No rellena ubicaciones ficticias ni elimina incidencias.
+20261118000000_close_model se aplica después de model_integrity. Se detiene ante ubicaciones ausentes y usuarios con varios equipos. No rellena ubicaciones ficticias ni elimina incidencias.
 La migración 20261120000000_comentarios_asignacion_opcionales permite guardar asignaciones sin comentarios y conserva las entradas históricas.
 La ubicación obligatoria se protege mediante triggers diferidos al commit para permitir el alta anidada de Prisma; por eso la relación inversa se expresa como opcional en Prisma.
 Los permisos se verifican en la API; la base de datos protege referencias, transiciones y conservación.

@@ -69,7 +69,7 @@ La PR #158 permite al frontend móvil crear incidencias mediante JSON y JWT. La 
 | `PATCH /incidents/:id/assignment` | Asignar departamento y equipo con motivo e historial. |
 | `GET /incidents/:id/assignments` | Consultar el historial de asignaciones según el ámbito del usuario. |
 
-El alta recibe JSON con `title` de 4 a 35 caracteres, categoría activa y coordenadas obligatorias; descripción, activo y dirección son opcionales. `civicId` procede de la sesión y no se admite en el cuerpo. Tampoco se admiten `images`, archivos ni multipart en esa ruta. Devuelve `201`, el recurso y la cabecera `Location`. Las fotos se suben después por `POST /incidents/:id/images`; el detalle incluye URL de lectura temporales.
+El alta recibe JSON con `title` de 4 a 35 caracteres y coordenadas obligatorias. La categoría, la descripción, el activo y la dirección son opcionales. Si se indica una categoría debe estar activa. La descripción no tiene longitud mínima. `civicId` procede de la sesión y no se admite en el cuerpo. Tampoco se admiten `images`, archivos ni multipart en esa ruta. Devuelve `201`, el recurso y la cabecera `Location`. Las fotos se suben después por `POST /incidents/:id/images`; el detalle incluye URL de lectura temporales.
 
 `GET /auth/me` y las rutas de incidencia individuales utilizan `JwtAuthGuard`; el listado y el filtro `civicId` siguen sin requerir autenticación. El listado usa cursor keyset, no OFFSET. El arranque no configura CORS explícitamente.
 
@@ -109,7 +109,7 @@ La configuración unitaria descubre `**/*.spec.ts` y la e2e `**/*.e2e-spec.ts`.
 
 Los usuarios y ciudadanos se almacenan en PostgreSQL mediante Prisma. Las contraseñas se guardan con hash bcrypt. El esquema `prisma/schema.prisma` también define incidencias, ubicaciones y cambios de estado y prioridad.
 
-`IncidentsService` usa Prisma para incidencias, ubicaciones e historiales; la creación y los cambios auditados usan transacciones. `FotosIncidenciaService` guarda las fotos en S3 y sus referencias en `IncidentImage`. Las migraciones se aplican en orden: `20261115000000_imagenes_s3` crea esa tabla; `20261117000000_model_integrity` añade categorías, activos, direcciones, contextos y restricciones; `20261118000000_close_model` exige categoría y ubicación, crea el catálogo controlado y cierra la auditoría de asignaciones. Las dos últimas se detienen ante datos históricos incompatibles para corregirlos antes de poblar la base. No se aplican automáticamente salvo que `DB_SYNC=deploy` se configure expresamente.
+`IncidentsService` usa Prisma para incidencias, ubicaciones e historiales; la creación y los cambios auditados usan transacciones. `FotosIncidenciaService` guarda las fotos en S3 y sus referencias en `IncidentImage`. Las migraciones se aplican en orden: `20261115000000_imagenes_s3` crea esa tabla; `20261117000000_model_integrity` añade categorías, activos, direcciones, contextos y restricciones; `20261118000000_close_model` exige ubicación, crea el catálogo controlado y cierra la auditoría de asignaciones. Las dos últimas se detienen ante datos históricos incompatibles para corregirlos antes de poblar la base. No se aplican automáticamente salvo que `DB_SYNC=deploy` se configure expresamente.
 
 El [DBML](../database/diagram.dbml) y el [SQL de referencia](docs/migrations/001_base_diagram.sql) describen el modelo de datos del proyecto.
 
@@ -120,5 +120,5 @@ La migración `20261118000000_close_model` exige categoría y ubicación y conse
 `citizens` y `TeamMember` pueden coexistir para un usuario; un usuario solo pertenece a un equipo. `DepartmentMember` determina el ámbito del rol `department`.
 Las asignaciones requieren `cause` y resultado con departamento y equipo; se guardan con historial inmutable. `GET /incidents/:id/assignments` permite consultarlo.
 Las transiciones adicionales están implementadas con autorización por departamento o técnico asignado; las incidencias se conservan permanentemente y las fotos se guardan en S3.
-Los clientes deben enviar categoría y coordenadas al crear, y motivo al asignar. No se han adaptado los frontends en este cambio.
+Los clientes deben enviar coordenadas al crear, y motivo al asignar. No se han adaptado los frontends en este cambio.
 La migración se detiene ante datos históricos incompatibles. La secuencia completa se comprobó en un PostgreSQL temporal; ninguna base existente fue modificada.

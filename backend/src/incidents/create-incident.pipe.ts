@@ -37,11 +37,6 @@ export class CreateIncidentPipe implements PipeTransform<
       value.description === undefined
         ? undefined
         : this.text(value.description, 'description');
-    if (description !== undefined && Array.from(description).length < 10) {
-      throw new BadRequestException(
-        'description requiere al menos 10 caracteres',
-      );
-    }
     const category =
       value.category === undefined
         ? undefined
@@ -52,9 +47,6 @@ export class CreateIncidentPipe implements PipeTransform<
       throw new BadRequestException('title must contain 4 to 35 characters');
     }
 
-    if (value.categoryId === undefined && !category) {
-      throw new BadRequestException('La categoría es obligatoria');
-    }
     if (value.latitude === undefined || value.longitude === undefined) {
       throw new BadRequestException('La ubicación es obligatoria');
     }

@@ -119,16 +119,18 @@ describe('CreateIncidentPipe', () => {
     ).toThrow(BadRequestException);
   });
 
-  it('rechaza una descripción demasiado corta', () => {
-    expect(() => pipe.transform({ ...input(), description: 'Corta' })).toThrow(
-      BadRequestException,
+  it.each(['  Corta  ', '   '])('acepta la descripción sin mínimo: %j', (description) => {
+    expect(pipe.transform({ ...input(), description }).description).toBe(
+      description.trim(),
     );
   });
 
-  it('rechaza ausencia de categoría', () => {
+  it('acepta ausencia de categoría', () => {
     const { categoryId: _categoryId, category: _category, ...value } = input();
+    const result = pipe.transform(value);
 
-    expect(() => pipe.transform(value)).toThrow(BadRequestException);
+    expect(result).not.toHaveProperty('categoryId');
+    expect(result).not.toHaveProperty('category');
   });
 
   it.each([

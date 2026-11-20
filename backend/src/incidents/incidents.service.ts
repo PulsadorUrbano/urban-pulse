@@ -38,7 +38,7 @@ const incluirAgregado = {
 };
 
 type IncidenciaConAgregado = PrismaIncident & {
-  categoria: CategoryModel;
+  categoria: CategoryModel | null;
   location: (PrismaIncidentLocation & { address: AddressModel | null }) | null;
 };
 
@@ -49,15 +49,11 @@ export class IncidentsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(input: CreateIncidentInput): Promise<Incident> {
-    if (
-      (!input.categoryId && !input.category?.trim()) ||
-      input.latitude === undefined ||
-      input.longitude === undefined
-    ) {
-      throw new BadRequestException('Categoría y ubicación obligatorias');
+    if (input.latitude === undefined || input.longitude === undefined) {
+      throw new BadRequestException('La ubicación es obligatoria');
     }
     let categoriaId = input.categoryId?.toLowerCase();
-    let nombreCategoria = input.category?.trim() || null;
+    const nombreCategoria = input.category?.trim();
     try {
       if (input.categoryId) {
         const categoria = await this.prisma.category.findUnique({
@@ -74,9 +70,7 @@ export class IncidentsService {
         ) {
           throw new BadRequestException('category no coincide con categoryId');
         }
-        nombreCategoria = categoria.name;
-      }
-      if (!categoriaId && nombreCategoria) {
+      } else if (nombreCategoria) {
         const categoria = await this.prisma.category.findUnique({
           where: { normalizedName: normalizeCategoryName(nombreCategoria) },
         });
@@ -115,7 +109,7 @@ export class IncidentsService {
       title: input.title,
       description: input.description ?? null,
       civicId: input.civicId.toLowerCase(),
-      categoryId: categoriaId!,
+      categoryId: categoriaId ?? null,
       urbanAssetId: input.urbanAssetId?.toLowerCase() ?? null,
       createdAt,
     };
@@ -739,7 +733,7 @@ export class IncidentsService {
       description: incident.description,
       civicId: incident.civicId,
       categoryId: incident.categoryId,
-      category: incident.categoria.name,
+      category: incident.categoria?.name ?? null,
       urbanAssetId: incident.urbanAssetId,
       departmentId: incident.departmentId,
       teamId: incident.teamId,

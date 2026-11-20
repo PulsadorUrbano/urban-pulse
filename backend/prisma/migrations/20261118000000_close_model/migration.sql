@@ -1,6 +1,5 @@
 BEGIN;
 DO $$ BEGIN
- IF EXISTS (SELECT 1 FROM "Incident" WHERE "categoryId" IS NULL) THEN RAISE EXCEPTION 'Completar categorías antes de migrar'; END IF;
  IF EXISTS (SELECT 1 FROM "Incident" i WHERE NOT EXISTS (SELECT 1 FROM "IncidentLocation" l WHERE l."incidentId"=i.id)) THEN RAISE EXCEPTION 'Completar ubicaciones antes de migrar'; END IF;
  IF EXISTS (SELECT 1 FROM "TeamMember" GROUP BY "userId" HAVING count(*)>1) THEN RAISE EXCEPTION 'Resolver usuarios con varios equipos antes de migrar'; END IF;
  IF EXISTS (SELECT 1 FROM "Incident" WHERE
@@ -8,7 +7,6 @@ DO $$ BEGIN
    OR (status IN ('in_progress','resolved') AND "technicianId" IS NULL)
  ) THEN RAISE EXCEPTION 'Corregir estados sin asignación completa antes de migrar'; END IF;
 END $$;
-ALTER TABLE "Incident" ALTER COLUMN "categoryId" SET NOT NULL;
 ALTER TABLE "Incident" DROP COLUMN "category";
 ALTER TABLE "Category" ADD COLUMN "code" TEXT, ADD COLUMN "isActive" BOOLEAN NOT NULL DEFAULT true;
 UPDATE "Category" SET "code"='legacy_' || replace(id::text,'-',''), "isActive"=false;

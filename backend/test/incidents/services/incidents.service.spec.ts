@@ -124,6 +124,17 @@ describe('IncidentsService', () => {
     await module.close();
   });
 
+  it('guarda y consulta una incidencia sin categoría y con descripción corta', async () => {
+    const module = await crearServicio();
+    const { categoryId: _categoryId, category: _category, ...sinCategoria } = input;
+    const creada = await service.create({ ...sinCategoria, description: 'Rota' });
+
+    expect(prisma.incidencias[0]).toMatchObject({ categoryId: null, description: 'Rota' });
+    expect(creada).toMatchObject({ categoryId: null, category: null, description: 'Rota' });
+    expect(await service.findOne(creada.id, propietario)).toEqual(creada);
+    await module.close();
+  });
+
   it('rechaza una categoría inexistente sin guardar la incidencia', async () => {
     const module = await crearServicio(
       crearPrismaIncidenciasFake({ categoriaInexistente: true }),
