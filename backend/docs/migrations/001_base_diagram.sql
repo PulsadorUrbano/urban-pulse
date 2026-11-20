@@ -21,7 +21,7 @@ CREATE TABLE "Incident" (
     "title" TEXT NOT NULL,
     "description" TEXT,
     "civicId" UUID NOT NULL,
-    "categoryId" UUID NOT NULL,
+    "categoryId" UUID,
     "urbanAssetId" UUID,
     "departmentId" UUID,
     "teamId" UUID,
