@@ -66,7 +66,7 @@ Ejecutadas desde frontend-web/ con Node 22.14.0.
 
 | Comprobación | Comando | Resultado real |
 | --- | --- | --- |
-| Tests | npm run test | 6 archivos, 76 pruebas correctas (16 nuevas) |
+| Tests | npm run test | 10 archivos, 92 pruebas correctas tras rebasar sobre `dev` (16 nuevas de esta feature) |
 | Typecheck | npm run typecheck | Sin errores |
 | Lint | npm run lint | Sin errores |
 | Build | npm run build | Correcto |
@@ -92,4 +92,5 @@ Ejecutadas desde frontend-web/ con Node 22.14.0.
 - Comprobaciones: ver la tabla anterior.
 - Decisiones y desviaciones: los filtros se aplican en el navegador, como decidió el usuario, hasta que exista #44.
 - Correcciones tras la revisión de la #198 (artina09, 2026-11-20): los calendarios guardan el rango ya ordenado con `withDateRange` en lugar de mostrar las fechas invertidas, y el aviso de resultado parcial remite a «Reintentar» cuando falla «Cargar más».
+- Rebase sobre `dev` (2026-11-20) tras la #201: el listado se pinta solo con sesión de administración (`token &&`) y el filtro de estado incluye los estados nuevos (`in_progress`, `resolved`, `reopened` y `closed`).
 - Limitaciones y pendientes: falta la prueba manual en navegador con el backend levantado. Con estado u orden inverso el resultado solo cubre lo cargado, y la interfaz lo avisa. Cuando el backend filtre (#44), `useIncidentFilters` debe enviar los filtros y reiniciar la paginación.

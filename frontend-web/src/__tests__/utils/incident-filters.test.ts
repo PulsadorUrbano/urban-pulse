@@ -88,6 +88,7 @@ describe('filtros del listado de incidencias', () => {
 
   it('interpreta los valores de los controles y descarta los desconocidos', () => {
     expect(parseStatusFilter('assigned')).toBe('assigned');
+    expect(parseStatusFilter('reopened')).toBe('reopened');
     expect(parseStatusFilter('all')).toBe('all');
     expect(parseStatusFilter('cerrada')).toBe('all');
     expect(parseSortOrder('oldest')).toBe('oldest');
