@@ -80,6 +80,20 @@ describe('requestLocationPermission', () => {
     await expect(requestLocationPermission()).resolves.toBe(false);
     expect(requestForegroundPermissionsMock).toHaveBeenCalledTimes(1);
   });
+
+  it('devuelve false cuando expo-location lanza al consultar el permiso', async () => {
+    getForegroundPermissionsMock.mockRejectedValue(new Error('fallo nativo'));
+
+    await expect(requestLocationPermission()).resolves.toBe(false);
+    expect(requestForegroundPermissionsMock).not.toHaveBeenCalled();
+  });
+
+  it('devuelve false cuando expo-location lanza al solicitar el permiso', async () => {
+    getForegroundPermissionsMock.mockResolvedValue(buildPermissionResponse(false));
+    requestForegroundPermissionsMock.mockRejectedValue(new Error('fallo nativo'));
+
+    await expect(requestLocationPermission()).resolves.toBe(false);
+  });
 });
 
 describe('areLocationServicesEnabled', () => {

@@ -15,6 +15,7 @@ import type { IncidentDetail } from '../../types/incident';
 
 const INCIDENT_ID = '0b6a3b8e-6f1d-4a43-9c55-0d2e6e1b7a10';
 const TOKEN = 'token-prueba';
+const NEW_INCIDENT_STATUSES = ['in_progress', 'resolved', 'reopened', 'closed'] as const;
 
 const incident: IncidentDetail = {
   id: INCIDENT_ID,
@@ -64,6 +65,16 @@ describe('incident.service', () => {
     expect(init.headers.Authorization).toBe(`Bearer ${TOKEN}`);
   });
 
+  it('admite una página con estados anteriores y nuevos', async () => {
+    const { title, createdAt } = incident;
+    const items = [incident.status, ...NEW_INCIDENT_STATUSES].map((status, index) => ({
+      id: `00000000-0000-4000-8000-00000000000${index}`, title, status, createdAt,
+    }));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(200, items)));
+
+    await expect(fetchIncidentPage(TOKEN)).resolves.toEqual({ items, nextCursor: null });
+  });
+
   it('codifica el cursor y admite una última página vacía', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, []));
     vi.stubGlobal('fetch', fetchMock);
@@ -91,6 +102,13 @@ describe('incident.service', () => {
     await expect(fetchIncidentById(INCIDENT_ID, TOKEN)).resolves.toEqual(incident);
     expect(fetchMock.mock.calls[0][0]).toBe(`/api/incidents/${INCIDENT_ID}`);
     expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe('Bearer token-prueba');
+  });
+
+  it.each(NEW_INCIDENT_STATUSES)('admite el estado %s en el detalle', async (status) => {
+    const detail = { ...incident, status };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(200, detail)));
+
+    await expect(fetchIncidentById(INCIDENT_ID, TOKEN)).resolves.toEqual(detail);
   });
 
   it('traduce un 404 a IncidentNotFoundError', async () => {

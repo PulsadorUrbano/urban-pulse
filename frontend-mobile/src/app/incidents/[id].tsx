@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Pressable, ScrollView, Text } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { IncidentPhotoViewer } from '@/components/incident-photo-viewer';
@@ -7,11 +7,13 @@ import { IncidentStatusBadge } from '@/components/incident-status-badge';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useIncidentDetail } from '@/hooks/use-incident-detail';
+import { useSession } from '@/hooks/use-session';
 
 export default function IncidentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { token } = useSession();
   const { incident, isLoading, errorMessage, isNotFound, backendFallbackNotice, reload } =
-    useIncidentDetail(id);
+    useIncidentDetail(id, token);
 
   return (
     <ThemedView className="flex-1 flex-row justify-center">
@@ -21,9 +23,9 @@ export default function IncidentDetailScreen() {
               importar el resto del estado (carga, error, contenido). */}
           {backendFallbackNotice ? (
             <ThemedView type="backgroundElement" className="rounded-2xl px-4 py-2">
-              <Text className="text-center text-sm font-medium text-[#d92d20]">
+              <ThemedText type="small" themeColor="error" className="text-center">
                 {backendFallbackNotice}
-              </Text>
+              </ThemedText>
             </ThemedView>
           ) : null}
 
@@ -58,9 +60,9 @@ export default function IncidentDetailScreen() {
           {/* Error genérico (conexión o respuesta no-404): ofrece reintentar. */}
           {errorMessage && !isNotFound ? (
             <ThemedView className="items-center gap-4 py-10">
-              <Text className="text-center text-sm font-medium text-[#d92d20]">
+              <ThemedText type="small" themeColor="error" className="text-center">
                 {errorMessage}
-              </Text>
+              </ThemedText>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Reintentar"

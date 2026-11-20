@@ -1,12 +1,9 @@
 /// <reference types="jest" />
 import { render, screen, userEvent } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import { CategoryPicker, type CategoryPickerProps } from '@/components/category-picker';
 import type { Category } from '@/types/category';
-
-// El tema importa `global.css` (Tailwind) que Jest no puede transformar;
-// se sustituye por un módulo vacío solo en el entorno de test.
-jest.mock('@/global.css', () => ({}));
 
 const categories: Category[] = [
   { id: '1', name: 'Transporte' },
@@ -19,11 +16,9 @@ async function renderCategoryPicker(overrides: Partial<CategoryPickerProps> = {}
   const props: CategoryPickerProps = {
     categories,
     selectedCategoryId: null,
-    customCategory: '',
     isLoading: false,
     errorMessage: null,
     onSelectCategory: jest.fn(),
-    onSelectOther: jest.fn(),
     onClear: jest.fn(),
     ...overrides,
   };
@@ -50,14 +45,18 @@ describe('CategoryPicker', () => {
     expect(screen.getByText('Añadir categoría +')).toBeOnTheScreen();
   });
 
-  it('al pulsar "Añadir categoría" abre la hoja con las categorías y la opción "Otros"', async () => {
+  it('al pulsar "Añadir categoría" abre la hoja solo con las categorías del catálogo (sin "Otros")', async () => {
     const user = userEvent.setup();
     await renderCategoryPicker();
 
     await user.press(screen.getByRole('button', { name: 'Añadir categoría' }));
 
     expect(screen.getByText('Transporte')).toBeOnTheScreen();
-    expect(screen.getByText('Otros')).toBeOnTheScreen();
+    expect(screen.getByText('Alumbrado público')).toBeOnTheScreen();
+    expect(screen.getByText('Objetos urbanos')).toBeOnTheScreen();
+    // El backend rechaza categorías de texto libre: ya no se ofrece "Otros".
+    expect(screen.queryByText('Otros')).toBeNull();
+    expect(screen.queryByLabelText('Categoría personalizada')).toBeNull();
   });
 
   it('al pulsar una categoría existente llama a onSelectCategory con su id', async () => {
@@ -70,25 +69,20 @@ describe('CategoryPicker', () => {
     expect(props.onSelectCategory).toHaveBeenCalledWith('1');
   });
 
-  it('al pulsar "Otros" abre el modal, deshabilita "Guardar" vacío y confirma el texto', async () => {
+  it('con muchas categorías la hoja acota su altura', async () => {
+    const manyCategories: Category[] = Array.from({ length: 30 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Categoría ${index + 1}`,
+    }));
     const user = userEvent.setup();
-    const { props } = await renderCategoryPicker();
+    await renderCategoryPicker({ categories: manyCategories });
 
     await user.press(screen.getByRole('button', { name: 'Añadir categoría' }));
-    await user.press(screen.getByRole('button', { name: 'Categoría Otros' }));
 
-    const input = screen.getByLabelText('Categoría personalizada');
-    expect(input).toBeOnTheScreen();
-
-    const saveButton = screen.getByRole('button', {
-      name: 'Guardar categoría personalizada',
-    });
-    expect(saveButton).toBeDisabled();
-
-    await user.type(input, 'Vallado caído');
-    await user.press(saveButton);
-
-    expect(props.onSelectOther).toHaveBeenCalledWith('Vallado caído');
+    const sheetStyle = StyleSheet.flatten(
+      screen.getByText('Elige una categoría').parent?.props.style,
+    );
+    expect(sheetStyle.maxHeight).toBeGreaterThan(0);
   });
 
   it('con una categoría seleccionada muestra su nombre y "Quitar categoría" llama a onClear', async () => {
@@ -100,11 +94,5 @@ describe('CategoryPicker', () => {
     await user.press(screen.getByRole('button', { name: 'Quitar categoría' }));
 
     expect(props.onClear).toHaveBeenCalledTimes(1);
-  });
-
-  it('con una categoría personalizada guardada muestra su texto', async () => {
-    await renderCategoryPicker({ customCategory: 'Vallado caído' });
-
-    expect(screen.getByText('Vallado caído')).toBeOnTheScreen();
   });
 });

@@ -170,12 +170,13 @@ model UrbanContext {
 }
 
 model IncidentImage {
-  id         String   @id @default(uuid()) @db.Uuid
-  incidentId String   @db.Uuid
-  objectKey  String   @unique
-  mimeType   String
-  createdAt  DateTime @default(now())
-  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Restrict)
+  id             String   @id @default(uuid()) @db.Uuid
+  incidentId     String   @db.Uuid
+  objectKey      String   @unique
+  mimeType       String
+  idempotencyKey String?  @db.Uuid
+  createdAt      DateTime @default(now())
+  incident       Incident @relation(fields: [incidentId], references: [id], onDelete: Restrict)
 
   @@index([incidentId])
 }

@@ -1,4 +1,4 @@
-import { ConflictException, ForbiddenException, Logger } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Logger } from '@nestjs/common';
 import {
   GUARDS_METADATA,
   METHOD_METADATA,
@@ -293,11 +293,17 @@ describe('IncidentsController autenticado', () => {
       size: 3,
     };
 
-    await controlador.subirFotos(incidencia.id, [archivo] as never, civic);
+    const clave = '12345678-abcd-4123-8123-123456789abc';
+    await controlador.subirFotos(incidencia.id, [archivo] as never, civic, clave.toUpperCase());
 
-    expect(fotos.subir).toHaveBeenCalledWith(incidencia.id, civic.ciudadanoId, [
-      { contenido: archivo.buffer, mimeType: 'image/jpeg', extension: 'jpg' },
-    ]);
+    expect(fotos.subir).toHaveBeenCalledWith(
+      incidencia.id,
+      civic.ciudadanoId,
+      [{ contenido: archivo.buffer, mimeType: 'image/jpeg', extension: 'jpg' }],
+      clave,
+    );
+    expect(() => controlador.subirFotos(incidencia.id, [archivo] as never, civic, 'inválida'))
+      .toThrow(BadRequestException);
   });
 });
 

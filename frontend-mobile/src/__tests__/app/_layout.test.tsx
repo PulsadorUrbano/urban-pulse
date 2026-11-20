@@ -20,9 +20,6 @@ import RootLayout from '@/app/_layout';
 //   - el módulo sigue exportando el layout raíz por defecto
 // ---------------------------------------------------------------------------
 
-// El layout importa `global.css` (Tailwind) que Jest no puede transformar.
-jest.mock('@/global.css', () => ({}));
-
 // Solo se sustituye la frontera nativa de `expo-router` que usa el layout; el
 // router real no se carga en el entorno de test. `enableLegacyHeaderAppearance`
 // es el único export con comportamiento que se verifica.

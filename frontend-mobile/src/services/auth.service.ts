@@ -1,10 +1,10 @@
 import { API_BASE_URL, BACKEND_API_URL } from '@/constants/config';
 import { simulateToken } from '@/services/token.service';
 import type { AuthToken } from '@/types/token';
-import type { BackendUser, LoginUserInput, MockUser, RegisterUserInput, User } from '@/types/user';
+import type { BackendUser, LoginUserInput, MockUser, RegisterUserInput, User, UserRole } from '@/types/user';
 import { generateMockUuid } from '@/utils/uuid';
 
-import { RequestTimeoutError, buildBackendRejectionMessage, fetchWithTimeout } from './http';
+import { buildBackendRejectionMessage, fetchWithTimeout, toConnectionErrorMessage } from './http';
 
 export const USERS_ENDPOINT = `${API_BASE_URL}/users`;
 const BACKEND_LOGIN_ENDPOINT = `${BACKEND_API_URL}/auth/login`;
@@ -57,7 +57,7 @@ interface MockUserRecord {
   username: string;
   email: string;
   password: string;
-  role: string;
+  role: UserRole;
   civicId: string;
 }
 
@@ -66,7 +66,7 @@ interface BackendPublicUserDto {
   userId: string;
   username: string;
   email: string;
-  role: string;
+  role: UserRole;
   phone: string | null;
 }
 
@@ -91,13 +91,13 @@ function toBackendUser(dto: BackendPublicUserDto): BackendUser {
 
 // Traduce un fallo de conexión (timeout o red) a un Error con mensaje amigable.
 function toConnectionError(error: unknown): Error {
-  if (error instanceof RequestTimeoutError) {
-    return new Error(
-      'El servidor tardó demasiado en responder. Comprueba que el servidor mock (npm run mock) esté activo y sea accesible desde tu dispositivo.',
-    );
-  }
-
-  return new Error('No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.');
+  return new Error(
+    toConnectionErrorMessage(
+      error,
+      'El servidor tardó demasiado en responder. Comprueba que el servidor mock (pnpm run mock) esté activo y sea accesible desde tu dispositivo.',
+      'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
+    ),
+  );
 }
 
 // Consulta usuarios del mock por un campo concreto y filtra en cliente por igualdad exacta.
@@ -126,7 +126,7 @@ async function fetchUsersByField(
 
 // Autentica contra el mock buscando por username y, si no hay match, por email.
 async function loginOnMock(input: LoginUserInput): Promise<LoginResult> {
-  const identifier = input.username_email.trim();
+  const identifier = input.usernameOrEmail.trim();
 
   let matchingUsers = await fetchUsersByField('username', identifier);
 
@@ -156,7 +156,7 @@ export async function login(input: LoginUserInput): Promise<LoginResult> {
     loginResponse = await fetchWithTimeout(BACKEND_LOGIN_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ usernameOrEmail: input.username_email.trim(), password: input.password }),
+      body: JSON.stringify({ usernameOrEmail: input.usernameOrEmail.trim(), password: input.password }),
     });
   } catch (error) {
     if (__DEV__) {

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { pickPhotoFromCamera, pickPhotoFromLibrary } from '@/services/photo-picker';
 import { storePhoto } from '@/services/storage.service';
@@ -37,6 +37,17 @@ export function usePhotoAttachment(): UsePhotoAttachmentResult {
   // aplicando así el tope máximo tanto desde cámara como desde galería.
   const selectedPhotoUrisRef = useRef<string[]>([]);
 
+  // Evita `setState` si el componente se desmontó mientras el picker o
+  // `storePhoto` estaban en curso. Se rearma al montar por el doble montaje de
+  // StrictMode (monta, desmonta y vuelve a montar).
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   // Punto común para cámara y galería: recibe el lanzador concreto del servicio
   // y orquesta el mismo flujo de carga, cancelación y error para ambos orígenes.
   const attachPhoto = useCallback(async (launchPhotoPicker: () => Promise<string | null>) => {
@@ -58,9 +69,11 @@ export function usePhotoAttachment(): UsePhotoAttachmentResult {
 
       // Simula el guardado externo (con retardo) y añade la URI al final.
       await storePhoto(pickedPhotoUri);
+      if (!isMountedRef.current) return;
       selectedPhotoUrisRef.current = [...selectedPhotoUrisRef.current, pickedPhotoUri];
       setSelectedPhotoUris((currentUris) => [...currentUris, pickedPhotoUri]);
     } catch (error) {
+      if (!isMountedRef.current) return;
       // Los servicios ya lanzan errores con mensaje amigable en español;
       // el mensaje genérico cubre cualquier fallo inesperado.
       setErrorMessage(
@@ -70,7 +83,9 @@ export function usePhotoAttachment(): UsePhotoAttachmentResult {
       );
     } finally {
       isProcessingPhotoRef.current = false;
-      setIsProcessingPhoto(false);
+      if (isMountedRef.current) {
+        setIsProcessingPhoto(false);
+      }
     }
   }, []);
 

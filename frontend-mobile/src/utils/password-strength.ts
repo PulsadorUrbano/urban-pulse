@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export type PasswordStrengthLevel = 'invalid' | 'acceptable' | 'strong';
 
 export function getPasswordStrengthLevel(password: string): PasswordStrengthLevel {
@@ -13,6 +15,10 @@ export function getPasswordStrengthLevel(password: string): PasswordStrengthLeve
   return hasSpecialChar ? 'strong' : 'acceptable';
 }
 
+// Se usa un regex propio en lugar de `z.string().email()`, cuyo criterio de
+// formato es distinto y aceptaría/rechazaría otros emails.
+const emailFormatSchema = z.string().regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+
 export function isEmailFormatValid(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  return emailFormatSchema.safeParse(email.trim()).success;
 }

@@ -1,9 +1,19 @@
 // Contrato de datos de las incidencias, alineado con backend/src/incidents/incident.ts y con
 // frontend-mobile/src/types/incident.ts (IncidentDetail, CreatedIncidentImage, IncidentSummary).
 
-// Estados que el backend gestiona hoy (enum IncidentStatus de schema.prisma).
-// El backend también admite assigned; la asignación no cambia el estado automáticamente.
-export type IncidentStatus = 'reported' | 'validated' | 'rejected' | 'assigned';
+// Estados del ciclo de incidencias definidos por el backend.
+export const INCIDENT_STATUSES = [
+  'reported',
+  'validated',
+  'rejected',
+  'assigned',
+  'in_progress',
+  'resolved',
+  'reopened',
+  'closed',
+] as const;
+
+export type IncidentStatus = (typeof INCIDENT_STATUSES)[number];
 
 // Prioridades del backend (enum IncidentPriority). El móvil declara además `urgent`.
 export type IncidentPriority = 'low' | 'medium' | 'high';
@@ -49,6 +59,18 @@ export interface IncidentSummary {
   title: string;
   status: IncidentStatus;
   createdAt: string;
+}
+
+// Filtros del listado web. Se aplican en el navegador hasta que GET /incidents filtre (#44).
+export type IncidentStatusFilter = IncidentStatus | 'all';
+export type IncidentSortOrder = 'newest' | 'oldest';
+
+// `from` y `to` son días AAAA-MM-DD de un <input type="date">, en hora local.
+export interface IncidentListFilters {
+  status: IncidentStatusFilter;
+  order: IncidentSortOrder;
+  from: string | null;
+  to: string | null;
 }
 
 // Cuerpo de PATCH /incidents/:id/status. El backend obtiene el actor de la sesión.

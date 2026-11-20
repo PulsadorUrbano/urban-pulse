@@ -3,10 +3,6 @@ import { act, cleanup, render, screen } from '@testing-library/react-native';
 
 import { TypewriterText } from '@/components/typewriter-text';
 
-// El tema (vía ThemedText) importa `global.css` (Tailwind) que Jest no puede transformar;
-// se sustituye por un módulo vacío solo en el entorno de test.
-jest.mock('@/global.css', () => ({}));
-
 const TEST_ID = 'typewriter-text';
 
 // Espías sobre los timers de intervalo: solo cuentan los creados por el componente.

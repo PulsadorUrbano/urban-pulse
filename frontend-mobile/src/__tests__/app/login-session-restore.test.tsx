@@ -24,19 +24,12 @@ import type { SessionUser } from '@/types/user';
 //   - mientras se restaura       -> muestra el loader y no el formulario
 // ---------------------------------------------------------------------------
 
-// El tema importa `global.css` (Tailwind) que Jest no puede transformar;
-// se sustituye por un módulo vacío solo en el entorno de test.
-jest.mock('@/global.css', () => ({}));
-
-// `PasswordInput` renderiza un icono; se sustituye para no cargar la fuente.
-jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');
-
 // `Redirect` se sustituye por un stub que pinta el `href` recibido. Así el test
 // distingue "se redirigió a /" del loader o del formulario por contenido visible,
 // sin depender de que la navegación ocurra de verdad.
 jest.mock('expo-router', () => {
-  const mockReact = require('react');
-  const { Text: MockText } = require('react-native');
+  const mockReact = jest.requireActual<typeof import('react')>('react');
+  const { Text: MockText } = jest.requireActual<typeof import('react-native')>('react-native');
 
   return {
     router: {

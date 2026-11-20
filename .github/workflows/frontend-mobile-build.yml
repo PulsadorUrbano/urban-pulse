@@ -1,0 +1,56 @@
+name: Frontend Mobile Build
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - "frontend-mobile/**"
+      - ".github/workflows/frontend-mobile-build.yml"
+  pull_request:
+    branches:
+      - main
+      - dev
+    paths:
+      - "frontend-mobile/**"
+      - ".github/workflows/frontend-mobile-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Lint, typecheck y tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend-mobile
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v6
+
+      - name: Configurar pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend-mobile/pnpm-lock.yaml
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm expo lint
+
+      - name: Typecheck (build)
+        run: pnpm tsc --noEmit
+
+      - name: Tests
+        run: pnpm test --ci

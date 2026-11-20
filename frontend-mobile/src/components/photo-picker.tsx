@@ -206,18 +206,17 @@ export function PhotoPicker({
             contentContainerClassName="gap-2"
           />
           {selectedPhotoUris.length >= MAX_SELECTED_PHOTOS ? (
-            // El color semántico de `ThemedText` se aplica vía `style` inline,
-            // por lo que `className="text-[#d92d20]"` quedaría pisado; el rojo
-            // de error se fuerza con `style` para garantizarlo.
-            <ThemedText type="small" style={{ color: '#d92d20' }}>
-              El número máximo de imágenes son 8
+            <ThemedText type="small" themeColor="error">
+              {`El número máximo de imágenes es ${MAX_SELECTED_PHOTOS}`}
             </ThemedText>
           ) : null}
         </>
       )}
 
       {errorMessage ? (
-        <Text className="text-sm font-medium text-[#d92d20]">{errorMessage}</Text>
+        <ThemedText type="small" themeColor="error">
+          {errorMessage}
+        </ThemedText>
       ) : null}
 
       <Modal transparent animationType="slide" visible={isSheetVisible} onRequestClose={closeSheet}>

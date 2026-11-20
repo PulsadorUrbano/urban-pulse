@@ -7,6 +7,7 @@ import { Text } from 'react-native';
 import MyIncidentsScreen from '@/app/(tabs)/my-incidents';
 import { useSession, type SessionContextValue } from '@/hooks/use-session';
 import { fetchMyIncidents } from '@/services/incident.service';
+import type { AuthToken } from '@/types/token';
 import type { SessionUser } from '@/types/user';
 
 // ---------------------------------------------------------------------------
@@ -19,10 +20,6 @@ import type { SessionUser } from '@/types/user';
 // `useFocusEffect` se sustituye: no hay NavigationContainer en Jest. El test
 // dispara el callback registrado para simular el foco inicial y los reenfoques.
 // ---------------------------------------------------------------------------
-
-jest.mock('@/global.css', () => ({}));
-
-jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');
 
 jest.mock('expo-router', () => {
   const mockReact = jest.requireActual<typeof React>('react');
@@ -76,13 +73,17 @@ const mockSessionUser: SessionUser = {
   source: 'mock',
 };
 
-function buildSessionValue(): SessionContextValue {
+// Token de backend de la sesión: el hook real lo reenvía al servicio en cada carga.
+const BACKEND_SESSION_TOKEN: AuthToken = { accessToken: 'jwt-session-test', source: 'backend' };
+
+function buildSessionValue(overrides: Partial<SessionContextValue> = {}): SessionContextValue {
   return {
     user: mockSessionUser,
-    token: null,
+    token: BACKEND_SESSION_TOKEN,
     isRestoringSession: false,
     signIn: jest.fn().mockResolvedValue(undefined),
     signOut: jest.fn().mockResolvedValue(undefined),
+    ...overrides,
   };
 }
 
@@ -118,8 +119,21 @@ describe('MyIncidentsScreen con useMyIncidents real (refresco por foco)', () => 
     await waitFor(() => expect(screen.getByText(EMPTY_STATE_TEXT)).toBeOnTheScreen());
     expect(mockedFetchMyIncidents).toHaveBeenCalledTimes(1);
     // Se pide por civicId de la sesión, no por el id numérico del usuario ('1').
-    expect(mockedFetchMyIncidents).toHaveBeenCalledWith(mockSessionUser.civicId);
-    expect(mockedFetchMyIncidents).not.toHaveBeenCalledWith(mockSessionUser.id);
+    expect(mockedFetchMyIncidents).toHaveBeenCalledWith(
+      mockSessionUser.civicId,
+      BACKEND_SESSION_TOKEN,
+    );
+    expect(mockedFetchMyIncidents).not.toHaveBeenCalledWith(mockSessionUser.id, expect.anything());
+  });
+
+  it('sin token en la sesión, ni el montaje ni los reenfoques llaman al servicio', async () => {
+    mockedUseSession.mockReturnValue(buildSessionValue({ token: null }));
+
+    await render(<MyIncidentsScreen />);
+    await simulateScreenFocus();
+    await simulateScreenFocus();
+
+    expect(mockedFetchMyIncidents).not.toHaveBeenCalled();
   });
 
   it('un reenfoque posterior al montaje vuelve a pedir las incidencias (2 peticiones en total)', async () => {

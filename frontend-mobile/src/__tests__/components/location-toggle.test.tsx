@@ -3,9 +3,6 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 
 import { LocationToggle } from '@/components/location-toggle';
 
-// Evita cargar la fuente del icono en el entorno de test.
-jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');
-
 describe('LocationToggle', () => {
   beforeEach(() => {
     // userEvent.press simula una pulsación con duración; los fake timers la aceleran.

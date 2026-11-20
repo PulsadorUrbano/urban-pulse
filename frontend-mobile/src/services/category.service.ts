@@ -1,7 +1,7 @@
 import { API_BASE_URL, BACKEND_API_URL } from '@/constants/config';
 import type { Category, FetchCategoriesResult } from '@/types/category';
 
-import { RequestTimeoutError, fetchWithTimeout } from './http';
+import { extractBackendErrorMessage, fetchWithTimeout, toConnectionErrorMessage } from './http';
 
 const BACKEND_CATEGORIES_ENDPOINT = `${BACKEND_API_URL}/categories`;
 const MOCK_CATEGORIES_ENDPOINT = `${API_BASE_URL}/categories`;
@@ -13,28 +13,11 @@ export const CATEGORIES_ENDPOINT = BACKEND_CATEGORIES_ENDPOINT;
 // de un Error que se lanza, aquí se devuelve como texto porque este fallo no
 // es bloqueante: solo informa del motivo del fallback al mock.
 function describeConnectionError(error: unknown): string {
-  if (error instanceof RequestTimeoutError) {
-    return 'El backend tardó demasiado en responder.';
-  }
-
-  return 'No se pudo conectar con el backend.';
-}
-
-// Extrae el `message` del cuerpo de error de NestJS (string o array de
-// strings de class-validator). Devuelve null si el cuerpo no tiene esa forma.
-function extractBackendErrorMessage(rawBody: string): string | null {
-  try {
-    const body = JSON.parse(rawBody) as { message?: string | string[] };
-    if (typeof body.message === 'string') {
-      return body.message;
-    }
-    if (Array.isArray(body.message)) {
-      return body.message.join('; ');
-    }
-  } catch {
-    // Cuerpo no-JSON: se ignora y se usa el mensaje genérico.
-  }
-  return null;
+  return toConnectionErrorMessage(
+    error,
+    'El backend tardó demasiado en responder.',
+    'No se pudo conectar con el backend.',
+  );
 }
 
 // Describe el motivo por el que el backend rechazó la petición de categorías.
@@ -63,14 +46,12 @@ async function fetchCategoriesFromMock(): Promise<Category[]> {
   try {
     response = await fetchWithTimeout(MOCK_CATEGORIES_ENDPOINT, { method: 'GET' });
   } catch (error) {
-    if (error instanceof RequestTimeoutError) {
-      throw new Error(
-        'El servidor tardó demasiado en responder. Comprueba que el servidor mock (npm run mock) esté activo y sea accesible desde tu dispositivo.',
-      );
-    }
-
     throw new Error(
-      'No se pudieron cargar las categorías. Revisa tu conexión e inténtalo de nuevo.',
+      toConnectionErrorMessage(
+        error,
+        'El servidor tardó demasiado en responder. Comprueba que el servidor mock (pnpm run mock) esté activo y sea accesible desde tu dispositivo.',
+        'No se pudieron cargar las categorías. Revisa tu conexión e inténtalo de nuevo.',
+      ),
     );
   }
 

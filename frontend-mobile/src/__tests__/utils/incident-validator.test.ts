@@ -8,13 +8,15 @@ import {
   hasValidationErrors,
   validateIncidentInput,
 } from '@/utils/incident-validator';
-import type { CreateIncidentInput } from '@/types/incident';
+import type { IncidentFormValues } from '@/utils/incident-validator';
 
 // Construye un input válido base para reutilizarlo en cada caso.
-function buildValidInput(overrides: Partial<CreateIncidentInput> = {}): CreateIncidentInput {
+function buildValidInput(overrides: Partial<IncidentFormValues> = {}): IncidentFormValues {
   return {
     title: 'Bache en la avenida',
     description: 'Hay un bache profundo que pone en riesgo a los vehículos.',
+    categoryId: '2',
+    isLocationEnabled: true,
     ...overrides,
   };
 }
@@ -64,11 +66,21 @@ describe('validateIncidentInput', () => {
     expect(errors).toEqual({});
   });
 
-  it('no marca error cuando la descripción es más corta que el mínimo (es opcional)', () => {
+  it('marca error en description cuando se escribe pero es más corta que el mínimo', () => {
     const tooShort = 'a'.repeat(INCIDENT_DESCRIPTION_MIN_LENGTH - 1);
     const errors = validateIncidentInput(buildValidInput({ description: tooShort }));
 
-    expect(errors).toEqual({});
+    expect(errors.description).toContain(String(INCIDENT_DESCRIPTION_MIN_LENGTH));
+  });
+
+  it('mide la longitud mínima de la descripción tras trim', () => {
+    const paddedTooShort = `   ${'a'.repeat(INCIDENT_DESCRIPTION_MIN_LENGTH - 1)}   `;
+
+    expect(validateIncidentInput(buildValidInput({ description: paddedTooShort })).description).toBeDefined();
+    expect(
+      validateIncidentInput(buildValidInput({ description: 'a'.repeat(INCIDENT_DESCRIPTION_MIN_LENGTH) }))
+        .description,
+    ).toBeUndefined();
   });
 
   it('devuelve un objeto vacío para un input válido', () => {
@@ -86,45 +98,48 @@ describe('validateIncidentInput', () => {
   });
 });
 
-describe('validateIncidentInput (categoría opcional)', () => {
-  it('no marca error cuando la categoría está ausente', () => {
-    const errors = validateIncidentInput(buildValidInput());
+describe('validateIncidentInput (categoría del catálogo obligatoria)', () => {
+  it('marca error cuando no hay categoría seleccionada', () => {
+    const errors = validateIncidentInput(buildValidInput({ categoryId: null }));
 
-    expect(errors.category).toBeUndefined();
+    expect(errors.category).toBe('Elige una categoría del catálogo.');
   });
 
-  it('no marca error cuando la categoría es null', () => {
-    const errors = validateIncidentInput(buildValidInput({ category: null }));
-
-    expect(errors.category).toBeUndefined();
-  });
-
-  it('marca error cuando la categoría está definida pero vacía', () => {
-    const errors = validateIncidentInput(buildValidInput({ category: '' }));
+  it('marca error cuando el categoryId está vacío', () => {
+    const errors = validateIncidentInput(buildValidInput({ categoryId: '  ' }));
 
     expect(errors.category).toBeDefined();
   });
 
-  it('marca error cuando la categoría solo contiene espacios', () => {
-    const errors = validateIncidentInput(buildValidInput({ category: '   ' }));
-
-    expect(errors.category).toBeDefined();
-  });
-
-  it('no marca error cuando hay categoría personalizada aunque categoryId sea null', () => {
-    const errors = validateIncidentInput(
-      buildValidInput({ category: 'Vallado', categoryId: null }),
-    );
+  it('no marca error cuando hay una categoría del catálogo', () => {
+    const errors = validateIncidentInput(buildValidInput({ categoryId: '2' }));
 
     expect(errors.category).toBeUndefined();
   });
+});
 
-  it('no marca error cuando hay categoryId aunque la categoría personalizada sea null', () => {
-    const errors = validateIncidentInput(
-      buildValidInput({ categoryId: '2', category: null }),
-    );
+describe('validateIncidentInput (ubicación obligatoria)', () => {
+  it('marca error cuando la ubicación está desactivada', () => {
+    const errors = validateIncidentInput(buildValidInput({ isLocationEnabled: false }));
 
-    expect(errors.category).toBeUndefined();
+    expect(errors.location).toContain('La ubicación es obligatoria');
+  });
+
+  it('no marca error cuando la ubicación está activada', () => {
+    const errors = validateIncidentInput(buildValidInput({ isLocationEnabled: true }));
+
+    expect(errors.location).toBeUndefined();
+  });
+
+  it('acumula los errores de varios campos a la vez', () => {
+    const errors = validateIncidentInput({
+      title: '',
+      description: 'corta',
+      categoryId: null,
+      isLocationEnabled: false,
+    });
+
+    expect(Object.keys(errors).sort()).toEqual(['category', 'description', 'location', 'title']);
   });
 });
 
@@ -144,53 +159,29 @@ describe('getDescriptionQuality', () => {
 });
 
 describe('getIncidentWarnings', () => {
-  // Descripción válida (supera el mínimo requerido).
-  const validDescription = 'Hay un bache profundo en la vía.';
-
-  it('avisa de descripción vacía cuando la ubicación está activada', () => {
-    const warnings = getIncidentWarnings({ description: '', isLocationEnabled: true });
+  it('avisa de descripción vacía', () => {
+    const warnings = getIncidentWarnings({ description: '' });
 
     expect(warnings).toHaveLength(1);
     expect(warnings[0].code).toBe('description-empty');
   });
 
-  it('avisa de descripción demasiado corta cuando la ubicación está activada', () => {
-    const warnings = getIncidentWarnings({
-      description: 'a'.repeat(INCIDENT_DESCRIPTION_MIN_LENGTH - 1),
-      isLocationEnabled: true,
-    });
-
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0].code).toBe('description-too-short');
-  });
-
-  it('avisa de ubicación desactivada cuando la descripción es válida', () => {
-    const warnings = getIncidentWarnings({
-      description: validDescription,
-      isLocationEnabled: false,
-    });
-
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0].code).toBe('location-disabled');
-  });
-
-  it('acumula los avisos de descripción y ubicación en ese orden', () => {
-    const warnings = getIncidentWarnings({ description: '', isLocationEnabled: false });
-
-    expect(warnings).toHaveLength(2);
-    expect(warnings.map((warning) => warning.code)).toEqual([
+  it('avisa de descripción vacía cuando solo contiene espacios', () => {
+    expect(getIncidentWarnings({ description: '   ' }).map((warning) => warning.code)).toEqual([
       'description-empty',
-      'location-disabled',
     ]);
   });
 
-  it('no devuelve avisos con descripción válida y ubicación activada', () => {
+  it('no avisa de una descripción corta (ya es un error de validación)', () => {
     const warnings = getIncidentWarnings({
-      description: validDescription,
-      isLocationEnabled: true,
+      description: 'a'.repeat(INCIDENT_DESCRIPTION_MIN_LENGTH - 1),
     });
 
     expect(warnings).toEqual([]);
+  });
+
+  it('no devuelve avisos con una descripción válida', () => {
+    expect(getIncidentWarnings({ description: 'Hay un bache profundo en la vía.' })).toEqual([]);
   });
 });
 
@@ -204,6 +195,14 @@ describe('hasValidationErrors', () => {
   });
 
   it('es true cuando existe error de categoría', () => {
-    expect(hasValidationErrors({ category: 'Escribe una categoría.' })).toBe(true);
+    expect(hasValidationErrors({ category: 'Elige una categoría del catálogo.' })).toBe(true);
+  });
+
+  it('es true cuando existe error de descripción', () => {
+    expect(hasValidationErrors({ description: 'Muy corta.' })).toBe(true);
+  });
+
+  it('es true cuando existe error de ubicación', () => {
+    expect(hasValidationErrors({ location: 'La ubicación es obligatoria.' })).toBe(true);
   });
 });

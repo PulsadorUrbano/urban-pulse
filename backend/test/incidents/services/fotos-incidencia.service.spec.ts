@@ -25,6 +25,7 @@ function preparar(
     limiteEnTransaccion?: number;
     falloSubir?: boolean;
     perderRespuestaCommit?: boolean;
+    loteConfirmadoConcurrentemente?: string;
   } = {},
 ) {
   const filas: Array<{
@@ -32,6 +33,7 @@ function preparar(
     incidentId: string;
     objectKey: string;
     mimeType: string;
+    idempotencyKey: string | null;
     createdAt: Date;
   }> = [];
   const incidencia =
@@ -55,10 +57,42 @@ function preparar(
       return { count: data.length };
     });
   const findMany = vi.fn().mockImplementation(() => [...filas]);
+  const findFirst = vi
+    .fn()
+    .mockImplementation(
+      ({
+        where,
+      }: {
+        where: { incidentId: string; idempotencyKey: string };
+      }) => {
+        if (
+          enTransaccion &&
+          where.idempotencyKey === opciones.loteConfirmadoConcurrentemente
+        ) {
+          const confirmada = {
+            id: randomUUID(),
+            incidentId: where.incidentId,
+            objectKey: 'incidents/confirmada.jpg',
+            mimeType: foto.mimeType,
+            idempotencyKey: where.idempotencyKey,
+            createdAt: new Date(),
+          };
+          filas.push(confirmada);
+          return confirmada;
+        }
+        return (
+          filas.find(
+            (fila) =>
+              fila.incidentId === where.incidentId &&
+              fila.idempotencyKey === where.idempotencyKey,
+          ) ?? null
+        );
+      },
+    );
   const queryRaw = vi.fn().mockResolvedValue([{ id }]);
   const prisma = {
     incident: { findUnique },
-    incidentImage: { count, createMany, findMany },
+    incidentImage: { count, createMany, findFirst, findMany },
     $queryRaw: queryRaw,
     $transaction: async (callback: (tx: unknown) => Promise<unknown>) => {
       enTransaccion = true;
@@ -111,6 +145,45 @@ describe('FotosIncidenciaService', () => {
         createdAt: filas[0].createdAt.toISOString(),
       },
     ]);
+  });
+
+  it('devuelve la galería al repetir una tanda aunque ya se haya alcanzado el límite', async () => {
+    const { servicio, subir, filas, firmarLectura } = preparar();
+    const clave = randomUUID();
+    const tanda = Array.from({ length: 8 }, () => foto);
+    const primera = await servicio.subir(id, ciudadanoId, tanda, clave);
+    firmarLectura.mockResolvedValue('https://s3.example/nueva-firma');
+
+    const reintento = await servicio.subir(id, ciudadanoId, tanda, clave);
+
+    expect(reintento.map((imagen) => imagen.id)).toEqual(
+      primera.map((imagen) => imagen.id),
+    );
+    expect(
+      reintento.every(
+        (imagen) => imagen.url === 'https://s3.example/nueva-firma',
+      ),
+    ).toBe(true);
+    expect(subir).toHaveBeenCalledTimes(8);
+    expect(filas).toHaveLength(8);
+    await expect(
+      servicio.subir(id, ciudadanoId, [foto], randomUUID()),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('descarta sus objetos provisionales si otra petición confirma la misma tanda', async () => {
+    const clave = randomUUID();
+    const { servicio, subir, borrar, filas } = preparar({
+      loteConfirmadoConcurrentemente: clave,
+      limiteEnTransaccion: 8,
+    });
+
+    const resultado = await servicio.subir(id, ciudadanoId, [foto], clave);
+
+    expect(subir).toHaveBeenCalledOnce();
+    expect(borrar).toHaveBeenCalledWith(subir.mock.calls[0][0]);
+    expect(filas).toHaveLength(1);
+    expect(resultado.map((imagen) => imagen.id)).toEqual([filas[0].id]);
   });
 
   it('no sube fotos a una incidencia ajena', async () => {

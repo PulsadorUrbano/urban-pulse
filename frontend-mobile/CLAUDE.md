@@ -79,7 +79,9 @@ pnpm expo install <package>  # SIEMPRE en lugar de npm/yarn/bun add — resuelve
 pnpm run start                # arranca el servidor de desarrollo
 pnpm expo lint                # lint
 pnpm tsc --noEmit             # typecheck
-pnpm expo-doctor              # diagnostica problemas de dependencias y configuración
+pnpm typecheck                # typecheck (script de package.json)
+pnpm test                     # tests (Jest)
+pnpm dlx expo-doctor          # diagnostica problemas de dependencias y configuración
 pnpm expo install --fix       # corrige versiones de paquetes incompatibles
 ```
 
@@ -134,11 +136,11 @@ docker compose up --build
 - **Safe Area:** usa siempre `react-native-safe-area-context` en lugar del `SafeAreaView` heredado de `react-native`.
 - **Estilos con NativeWind:** usa `className="..."` con clases de utilidad válidas de React Native. Evita utilidades web no soportadas (p. ej. CSS grid, `vw`/`vh` crudos). Evita objetos `style={{ ... }}` inline y pesados.
 - **Convenciones de nombres:**
-  - PascalCase para componentes de React (`Button.tsx`)
-  - camelCase para hooks (`useLocation.ts`), funciones y variables
+  - kebab-case para el nombre de archivo tanto de componentes (`button.tsx`) como de hooks (`use-location.ts`); el export principal (el componente o el hook en sí) sigue en PascalCase (`Button`) / camelCase (`useLocation`) respectivamente. Esto documenta el estándar ya adoptado de forma consistente en todo `src/components/` y `src/hooks/`.
+  - camelCase para funciones y variables
   - Las rutas dentro de `src/app/` siguen kebab-case o las convenciones de Expo Router (`[id].tsx`, `_layout.tsx`)
-- **Ubicación de los tests:** todos los tests viven en **`src/__tests__/`** espejando el árbol de código fuente (`src/__tests__/components/Button.test.tsx`, `src/__tests__/hooks/useAuth.test.ts`), con nombres descriptivos `<module>.test.ts(x)`. NUNCA coloques tests dentro de `src/app/` — Expo Router empaqueta todos los archivos de ese directorio.
-- **Manejo de errores:** los fallos a nivel de ruta se gestionan con los límites `+error.tsx` de Expo Router. Los errores de la API se capturan y transforman en `src/services/`, exponiendo feedback amigable al usuario mediante estado de UI o notificaciones toast.
+- **Ubicación de los tests:** todos los tests viven en **`src/__tests__/`** espejando el árbol de código fuente (`src/__tests__/components/button.test.tsx`, `src/__tests__/hooks/use-auth.test.ts`), con nombres descriptivos `<module>.test.ts(x)`. NUNCA coloques tests dentro de `src/app/` — Expo Router empaqueta todos los archivos de ese directorio.
+- **Manejo de errores:** los fallos a nivel de ruta se gestionan exportando `ErrorBoundary` desde el archivo de ruta o layout (en Expo Router no existe `+error.tsx`); está implementado en `src/app/_layout.tsx` con el componente `RouteErrorFallback`. Los errores de la API se capturan y transforman en `src/services/`, exponiendo feedback amigable al usuario mediante estado de UI o notificaciones toast.
 - **Patrones y buenas prácticas:** valida las entradas de formularios y la forma de los payloads (p. ej. con Zod) antes de despachar a la API; impón props tipadas con TypeScript; muestra estados de carga explícitos durante acciones asíncronas para evitar envíos duplicados.
 - **Nombres intuitivos y autodescriptivos:** usa nombres claros que revelen la intención sin necesidad de comentarios. Evita abreviaturas genéricas o crípticas (p. ej. usa `incidentList` en vez de `data`/`arr`, `isSubmittingReport` en vez de `flag`, `fetchIncidentsByStatus` en vez de `getData`).
 - **Expo Go solo incluye sus módulos nativos empaquetados.** Tras añadir una librería con código nativo, la app necesita un development build: `pnpm expo run:ios|android` en local, o `eas build --profile development`.
@@ -164,7 +166,7 @@ src/app/
   (tabs)/
     _layout.tsx        → <AppTabs />        (NativeTabs: secciones fijas)
     index.tsx           (tab Home)
-    explore.tsx         (tab Explore)
+    my-incidents.tsx    (tab Mis incidencias)
   incidents/
     new.tsx            → ruta /incidents/new (se empuja desde las tabs)
 ```

@@ -6,6 +6,7 @@ import { IncidentValidationView } from './components/incident-validation-view';
 import { LoginView } from './components/login-view';
 import { useAuth } from './hooks/use-auth';
 import { useTheme } from './hooks/use-theme';
+import { isAdministrativeRole } from './types/user';
 
 function readIncidentIdFromUrl(): string | null {
   return new URLSearchParams(window.location.search).get('incidencia')?.trim() || null;
@@ -41,7 +42,6 @@ function App() {
 
   const user = auth.user;
   const token = user?.source === 'backend' ? auth.token?.accessToken ?? null : null;
-  const canAssign = user?.role === 'admin' || user?.role === 'administrative';
   const viewProps = { isDarkMode, onToggleTheme: toggleTheme, onLogout: handleLogout };
 
   return (
@@ -74,7 +74,9 @@ function App() {
           user={user}
           token={token}
           onOpenIncident={setIncidentId}
-          onOpenAssignmentDemo={import.meta.env.DEV && canAssign ? () => setShowAssignmentDemo(true) : undefined}
+          onOpenAssignmentDemo={
+            import.meta.env.DEV && isAdministrativeRole(user.role) ? () => setShowAssignmentDemo(true) : undefined
+          }
           {...viewProps}
         />
       )}

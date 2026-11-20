@@ -8,6 +8,7 @@ import MyIncidentsScreen from '@/app/(tabs)/my-incidents';
 import { useMyIncidents, type UseMyIncidentsResult } from '@/hooks/use-my-incidents';
 import { useSession, type SessionContextValue } from '@/hooks/use-session';
 import type { IncidentSummary } from '@/types/incident';
+import type { AuthToken } from '@/types/token';
 import type { SessionUser } from '@/types/user';
 
 // ---------------------------------------------------------------------------
@@ -17,13 +18,6 @@ import type { SessionUser } from '@/types/user';
 // navegación (`router` y `Redirect` de `expo-router`). Los componentes
 // presentacionales (`IncidentListItem`, `IncidentStatusBadge`) son reales.
 // ---------------------------------------------------------------------------
-
-// El tema importa `global.css` (Tailwind) que Jest no puede transformar;
-// se sustituye por un módulo vacío solo en el entorno de test.
-jest.mock('@/global.css', () => ({}));
-
-// Evita cargar la fuente del icono en el entorno de test.
-jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');
 
 // `Redirect` se sustituye por un stub que pinta el `href` recibido, para
 // distinguir "se redirigió a /login" por contenido visible.
@@ -111,13 +105,16 @@ const incidentsInReceivedOrder: IncidentSummary[] = [
   },
 ];
 
-// Construye un valor de sesión completo; por defecto hay un ciudadano activo.
+// Token de backend que la sesión entrega a la pantalla; el hook debe recibirlo tal cual.
+const BACKEND_SESSION_TOKEN: AuthToken = { accessToken: 'jwt-session-test', source: 'backend' };
+
+// Construye un valor de sesión completo; por defecto hay un ciudadano activo con token.
 function buildSessionValue(
   overrides: Partial<SessionContextValue> = {},
 ): SessionContextValue {
   return {
     user: mockSessionUser,
-    token: null,
+    token: BACKEND_SESSION_TOKEN,
     isRestoringSession: false,
     signIn: jest.fn().mockResolvedValue(undefined),
     signOut: jest.fn().mockResolvedValue(undefined),
@@ -328,14 +325,31 @@ describe('MyIncidentsScreen (tab Mis incidencias)', () => {
     expect(requestedCivicIds).not.toContain(mockSessionUser.id);
   });
 
-  it('sin sesión resuelta pide las incidencias con civicId null', async () => {
+  it('sin sesión resuelta pide las incidencias con civicId null y sin token', async () => {
     mockedUseSession.mockReturnValue(
-      buildSessionValue({ user: null, isRestoringSession: false }),
+      buildSessionValue({ user: null, token: null, isRestoringSession: false }),
     );
 
     await renderMyIncidentsScreen();
 
-    expect(mockedUseMyIncidents).toHaveBeenCalledWith(null);
+    expect(mockedUseMyIncidents).toHaveBeenCalledWith(null, null);
+  });
+
+  it('pasa al hook el token de la sesión junto al civicId', async () => {
+    await renderMyIncidentsScreen();
+
+    expect(mockedUseMyIncidents).toHaveBeenCalledWith(
+      mockSessionUser.civicId,
+      BACKEND_SESSION_TOKEN,
+    );
+  });
+
+  it('con sesión sin token pasa token null al hook, que decide el estado de sesión', async () => {
+    mockedUseSession.mockReturnValue(buildSessionValue({ token: null }));
+
+    await renderMyIncidentsScreen();
+
+    expect(mockedUseMyIncidents).toHaveBeenCalledWith(mockSessionUser.civicId, null);
   });
 
   it('registra un useFocusEffect al montar la pantalla', async () => {

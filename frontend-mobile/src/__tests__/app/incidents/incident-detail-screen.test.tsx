@@ -6,7 +6,10 @@ import React from 'react';
 import IncidentDetailScreen from '@/app/incidents/[id]';
 import { STATUS_LABELS } from '@/components/incident-status-badge';
 import { useIncidentDetail, type UseIncidentDetailResult } from '@/hooks/use-incident-detail';
+import { useSession, type SessionContextValue } from '@/hooks/use-session';
 import type { CreatedIncidentImage, IncidentDetail } from '@/types/incident';
+import type { AuthToken } from '@/types/token';
+import type { SessionUser } from '@/types/user';
 
 // ---------------------------------------------------------------------------
 // Test de la pantalla de detalle de incidencia (`incidents/[id]`). Se monta la
@@ -15,14 +18,6 @@ import type { CreatedIncidentImage, IncidentDetail } from '@/types/incident';
 // navegación (`router`) y el hook de carga (`useIncidentDetail`), para poder
 // fijar cada escenario sin ejercitar el fetch real.
 // ---------------------------------------------------------------------------
-
-// El tema importa `global.css` (Tailwind) que Jest no puede transformar;
-// se sustituye por un módulo vacío solo en el entorno de test.
-jest.mock('@/global.css', () => ({}));
-
-// Evita cargar la fuente del icono en el entorno de test (mismo patrón
-// que `new-incident-screen.test.tsx`).
-jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');
 
 // `expo-image` renderiza una vista nativa que RNTL no considera accesible, por lo
 // que `getAllByRole('image')` no la encontraría. Se sustituye por un `View` host
@@ -70,7 +65,37 @@ jest.mock('@/hooks/use-incident-detail', () => ({
   useIncidentDetail: jest.fn(),
 }));
 
+// La sesión se sustituye: la pantalla lee el token de `useSession` y lo pasa al hook.
+jest.mock('@/hooks/use-session', () => ({
+  useSession: jest.fn(),
+}));
+
 const mockedUseIncidentDetail = useIncidentDetail as jest.MockedFunction<typeof useIncidentDetail>;
+const mockedUseSession = jest.mocked(useSession);
+
+const SESSION_USER: SessionUser = {
+  id: '1',
+  username: 'ciudadano-test',
+  email: 'ciudadano@example.com',
+  role: 'civic',
+  civicId: '20ac442e-0f00-4fe4-bad3-61c8e8e0bff5',
+  phone: null,
+  source: 'backend',
+};
+
+// Token de backend de la sesión; la pantalla debe reenviarlo al hook sin cambios.
+const BACKEND_SESSION_TOKEN: AuthToken = { accessToken: 'jwt-session-test', source: 'backend' };
+
+function buildSessionValue(overrides: Partial<SessionContextValue> = {}): SessionContextValue {
+  return {
+    user: SESSION_USER,
+    token: BACKEND_SESSION_TOKEN,
+    isRestoringSession: false,
+    signIn: jest.fn().mockResolvedValue(undefined),
+    signOut: jest.fn().mockResolvedValue(undefined),
+    ...overrides,
+  };
+}
 const mockedUseLocalSearchParams = useLocalSearchParams as jest.MockedFunction<
   typeof useLocalSearchParams
 >;
@@ -153,6 +178,7 @@ describe('IncidentDetailScreen', () => {
     mockedUseIncidentDetail.mockReset();
     mockedUseLocalSearchParams.mockReset();
     jest.mocked(router.back).mockReset();
+    mockedUseSession.mockReturnValue(buildSessionValue());
 
     mockedUseLocalSearchParams.mockReturnValue({ id: INCIDENT_ID });
   });
@@ -160,8 +186,8 @@ describe('IncidentDetailScreen', () => {
   it('con incidencia completa muestra el visor de fotos, el título, el estado, la categoría y la descripción', async () => {
     await renderDetailScreenWithHookState(buildHookState({ incident: fullIncident }));
 
-    // El hook recibe el id de la ruta tal cual.
-    expect(mockedUseIncidentDetail).toHaveBeenCalledWith(INCIDENT_ID);
+    // El hook recibe el id de la ruta y el token de la sesión.
+    expect(mockedUseIncidentDetail).toHaveBeenCalledWith(INCIDENT_ID, BACKEND_SESSION_TOKEN);
 
     // Visor de fotos real: una imagen accesible por cada adjunto.
     const renderedImages = screen.getAllByRole('image');
@@ -293,5 +319,18 @@ describe('IncidentDetailScreen', () => {
     expect(screen.queryByText(fullIncident.title)).not.toBeOnTheScreen();
     expect(screen.queryByText(EMPTY_CATEGORY_TEXT)).not.toBeOnTheScreen();
     expect(screen.queryByText(EMPTY_DESCRIPTION_TEXT)).not.toBeOnTheScreen();
+  });
+
+  it('con sesión sin token pasa token null al hook, que decide el estado de sesión', async () => {
+    mockedUseSession.mockReturnValue(buildSessionValue({ token: null }));
+
+    await renderDetailScreenWithHookState(
+      buildHookState({ errorMessage: 'No se pudo identificar tu sesión. Vuelve a iniciar sesión.' }),
+    );
+
+    expect(mockedUseIncidentDetail).toHaveBeenCalledWith(INCIDENT_ID, null);
+    expect(
+      screen.getByText('No se pudo identificar tu sesión. Vuelve a iniciar sesión.'),
+    ).toBeOnTheScreen();
   });
 });

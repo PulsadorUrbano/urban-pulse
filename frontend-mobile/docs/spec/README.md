@@ -16,6 +16,8 @@ spec/
 └── bugs/                               ← Carpeta dedicada al arreglo de bugs
 |   └── nombre-feature/                 ← A qué funcionalidad se le ha aplicado el arreglo de bugs
 |   |   └── DD-MM-YY-asunto.md          ← Explicación del arreglo de bugs y documentación sobre este
+|   └── general/                        ← Bugs no atados a una feature concreta (afectan a varias pantallas)
+|   |   └── DD-MM-YY-asunto.md          ← Explicación del arreglo de bugs y documentación sobre este
 |   └── todo.md                         ← Bugs anotados para arreglar en un futuro, viene con estructura que se debe seguir
 └── templates/                          ← Plantillas para el agente
     ├── bug-template.md                 ← Para rellenar un bug
@@ -54,6 +56,6 @@ El agente `organizador` es responsable de mantener esta carpeta y su trazabilida
 1. Crear `refactor/nombre-feature/DD-MM-YY-asunto.md` (o `refactor/independent/DD-MM-YY-asunto.md` si no pertenece a una feature concreta) a partir de `templates/refactor-template.md`.
 2. Documentar motivo, alcance y resultado; una refactorización no debe cambiar comportamiento observable.
 
-> Si refactor pertenece a una feature que ya tiene más refactors, no hace falta crear `bugs/nombre-feature/DD-MM-YY-asunto.md`, basta con introducirlo en `bugs/nombre-feature/`.
+> Si refactor pertenece a una feature que ya tiene más refactors, no hace falta crear `refactor/nombre-feature/DD-MM-YY-asunto.md`, basta con introducirlo en `refactor/nombre-feature/`.
 
 > El alcance, el stack y las convenciones del proyecto los manda `CLAUDE.md` — no se duplican aquí. Si una feature, bug o refactor choca con lo que indica `CLAUDE.md`, se replantea el trabajo, no `CLAUDE.md`.

@@ -4,9 +4,6 @@ import { render, screen } from '@testing-library/react-native';
 import { PasswordStrengthMeter, STRENGTH_LABELS } from '@/components/password-strength-meter';
 import { getPasswordStrengthLevel, type PasswordStrengthLevel } from '@/utils/password-strength';
 
-// El tema (vía ThemedText) importa `global.css` (Tailwind) que Jest no puede transformar.
-jest.mock('@/global.css', () => ({}));
-
 // Contraseñas de ejemplo para cada nivel. Su nivel se verifica con
 // getPasswordStrengthLevel en cada test para no depender de un valor fijo.
 const EXAMPLE_PASSWORD_BY_LEVEL: Record<PasswordStrengthLevel, string> = {

@@ -1,14 +1,14 @@
 // Contrato de datos para las los usuarios.
 // `username`, `password`, `email`, `role` son obligatorios: dos usuarios no pueden tener el mismo username o email
 
-export type UserRole = 'administrative' | 'department' | 'team' | 'technician' | 'civic' | `admin` | `analyst`;
+export type UserRole = 'administrative' | 'department' | 'team' | 'technician' | 'civic' | 'admin' | 'analyst';
 
 // Campos comunes a cualquier origen de usuario (mock o backend real).
 interface UserBase {
   id: string;
   username: string;
   email: string;
-  role: string;
+  role: UserRole;
   // Identidad estable usada en el dominio de incidencias (100% mock, fuera de
   // alcance de este refactor): en MockUser es el UUID generado en el cliente
   // al registrarse; en BackendUser se sintetiza igual a `id` (el userId del
@@ -42,7 +42,7 @@ export type SessionUser = MockSessionUser | BackendUser;
 
 // Usará o username o email
 export interface LoginUserInput {
-  username_email: string;
+  usernameOrEmail: string;
   password: string;
 }
 

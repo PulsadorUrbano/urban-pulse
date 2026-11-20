@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet } from 'react-native';
+import { FlatList, Modal, Pressable, useWindowDimensions, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { COUNTRIES } from '@/constants/countries';
-import { Spacing } from '@/constants/theme';
 import type { Country } from '@/types/country';
+
+// Fracción de la altura de la ventana que puede ocupar la hoja inferior.
+const SHEET_MAX_HEIGHT_RATIO = 0.8;
 
 export interface CountryCodePickerProps {
   selectedCountry: Country;
@@ -15,6 +17,7 @@ export interface CountryCodePickerProps {
 // Selector compacto de prefijo telefónico: muestra el país elegido en un
 // trigger reducido y delega la elección en una hoja inferior deslizante.
 export function CountryCodePicker({ selectedCountry, onSelectCountry }: CountryCodePickerProps) {
+  const { height: windowHeight } = useWindowDimensions();
   const [isSheetVisible, setIsSheetVisible] = useState(false);
 
   // Abre la hoja de países.
@@ -35,13 +38,13 @@ export function CountryCodePicker({ selectedCountry, onSelectCountry }: CountryC
 
   return (
     <>
-      <ThemedView type="backgroundElement" style={styles.trigger}>
+      <ThemedView type="backgroundElement" className="flex-row items-center rounded-2xl px-4 py-1">
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Cambiar prefijo de país, actual: ${selectedCountry.name} ${selectedCountry.dialCode}`}
           onPress={openSheet}
-          style={({ pressed }) => [styles.triggerLabel, pressed && styles.pressed]}>
-          <ThemedText type="small" numberOfLines={1} style={styles.triggerLabelText}>
+          className="shrink active:opacity-70">
+          <ThemedText type="small" numberOfLines={1} className="shrink">
             {selectedCountry.flagEmoji} {selectedCountry.isoCode} {selectedCountry.dialCode}
           </ThemedText>
         </Pressable>
@@ -52,68 +55,38 @@ export function CountryCodePicker({ selectedCountry, onSelectCountry }: CountryC
           accessibilityRole="button"
           accessibilityLabel="Cerrar selector de prefijo de país"
           onPress={closeSheet}
-          style={styles.backdrop}>
-          {/* El Pressable vacío evita que los toques dentro del panel cierren la hoja. */}
-          <Pressable onPress={() => undefined}>
-            <ThemedView style={styles.sheet}>
-              <ThemedText type="smallBold" style={styles.sheetTitle}>
+          className="flex-1 justify-end bg-black/40">
+          {/* El View captura el toque dentro del panel para que no cierre la hoja; a diferencia
+              de un Pressable vacío, no compite con el gesto de scroll de la lista. */}
+          <View onStartShouldSetResponder={() => true}>
+            <ThemedView
+              className="gap-2 rounded-t-3xl px-6 pb-8 pt-6"
+              style={{ maxHeight: windowHeight * SHEET_MAX_HEIGHT_RATIO }}>
+              <ThemedText type="smallBold" className="mb-1">
                 Elige un país
               </ThemedText>
 
-              {COUNTRIES.map((country) => (
-                <Pressable
-                  key={country.isoCode}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Prefijo de ${country.name} ${country.dialCode}`}
-                  onPress={() => handleSelectCountry(country)}
-                  style={({ pressed }) => [styles.option, pressed && styles.pressed]}>
-                  <ThemedText type="default">
-                    {country.flagEmoji} {country.name} {country.dialCode}
-                  </ThemedText>
-                </Pressable>
-              ))}
+              <FlatList
+                data={COUNTRIES}
+                keyExtractor={(country) => country.isoCode}
+                className="shrink grow-0"
+                contentContainerClassName="gap-2"
+                renderItem={({ item: country }) => (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Prefijo de ${country.name} ${country.dialCode}`}
+                    onPress={() => handleSelectCountry(country)}
+                    className="active:opacity-70 py-6">
+                    <ThemedText type="default">
+                      {country.flagEmoji} {country.name} {country.dialCode}
+                    </ThemedText>
+                  </Pressable>
+                )}
+              />
             </ThemedView>
-          </Pressable>
+          </View>
         </Pressable>
       </Modal>
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  trigger: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.one,
-  },
-  triggerLabel: {
-    flexShrink: 1,
-  },
-  triggerLabelText: {
-    flexShrink: 1,
-  },
-  backdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  sheet: {
-    borderTopLeftRadius: Spacing.four,
-    borderTopRightRadius: Spacing.four,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
-    paddingBottom: Spacing.five,
-    gap: Spacing.two,
-  },
-  sheetTitle: {
-    marginBottom: Spacing.one,
-  },
-  option: {
-    paddingVertical: Spacing.four,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-});

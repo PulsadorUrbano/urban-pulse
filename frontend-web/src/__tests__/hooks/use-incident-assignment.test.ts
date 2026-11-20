@@ -39,6 +39,15 @@ describe('selección jerárquica de asignación', () => {
     expect(buildAssignmentPatch(incident, { departmentId: null, teamId: null, technicianId: null })).toEqual({});
   });
 
+  it('exige departamento y equipo y admite una asignación sin técnico', () => {
+    const selection = { departmentId, teamId, technicianId };
+
+    expect(isValidSelection({ departmentId, teamId, technicianId: null }, options)).toBe(true);
+    expect(isValidSelection({ departmentId: null, teamId: null, technicianId: null }, options)).toBe(false);
+    expect(isValidSelection(changeDepartment(selection, options.departments[1].id), options)).toBe(false);
+    expect(isValidSelection(changeTeam(selection, null), options)).toBe(false);
+  });
+
   it('rechaza un equipo o técnico ajeno a la cadena elegida', () => {
     expect(isValidSelection({ departmentId, teamId, technicianId }, options)).toBe(true);
     expect(isValidSelection({ departmentId, teamId: options.teams[1].id, technicianId: null }, options)).toBe(false);

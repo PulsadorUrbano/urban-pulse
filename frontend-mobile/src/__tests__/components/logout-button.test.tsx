@@ -3,13 +3,6 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 
 import { LOGOUT_BUTTON_SIZE, LogoutButton } from '@/components/logout-button';
 
-// Evita cargar la fuente del icono en el entorno de test.
-jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');
-
-// El tema importa `global.css` (Tailwind) que Jest no puede transformar;
-// se sustituye por un módulo vacío solo en el entorno de test.
-jest.mock('@/global.css', () => ({}));
-
 describe('LogoutButton', () => {
   beforeEach(() => {
     // userEvent.press simula una pulsación con duración; los fake timers la aceleran.

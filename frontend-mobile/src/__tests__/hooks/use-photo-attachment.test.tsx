@@ -24,13 +24,9 @@ jest.mock('@/services/storage.service', () => ({
   storePhoto: jest.fn(),
 }));
 
-const mockedPickPhotoFromCamera = pickPhotoFromCamera as jest.MockedFunction<
-  typeof pickPhotoFromCamera
->;
-const mockedPickPhotoFromLibrary = pickPhotoFromLibrary as jest.MockedFunction<
-  typeof pickPhotoFromLibrary
->;
-const mockedStorePhoto = storePhoto as jest.MockedFunction<typeof storePhoto>;
+const mockedPickPhotoFromCamera = jest.mocked(pickPhotoFromCamera);
+const mockedPickPhotoFromLibrary = jest.mocked(pickPhotoFromLibrary);
+const mockedStorePhoto = jest.mocked(storePhoto);
 
 // Replica del retardo simulado de `storage.service.ts` (800 ms vía
 // `setTimeout`) para poder controlarlo con los fake timers de Jest.
