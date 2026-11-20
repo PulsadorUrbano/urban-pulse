@@ -12,7 +12,7 @@ it('exige departamento y equipo en la demo y permite retirar el técnico', () =>
   expect(loadMockAssignment(MOCK_INCIDENT_ID).incident).toEqual(incident);
 
   const assigned = saveMockAssignment({ departmentId, teamId });
-  expect(assigned).toMatchObject({ departmentId, teamId, technicianId: null, status: incident.status });
+  expect(assigned).toMatchObject({ departmentId, teamId, technicianId: null, status: 'assigned' });
   expect(saveMockAssignment({ technicianId }).technicianId).toBe(technicianId);
   expect(saveMockAssignment({ technicianId: null })).toEqual(assigned);
 

@@ -67,17 +67,32 @@ describe('assignment.service', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('envía el equipo actual en una reasignación y devuelve la incidencia asignada del servidor', async () => {
+    const { departmentId, id: teamId } = options.teams[0];
+    const assigned = { ...incident, status: 'assigned', departmentId, teamId };
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, assigned));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(saveBackendAssignment(incident.id, { teamId }, TOKEN)).resolves.toEqual(assigned);
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/incidents/${incident.id}/assignment`,
+      expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ teamId }) }),
+    );
+  });
+
   it.each([401, 403] as const)('distingue HTTP %s y no lo convierte en modo demo', async (status) => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(status, { message: 'Sin acceso' })));
     await expect(fetchAssignmentOptions(TOKEN)).rejects.toMatchObject({ name: AssignmentAccessError.name, status });
   });
 
-  it('señala el conflicto 409 sin guardar un cambio simulado', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(409, { message: 'La asignación cambió' })));
-    await expect(saveBackendAssignment(MOCK_INCIDENT_ID, { teamId: null }, TOKEN))
-      .rejects.toBeInstanceOf(AssignmentConflictError);
-    expect(loadMockAssignment(MOCK_INCIDENT_ID).incident.teamId).toBeNull();
-  });
+  it.each([[403, AssignmentAccessError], [409, AssignmentConflictError]] as const)(
+    'señala el error %s al reasignar sin guardar un cambio simulado', async (status, error) => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(status, { message: 'Guardado rechazado' })));
+      await expect(saveBackendAssignment(MOCK_INCIDENT_ID, { teamId: options.teams[0].id }, TOKEN))
+        .rejects.toBeInstanceOf(error);
+      expect(loadMockAssignment(MOCK_INCIDENT_ID).incident.teamId).toBeNull();
+    },
+  );
 
   it('informa de caída del backend sin fingir persistencia', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValueOnce(new TypeError('Failed to fetch')));

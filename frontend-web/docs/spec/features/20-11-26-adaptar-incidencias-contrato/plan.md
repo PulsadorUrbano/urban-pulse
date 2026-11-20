@@ -7,8 +7,8 @@
 - **Arquitectura.** Reutilizar los tipos, servicios, hooks, vistas y modo demo del flujo existente. El detalle conserva como fuente de verdad la incidencia devuelta por el backend al guardar.
 - **Herramientas.** React 19, Vite 8, TypeScript 5, Tailwind CSS 3 y Vitest 5.
 - **Especificación.** [Contrato y criterios de aceptación](./spec.md).
-- **Ramas propuestas.** `fix/compatibilidad-incidencias-web` para la primera PR y `feature/completar-asignaciones-web` para la segunda. Crear cada rama desde el `origin/dev` vigente cuando empiece su fase. Borrador preparado en la copia local de `dev`.
-- **Estado.** Primera PR implementada. Pasaron las comprobaciones automatizadas de la rama completa y queda pendiente la prueba del flujo con el backend.
+- **Ramas de trabajo.** `fix/compatibilidad-incidencias-web` para la primera PR y `feature/completar-asignaciones-web` para la segunda. El trabajo local de la segunda parte provisionalmente de la #201 (`3792cc2`). Antes de publicar, trasladar sus commits al `origin/dev` que incluya la #185.
+- **Estado.** Primera PR abierta como #201. Reasignación de reabiertas implementada en la segunda rama. Quedan pendientes los comentarios opcionales y la prueba del flujo con el backend.
 
 ## Restricciones generales
 
@@ -22,7 +22,7 @@
 
 1. **PR web de compatibilidad.** Integrar la lectura de los estados nuevos, el acceso provisional al listado y la selección obligatoria de departamento y equipo. La petición de guardado conserva el cuerpo que admite `dev`. Referenciar la #192 como trabajo en curso.
 2. **PR #185.** Integrar el backend cuando estén cubiertas las adaptaciones necesarias de ambos clientes. Una vez en `dev`, comprobar que la primera PR web carga y asigna incidencias con el backend actualizado.
-3. **PR web para completar las asignaciones.** Partir del `dev` que ya incluye la #185, habilitar la reasignación de reabiertas y añadir «Comentarios adicionales». Cerrar la #192 con esta PR cuando sus criterios estén verificados.
+3. **PR web para completar las asignaciones.** Abrirla sobre el `dev` que ya incluye la #185 con la reasignación de reabiertas y «Comentarios adicionales». Cerrar la #192 con esta PR cuando sus criterios estén verificados.
 
 ## Focos de revisión
 
@@ -83,8 +83,10 @@ Rutas relativas a la raíz del repositorio.
 
 ## Tarea 4. Reasignar una incidencia reabierta (segunda PR)
 
-- [ ] Permitir guardar en `validated`, `assigned` y `reopened`. Si una reabierta se devuelve al mismo equipo sin cambios de identificadores, enviar su `teamId` para que el backend ejecute la transición.
-- [ ] Actualizar el detalle con la respuesta del PATCH y reflejar en la demo el estado `assigned`. Comprobar la reasignación al mismo equipo, el estado devuelto y los errores de permisos o conflicto antes de mostrar un guardado correcto.
+- [x] Permitir guardar en `validated`, `assigned` y `reopened`. Si una reabierta se devuelve al mismo equipo sin cambios de identificadores, enviar su `teamId` para que el backend ejecute la transición.
+- [x] Conservar la respuesta del PATCH como origen del detalle y reflejar en la demo el estado `assigned`. Comprobar el guardado en el mismo equipo, la respuesta del servicio y el tratamiento de los errores de permisos y conflicto con respuestas simuladas.
+
+**Verificación del bloque.** Cinco casos fallaron antes de implementar el cambio. Después pasaron las 81 pruebas en 9 archivos, el typecheck, el lint, la compilación y `git diff --check`. Se comprobó el formulario de una reabierta, el acceso por rol, el cuerpo con `teamId`, la respuesta `assigned` y los errores 403 y 409. Docker estaba inactivo, por lo que la prueba del flujo con el backend de la #185 sigue pendiente.
 
 ## Tarea 5. Añadir «Comentarios adicionales» (segunda PR)
 
@@ -128,9 +130,9 @@ Ejecutar en cada PR desde `frontend-web/` salvo la comprobación de Git.
 
 ## Confirmación de implementación
 
-- **Estado final.** Primera PR implementada con prueba real pendiente. Segunda PR pendiente.
+- **Estado final.** Primera PR implementada con prueba real pendiente. Segunda PR en curso con la reasignación de reabiertas implementada.
 - **Fecha de revisión.** 2026-11-20.
 - **Resultado entregado.** Plan y especificación, lectura de los cuatro estados nuevos, prioridad visible, acceso provisional al listado y selección de departamento y equipo obligatoria para guardar.
 - **Evidencia y comprobaciones.** Los estados y la prioridad se comprobaron con pruebas del servicio y del detalle. El acceso se comprobó por rol y la asignación se comprobó en el formulario, la demo y los validadores de los dos contratos. La rama completa pasó las comprobaciones indicadas arriba.
 - **Decisiones y desviaciones.** La compatibilidad web entra antes de la #185 y las funciones del contrato nuevo entran después, con commits individuales a cargo de Artina. Se han respetado los nombres de rama indicados por Artina.
-- **Limitaciones y pendientes.** Prueba del flujo con el backend y tareas 4 y 5 de la segunda PR. La #198 sigue abierta y el selector de estados queda por coordinar cuando se integre.
+- **Limitaciones y pendientes.** Tarea 5 de la segunda PR, traslado de la rama al `dev` que incluya la #185 y prueba del flujo con el backend. El selector de estados se coordinará al integrar la #198.

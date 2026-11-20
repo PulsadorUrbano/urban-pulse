@@ -1,4 +1,4 @@
-import type { AssignmentOptions, AssignmentPatch } from '../types/assignment';
+import { canEditAssignment, type AssignmentOptions, type AssignmentPatch } from '../types/assignment';
 import type { IncidentDetail } from '../types/incident';
 
 export const MOCK_INCIDENT_ID = '20ac442e-0f00-4fe4-bad3-61c8e8e0bff5';
@@ -47,7 +47,7 @@ export function loadMockAssignment(id: string): { incident: IncidentDetail; opti
 }
 
 export function saveMockAssignment(patch: AssignmentPatch): IncidentDetail {
-  if (incident.status !== 'validated' && incident.status !== 'assigned') {
+  if (!canEditAssignment(incident.status)) {
     throw new Error('La incidencia de demostración no admite asignaciones.');
   }
   const departmentId = patch.departmentId === undefined ? incident.departmentId : patch.departmentId;
@@ -69,6 +69,6 @@ export function saveMockAssignment(patch: AssignmentPatch): IncidentDetail {
   if (technicianId && !OPTIONS.technicians.some((technician) => technician.id === technicianId && technician.teamId === teamId)) {
     throw new Error('El técnico no pertenece al equipo.');
   }
-  incident = { ...incident, departmentId, teamId, technicianId };
+  incident = { ...incident, departmentId, teamId, technicianId, status: 'assigned' };
   return { ...incident };
 }

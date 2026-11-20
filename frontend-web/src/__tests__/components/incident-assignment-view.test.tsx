@@ -15,3 +15,16 @@ it('muestra indicaciones en los campos obligatorios y conserva la opción de qui
   expect(form).toMatch(/<option value="" selected="">Sin asignar<\/option>/);
   expect(form).toMatch(/<button[^>]*disabled=""[^>]*>Guardar asignación<\/button>/);
 });
+
+it('habilita el guardado de una incidencia reabierta con su asignación actual', () => {
+  const { incident, options } = loadMockAssignment(MOCK_INCIDENT_ID);
+  const form = renderToStaticMarkup(
+    <IncidentAssignmentView
+      incident={{ ...incident, status: 'reopened', departmentId: options.departments[0].id, teamId: options.teams[0].id }}
+      mode={{ demoOptions: options }}
+      onSaved={vi.fn()}
+    />,
+  );
+
+  expect(form).toMatch(/<button\b(?![^>]*\bdisabled\b="")[^>]*>Guardar asignación<\/button>/);
+});

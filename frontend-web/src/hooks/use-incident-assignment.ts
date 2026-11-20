@@ -7,14 +7,10 @@ import {
   saveBackendAssignment,
   saveDemoAssignment,
 } from '../services/assignment.service';
-import type { AssignmentOptions, AssignmentPatch, AssignmentSelection } from '../types/assignment';
-import type { IncidentDetail, IncidentStatus } from '../types/incident';
+import { canEditAssignment, type AssignmentOptions, type AssignmentPatch, type AssignmentSelection } from '../types/assignment';
+import type { IncidentDetail } from '../types/incident';
 
 export type AssignmentMode = { token: string } | { demoOptions: AssignmentOptions };
-
-export function canEditAssignment(status: IncidentStatus): boolean {
-  return status === 'validated' || status === 'assigned';
-}
 
 function selectionOf(incident: IncidentDetail): AssignmentSelection {
   return {
@@ -39,6 +35,9 @@ export function buildAssignmentPatch(incident: IncidentDetail, selection: Assign
   if (incident.departmentId !== selection.departmentId) patch.departmentId = selection.departmentId;
   if (incident.teamId !== selection.teamId) patch.teamId = selection.teamId;
   if (incident.technicianId !== selection.technicianId) patch.technicianId = selection.technicianId;
+  if (incident.status === 'reopened' && selection.teamId && Object.keys(patch).length === 0) {
+    return { teamId: selection.teamId };
+  }
   return patch;
 }
 

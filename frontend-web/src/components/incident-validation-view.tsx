@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { MapPin, CheckCircle2, Info, LogOut, AlertTriangle, RefreshCw } from 'lucide-react';
 
 import { PRIORITY_LABELS, STATUS_LABELS } from '../constants/incident-labels';
-import { canEditAssignment } from '../hooks/use-incident-assignment';
 import { useIncidentValidation } from '../hooks/use-incident-validation';
+import { canEditAssignment } from '../types/assignment';
 import { isAdministrativeRole, type SessionUser } from '../types/user';
 import { AppHeader } from './app-header';
 import { IncidentAssignmentView } from './incident-assignment-view';
