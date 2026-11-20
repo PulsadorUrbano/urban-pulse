@@ -11,6 +11,6 @@ Errores: 400 UUID inválido; 401 JWT inválido; 403 rol o perfil no permitido; 4
 
 ## Referencias
 
-- [Especificación CloudFront](../../features/specs/2026-11-15-integrar-fotos-cloudfront-spec.md).
+- [Especificación CloudFront](../../features/15-11-26-integrar-fotos-cloudfront/spec.md).
 - [Controlador](../../../../src/incidents/incidents.controller.ts).
 - [Servicio](../../../../src/incidents/incidents.service.ts).

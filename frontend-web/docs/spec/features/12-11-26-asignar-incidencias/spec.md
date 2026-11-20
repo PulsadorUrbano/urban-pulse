@@ -8,7 +8,7 @@
 - Última actualización: 2026-11-12.
 - Estado: implementado y verificado localmente; pendiente de prueba con backend activo.
 - Plan: [Plan de implementación](./plan.md#confirmación-de-implementación).
-- Referencias: [especificación backend](../../../../../backend/docs/spec/features/specs/2026-11-03-asignar-departamento-equipo-y-tecnico-spec.md) y [contrato de asignación](../../../../../backend/docs/spec/endpoint/patch-incidents-id-assignment/README.md).
+- Referencias: [especificación backend](../../../../../backend/docs/spec/features/03-11-26-asignar-departamento-equipo-y-tecnico/spec.md) y [contrato de asignación](../../../../../backend/docs/spec/endpoint/patch-incidents-id-assignment/README.md).
 
 ## Objetivo y decisiones vigentes
 

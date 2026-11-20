@@ -162,4 +162,4 @@ Después de preparar la base, construye e inicia los servicios con los comandos 
 - [Restringir un origen S3 con OAC](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html).
 - [Servir contenido privado con URL firmadas](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/PrivateContent.html).
 - [Firmador de CloudFront para Node.js](https://github.com/aws/aws-sdk-js-v3/blob/main/packages/cloudfront-signer/README.md).
-- [Especificación de la integración](../backend/docs/spec/features/specs/2026-11-15-almacenar-fotos-incidencias-s3-spec.md).
+- [Especificación de la integración](../backend/docs/spec/features/15-11-26-almacenar-fotos-incidencias-s3/spec.md).
