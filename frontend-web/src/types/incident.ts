@@ -61,6 +61,18 @@ export interface IncidentSummary {
   createdAt: string;
 }
 
+// Filtros del listado web. Se aplican en el navegador hasta que GET /incidents filtre (#44).
+export type IncidentStatusFilter = IncidentStatus | 'all';
+export type IncidentSortOrder = 'newest' | 'oldest';
+
+// `from` y `to` son días AAAA-MM-DD de un <input type="date">, en hora local.
+export interface IncidentListFilters {
+  status: IncidentStatusFilter;
+  order: IncidentSortOrder;
+  from: string | null;
+  to: string | null;
+}
+
 // Cuerpo de PATCH /incidents/:id/status. El backend obtiene el actor de la sesión.
 export interface ChangeIncidentStatusInput {
   status: 'validated' | 'rejected';
