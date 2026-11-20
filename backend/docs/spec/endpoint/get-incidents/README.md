@@ -39,11 +39,11 @@ PostgreSQL no disponible devuelve 503. La respuesta no incluye historial.
 
 ## Referencias
 
-- [Especificación de paginación](../../features/specs/2026-11-09-paginar-incidencias-con-cursor-spec.md).
-- [Plan y confirmación](../../features/plans/2026-11-09-paginar-incidencias-con-cursor-plan.md).
+- [Especificación de paginación](../../features/09-11-26-paginar-incidencias-con-cursor/spec.md).
+- [Plan y confirmación](../../features/09-11-26-paginar-incidencias-con-cursor/plan.md).
 - [Controlador](../../../../src/incidents/incidents.controller.ts).
 - [Validación de consulta](../../../../src/incidents/listar-incidencias.pipe.ts).
 - [Servicio](../../../../src/incidents/incidents.service.ts).
 - [Unitarias del servicio](../../../../test/incidents/services/listar-incidencias.service.spec.ts).
 - [Unitarias de validación](../../../../test/incidents/pipes/listar-incidencias.pipe.spec.ts).
-- [Diseño integrado](../../features/specs/2026-11-09-integrar-incidencias-jwt-prisma-sin-imagenes-design.md)
+- [Diseño integrado](../../features/09-11-26-integrar-incidencias-jwt-prisma-sin-imagenes/spec.md)

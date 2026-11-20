@@ -97,10 +97,12 @@ backend/
 
 Guardar la documentación en backend/docs/. Las rutas siguientes parten de la raíz del repositorio.
 
-- Crear la especificación en backend/docs/spec/features/specs/ usando backend/docs/spec/templates/spec-template.md.
-- Crear el plan en backend/docs/spec/features/plans/ usando backend/docs/spec/templates/plan-template.md.
-- Registrar el progreso, las comprobaciones y la confirmación de implementación en ese mismo plan, sin archivos adicionales de tareas o informes.
-- Usar nombres y títulos con fecha y descripción de la acción: AAAA-MM-DD-descripcion-del-cambio-spec.md y AAAA-MM-DD-descripcion-del-cambio-plan.md; encabezados como «AAAA-MM-DD — Plan para describir la acción». Evitar títulos genéricos como spec.md o plan.md.
+- Para funcionalidades nuevas, crear backend/docs/spec/features/DD-MM-YY-nombre-feature/ con spec.md y plan.md a partir de las plantillas de backend/docs/spec/templates/.
+- La especificación recoge alcance, contratos y criterios de aceptación; el plan registra tareas, comprobaciones y confirmación de implementación, sin informes ni archivos de tareas separados.
+- Para bugs, usar backend/docs/spec/bugs/nombre-feature/DD-MM-YY-asunto.md y registrar los pendientes en bugs/todo.md. Para refactorizaciones, usar backend/docs/spec/refactor/nombre-feature/DD-MM-YY-asunto.md o refactor/independent/.
+- Los cambios únicamente documentales se registran en una nota backend/docs/AAAA-MM-DD-NNN-nombre.md; no necesitan spec.md ni plan.md. Mantener contexto, alcance, decisiones, archivos, checklist, verificación y pendientes.
+- Incluir fecha y descripción concreta en el nombre de la carpeta de funcionalidad y en los títulos. En documentos nuevos, registrar desarrollador responsable, asistente y modelo de IA sin inventar datos no disponibles.
+- Consultar backend/docs/spec/README.md para la estructura y el archivo histórico backend/docs/old/. Conservar el contenido histórico sin presentar sus instrucciones como vigentes.
 - Escribir en español y mantener los documentos alineados con el comportamiento real.
 
 ## Catálogo de endpoints
@@ -141,4 +143,4 @@ En PowerShell puede usarse Get-ChildItem con las mismas rutas.
 - Para cambios de código o dependencias, ejecutar pnpm run build, pnpm run lint y pnpm test. Añadir solo las pruebas unitarias pertinentes; no debilitar validaciones para conseguir un resultado correcto.
 - Para cambios únicamente documentales, comprobar rutas, comandos, coherencia con la rama y git diff --check. No añadir pruebas ni ejecutar servicios para verificar texto.
 - Si una comprobación está bloqueada por el entorno, informar del comando y la causa; no presentarla como correcta ni cambiar políticas del sistema para sortear el bloqueo.
-- Entregar un resumen en español con lo modificado, las comprobaciones reales y las limitaciones. Confirmar el resultado y las comprobaciones en el mismo plan.
+- Entregar un resumen en español con lo modificado, las comprobaciones reales y las limitaciones. Confirmar el resultado y las comprobaciones en el plan, documento de bug/refactor o nota de sesión que corresponda.
