@@ -34,22 +34,39 @@ const incident: Omit<IncidentDetail, 'status'> = {
 const useIncidentValidation = vi.hoisted(() => vi.fn());
 
 vi.mock('../../hooks/use-incident-validation', () => ({ useIncidentValidation }));
-vi.mock('../../components/resolution-form', () => ({ ResolutionForm: () => null }));
+vi.mock('../../components/resolution-form', () => ({
+  ResolutionForm: () => <button type="button">Validar incidencia</button>,
+}));
 
-it('muestra el estado y la prioridad guardada de una incidencia resuelta', () => {
-  useIncidentValidation.mockReturnValue({ incident: { ...incident, status: 'resolved' }, loading: false });
-
-  const detail = renderToStaticMarkup(
+function renderDetail(sessionUser: SessionUser = user): string {
+  return renderToStaticMarkup(
     <IncidentValidationView
       incidentId={incident.id}
-      user={user}
+      user={sessionUser}
       token="token-prueba"
       isDarkMode={false}
       onToggleTheme={vi.fn()}
       onLogout={vi.fn()}
     />,
   );
+}
+
+it('muestra el estado y la prioridad guardada de una incidencia resuelta', () => {
+  useIncidentValidation.mockReturnValue({ incident: { ...incident, status: 'resolved' }, loading: false });
+
+  const detail = renderDetail();
 
   expect(detail).toMatch(/<dd[^>]*>Resuelta<\/dd>/);
   expect(detail).toMatch(/<dd[^>]*>Alta<\/dd>/);
+});
+
+it('conserva el detalle de un perfil de departamento y oculta el formulario de validación', () => {
+  useIncidentValidation.mockReturnValue({ incident: { ...incident, status: 'reported' }, loading: false });
+
+  const detail = renderDetail({ ...user, role: 'department' });
+
+  expect(useIncidentValidation).toHaveBeenLastCalledWith(incident.id, 'token-prueba');
+  expect(detail).toContain('Farola apagada');
+  expect(detail).not.toContain('Validar incidencia');
+  expect(renderDetail()).toContain('Validar incidencia');
 });

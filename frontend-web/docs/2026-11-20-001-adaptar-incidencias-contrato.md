@@ -10,7 +10,7 @@ El panel web debe adaptarse al contrato de la #185 y a las reglas de asignación
 
 ## Alcance
 
-Preparar el plan y la especificación de las dos PRs web y adaptar el listado y el detalle a los estados nuevos.
+Preparar el plan y la especificación, adaptar el panel a los estados nuevos y aplicar el acceso provisional al listado global.
 
 ## Decisiones clave
 
@@ -26,6 +26,7 @@ Preparar el plan y la especificación de las dos PRs web y adaptar el listado y 
 | [Especificación](spec/features/20-11-26-adaptar-incidencias-contrato/spec.md) | Contrato del panel y criterios de aceptación de ambas PRs |
 | `src/types/incident.ts`, `src/services/incident.service.ts`, `src/constants/incident-labels.ts` | Estados nuevos y etiquetas en las respuestas del listado y el detalle |
 | `src/components/incident-validation-view.tsx`, `src/__tests__/` | Prioridad visible en incidencias tramitadas y pruebas de regresión |
+| `src/App.tsx`, `src/types/user.ts`, `src/components/incident-list-view.tsx` | Acceso al listado y criterio compartido para administración |
 
 ## Checklist de la sesión
 
@@ -36,7 +37,9 @@ Preparar el plan y la especificación de las dos PRs web y adaptar el listado y 
 - [x] Crear la especificación tras su aprobación.
 - [x] Hacer el commit de documentación en `fix/compatibilidad-incidencias-web` (`c58c5c5`).
 - [x] Implementar y comprobar los estados nuevos del listado y el detalle.
-- [ ] Hacer el commit del bloque de estados.
+- [x] Hacer el commit del bloque de estados (`9a3a5a3`).
+- [x] Implementar y probar el acceso provisional al listado y el formulario del detalle según el rol.
+- [ ] Hacer el commit del bloque de acceso.
 
 ## Documentos actualizados
 
@@ -44,8 +47,8 @@ Preparar el plan y la especificación de las dos PRs web y adaptar el listado y 
 
 ## Estado / Verificación
 
-Pasaron las 66 pruebas unitarias, el typecheck, el lint y la compilación. La verificación del flujo con el backend queda pendiente.
+Pasaron las 73 pruebas unitarias, el typecheck, el lint y la compilación tras adaptar el acceso provisional. La verificación del flujo con el backend queda pendiente.
 
 ## Pendiente / diferido
 
-Commit del bloque de estados. El siguiente bloque de la primera PR es el acceso provisional al listado.
+Commit del bloque de acceso. El siguiente bloque de la primera PR es exigir departamento y equipo al guardar.

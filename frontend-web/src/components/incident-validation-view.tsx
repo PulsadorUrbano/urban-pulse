@@ -4,7 +4,7 @@ import { MapPin, CheckCircle2, Info, LogOut, AlertTriangle, RefreshCw } from 'lu
 import { PRIORITY_LABELS, STATUS_LABELS } from '../constants/incident-labels';
 import { canEditAssignment } from '../hooks/use-incident-assignment';
 import { useIncidentValidation } from '../hooks/use-incident-validation';
-import type { SessionUser } from '../types/user';
+import { isAdministrativeRole, type SessionUser } from '../types/user';
 import { AppHeader } from './app-header';
 import { IncidentAssignmentView } from './incident-assignment-view';
 import { IncidentGallery } from './incident-gallery';
@@ -32,7 +32,7 @@ export function IncidentValidationView({
   const { incident, loading, loadError, outcome, reset } = validation;
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [assignmentSaving, setAssignmentSaving] = useState(false);
-  const canAssign = user.source === 'backend' && (user.role === 'admin' || user.role === 'administrative');
+  const administrativeToken = user.source === 'backend' && isAdministrativeRole(user.role) ? token : null;
 
   if (loading) {
     return (
@@ -170,19 +170,21 @@ export function IncidentValidationView({
             </dl>
           </div>
 
-          {outcome && (
+          {administrativeToken && outcome && (
             <p role="status" className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
               <CheckCircle2 className="h-4 w-4" />
               {outcome === 'validated' ? 'Incidencia validada y prioridad guardada.' : 'Incidencia descartada.'}
             </p>
           )}
-          <fieldset disabled={assignmentSaving}>
-            <ResolutionForm incident={incident} validation={validation} />
-          </fieldset>
-          {token && canAssign && canEditAssignment(incident.status) && (
+          {administrativeToken && (
+            <fieldset disabled={assignmentSaving}>
+              <ResolutionForm incident={incident} validation={validation} />
+            </fieldset>
+          )}
+          {administrativeToken && canEditAssignment(incident.status) && (
             <IncidentAssignmentView
               incident={incident}
-              mode={{ token }}
+              mode={{ token: administrativeToken }}
               disabled={validation.submitting}
               onSaved={validation.setIncident}
               onSavingChange={setAssignmentSaving}

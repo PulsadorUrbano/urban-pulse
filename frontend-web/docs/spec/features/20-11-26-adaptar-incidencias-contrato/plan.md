@@ -8,7 +8,7 @@
 - **Herramientas.** React 19, Vite 8, TypeScript 5, Tailwind CSS 3 y Vitest 5.
 - **Especificación.** [Contrato y criterios de aceptación](./spec.md).
 - **Ramas propuestas.** `fix/compatibilidad-incidencias-web` para la primera PR y `feature/completar-asignaciones-web` para la segunda. Crear cada rama desde el `origin/dev` vigente cuando empiece su fase. Borrador preparado en la copia local de `dev`.
-- **Estado.** Primera PR en curso. Los estados nuevos del listado y el detalle están implementados y verificados con pruebas unitarias.
+- **Estado.** Primera PR en curso. Los estados nuevos y el acceso provisional al listado están implementados y comprobados con pruebas unitarias.
 
 ## Restricciones generales
 
@@ -40,10 +40,12 @@ Rutas relativas a la raíz del repositorio.
 | --- | --- | --- |
 | Modificar | `frontend-web/src/types/incident.ts`, `frontend-web/src/services/incident.service.ts`, `frontend-web/src/constants/incident-labels.ts` | Estados admitidos en listado, detalle y respuestas de guardado, con etiquetas en español |
 | Modificar | `frontend-web/src/App.tsx`, `frontend-web/src/components/incident-list-view.tsx`, `frontend-web/src/components/incident-validation-view.tsx` | Acceso provisional al listado, prioridad visible y acciones permitidas en el detalle |
+| Modificar | `frontend-web/src/types/user.ts` | Criterio compartido para los roles de administración |
 | Modificar | `frontend-web/src/hooks/use-incident-assignment.ts`, `frontend-web/src/components/incident-assignment-view.tsx`, `frontend-web/src/types/assignment.ts` | Selección completa, reasignación de reabiertas y comentarios opcionales |
 | Adaptar | `frontend-web/src/mocks/assignment-mock.ts` | Mismas reglas de selección y asignación en la demostración |
 | Reutilizar | `frontend-web/src/services/assignment.service.ts` | Catálogo, PATCH con JWT, validación de la respuesta y gestión de errores |
 | Actualizar | `frontend-web/src/__tests__/services/incident.service.test.ts`, `frontend-web/src/__tests__/services/assignment.service.test.ts`, `frontend-web/src/__tests__/hooks/use-incident-assignment.test.ts` | Cubrir cambios de contrato y reglas de selección |
+| Crear o actualizar | `frontend-web/src/__tests__/components/incident-list-view.test.tsx`, `frontend-web/src/__tests__/components/incident-validation-view.test.tsx` | Cubrir la carga del listado según el rol y las acciones visibles en el detalle |
 | Actualizar | Esta carpeta y la nota de sesión | Contrato, ejecución y resultados de la verificación |
 
 ## Preparación
@@ -65,8 +67,10 @@ Rutas relativas a la raíz del repositorio.
 
 ## Tarea 2. Aplicar el acceso provisional (primera PR)
 
-- [ ] Cargar el listado global solo para `admin` y `administrative`. Mostrar «El listado de incidencias está disponible para administración» al resto de perfiles municipales.
-- [ ] Verificar el uso del token en la consulta y que el aviso evita iniciar la petición global. Ajustar la visibilidad de las acciones de validación, descarte y prioridad a los perfiles autorizados y conservar los permisos del backend en el detalle.
+- [x] Cargar el listado global solo para `admin` y `administrative`. Mostrar «El listado de incidencias está disponible para administración» al resto de perfiles municipales.
+- [x] Comprobar que el cargador recibe el JWT de administración y que el resto de perfiles ve el aviso sin iniciar la petición global, mostrar datos ni ofrecer paginación. Limitar el formulario de validación, descarte y prioridad a sesiones administrativas y mantener el JWT de los demás perfiles al consultar su detalle permitido.
+
+**Verificación del bloque.** Cinco de los siete casos nuevos fallaron antes del cambio. Después pasaron las 73 pruebas, el typecheck, el lint, la compilación y `git diff --check`. Las pruebas de componentes usan renderizado estático y sustituyen los hooks. Sigue pendiente el recorrido con el backend de la #185.
 
 ## Tarea 3. Exigir departamento y equipo al guardar (primera PR)
 
@@ -122,7 +126,7 @@ Ejecutar en cada PR desde `frontend-web/` salvo la comprobación de Git.
 
 - **Estado final.** Implementación parcial.
 - **Fecha de revisión.** Pendiente.
-- **Resultado entregado.** Plan y especificación, lectura de los cuatro estados nuevos y prioridad visible en el detalle.
-- **Evidencia y comprobaciones.** El bloque de estados pasó las pruebas unitarias, el typecheck, el lint y la compilación. El detalle de esas comprobaciones figura en la tarea 1.
+- **Resultado entregado.** Plan y especificación, lectura de los cuatro estados nuevos, prioridad visible y acceso provisional al listado.
+- **Evidencia y comprobaciones.** Los bloques de estados y acceso pasaron las pruebas unitarias, el typecheck, el lint y la compilación. El detalle de esas comprobaciones figura en las tareas 1 y 2.
 - **Decisiones y desviaciones.** La compatibilidad web entra antes de la #185 y las funciones del contrato nuevo entran después, con commits individuales a cargo de Artina. Se han respetado los nombres de rama indicados por Artina.
-- **Limitaciones y pendientes.** Commit del bloque de estados, tareas 2 a 5 y prueba del flujo con el backend.
+- **Limitaciones y pendientes.** Commit del bloque de acceso, tareas 3 a 5 y prueba del flujo con el backend.
