@@ -26,3 +26,4 @@
 - Incorporar la protección de `GET /incidents` de la #170 conservando las reglas de asignación e historial de la #185. El acceso global es de `admin` y `administrative`; los demás roles autorizados solo pueden listar la identidad ciudadana que tienen vinculada.
 - Actualizar el mensaje y las pruebas del validador de estados. Mantener el modelo como referencia para las adaptaciones de la #192 (web) y la #193 (móvil).
 - Aplicar a los documentos de la #185 la organización por funcionalidad acordada en la #181 y recuperar el workflow de backend de la #167.
+- Verificación tras la revisión: [GitHub Actions](https://github.com/PulsadorUrbano/urban-pulse/actions/runs/44707147372) completó la instalación con lockfile congelado, la generación de Prisma, la compilación, el lint con tipos y las pruebas unitarias. Las pruebas del listado cubren filtros ajenos o ausentes, acceso global administrativo y consulta propia con perfil ciudadano y rol técnico.
