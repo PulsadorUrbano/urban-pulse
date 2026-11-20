@@ -16,10 +16,13 @@ interface AssignmentSelectProps {
   value: string | null;
   options: readonly { id: string; name: string }[];
   disabled: boolean;
+  requiredPlaceholder?: string;
   onChange: (id: string | null) => void;
 }
 
-function AssignmentSelect({ label, value, options, disabled, onChange }: AssignmentSelectProps) {
+function AssignmentSelect({ label, value, options, disabled, requiredPlaceholder, onChange }: AssignmentSelectProps) {
+  const required = requiredPlaceholder !== undefined;
+
   return (
     <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
       {label}
@@ -27,9 +30,10 @@ function AssignmentSelect({ label, value, options, disabled, onChange }: Assignm
         value={value ?? ''}
         onChange={(event) => onChange(event.target.value || null)}
         disabled={disabled}
+        required={required}
         className="mt-2 w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-900 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
       >
-        <option value="">Sin asignar</option>
+        <option value="" disabled={required}>{requiredPlaceholder ?? 'Sin asignar'}</option>
         {value && !options.some((item) => item.id === value) && <option value={value}>Fuera del catálogo</option>}
         {options.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
       </select>
@@ -86,10 +90,22 @@ export function IncidentAssignmentView({
             </p>
           )}
           <div className="mt-4 grid gap-4 sm:grid-cols-3 md:grid-cols-1 xl:grid-cols-3">
-            <AssignmentSelect label="Departamento" value={selection.departmentId} options={options.departments}
-              disabled={controlsDisabled} onChange={assignment.setDepartment} />
-            <AssignmentSelect label="Equipo" value={selection.teamId} options={assignment.teams}
-              disabled={controlsDisabled || !selection.departmentId} onChange={assignment.setTeam} />
+            <AssignmentSelect
+              label="Departamento"
+              value={selection.departmentId}
+              options={options.departments}
+              disabled={controlsDisabled}
+              requiredPlaceholder="Selecciona departamento"
+              onChange={assignment.setDepartment}
+            />
+            <AssignmentSelect
+              label="Equipo"
+              value={selection.teamId}
+              options={assignment.teams}
+              disabled={controlsDisabled || !selection.departmentId}
+              requiredPlaceholder="Selecciona equipo"
+              onChange={assignment.setTeam}
+            />
             <AssignmentSelect label="Técnico" value={selection.technicianId} options={assignment.technicians}
               disabled={controlsDisabled || !selection.teamId} onChange={assignment.setTechnician} />
           </div>

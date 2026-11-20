@@ -1,9 +1,19 @@
 // Contrato de datos de las incidencias, alineado con backend/src/incidents/incident.ts y con
 // frontend-mobile/src/types/incident.ts (IncidentDetail, CreatedIncidentImage, IncidentSummary).
 
-// Estados que el backend gestiona hoy (enum IncidentStatus de schema.prisma).
-// El backend también admite assigned; la asignación no cambia el estado automáticamente.
-export type IncidentStatus = 'reported' | 'validated' | 'rejected' | 'assigned';
+// Estados del ciclo de incidencias definidos por el backend.
+export const INCIDENT_STATUSES = [
+  'reported',
+  'validated',
+  'rejected',
+  'assigned',
+  'in_progress',
+  'resolved',
+  'reopened',
+  'closed',
+] as const;
+
+export type IncidentStatus = (typeof INCIDENT_STATUSES)[number];
 
 // Prioridades del backend (enum IncidentPriority). El móvil declara además `urgent`.
 export type IncidentPriority = 'low' | 'medium' | 'high';
