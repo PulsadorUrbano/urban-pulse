@@ -66,7 +66,7 @@ Ejecutadas desde frontend-web/ con Node 22.14.0.
 
 | Comprobación | Comando | Resultado real |
 | --- | --- | --- |
-| Tests | npm run test | 6 archivos, 74 pruebas correctas (14 nuevas) |
+| Tests | npm run test | 6 archivos, 76 pruebas correctas (16 nuevas) |
 | Typecheck | npm run typecheck | Sin errores |
 | Lint | npm run lint | Sin errores |
 | Build | npm run build | Correcto |
@@ -78,17 +78,18 @@ Ejecutadas desde frontend-web/ con Node 22.14.0.
 ## Confirmación de implementación
 
 - Estado final: Implementado con verificación pendiente.
-- Fecha de revisión: 2026-11-19.
+- Fecha de revisión: 2026-11-20.
 - Resultado entregado: filtros de estado, orden y rango de días en el listado del panel web.
 
 | Criterio de aceptación | Evidencia concreta | Resultado |
 | --- | --- | --- |
 | 1. Filtro por estado | Caso «filtra por estado» | Cumplido |
 | 2. Orden inverso y desempate | Casos «ordena de más antigua a más reciente» y «desempata por id» | Cumplido |
-| 3. Rango de días | Casos de día completo, rangos abiertos e invertidos | Cumplido |
-| 4. Aviso de resultado parcial | Bloque «resultado parcial al filtrar sobre páginas cargadas» | Cumplido |
+| 3. Rango de días | Casos de día completo, rangos abiertos e invertidos, y `withDateRange` para los calendarios | Cumplido |
+| 4. Aviso de resultado parcial | Bloque «resultado parcial al filtrar sobre páginas cargadas»; texto con «Reintentar» si falla la carga | Cumplido |
 | 5. Limpiar y valores desconocidos | Caso «interpreta los valores de los controles»; `reset` vuelve a `DEFAULT_INCIDENT_FILTERS` | Cumplido |
 
 - Comprobaciones: ver la tabla anterior.
 - Decisiones y desviaciones: los filtros se aplican en el navegador, como decidió el usuario, hasta que exista #44.
+- Correcciones tras la revisión de la #198 (artina09, 2026-11-20): los calendarios guardan el rango ya ordenado con `withDateRange` en lugar de mostrar las fechas invertidas, y el aviso de resultado parcial remite a «Reintentar» cuando falla «Cargar más».
 - Limitaciones y pendientes: falta la prueba manual en navegador con el backend levantado. Con estado u orden inverso el resultado solo cubre lo cargado, y la interfaz lo avisa. Cuando el backend filtre (#44), `useIncidentFilters` debe enviar los filtros y reiniciar la paginación.

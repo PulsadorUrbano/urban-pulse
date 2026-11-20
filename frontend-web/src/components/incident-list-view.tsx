@@ -65,7 +65,9 @@ export function IncidentListView({
           <div className="mb-4 p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 rounded-xl flex items-start gap-2.5 text-amber-800 dark:text-amber-300 text-xs">
             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
             <p className="font-semibold">
-              Los filtros solo se aplican a las incidencias cargadas. Pulsa «Cargar más» para completar el resultado.
+              {error
+                ? 'Los filtros solo se aplican a las incidencias cargadas. Pulsa «Reintentar» para seguir cargando.'
+                : 'Los filtros solo se aplican a las incidencias cargadas. Pulsa «Cargar más» para completar el resultado.'}
             </p>
           </div>
         )}

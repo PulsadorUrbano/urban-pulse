@@ -25,8 +25,14 @@ export function hasActiveFilters(filters: IncidentListFilters): boolean {
   return filters.status !== 'all' || filters.order !== 'newest' || filters.from !== null || filters.to !== null;
 }
 
-// Límites del rango en milisegundos. Si `from` es posterior a `to` se intercambian, así el rango nunca queda vacío
-// por el orden en que se rellenan los calendarios.
+// Guarda el rango ordenado: si `from` queda posterior a `to` se intercambian, para que los calendarios muestren
+// el mismo rango que se aplica. Un valor vacío del <input type="date"> deja ese extremo abierto.
+export function withDateRange(filters: IncidentListFilters, from: string, to: string): IncidentListFilters {
+  const [first, last] = from && to && from > to ? [to, from] : [from, to];
+  return { ...filters, from: first || null, to: last || null };
+}
+
+// Límites del rango en milisegundos. También ordena los extremos por si los filtros no pasaron por withDateRange.
 function rangeBounds({ from, to }: IncidentListFilters): { start: number; end: number } {
   const [first, last] = from && to && from > to ? [to, from] : [from, to];
   return {

@@ -8,6 +8,7 @@ import {
   isFilterResultPartial,
   parseSortOrder,
   parseStatusFilter,
+  withDateRange,
 } from '../../utils/incident-filters';
 
 // Fechas en hora local, como las que genera <input type="date">.
@@ -57,6 +58,21 @@ describe('filtros del listado de incidencias', () => {
 
   it('intercambia desde y hasta si llegan invertidos', () => {
     expect(ids(applyIncidentFilters(ITEMS, filters({ from: '2026-11-18', to: '2026-11-17' })))).toEqual(['d', 'c', 'b']);
+  });
+
+  it('guarda el rango ordenado para que los calendarios muestren lo que se aplica', () => {
+    expect(withDateRange(DEFAULT_INCIDENT_FILTERS, '2026-11-20', '2026-11-15')).toMatchObject({
+      from: '2026-11-15', to: '2026-11-20',
+    });
+    expect(withDateRange(DEFAULT_INCIDENT_FILTERS, '2026-11-15', '2026-11-20')).toMatchObject({
+      from: '2026-11-15', to: '2026-11-20',
+    });
+  });
+
+  it('deja abierto el extremo vacío y conserva el resto de filtros', () => {
+    const current = filters({ status: 'assigned', order: 'oldest', from: '2026-11-15', to: '2026-11-20' });
+    expect(withDateRange(current, '', '2026-11-20')).toEqual({ ...current, from: null });
+    expect(withDateRange(current, '2026-11-15', '')).toEqual({ ...current, to: null });
   });
 
   it('combina estado, rango y orden', () => {

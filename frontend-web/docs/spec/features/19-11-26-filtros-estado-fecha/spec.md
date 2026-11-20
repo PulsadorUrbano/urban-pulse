@@ -5,7 +5,7 @@
 - Modelo de IA que creó la especificación: Claude Opus 5.5 (claude-opus-5-5).
 
 - Rama: feature/173-filtros-estado-fecha-frontend-web.
-- Última actualización: 2026-11-19.
+- Última actualización: 2026-11-20.
 - Estado: implementado y verificado con pruebas unitarias; prueba manual en navegador pendiente.
 - Plan: [Plan de implementación](./plan.md#confirmación-de-implementación).
 - Referencias: issue #173 (filtros del dashboard), sub-issues #194 (estado) y #195 (fecha), issue #44 (filtrado en el backend) y ADR 0002.
@@ -20,7 +20,7 @@ El personal municipal necesita encontrar rápido las incidencias que tiene que t
   - Los filtros se aplican en el navegador sobre las páginas ya cargadas, porque `GET /incidents` todavía no filtra (#44). El usuario decidió no tocar el backend.
   - Cuando el resultado puede estar incompleto se muestra un aviso y el usuario puede seguir con «Cargar más».
   - Como el backend devuelve las incidencias de más reciente a más antigua, un rango cuyo inicio es posterior a la incidencia más antigua cargada ya está completo y no muestra el aviso.
-  - Los días se interpretan en hora local, de 00:00:00 a 23:59:59.999. Si «Desde» es posterior a «Hasta» se intercambian.
+  - Los días se interpretan en hora local, de 00:00:00 a 23:59:59.999. Si «Desde» es posterior a «Hasta» se intercambian, también en los calendarios, para que muestren el rango aplicado.
 - Suposiciones por validar: ninguna.
 - Fuera de alcance: filtros en el backend (#44), prioridad, categoría y ubicación, persistir los filtros en la URL y cambios en `backend/` o `frontend-mobile/`.
 
@@ -73,8 +73,8 @@ No aplica: el listado no tiene mock y esta feature no lo añade.
 
 1. Elegir un estado muestra solo las incidencias cargadas con ese estado.
 2. El orden «Más antiguas primero» invierte el orden y desempata por id.
-3. Un rango de días incluye los dos extremos completos; un rango abierto por un lado también funciona, y uno invertido se corrige.
-4. Si quedan páginas por cargar y el resultado puede estar incompleto, se muestra el aviso; si el rango ya está cubierto, no.
+3. Un rango de días incluye los dos extremos completos; un rango abierto por un lado también funciona, y uno invertido se corrige también en los calendarios.
+4. Si quedan páginas por cargar y el resultado puede estar incompleto, se muestra el aviso; si el rango ya está cubierto, no. Si falla la carga de la página siguiente, el aviso remite a «Reintentar».
 5. «Limpiar filtros» vuelve al estado inicial y los valores desconocidos de los controles caen en el valor por defecto.
 
 ## Estrategia de verificación

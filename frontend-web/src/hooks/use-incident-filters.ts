@@ -8,6 +8,7 @@ import {
   isFilterResultPartial,
   parseSortOrder,
   parseStatusFilter,
+  withDateRange,
 } from '../utils/incident-filters';
 
 // Filtros del listado aplicados sobre las páginas ya cargadas. Cuando GET /incidents acepte filtros (#44),
@@ -23,8 +24,8 @@ export function useIncidentFilters(items: readonly IncidentSummary[], hasMore: b
     isPartial: isFilterResultPartial(items, filters, hasMore),
     setStatus: (value: string) => setFilters((current) => ({ ...current, status: parseStatusFilter(value) })),
     setOrder: (value: string) => setFilters((current) => ({ ...current, order: parseSortOrder(value) })),
-    setFrom: (value: string) => setFilters((current) => ({ ...current, from: value || null })),
-    setTo: (value: string) => setFilters((current) => ({ ...current, to: value || null })),
+    setFrom: (value: string) => setFilters((current) => withDateRange(current, value, current.to ?? '')),
+    setTo: (value: string) => setFilters((current) => withDateRange(current, current.from ?? '', value)),
     reset: () => setFilters(DEFAULT_INCIDENT_FILTERS),
   };
 }
