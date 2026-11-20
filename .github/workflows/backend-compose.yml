@@ -1,0 +1,43 @@
+name: Backend - arranque con Compose
+
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'docker-compose.yml'
+      - '.env.example'
+      - '.github/workflows/backend-compose.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  arranque:
+    name: Arrancar la imagen final con PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Obtener el repositorio
+        uses: actions/checkout@v6
+      - name: Construir y arrancar el backend
+        run: |
+          cp .env.example .env
+          sed -i 's/^DB_SYNC=.*/DB_SYNC=deploy/' .env
+          docker compose up --detach --build backend
+      - name: Comprobar el catálogo y la categoría opcional
+        run: |
+          curl --silent --show-error --fail --retry 30 --retry-delay 2 \
+            --retry-all-errors --max-time 5 http://localhost:3000/categories |
+            jq -e 'type == "array" and length > 0 and all(.[]; (.id | type == "string") and (.name | type == "string"))'
+
+          nullable=$(docker compose exec -T database psql --username postgres --dbname urbanpulse_db \
+            --no-align --tuples-only --set ON_ERROR_STOP=1 \
+            --command "SELECT is_nullable FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'Incident' AND column_name = 'categoryId'")
+          test "$nullable" = YES
+      - name: Mostrar los logs si falla la prueba
+        if: failure()
+        run: docker compose logs --no-color database backend
+      - name: Detener Compose
+        if: always()
+        run: docker compose down
