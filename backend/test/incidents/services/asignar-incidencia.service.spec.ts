@@ -114,6 +114,26 @@ describe('Asignación auditada', () => {
       expect.objectContaining({ nuevoEstado: 'assigned' }),
     ]);
   });
+  it('audita la asignación sin comentarios adicionales', async () => {
+    const p = preparar();
+    const respuesta = await p.servicio.asignar(
+      tecnico,
+      { technicianId: tecnico },
+      operador,
+    );
+
+    expect(respuesta.status).toBe('assigned');
+    expect(p.historial).toEqual([
+      expect.objectContaining({ actorId: tecnico, motivo: null }),
+    ]);
+    expect(p.estados).toEqual([
+      expect.objectContaining({
+        nuevoEstado: 'assigned',
+        motivo: 'Asignación de incidencia',
+      }),
+    ]);
+  });
+
   it('revierte asignación si falla el historial', async () => {
     const p = preparar();
     p.prisma.cambioAsignacion.create.mockRejectedValueOnce(new Error('Fallo'));

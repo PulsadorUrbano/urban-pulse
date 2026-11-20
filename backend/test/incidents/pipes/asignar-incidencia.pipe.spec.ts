@@ -12,6 +12,8 @@ describe('AsignarIncidenciaPipe', () => {
     [],
     { status: 'assigned' },
     { teamId: 1 },
+    { cause: 'Solo comentarios' },
+    { teamId: id, cause: 1 },
     { technicianId: 'mal' },
     { departmentId: undefined },
   ])('rechaza cuerpo inválido %j', async (entrada) => {
@@ -20,10 +22,17 @@ describe('AsignarIncidenciaPipe', () => {
     );
   });
 
+  it.each([{ teamId: id }, { teamId: id, cause: '   ' }])(
+    'admite una asignación sin comentarios adicionales: %j',
+    async (entrada) => {
+      await expect(pipe.transform(entrada)).resolves.toEqual({ teamId: id });
+    },
+  );
+
   it('admite un subconjunto de UUID y null y normaliza los UUID', async () => {
     await expect(
       pipe.transform({
-        cause: 'Revisada',
+        cause: '  Revisada  ',
         departmentId: id.toUpperCase(),
         technicianId: null,
       }),

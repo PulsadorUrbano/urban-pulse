@@ -359,8 +359,7 @@ export class IncidentsService {
     cambio: CambioAsignacionIncidencia,
     usuario: UsuarioIncidencias,
   ): Promise<Incident> {
-    if (!cambio.cause?.trim())
-      throw new BadRequestException('El motivo es obligatorio');
+    const comentarios = cambio.cause?.trim() || null;
     const id = idIncidencia.toLowerCase();
     let resultado: IncidenciaConAgregado | null;
     try {
@@ -474,7 +473,7 @@ export class IncidentsService {
           data: {
             incidenciaId: id,
             actorId: usuario.id,
-            motivo: cambio.cause.trim(),
+            motivo: comentarios,
             departamentoAnteriorId: actual.departmentId,
             equipoAnteriorId: actual.teamId,
             tecnicoAnteriorId: actual.technicianId,
@@ -489,7 +488,7 @@ export class IncidentsService {
               incidenciaId: id,
               actorId: usuario.id,
               nuevoEstado: 'assigned',
-              motivo: cambio.cause.trim(),
+              motivo: comentarios ?? 'Asignación de incidencia',
             },
           });
         return tx.incident.findUnique({

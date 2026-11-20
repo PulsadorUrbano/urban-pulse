@@ -29,22 +29,23 @@ La pertenencia vigente no es el historial. Para cambiar de equipo hay que retira
 | closed | reopened | administración |
 | reopened | assigned | administración o departamento propio, mediante asignación completa |
 
-rejected es terminal. Todas las operaciones requieren motivo. La resolución usa cause para describir la actuación.
+rejected es terminal. Los cambios explícitos de estado requieren motivo. La resolución usa cause para describir la actuación.
 assigned exige departamento y equipo; el técnico es opcional hasta el comienzo de la intervención.
 Las reasignaciones de assigned conservan el estado. No se permite reasignar mientras hay trabajo en curso.
 El alta registra reported en el historial. Estado e historial se escriben atómicamente con comprobación optimista de concurrencia.
 
 ## Historial de asignaciones y conservación
 
-assignment_changes guarda incidencia, actor autenticado, motivo, fecha y UUID de departamento, equipo y técnico anteriores y nuevos.
+assignment_changes guarda incidencia, actor autenticado, comentarios adicionales opcionales, fecha y UUID de departamento, equipo y técnico anteriores y nuevos.
 Las referencias históricas apuntan a usuarios y catálogos, no a la membresía actual. Una retirada de membresía no borra la auditoría.
-Cada PATCH /incidents/:id/assignment exige cause y registra el cambio dentro de la misma transacción. La primera asignación y la reasignación tras reapertura también registran assigned.
+Cada PATCH /incidents/:id/assignment registra el cambio dentro de la misma transacción y admite cause como texto opcional. La primera asignación y la reasignación tras reapertura también registran assigned, con un motivo automático si se omiten los comentarios.
 GET /incidents/:id/assignments devuelve el historial cronológico, protegido por el ámbito del detalle, solo para roles municipales.
 Las incidencias se conservan permanentemente. Los historiales son inmutables; no se inventa auditoría para asignaciones anteriores a la migración.
 
 ## Migración y límites
 
 20261118000000_close_model se aplica después de model_integrity. Se detiene ante categorías o ubicaciones ausentes y usuarios con varios equipos. No rellena ubicaciones ficticias ni elimina incidencias.
+La migración 20261120000000_comentarios_asignacion_opcionales permite guardar asignaciones sin comentarios y conserva las entradas históricas.
 La ubicación obligatoria se protege mediante triggers diferidos al commit para permitir el alta anidada de Prisma; por eso la relación inversa se expresa como opcional en Prisma.
 Los permisos se verifican en la API; la base de datos protege referencias, transiciones y conservación.
 El contexto urbano conserva sus campos opcionales; demography admite solo valores no negativos. Su vocabulario detallado no se define en este cambio.

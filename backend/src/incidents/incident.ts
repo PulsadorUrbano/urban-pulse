@@ -55,7 +55,7 @@ export interface Incident {
 
 export type CambioAsignacionIncidencia = Partial<
   Pick<Incident, 'departmentId' | 'teamId' | 'technicianId'>
-> & { cause: string };
+> & { cause?: string };
 
 export interface OpcionesAsignacion {
   departments: { id: string; name: string }[];

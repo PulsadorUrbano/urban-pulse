@@ -275,7 +275,7 @@ model CambioAsignacion {
   equipoNuevo            Team?       @relation("EquipoNuevo", fields: [equipoNuevoId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   tecnicoNuevoId         String?     @db.Uuid
   tecnicoNuevo           users?      @relation("TecnicoNuevo", fields: [tecnicoNuevoId], references: [id], onDelete: Restrict, onUpdate: NoAction)
-  motivo                 String
+  motivo                 String?
   fechaCreacion          DateTime    @default(now()) @db.Timestamptz(3)
 
   @@index([incidenciaId, fechaCreacion, id])

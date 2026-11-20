@@ -183,7 +183,7 @@ CREATE TABLE "assignment_changes" (
     "departamentoNuevoId" UUID,
     "equipoNuevoId" UUID,
     "tecnicoNuevoId" UUID,
-    "motivo" TEXT NOT NULL,
+    "motivo" TEXT,
     "fechaCreacion" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "assignment_changes_pkey" PRIMARY KEY ("id")

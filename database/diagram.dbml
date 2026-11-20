@@ -179,7 +179,7 @@ Table assignment_changes {
   departamentoNuevoId uuid
   equipoNuevoId uuid
   tecnicoNuevoId uuid
-  motivo varchar [not null]
+  motivo varchar
   fechaCreacion timestamp [not null]
 }
 

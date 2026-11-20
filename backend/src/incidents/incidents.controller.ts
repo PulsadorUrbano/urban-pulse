@@ -563,10 +563,13 @@ export class IncidentsController {
     schema: {
       type: 'object',
       additionalProperties: false,
-      minProperties: 2,
-      required: ['cause'],
+      anyOf: [
+        { required: ['departmentId'] },
+        { required: ['teamId'] },
+        { required: ['technicianId'] },
+      ],
       properties: {
-        cause: { type: 'string', minLength: 1 },
+        cause: { type: 'string', description: 'Comentarios adicionales' },
         departmentId: { type: 'string', format: 'uuid', nullable: true },
         teamId: { type: 'string', format: 'uuid', nullable: true },
         technicianId: { type: 'string', format: 'uuid', nullable: true },
