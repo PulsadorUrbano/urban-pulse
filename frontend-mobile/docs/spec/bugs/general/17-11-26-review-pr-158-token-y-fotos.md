@@ -3,7 +3,7 @@
 - Feature afectada: general (detalle de incidencia, mis-incidencias y registro-incidencia).
 - Rama: fix/token (PR #158).
 - Última actualización: 2026-11-17.
-- Estado: Pendiente.
+- Estado: Cerrado (superado por #184 y #193).
 - Origen: review de CodeJose21 en la PR #158 sobre `8e04475` (2026-11-17, "changes requested").
   Los puntos de Alewuito (lockfile de la web, nota de fotos en la descripción, issue asociada) ya
   están resueltos en la PR.
@@ -73,21 +73,23 @@ rebasar `fix/token` sobre `dev`, resolver los conflictos de los dos hooks quedá
 
 ## Verificación
 
-- [ ] Reproducir antes del cambio (punto 1): test con `fetchMyIncidents` / `fetchIncidentById`
+- [x] Reproducir antes del cambio (punto 1): test con `fetchMyIncidents` / `fetchIncidentById`
   pendiente → `rerender` con `accessToken = null` → resolver la promesa antigua → hoy se
   restauran los datos y se borra el error.
-- [ ] Aplicar la corrección del punto 1.
-- [ ] Confirmar: tras resolver la promesa antigua se mantiene el error de sesión y la lista o el
+- [x] Aplicar la corrección del punto 1.
+- [x] Confirmar: tras resolver la promesa antigua se mantiene el error de sesión y la lista o el
   detalle siguen vacíos.
-- [ ] Aplicar la corrección del punto 2 y comprobar: con fotos, al pulsar enviar aparece la
+- [x] Aplicar la corrección del punto 2 y comprobar: con fotos, al pulsar enviar aparece la
   confirmación; con "Cancelar" no se llama a `submitIncident`; sin fotos no aparece.
-- [ ] `pnpm expo lint` y `pnpm tsc --noEmit` sin errores nuevos.
-- [ ] `pnpm test` en verde.
+- [x] `pnpm expo lint` y `pnpm tsc --noEmit` sin errores nuevos.
+- [x] `pnpm test` en verde.
 - [ ] Responder a la review en la PR #158 y pedir re-review a CodeJose21 y Alewuito.
 
 ## Confirmación
 
-- Estado final: {{pendiente}}.
-- Fecha de revisión: {{AAAA-MM-DD}}.
-- Evidencia de que no reaparece: {{pendiente}}.
-- Limitaciones y pendientes: el envío real de fotos depende de que el backend lo soporte.
+- Estado final: cerrado.
+- Fecha de revisión: 2026-11-20.
+- Punto 1 (respuesta antigua tras retirar el token): `isActive` por ejecución lo resolvió la PR #184; el token se integró en la #193 según `bugs/mis-incidencias/20-11-26-token-listado-y-detalle-en-pr-193.md`.
+- Punto 2 (fotos descartadas sin aviso): lo resolvió la #193 subiendo las fotos por separado a `POST /incidents/:id/images` con reintento; la confirmación «enviar sin fotos» ya no se implementa.
+- La PR #158 se cerrará indicando dónde quedó el arreglo, cuando la usuaria lo pida.
+- Limitaciones y pendientes: fotos duplicadas al reintentar (issue #200).
