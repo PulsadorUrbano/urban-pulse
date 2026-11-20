@@ -8,7 +8,7 @@
 - **Herramientas.** React 19, Vite 8, TypeScript 5, Tailwind CSS 3 y Vitest 5.
 - **Especificación.** [Contrato y criterios de aceptación](./spec.md).
 - **Ramas de trabajo.** `fix/compatibilidad-incidencias-web` para la primera PR y `feature/completar-asignaciones-web` para la segunda. El trabajo local de la segunda parte provisionalmente de la #201 (`3792cc2`). Antes de publicar, trasladar sus commits al `origin/dev` que incluya la #185.
-- **Estado.** Primera PR abierta como #201. Reasignación de reabiertas implementada en la segunda rama. Quedan pendientes los comentarios opcionales y la prueba del flujo con el backend.
+- **Estado.** Primera PR abierta como #201. Reasignación de reabiertas y comentarios opcionales implementados en la segunda rama. Queda pendiente la prueba del flujo con el backend.
 
 ## Restricciones generales
 
@@ -90,9 +90,11 @@ Rutas relativas a la raíz del repositorio.
 
 ## Tarea 5. Añadir «Comentarios adicionales» (segunda PR)
 
-- [ ] Añadir el campo opcional debajo de los desplegables y dar soporte a `cause?: string` en `AssignmentPatch`.
-- [ ] Enviar el texto recortado junto con la asignación. Omitir `cause` si está vacío o solo contiene espacios. Mantener el requisito de al menos un identificador de asignación en el PATCH.
-- [ ] Verificar el cuerpo con y sin comentario, la conservación del borrador ante un error 400, 403 o 409 y su limpieza tras guardar. Mantener la justificación obligatoria del cambio de estado y de prioridad en sus propias peticiones.
+- [x] Añadir el campo opcional debajo de los desplegables y dar soporte a `cause?: string` en `AssignmentPatch`.
+- [x] Enviar el texto recortado junto con la asignación. Omitir `cause` si está vacío o solo contiene espacios. Mantener el requisito de al menos un identificador de asignación en el PATCH.
+- [x] Mantener el borrador ante un rechazo del guardado y limpiarlo tras guardar correctamente. Conservar la justificación obligatoria del cambio de estado y de prioridad en sus propias peticiones.
+
+**Verificación del bloque.** Cuatro comprobaciones fallaron antes del cambio. Después pasaron las 86 pruebas en 9 archivos, el typecheck, el lint y la compilación. Las pruebas cubren el campo opcional, el cuerpo con y sin `cause` y el rechazo de un parche con solo comentarios en la web y la demo. Una comprobación del hook con respuestas simuladas confirmó que conserva el texto ante 400, 403 y 409 y lo limpia cuando el guardado se confirma. La prueba con el backend de la #185 sigue pendiente.
 
 ## Puntos de commit
 
@@ -130,9 +132,9 @@ Ejecutar en cada PR desde `frontend-web/` salvo la comprobación de Git.
 
 ## Confirmación de implementación
 
-- **Estado final.** Primera PR implementada con prueba real pendiente. Segunda PR en curso con la reasignación de reabiertas implementada.
+- **Estado final.** Ambas fases implementadas con prueba real pendiente. La segunda sigue en su rama local.
 - **Fecha de revisión.** 2026-11-20.
 - **Resultado entregado.** Plan y especificación, lectura de los cuatro estados nuevos, prioridad visible, acceso provisional al listado y selección de departamento y equipo obligatoria para guardar.
 - **Evidencia y comprobaciones.** Los estados y la prioridad se comprobaron con pruebas del servicio y del detalle. El acceso se comprobó por rol y la asignación se comprobó en el formulario, la demo y los validadores de los dos contratos. La rama completa pasó las comprobaciones indicadas arriba.
 - **Decisiones y desviaciones.** La compatibilidad web entra antes de la #185 y las funciones del contrato nuevo entran después, con commits individuales a cargo de Artina. Se han respetado los nombres de rama indicados por Artina.
-- **Limitaciones y pendientes.** Tarea 5 de la segunda PR, traslado de la rama al `dev` que incluya la #185 y prueba del flujo con el backend. El selector de estados se coordinará al integrar la #198.
+- **Limitaciones y pendientes.** Traslado de la segunda rama al `dev` que incluya la #185 y prueba del flujo con el backend. El selector de estados se coordinará al integrar la #198.

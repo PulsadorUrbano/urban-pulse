@@ -1,5 +1,5 @@
 import { resolveBackendApiUrl } from '../constants/config';
-import type { AssignmentOptions, AssignmentPatch } from '../types/assignment';
+import { hasAssignmentFields, type AssignmentOptions, type AssignmentPatch } from '../types/assignment';
 import type { IncidentDetail } from '../types/incident';
 import {
   bearerHeader,
@@ -67,7 +67,7 @@ export async function fetchAssignmentOptions(token: string): Promise<AssignmentO
 }
 
 export async function saveBackendAssignment(id: string, patch: AssignmentPatch, token: string): Promise<IncidentDetail> {
-  if (Object.keys(patch).length === 0) throw new Error('Selecciona un cambio antes de guardar.');
+  if (!hasAssignmentFields(patch)) throw new Error('Selecciona un cambio antes de guardar.');
   const response = await request(`${endpoint()}/${encodeURIComponent(id)}/assignment`, {
     method: 'PATCH',
     headers: { ...bearerHeader(token), 'Content-Type': 'application/json' },
@@ -92,7 +92,7 @@ export async function startDemoAssignment(): Promise<{ incident: IncidentDetail;
 
 export async function saveDemoAssignment(patch: AssignmentPatch): Promise<IncidentDetail> {
   if (!import.meta.env.DEV) throw new Error('La demostración solo está disponible en desarrollo.');
-  if (Object.keys(patch).length === 0) throw new Error('Selecciona un cambio antes de guardar.');
+  if (!hasAssignmentFields(patch)) throw new Error('Selecciona un cambio antes de guardar.');
   const demo = await import('../mocks/assignment-mock');
   return demo.saveMockAssignment(patch);
 }

@@ -7,6 +7,7 @@ import {
   fetchAssignmentOptions,
   isAssignmentOptions,
   saveBackendAssignment,
+  saveDemoAssignment,
   startDemoAssignment,
 } from '../../services/assignment.service';
 import { BackendContractError } from '../../services/http';
@@ -60,11 +61,29 @@ describe('assignment.service', () => {
     expect(JSON.parse(init.body)).toEqual({ departmentId: null });
   });
 
-  it('no envía un parche vacío', async () => {
+  it('no envía un parche vacío o compuesto solo por comentarios', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
     await expect(saveBackendAssignment(MOCK_INCIDENT_ID, {}, TOKEN)).rejects.toThrow('Selecciona un cambio');
+    await expect(saveBackendAssignment(MOCK_INCIDENT_ID, { cause: 'Solo comentarios' }, TOKEN))
+      .rejects.toThrow('Selecciona un cambio');
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('admite una asignación con comentarios en el cuerpo JSON', async () => {
+    const { departmentId, id: teamId } = options.teams[0];
+    const patch = { departmentId, teamId, cause: 'Revisar por la mañana' };
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, { ...incident, departmentId, teamId }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await saveBackendAssignment(incident.id, patch, TOKEN);
+    expect(fetchMock).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ body: JSON.stringify(patch) }));
+  });
+
+  it('exige un campo de asignación al enviar comentarios en la demo', async () => {
+    vi.stubEnv('DEV', true);
+
+    await expect(saveDemoAssignment({ cause: 'Solo comentarios' })).rejects.toThrow('Selecciona un cambio');
   });
 
   it('envía el equipo actual en una reasignación y devuelve la incidencia asignada del servidor', async () => {

@@ -53,6 +53,24 @@ describe('selección jerárquica de asignación', () => {
     expect(buildAssignmentPatch({ ...reopened, status: 'assigned' }, selection)).toEqual({});
   });
 
+  it('recorta los comentarios y los adjunta a una asignación o reasignación', () => {
+    const selection = { departmentId, teamId, technicianId: null };
+    const reopened = { ...incident, ...selection, status: 'reopened' as const };
+
+    expect(buildAssignmentPatch(incident, selection, '  Revisar por la mañana  ')).toEqual({
+      departmentId, teamId, cause: 'Revisar por la mañana',
+    });
+    expect(buildAssignmentPatch(reopened, selection, '  Mismo equipo  ')).toEqual({ teamId, cause: 'Mismo equipo' });
+  });
+
+  it('omite los comentarios vacíos y no genera un parche que solo tenga comentarios', () => {
+    const selection = { departmentId, teamId, technicianId: null };
+    const assigned = { ...incident, ...selection, status: 'assigned' as const };
+
+    expect(buildAssignmentPatch(incident, selection, ' \n ')).toEqual({ departmentId, teamId });
+    expect(buildAssignmentPatch(assigned, selection, 'Solo un comentario')).toEqual({});
+  });
+
   it('exige departamento y equipo y admite una asignación sin técnico', () => {
     const selection = { departmentId, teamId, technicianId };
 

@@ -29,6 +29,7 @@ Preparar el plan y la especificación, adaptar el panel a los estados nuevos, ap
 | `src/App.tsx`, `src/types/user.ts`, `src/components/incident-list-view.tsx` | Acceso al listado y criterio compartido para administración |
 | `src/hooks/use-incident-assignment.ts`, `src/components/incident-assignment-view.tsx`, `src/mocks/assignment-mock.ts` | Selección completa para guardar, técnico opcional y misma regla en la demo |
 | `src/types/assignment.ts`, `src/hooks/use-incident-assignment.ts`, `src/components/incident-validation-view.tsx`, `src/mocks/assignment-mock.ts`, `src/__tests__/` | Regla compartida para editar reabiertas, guardado con el equipo actual y estado `assigned` al guardar en la demo |
+| `src/components/incident-assignment-view.tsx`, `src/hooks/use-incident-assignment.ts`, `src/services/assignment.service.ts`, `src/types/assignment.ts`, `src/__tests__/` | Campo «Comentarios adicionales», borrador durante la edición y cuerpo PATCH con `cause` opcional |
 
 ## Checklist de la sesión
 
@@ -47,8 +48,9 @@ Preparar el plan y la especificación, adaptar el panel a los estados nuevos, ap
 - [x] Revisar el diff de la primera PR, repetir las comprobaciones automatizadas y contrastar los cuerpos de asignación con los validadores de `dev` y de la #185.
 - [x] Abrir la primera PR web para revisión (#201).
 - [x] Implementar y comprobar la reasignación de reabiertas, incluida la asignación al equipo actual.
-- [ ] Hacer el commit de reasignación.
-- [ ] Implementar y comprobar los comentarios opcionales.
+- [x] Hacer el commit de reasignación (`4d0d053`).
+- [x] Implementar y comprobar el campo opcional y los cuerpos con y sin comentario.
+- [ ] Hacer el commit de comentarios opcionales.
 
 ## Documentos actualizados
 
@@ -60,6 +62,8 @@ La rama completa pasó las 76 pruebas unitarias, el typecheck, el lint, la compi
 
 El bloque de reasignación pasó las 81 pruebas unitarias, el typecheck, el lint, la compilación y `git diff --check`. El mismo equipo se conserva al reasignar una reabierta y un rechazo del servidor se presenta como error de guardado. La prueba del recorrido real sigue pendiente.
 
+El bloque de comentarios adicionales pasó las 86 pruebas unitarias, el typecheck, el lint y la compilación. Las pruebas cubren el campo opcional, el recorte de espacios, la omisión de `cause` vacío y el rechazo de un parche con solo comentarios. Con respuestas simuladas, el hook conservó el borrador ante 400, 403 y 409 y lo limpió tras guardar.
+
 ## Pendiente / diferido
 
-Revisión de la #201, comentarios opcionales, actualización de la base de la segunda rama y prueba del flujo con el backend.
+Revisión de la #201, actualización de la base de la segunda rama y prueba del flujo con el backend.
