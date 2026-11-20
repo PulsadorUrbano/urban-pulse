@@ -50,7 +50,9 @@ Preparar el plan y la especificación, adaptar el panel a los estados nuevos, ap
 - [x] Implementar y comprobar la reasignación de reabiertas, incluida la asignación al equipo actual.
 - [x] Hacer el commit de reasignación (`4d0d053`).
 - [x] Implementar y comprobar el campo opcional y los cuerpos con y sin comentario.
-- [ ] Hacer el commit de comentarios opcionales.
+- [x] Hacer el commit de comentarios opcionales (`b120e76`).
+- [x] Verificar la rama completa y contrastar sus peticiones con el código de la #185.
+- [ ] Trasladar la rama al `dev` que incluya la #185 y comprobar el flujo antes de publicar.
 
 ## Documentos actualizados
 
@@ -63,6 +65,8 @@ La rama completa pasó las 76 pruebas unitarias, el typecheck, el lint, la compi
 El bloque de reasignación pasó las 81 pruebas unitarias, el typecheck, el lint, la compilación y `git diff --check`. El mismo equipo se conserva al reasignar una reabierta y un rechazo del servidor se presenta como error de guardado. La prueba del recorrido real sigue pendiente.
 
 El bloque de comentarios adicionales pasó las 86 pruebas unitarias, el typecheck, el lint y la compilación. Las pruebas cubren el campo opcional, el recorte de espacios, la omisión de `cause` vacío y el rechazo de un parche con solo comentarios. Con respuestas simuladas, el hook conservó el borrador ante 400, 403 y 409 y lo limpió tras guardar.
+
+Con los dos commits de la segunda rama, las 86 pruebas, el typecheck, el lint, la compilación y `git diff --check` volvieron a pasar. El validador y el servicio de la #185 (`bde5326`), ejecutados con dobles de NestJS y Prisma, confirmaron el estado `assigned` y el comentario opcional en el historial. El backend local seguía inactivo.
 
 ## Pendiente / diferido
 
