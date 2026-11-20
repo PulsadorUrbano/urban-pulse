@@ -44,7 +44,7 @@ Configura el entorno y prepara la base de datos antes del arranque. El ejemplo d
 pnpm exec prisma generate --config prisma7.config.ts
 ```
 
-Los scripts `start`, `start:dev` y `build` generan el cliente Prisma con `prisma7.config.ts`. La imagen Docker lo genera durante el build y arranca con `pnpm run start:prod`.
+Los scripts `start`, `start:dev` y `build` generan el cliente Prisma con `prisma7.config.ts`. La imagen Docker lo genera durante el build y arranca con `pnpm run start:prod`. Con `DB_SYNC=deploy`, el backend espera a que Prisma aplique las migraciones y detiene el arranque si fallan.
 
 Swagger se publica en `http://localhost:3000/`. `GET /health` devuelve `{ "status": "ok" }`; no consulta PostgreSQL. Ajusta la dirección si defines otro `PORT`.
 
@@ -59,15 +59,17 @@ La PR #158 permite al frontend móvil crear incidencias mediante JSON y JWT. La 
 | `POST /auth/register` | Registrar un ciudadano. |
 | `POST /auth/login` | Iniciar sesión y obtener un JWT. |
 | `GET /auth/me` | Consultar el usuario autenticado mediante un token Bearer. |
-| `GET /categories` | Consultar el catálogo temporal de categorías. |
+| `GET /categories` | Consultar el catálogo persistido de categorías. |
 | `POST /incidents` | Crear una incidencia con JSON y JWT. |
 | `POST /incidents/:id/images` | Añadir entre una y ocho fotos a una incidencia propia. |
 | `GET /incidents` | Listar incidencias con cursor en cabeceras (`limit` por defecto 10, máximo 100) y filtro opcional `civicId`. |
 | `GET /incidents/:id` | Consultar una incidencia. |
 | `PATCH /incidents/:id/status` | Validar o rechazar una incidencia reportada, con motivo y actor derivado del JWT. |
 | `PATCH /incidents/:id/priority` | Cambiar la prioridad de una incidencia validada, con motivo y actor derivado del JWT. |
+| `PATCH /incidents/:id/assignment` | Asignar departamento y equipo con motivo e historial. |
+| `GET /incidents/:id/assignments` | Consultar el historial de asignaciones según el ámbito del usuario. |
 
-El alta recibe JSON con `title` obligatorio. El título recortado admite entre 4 y 35 puntos de código; descripción, categoría, activo y ubicación son opcionales. `civicId` procede de la sesión y no se admite en el cuerpo. Tampoco se admiten `images`, archivos ni multipart en esa ruta. Devuelve `201`, el recurso y la cabecera `Location`. Las fotos se suben después por `POST /incidents/:id/images`; el detalle incluye URL de lectura temporales.
+El alta recibe JSON con `title` de 4 a 35 caracteres y coordenadas obligatorias. La categoría, la descripción, el activo y la dirección son opcionales. Si se indica una categoría debe estar activa. La descripción no tiene longitud mínima. `civicId` procede de la sesión y no se admite en el cuerpo. Tampoco se admiten `images`, archivos ni multipart en esa ruta. Devuelve `201`, el recurso y la cabecera `Location`. Las fotos se suben después por `POST /incidents/:id/images`; el detalle incluye URL de lectura temporales. Sin `S3_BUCKET` o `S3_REGION`, la subida devuelve `503` con un mensaje de configuración y la incidencia se puede crear sin fotos.
 
 `GET /auth/me` y las rutas de incidencia individuales utilizan `JwtAuthGuard`; el listado y el filtro `civicId` siguen sin requerir autenticación. El listado usa cursor keyset, no OFFSET. El arranque no configura CORS explícitamente.
 
@@ -107,8 +109,16 @@ La configuración unitaria descubre `**/*.spec.ts` y la e2e `**/*.e2e-spec.ts`.
 
 Los usuarios y ciudadanos se almacenan en PostgreSQL mediante Prisma. Las contraseñas se guardan con hash bcrypt. El esquema `prisma/schema.prisma` también define incidencias, ubicaciones y cambios de estado y prioridad.
 
-`IncidentsService` usa operaciones asíncronas de Prisma para incidencias, ubicaciones e historiales. La creación y los cambios auditados usan transacciones. `FotosIncidenciaService` guarda las fotos en S3 y sus referencias en `IncidentImage`; la migración `20261115000000_imagenes_s3` crea la tabla después de la retirada anterior. El catálogo de categorías sigue siendo temporal. El esquema local debe estar preparado; no se aplican migraciones automáticamente salvo que `DB_SYNC=deploy` se configure expresamente.
+`IncidentsService` usa Prisma para incidencias, ubicaciones e historiales; la creación y los cambios auditados usan transacciones. `FotosIncidenciaService` guarda las fotos en S3 y sus referencias en `IncidentImage`. Las migraciones se aplican en orden: `20261115000000_imagenes_s3` crea esa tabla; `20261117000000_model_integrity` añade categorías, activos, direcciones, contextos y restricciones; `20261118000000_close_model` exige ubicación, crea el catálogo controlado y cierra la auditoría de asignaciones. Las dos últimas se detienen ante datos históricos incompatibles para corregirlos antes de poblar la base. No se aplican automáticamente salvo que `DB_SYNC=deploy` se configure expresamente.
 
 El [DBML](../database/diagram.dbml) y el [SQL de referencia](docs/migrations/001_base_diagram.sql) describen el modelo de datos del proyecto.
 
 Guías: [arquitectura](../docs/architecture.md), [desarrollo](../docs/development.md), [despliegue](../docs/deployment.md), [contribución](../CONTRIBUTING.md) y [ADRs](../docs/adr/).
+### Cierre del modelo y auditoría de asignaciones
+
+La migración `20261118000000_close_model` exige categoría y ubicación y conserva el máximo de 35 caracteres del título. Mantiene los UUID del catálogo anterior y establece diez categorías controladas y quince tipos de activo urbano; las categorías históricas ajenas se conservan inactivas.
+`citizens` y `TeamMember` pueden coexistir para un usuario; un usuario solo pertenece a un equipo. `DepartmentMember` determina el ámbito del rol `department`.
+Las asignaciones requieren `cause` y resultado con departamento y equipo; se guardan con historial inmutable. `GET /incidents/:id/assignments` permite consultarlo.
+Las transiciones adicionales están implementadas con autorización por departamento o técnico asignado; las incidencias se conservan permanentemente y las fotos se guardan en S3.
+Los clientes deben enviar coordenadas al crear, y motivo al asignar. No se han adaptado los frontends en este cambio.
+La migración se detiene ante datos históricos incompatibles. La secuencia completa se comprobó en un PostgreSQL temporal; ninguna base existente fue modificada.

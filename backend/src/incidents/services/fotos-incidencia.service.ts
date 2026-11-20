@@ -65,6 +65,7 @@ export class FotosIncidenciaService {
     if (cantidad + fotos.length > LIMITE_FOTOS)
       throw new ConflictException('La incidencia ya tiene el máximo de fotos.');
 
+    this.almacenamiento.comprobarConfiguracion();
     const fecha = new Date();
     const filas = fotos.map((foto) => {
       const idFoto = randomUUID();

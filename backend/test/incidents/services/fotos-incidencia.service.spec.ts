@@ -108,9 +108,11 @@ function preparar(
   } as unknown as PrismaService;
   const subir = vi.fn().mockResolvedValue(undefined);
   if (opciones.falloSubir) subir.mockRejectedValueOnce(new Error('fallo S3'));
+  const comprobarConfiguracion = vi.fn();
   const borrar = vi.fn().mockResolvedValue(undefined);
   const firmarLectura = vi.fn().mockResolvedValue('https://s3.example/foto');
   const s3 = {
+    comprobarConfiguracion,
     subir,
     borrar,
     firmarLectura,
@@ -118,6 +120,7 @@ function preparar(
   return {
     servicio: new FotosIncidenciaService(prisma, s3),
     filas,
+    comprobarConfiguracion,
     subir,
     borrar,
     firmarLectura,
@@ -184,6 +187,16 @@ describe('FotosIncidenciaService', () => {
     expect(borrar).toHaveBeenCalledWith(subir.mock.calls[0][0]);
     expect(filas).toHaveLength(1);
     expect(resultado.map((imagen) => imagen.id)).toEqual([filas[0].id]);
+  });
+
+  it('devuelve 503 sin intentar subir ni limpiar cuando S3 no está configurado', async () => {
+    const { servicio, comprobarConfiguracion, subir, borrar } = preparar();
+    const error = new ServiceUnavailableException('El almacenamiento de fotos no está configurado.');
+    comprobarConfiguracion.mockImplementationOnce(() => { throw error; });
+
+    await expect(servicio.subir(id, ciudadanoId, [foto])).rejects.toBe(error);
+    expect(subir).not.toHaveBeenCalled();
+    expect(borrar).not.toHaveBeenCalled();
   });
 
   it('no sube fotos a una incidencia ajena', async () => {

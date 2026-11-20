@@ -76,7 +76,7 @@ describe('IncidentsController autenticado', () => {
     expect(servicio.cambiarEstado).toHaveBeenCalledWith(
       incidencia.id,
       { status: 'validated', cause: 'Comprobada' },
-      operador.id,
+      operador,
     );
     expect(servicio.cambiarPrioridad).toHaveBeenCalledWith(
       incidencia.id,
@@ -186,18 +186,27 @@ describe('IncidentsController autenticado', () => {
       RequestMethod.PATCH,
     );
 
-    await expect(controlador.opcionesAsignacion()).resolves.toEqual({
+    await expect(controlador.opcionesAsignacion(operador)).resolves.toEqual({
       departments: [],
       teams: [],
       technicians: [],
     });
-    await controlador.asignar(incidencia.id, { departmentId: null });
-    expect(servicio.asignar).toHaveBeenCalledWith(incidencia.id, {
-      departmentId: null,
-    });
+    await controlador.asignar(
+      incidencia.id,
+      { departmentId: null, cause: 'Revisada' },
+      operador,
+    );
+    expect(servicio.asignar).toHaveBeenCalledWith(
+      incidencia.id,
+      {
+        departmentId: null,
+        cause: 'Revisada',
+      },
+      operador,
+    );
   });
 
-  it('deja público el listado y protege las operaciones autenticadas', () => {
+  it('protege el listado y las operaciones autenticadas', () => {
     expect(
       Reflect.getMetadata(GUARDS_METADATA, IncidentsController),
     ).toBeUndefined();
@@ -205,8 +214,18 @@ describe('IncidentsController autenticado', () => {
       IncidentsController.prototype,
       'listar',
     )?.value;
-    expect(Reflect.getMetadata(GUARDS_METADATA, listado)).toBeUndefined();
-    expect(Reflect.getMetadata('rolesIncidencias', listado)).toBeUndefined();
+    expect(Reflect.getMetadata(GUARDS_METADATA, listado)).toEqual([
+      JwtAuthGuard,
+      AccesoIncidenciasGuard,
+    ]);
+    expect(Reflect.getMetadata('rolesIncidencias', listado)).toEqual([
+      'civic',
+      'admin',
+      'administrative',
+      'department',
+      'team',
+      'technician',
+    ]);
 
     for (const metodo of [
       'create',
@@ -238,8 +257,22 @@ describe('IncidentsController autenticado', () => {
       expect(Reflect.getMetadata('rolesIncidencias', operacion)).toEqual([
         'admin',
         'administrative',
+        'department',
       ]);
     }
+
+    const detalle = Object.getOwnPropertyDescriptor(
+      IncidentsController.prototype,
+      'findOne',
+    )?.value;
+    expect(Reflect.getMetadata('rolesIncidencias', detalle)).toEqual([
+      'civic',
+      'admin',
+      'administrative',
+      'department',
+      'team',
+      'technician',
+    ]);
   });
 
   it('expone la ruta protegida de fotos y las añade solo al ciudadano vinculado', async () => {
@@ -275,7 +308,61 @@ describe('IncidentsController autenticado', () => {
 });
 
 describe('Listado paginado de incidencias', () => {
-  it('publica las cabeceras de continuación y conserva el cuerpo como array', async () => {
+  const ciudadano: UsuarioIncidencias = {
+    id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    role: 'civic',
+    ciudadanoId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  };
+  const operador: UsuarioIncidencias = {
+    id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    role: 'administrative',
+    ciudadanoId: null,
+  };
+
+  it('rechaza filtros ajenos o ausentes y operadores sin perfil ciudadano', () => {
+    const servicio = { listarPagina: vi.fn() };
+    const controlador = new IncidentsController(
+      servicio as unknown as IncidentsService,
+      {} as FotosIncidenciaService,
+    );
+    const response = { setHeader: vi.fn() } as unknown as Response;
+
+    expect(() =>
+      controlador.listar({ limit: 10 }, response, ciudadano),
+    ).toThrow(ForbiddenException);
+    expect(() =>
+      controlador.listar({ civicId: operador.id, limit: 10 }, response, ciudadano),
+    ).toThrow(ForbiddenException);
+    expect(() =>
+      controlador.listar({ civicId: operador.id, limit: 10 }, response, {
+        ...operador,
+        role: 'department',
+      }),
+    ).toThrow(ForbiddenException);
+    expect(servicio.listarPagina).not.toHaveBeenCalled();
+  });
+
+  it('permite la consulta global a administración', async () => {
+    const servicio = {
+      listarPagina: vi.fn().mockResolvedValue({
+        items: [],
+        limit: 10,
+        pagina: 0,
+        nextCursor: null,
+      }),
+    };
+    const controlador = new IncidentsController(
+      servicio as unknown as IncidentsService,
+      {} as FotosIncidenciaService,
+    );
+    const response = { setHeader: vi.fn() } as unknown as Response;
+
+    await expect(controlador.listar({ limit: 10 }, response, operador))
+      .resolves.toEqual([]);
+    expect(servicio.listarPagina).toHaveBeenCalledWith(10, undefined, undefined);
+  });
+
+  it.each(['civic', 'technician'] as const)('publica las cabeceras de continuación y conserva el cuerpo como array para el perfil %s', async (role) => {
     const items = [
       {
         id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
@@ -300,7 +387,11 @@ describe('Listado paginado de incidencias', () => {
     );
 
     await expect(
-      controlador.listar({ civicId: items[0].id, limit: 1 }, response),
+      controlador.listar(
+        { civicId: items[0].id, limit: 1 },
+        response,
+        { ...ciudadano, role },
+      ),
     ).resolves.toBe(items);
     expect(servicio.listarPagina).toHaveBeenCalledWith(
       1,

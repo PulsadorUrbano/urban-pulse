@@ -3,6 +3,8 @@ import type { PrismaService } from '../../../src/prisma/prisma.service.js';
 type Registro = Record<string, unknown>;
 
 interface OpcionesFalsoPrisma {
+  categoriaInexistente?: boolean;
+  activoInexistente?: boolean;
   falloCrearIncidencia?: Error;
   falloCrearCambioEstado?: Error;
   falloCrearCambioPrioridad?: Error;
@@ -31,6 +33,7 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
   const cambiosEstado: Registro[] = [];
   const cambiosPrioridad: Registro[] = [];
   const consultasIncidencias: Registro[] = [];
+  let direccionActual: Registro | null = null;
   let leyendoConciliacion = false;
   let colaTransacciones = Promise.resolve();
 
@@ -50,9 +53,18 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
         location: null,
       };
       delete created.location;
+      const inicial = data.cambiosEstado
+        ? objeto(objeto(data.cambiosEstado).create)
+        : null;
+      delete created.cambiosEstado;
+      if (inicial) cambiosEstado.push({ ...inicial, incidenciaId: data.id });
       incidencias.push(created);
       if (location) {
-        const row = { ...location, incidentId: data.id };
+        const row = {
+          ...location,
+          incidentId: data.id,
+          address: location.addressId ? clonar(direccionActual) : null,
+        };
         ubicaciones.push(row);
       }
       return obtenerAgregado(String(data.id));
@@ -160,6 +172,7 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
     if (!incident) return null;
     return {
       ...clonar(incident),
+      categoria: incident.categoryId ? { name: 'Iluminación' } : null,
       location: clonar(
         ubicaciones.find((row) => String(row.incidentId) === id) ?? null,
       ),
@@ -168,6 +181,34 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
 
   const fake = {
     incident: incidente,
+    address: {
+      upsert: async (argumentos: unknown) => {
+        const data = objeto(objeto(argumentos).create);
+        direccionActual = {
+          id: '10000000-0000-4000-8000-000000000099',
+          ...data,
+        };
+        return clonar(direccionActual);
+      },
+    },
+    category: {
+      findUnique: async () =>
+        opciones.categoriaInexistente
+          ? null
+          : {
+              id: '10000000-0000-4000-8000-000000000001',
+              name: 'Iluminación',
+              isActive: true,
+            },
+      upsert: async () => ({
+        id: '10000000-0000-4000-8000-000000000001',
+        name: 'Iluminación',
+      }),
+    },
+    urbanAsset: {
+      findUnique: async () =>
+        opciones.activoInexistente ? null : { id: 'activo' },
+    },
     cambioEstado,
     cambioPrioridad,
     $transaction: async <T>(callback: (tx: PrismaService) => Promise<T>) => {

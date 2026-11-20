@@ -1,49 +1,46 @@
-import { Injectable } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
+import {
+  BadRequestException,
+  Injectable,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service.js';
 import { Category, normalizeCategoryName } from './category.js';
-
-const seedNames = [
-  'Iluminación',
-  'Limpieza',
-  'Vía pública',
-  'Movilidad',
-  'Zonas verdes',
-];
 
 @Injectable()
 export class CategoriesService {
-  private readonly categories = new Map<string, Category>();
-
-  constructor() {
-    for (const name of seedNames) {
-      this.create(name);
+  constructor(private readonly prisma: PrismaService) {}
+  async findAll(): Promise<Category[]> {
+    try {
+      const categorias = await this.prisma.category.findMany({
+        where: { isActive: true },
+        orderBy: [{ code: 'asc' }],
+      });
+      return categorias.map(({ id, name, createdAt }) => ({
+        id,
+        name,
+        createdAt: createdAt.toISOString(),
+      }));
+    } catch {
+      throw new ServiceUnavailableException('No se pudo consultar el catálogo');
     }
   }
-
-  findAll(): Category[] {
-    return Array.from(this.categories.values(), (category) =>
-      this.copy(category),
-    );
-  }
-
-  resolve(name: string): Category {
-    const normalizedName = normalizeCategoryName(name);
-    const category = this.categories.get(normalizedName);
-
-    return this.copy(category ?? this.create(name.trim()));
-  }
-
-  private create(name: string): Category {
-    const category: Category = {
-      id: randomUUID(),
-      name,
-      createdAt: new Date().toISOString(),
-    };
-    this.categories.set(normalizeCategoryName(name), category);
-    return category;
-  }
-
-  private copy(category: Category): Category {
-    return { ...category };
+  async resolve(name: string): Promise<Category> {
+    try {
+      const categoria = await this.prisma.category.findUnique({
+        where: { normalizedName: normalizeCategoryName(name) },
+      });
+      if (!categoria?.isActive)
+        throw new BadRequestException(
+          'La categoría no pertenece al catálogo activo',
+        );
+      return {
+        id: categoria.id,
+        name: categoria.name,
+        createdAt: categoria.createdAt.toISOString(),
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw new ServiceUnavailableException('No se pudo consultar el catálogo');
+    }
   }
 }

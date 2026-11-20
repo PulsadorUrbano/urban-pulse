@@ -52,6 +52,7 @@ describe('AuthService', () => {
 
     it('crea el usuario civic con contraseña hasheada y su registro de ciudadano', async () => {
       prisma.users.create.mockResolvedValue({
+        isActive: true,
         id: ID_CIUDADANO,
         username: entrada.username,
         email: entrada.email,
@@ -80,6 +81,7 @@ describe('AuthService', () => {
 
     it('guarda phone como null cuando no se indica', async () => {
       prisma.users.create.mockResolvedValue({
+        isActive: true,
         id: ID_CIUDADANO,
         username: entrada.username,
         email: entrada.email,
@@ -121,6 +123,7 @@ describe('AuthService', () => {
   describe('login', () => {
     it('devuelve un JWT con las claims del usuario cuando las credenciales son válidas', async () => {
       prisma.users.findFirst.mockResolvedValue({
+        isActive: true,
         id: ID_CIUDADANO,
         username: 'ciudadano',
         role: 'civic',
@@ -157,6 +160,7 @@ describe('AuthService', () => {
 
     it('rechaza una contraseña incorrecta con el mensaje genérico', async () => {
       prisma.users.findFirst.mockResolvedValue({
+        isActive: true,
         id: ID_CIUDADANO,
         username: 'ciudadano',
         role: 'civic',
@@ -187,6 +191,7 @@ describe('AuthService', () => {
 
     it('devuelve los datos actuales del usuario, incluido el teléfono', async () => {
       prisma.users.findUnique.mockResolvedValue({
+        isActive: true,
         id: ID_CIUDADANO,
         username: 'ciudadano',
         email: 'ciudadano@example.com',
@@ -217,6 +222,7 @@ describe('AuthService', () => {
     'emite token con identidad pública y una hora de vida para %s',
     async (identificador) => {
       prisma.users.findFirst.mockResolvedValue({
+        isActive: true,
         id: ID_CIUDADANO,
         username: 'persona',
         role: 'civic',
@@ -251,6 +257,7 @@ describe('AuthService', () => {
   });
   it('propaga un fallo de firma sin emitir token de respaldo', async () => {
     prisma.users.findFirst.mockResolvedValue({
+      isActive: true,
       id: ID_CIUDADANO,
       username: 'persona',
       role: 'civic',
@@ -262,6 +269,7 @@ describe('AuthService', () => {
   });
   it('me devuelve el perfil actual, no el rol o nombre antiguo del JWT', async () => {
     prisma.users.findUnique.mockResolvedValue({
+      isActive: true,
       id: ID_CIUDADANO,
       username: 'nombre.actual',
       email: 'actual@example.com',
