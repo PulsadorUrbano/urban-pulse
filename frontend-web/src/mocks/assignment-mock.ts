@@ -57,10 +57,13 @@ export function saveMockAssignment(patch: AssignmentPatch): IncidentDetail {
   const technicianId = patch.technicianId === undefined
     ? teamId === incident.teamId && departmentId === incident.departmentId ? incident.technicianId : null
     : patch.technicianId;
-  if (departmentId && !OPTIONS.departments.some((department) => department.id === departmentId)) {
+  if (!departmentId || !teamId) {
+    throw new Error('Selecciona un departamento y un equipo antes de guardar.');
+  }
+  if (!OPTIONS.departments.some((department) => department.id === departmentId)) {
     throw new Error('El departamento no existe.');
   }
-  if (teamId && !OPTIONS.teams.some((team) => team.id === teamId && team.departmentId === departmentId)) {
+  if (!OPTIONS.teams.some((team) => team.id === teamId && team.departmentId === departmentId)) {
     throw new Error('El equipo no pertenece al departamento.');
   }
   if (technicianId && !OPTIONS.technicians.some((technician) => technician.id === technicianId && technician.teamId === teamId)) {

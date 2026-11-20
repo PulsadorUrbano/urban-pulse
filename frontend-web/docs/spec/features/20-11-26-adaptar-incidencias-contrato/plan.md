@@ -8,7 +8,7 @@
 - **Herramientas.** React 19, Vite 8, TypeScript 5, Tailwind CSS 3 y Vitest 5.
 - **Especificación.** [Contrato y criterios de aceptación](./spec.md).
 - **Ramas propuestas.** `fix/compatibilidad-incidencias-web` para la primera PR y `feature/completar-asignaciones-web` para la segunda. Crear cada rama desde el `origin/dev` vigente cuando empiece su fase. Borrador preparado en la copia local de `dev`.
-- **Estado.** Primera PR en curso. Los estados nuevos y el acceso provisional al listado están implementados y comprobados con pruebas unitarias.
+- **Estado.** Las tres tareas de la primera PR están implementadas y comprobadas con pruebas unitarias. Queda pendiente la prueba con el backend.
 
 ## Restricciones generales
 
@@ -46,6 +46,7 @@ Rutas relativas a la raíz del repositorio.
 | Reutilizar | `frontend-web/src/services/assignment.service.ts` | Catálogo, PATCH con JWT, validación de la respuesta y gestión de errores |
 | Actualizar | `frontend-web/src/__tests__/services/incident.service.test.ts`, `frontend-web/src/__tests__/services/assignment.service.test.ts`, `frontend-web/src/__tests__/hooks/use-incident-assignment.test.ts` | Cubrir cambios de contrato y reglas de selección |
 | Crear o actualizar | `frontend-web/src/__tests__/components/incident-list-view.test.tsx`, `frontend-web/src/__tests__/components/incident-validation-view.test.tsx` | Cubrir la carga del listado según el rol y las acciones visibles en el detalle |
+| Crear | `frontend-web/src/__tests__/components/incident-assignment-view.test.tsx`, `frontend-web/src/__tests__/mocks/assignment-mock.test.ts` | Comprobar las opciones del formulario, el rechazo de asignaciones incompletas y la retirada del técnico en la demo |
 | Actualizar | Esta carpeta y la nota de sesión | Contrato, ejecución y resultados de la verificación |
 
 ## Preparación
@@ -74,9 +75,11 @@ Rutas relativas a la raíz del repositorio.
 
 ## Tarea 3. Exigir departamento y equipo al guardar (primera PR)
 
-- [ ] Reutilizar la selección jerárquica. Mostrar indicaciones de selección en departamento y equipo, y conservar la opción «Sin asignar» para el técnico.
-- [ ] Deshabilitar el guardado hasta que departamento y equipo formen una selección válida. Si hay técnico, comprobar que pertenece al equipo elegido.
-- [ ] Ajustar la demo a la misma regla de selección. Comprobar selección inicial incompleta, cambio de departamento sin equipo, equipo ajeno, cambio de equipo y retirada del técnico. Conservar la respuesta de guardado del contrato actual durante esta fase.
+- [x] Reutilizar la selección jerárquica. Mostrar «Selecciona departamento» y «Selecciona equipo», y conservar la opción «Sin asignar» para el técnico.
+- [x] Deshabilitar el guardado hasta que departamento y equipo formen una selección válida. Si hay técnico, comprobar que pertenece al equipo elegido.
+- [x] Ajustar la demo a la misma regla de selección. Comprobar selección inicial incompleta, cambio de departamento sin equipo, equipo ajeno, limpieza del técnico al cambiar de equipo y retirada del técnico. La demo conserva el estado del contrato vigente en `dev`.
+
+**Verificación del bloque.** Las tres pruebas nuevas reprodujeron los fallos de selección, demo y formulario antes del cambio. Después pasaron las 76 pruebas, el typecheck, el lint, la compilación y `git diff --check`. Queda pendiente probar el guardado con las dos versiones del backend previstas en el plan.
 
 ## Tarea 4. Reasignar una incidencia reabierta (segunda PR)
 
@@ -126,7 +129,7 @@ Ejecutar en cada PR desde `frontend-web/` salvo la comprobación de Git.
 
 - **Estado final.** Implementación parcial.
 - **Fecha de revisión.** Pendiente.
-- **Resultado entregado.** Plan y especificación, lectura de los cuatro estados nuevos, prioridad visible y acceso provisional al listado.
-- **Evidencia y comprobaciones.** Los bloques de estados y acceso pasaron las pruebas unitarias, el typecheck, el lint y la compilación. El detalle de esas comprobaciones figura en las tareas 1 y 2.
+- **Resultado entregado.** Plan y especificación, lectura de los cuatro estados nuevos, prioridad visible, acceso provisional al listado y selección de departamento y equipo obligatoria para guardar.
+- **Evidencia y comprobaciones.** Los tres bloques pasaron las pruebas unitarias, el typecheck, el lint y la compilación. El detalle de esas comprobaciones figura en las tareas 1 a 3.
 - **Decisiones y desviaciones.** La compatibilidad web entra antes de la #185 y las funciones del contrato nuevo entran después, con commits individuales a cargo de Artina. Se han respetado los nombres de rama indicados por Artina.
-- **Limitaciones y pendientes.** Commit del bloque de acceso, tareas 3 a 5 y prueba del flujo con el backend.
+- **Limitaciones y pendientes.** Commit del bloque de asignación, prueba del flujo con el backend y tareas 4 y 5 de la segunda PR.

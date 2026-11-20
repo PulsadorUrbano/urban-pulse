@@ -42,11 +42,16 @@ export function buildAssignmentPatch(incident: IncidentDetail, selection: Assign
   return patch;
 }
 
-export function isValidSelection(selection: AssignmentSelection, options: AssignmentOptions): boolean {
-  if (selection.departmentId && !options.departments.some((department) => department.id === selection.departmentId)) return false;
-  if (selection.teamId && !options.teams.some((team) => team.id === selection.teamId && team.departmentId === selection.departmentId)) return false;
-  if (selection.technicianId && !options.technicians.some((technician) => technician.id === selection.technicianId && technician.teamId === selection.teamId)) return false;
-  return true;
+export function isValidSelection(
+  { departmentId, teamId, technicianId }: AssignmentSelection,
+  options: AssignmentOptions,
+): boolean {
+  if (!departmentId || !teamId) return false;
+
+  return options.departments.some((department) => department.id === departmentId)
+    && options.teams.some((team) => team.id === teamId && team.departmentId === departmentId)
+    && (technicianId === null
+      || options.technicians.some((technician) => technician.id === technicianId && technician.teamId === teamId));
 }
 
 export function useIncidentAssignment(
