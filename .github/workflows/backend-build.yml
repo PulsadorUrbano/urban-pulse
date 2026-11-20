@@ -1,0 +1,48 @@
+name: Backend - compilación y pruebas
+
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-build.yml'
+  push:
+    branches: [dev]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-build.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Compilar, analizar y probar backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/urbanpulse_ci?schema=public
+    steps:
+      - name: Obtener el repositorio
+        uses: actions/checkout@v6
+      - name: Preparar pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: backend/package.json
+          run_install: false
+      - name: Preparar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+      - name: Generar Prisma y compilar
+        run: pnpm run build
+      - name: Analizar código y tipos
+        run: pnpm run lint
+      - name: Ejecutar pruebas unitarias
+        run: pnpm test
