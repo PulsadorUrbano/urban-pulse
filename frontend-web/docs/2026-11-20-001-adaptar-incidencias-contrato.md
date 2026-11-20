@@ -42,7 +42,9 @@ Preparar el plan y la especificación, adaptar el panel a los estados nuevos, ap
 - [x] Implementar y probar el acceso provisional al listado y el formulario del detalle según el rol.
 - [x] Hacer el commit del bloque de acceso (`8570368`).
 - [x] Implementar y probar la selección obligatoria de departamento y equipo.
-- [ ] Hacer el commit del bloque de asignación.
+- [x] Hacer el commit del bloque de asignación (`eac841a`).
+- [x] Revisar el diff de la primera PR, repetir las comprobaciones automatizadas y contrastar los cuerpos de asignación con los validadores de `dev` y de la #185.
+- [ ] Abrir la primera PR web para revisión.
 
 ## Documentos actualizados
 
@@ -50,8 +52,8 @@ Preparar el plan y la especificación, adaptar el panel a los estados nuevos, ap
 
 ## Estado / Verificación
 
-Pasaron las 76 pruebas unitarias, el typecheck, el lint y la compilación tras adaptar el guardado de asignaciones. La verificación del flujo con el backend queda pendiente.
+La rama completa pasó las 76 pruebas unitarias, el typecheck, el lint, la compilación y `git diff --check`. Los validadores de `dev` y de la #185 aceptaron los cuerpos de asignación comprobados con dobles. El motor de Docker y el backend local estaban inactivos. Queda pendiente el recorrido con el backend.
 
 ## Pendiente / diferido
 
-Commit del bloque de asignación y verificación final de la primera PR web.
+Apertura y revisión de la primera PR web y prueba del flujo con el backend.
