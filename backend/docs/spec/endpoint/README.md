@@ -47,17 +47,19 @@ Al añadir, modificar o retirar un endpoint, actualizar su carpeta en el mismo c
 - [Asignar departamento, equipo y técnico](patch-incidents-id-assignment/README.md): PATCH /incidents/:id/assignment, operadores autenticados.
 - [Asignar prioridad manual con motivo](patch-incidents-id-priority/README.md): PATCH /incidents/:id/priority, solo incidencias validadas y operadores autenticados.
 
-- [Validar o rechazar una incidencia con motivo](patch-incidents-id-status/README.md): PATCH /incidents/:id/status; solo admin/administrative actuales, con actor autenticado.
+- [Cambiar el estado de una incidencia con motivo](patch-incidents-id-status/README.md): PATCH /incidents/:id/status, con JWT y permisos por transición.
 
-- [Consultar incidencias con cursor](get-incidents/README.md): GET /incidents, cursor keyset con límite máximo 100, filtro opcional civicId y deuda de identidad documentada.
+- [Consultar incidencias con cursor](get-incidents/README.md): GET /incidents, JWT, cursor keyset con límite máximo 100 y filtro ciudadano según el rol.
 
 - [Registrar incidencias](post-incidents/README.md): POST /incidents.
 - [Consultar una incidencia](get-incidents-id/README.md): GET /incidents/:id.
+- [Adjuntar fotos de una incidencia](post-incidents-id-images/README.md): POST /incidents/:id/images, para su propietario autenticado.
+- [Consultar el historial de asignaciones](get-incidents-id-assignments/README.md): GET /incidents/:id/assignments, con acceso por ámbito.
 - [Consultar categorías](get-categories/README.md): GET /categories.
 
 Contratos revisados estáticamente; consultar cada ficha para los límites y la fecha de revisión.
 
-Las antiguas rutas de descarga de imágenes no forman parte de la API activa. Las incidencias requieren JWT, usan PostgreSQL mediante Prisma y no aceptan ni almacenan imágenes. El campo de respuesta `images` se conserva temporalmente como `[]` por compatibilidad.
+Las operaciones de incidencias requieren JWT y usan PostgreSQL mediante Prisma. Las fotos se adjuntan después del alta. El detalle devuelve URLs de lectura temporales.
 
 ## Autenticación incorporada desde token-backend
 
@@ -66,5 +68,3 @@ Las antiguas rutas de descarga de imágenes no forman parte de la API activa. La
 - [Iniciar sesión](post-auth-login/README.md): POST /auth/login.
 - [Validar sesión](get-auth-me/README.md): GET /auth/me.
 - [Emisión anterior retirada](post-auth-token/README.md): POST /auth/token, sin ruta activa.
-
-- [GET /incidents/:id/assignments](get-incidents-id-assignments/README.md): historial de asignaciones autorizado por ámbito.

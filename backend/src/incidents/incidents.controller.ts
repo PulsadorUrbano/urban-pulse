@@ -187,10 +187,20 @@ export class IncidentsController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
+  @SetMetadata('rolesIncidencias', [
+    'civic',
+    'admin',
+    'administrative',
+    'department',
+    'team',
+    'technician',
+  ])
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Consultar todas las incidencias o filtrarlas por ciudadano',
     description:
-      'Sin civicId devuelve todas las incidencias. Con civicId devuelve solo las de ese ciudadano. Prototipo sin autenticación: civicId es un filtro del cliente, no acredita identidad ni propiedad (DEUDA-27-01). No devuelve trazabilidad.',
+      'Requiere JWT. Admin y administrative pueden consultar todas las incidencias o filtrar por ciudadano. Los demás roles autorizados solo pueden consultar su propio civicId si tienen perfil ciudadano. No devuelve trazabilidad.',
   })
   @ApiQuery({ name: 'civicId', required: false, type: String, format: 'uuid' })
   @ApiQuery({
@@ -248,13 +258,30 @@ export class IncidentsController {
     description:
       'Parámetros inválidos o desconocidos, limit fuera del rango 1–100 o cursor inválido.',
   })
+  @ApiUnauthorizedResponse({
+    description: 'JWT inválido o usuario inexistente.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Rol insuficiente o filtro ciudadano ausente o ajeno.',
+  })
   @ApiServiceUnavailableResponse({
     description: 'PostgreSQL no está disponible.',
   })
   listar(
     @Query(new ListarIncidenciasPipe()) consulta: ConsultaListadoIncidencias,
     @Res({ passthrough: true }) response: Response,
+    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
   ): Promise<ResumenIncidencia[]> {
+    const puedeConsultarGlobal =
+      usuario.role === 'admin' || usuario.role === 'administrative';
+    if (
+      !puedeConsultarGlobal &&
+      (usuario.ciudadanoId === null || consulta.civicId !== usuario.ciudadanoId)
+    ) {
+      throw new ForbiddenException(
+        'El ciudadano solo puede consultar sus incidencias',
+      );
+    }
     return this.incidentsService
       .listarPagina(consulta.limit, consulta.cursor, consulta.civicId)
       .then((pagina) => {
