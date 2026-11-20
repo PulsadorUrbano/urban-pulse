@@ -47,9 +47,9 @@ Sugerencias de la revisión de la #200 (pendientes de aplicar por la usuaria): c
 - [x] Revisar la issue #200 y el comentario de la usuaria en la #193.
 - [x] Redactar el plan de la opción 2.
 - [x] Implementar el plan (ver `2026-11-20-002-token-listado-y-detalle.md`).
-- [ ] Añadir el enlace a la #200 en la descripción de la #193.
+- [x] Añadir el enlace a la #200 en la descripción de la #193.
 - [x] Prueba manual del flujo completo contra el backend de la #185 (fotos sin probar por falta de S3).
-- [ ] Cerrar la #158 indicando dónde quedó el arreglo, una vez mergeada la #193.
+- [ ] Cerrar la #158 indicando dónde quedó el arreglo, una vez mergeada la #193. La #158 ya tiene un comentario que indica dónde quedó el arreglo y sigue abierta hasta el merge.
 
 ## Estado / Verificación
 
