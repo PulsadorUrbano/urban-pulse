@@ -109,6 +109,16 @@ export function IncidentAssignmentView({
             <AssignmentSelect label="Técnico" value={selection.technicianId} options={assignment.technicians}
               disabled={controlsDisabled || !selection.teamId} onChange={assignment.setTechnician} />
           </div>
+          <label className="mt-4 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+            Comentarios adicionales <span className="font-normal text-zinc-600 dark:text-zinc-400">(opcional)</span>
+            <textarea
+              value={assignment.comments}
+              onChange={(event) => assignment.setComments(event.target.value)}
+              disabled={controlsDisabled}
+              rows={3}
+              className="mt-2 block w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-900 focus-visible:outline-2 focus-visible:outline-zinc-900 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus-visible:outline-zinc-100"
+            />
+          </label>
           <button
             type="button"
             onClick={() => void assignment.save()}

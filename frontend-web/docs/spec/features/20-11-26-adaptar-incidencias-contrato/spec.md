@@ -3,9 +3,9 @@
 - **Desarrollador responsable.** Artina (`artina09`).
 - **Asistente de IA.** Codex.
 - **Modelo de IA que creó la especificación.** GPT-6. Identificador exacto de la sesión no disponible.
-- **Ramas de trabajo.** `fix/compatibilidad-incidencias-web` para la primera PR y `feature/completar-asignaciones-web` para la segunda. Documentación preparada en la copia local de `dev`.
+- **Ramas de trabajo.** `fix/compatibilidad-incidencias-web` para la #201 y `feature/completar-asignaciones-web` para la segunda PR. La segunda rama parte provisionalmente de la #201.
 - **Última actualización.** 2026-11-20.
-- **Estado.** Borrador. Implementación y verificación pendientes.
+- **Estado.** Implementada con pruebas automatizadas. Pendiente de verificación con el backend desplegado.
 - **Plan.** [Plan de implementación](./plan.md).
 - **Referencias.** [Backend #185](https://github.com/PulsadorUrbano/urban-pulse/pull/185), [tarea #192](https://github.com/PulsadorUrbano/urban-pulse/issues/192), [filtro #198](https://github.com/PulsadorUrbano/urban-pulse/pull/198) y [flujo web existente](../16-11-26-flujo-web-incidencias/spec.md).
 

@@ -58,6 +58,15 @@ it('muestra el estado y la prioridad guardada de una incidencia resuelta', () =>
 
   expect(detail).toMatch(/<dd[^>]*>Resuelta<\/dd>/);
   expect(detail).toMatch(/<dd[^>]*>Alta<\/dd>/);
+  expect(detail).not.toContain('assignment-heading');
+});
+
+it('muestra la asignación de una reabierta solo al personal de administración', () => {
+  useIncidentValidation.mockReturnValue({ incident: { ...incident, status: 'reopened' }, loading: false });
+
+  expect(renderDetail()).toContain('id="assignment-heading"');
+  expect(renderDetail({ ...user, role: 'administrative' })).toContain('id="assignment-heading"');
+  expect(renderDetail({ ...user, role: 'department' })).not.toContain('assignment-heading');
 });
 
 it('conserva el detalle de un perfil de departamento y oculta el formulario de validación', () => {

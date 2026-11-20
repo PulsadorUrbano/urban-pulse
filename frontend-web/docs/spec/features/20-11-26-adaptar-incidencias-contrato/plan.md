@@ -7,8 +7,8 @@
 - **Arquitectura.** Reutilizar los tipos, servicios, hooks, vistas y modo demo del flujo existente. El detalle conserva como fuente de verdad la incidencia devuelta por el backend al guardar.
 - **Herramientas.** React 19, Vite 8, TypeScript 5, Tailwind CSS 3 y Vitest 5.
 - **Especificación.** [Contrato y criterios de aceptación](./spec.md).
-- **Ramas propuestas.** `fix/compatibilidad-incidencias-web` para la primera PR y `feature/completar-asignaciones-web` para la segunda. Crear cada rama desde el `origin/dev` vigente cuando empiece su fase. Borrador preparado en la copia local de `dev`.
-- **Estado.** Primera PR implementada. Pasaron las comprobaciones automatizadas de la rama completa y queda pendiente la prueba del flujo con el backend.
+- **Ramas de trabajo.** `fix/compatibilidad-incidencias-web` para la primera PR y `feature/completar-asignaciones-web` para la segunda. El trabajo local de la segunda parte provisionalmente de la #201 (`3792cc2`). Antes de publicar, trasladar sus commits al `origin/dev` que incluya la #185.
+- **Estado.** Primera PR abierta como #201. Reasignación de reabiertas y comentarios opcionales implementados en la segunda rama. Queda pendiente la prueba del flujo con el backend.
 
 ## Restricciones generales
 
@@ -22,7 +22,7 @@
 
 1. **PR web de compatibilidad.** Integrar la lectura de los estados nuevos, el acceso provisional al listado y la selección obligatoria de departamento y equipo. La petición de guardado conserva el cuerpo que admite `dev`. Referenciar la #192 como trabajo en curso.
 2. **PR #185.** Integrar el backend cuando estén cubiertas las adaptaciones necesarias de ambos clientes. Una vez en `dev`, comprobar que la primera PR web carga y asigna incidencias con el backend actualizado.
-3. **PR web para completar las asignaciones.** Partir del `dev` que ya incluye la #185, habilitar la reasignación de reabiertas y añadir «Comentarios adicionales». Cerrar la #192 con esta PR cuando sus criterios estén verificados.
+3. **PR web para completar las asignaciones.** Abrirla sobre el `dev` que ya incluye la #185 con la reasignación de reabiertas y «Comentarios adicionales». Cerrar la #192 con esta PR cuando sus criterios estén verificados.
 
 ## Focos de revisión
 
@@ -83,14 +83,18 @@ Rutas relativas a la raíz del repositorio.
 
 ## Tarea 4. Reasignar una incidencia reabierta (segunda PR)
 
-- [ ] Permitir guardar en `validated`, `assigned` y `reopened`. Si una reabierta se devuelve al mismo equipo sin cambios de identificadores, enviar su `teamId` para que el backend ejecute la transición.
-- [ ] Actualizar el detalle con la respuesta del PATCH y reflejar en la demo el estado `assigned`. Comprobar la reasignación al mismo equipo, el estado devuelto y los errores de permisos o conflicto antes de mostrar un guardado correcto.
+- [x] Permitir guardar en `validated`, `assigned` y `reopened`. Si una reabierta se devuelve al mismo equipo sin cambios de identificadores, enviar su `teamId` para que el backend ejecute la transición.
+- [x] Conservar la respuesta del PATCH como origen del detalle y reflejar en la demo el estado `assigned`. Comprobar el guardado en el mismo equipo, la respuesta del servicio y el tratamiento de los errores de permisos y conflicto con respuestas simuladas.
+
+**Verificación del bloque.** Cinco casos fallaron antes de implementar el cambio. Después pasaron las 81 pruebas en 9 archivos, el typecheck, el lint, la compilación y `git diff --check`. Se comprobó el formulario de una reabierta, el acceso por rol, el cuerpo con `teamId`, la respuesta `assigned` y los errores 403 y 409. Docker estaba inactivo, por lo que la prueba del flujo con el backend de la #185 sigue pendiente.
 
 ## Tarea 5. Añadir «Comentarios adicionales» (segunda PR)
 
-- [ ] Añadir el campo opcional debajo de los desplegables y dar soporte a `cause?: string` en `AssignmentPatch`.
-- [ ] Enviar el texto recortado junto con la asignación. Omitir `cause` si está vacío o solo contiene espacios. Mantener el requisito de al menos un identificador de asignación en el PATCH.
-- [ ] Verificar el cuerpo con y sin comentario, la conservación del borrador ante un error 400, 403 o 409 y su limpieza tras guardar. Mantener la justificación obligatoria del cambio de estado y de prioridad en sus propias peticiones.
+- [x] Añadir el campo opcional debajo de los desplegables y dar soporte a `cause?: string` en `AssignmentPatch`.
+- [x] Enviar el texto recortado junto con la asignación. Omitir `cause` si está vacío o solo contiene espacios. Mantener el requisito de al menos un identificador de asignación en el PATCH.
+- [x] Mantener el borrador ante un rechazo del guardado y limpiarlo tras guardar correctamente. Conservar la justificación obligatoria del cambio de estado y de prioridad en sus propias peticiones.
+
+**Verificación del bloque.** Cuatro comprobaciones fallaron antes del cambio. Después pasaron las 86 pruebas en 9 archivos, el typecheck, el lint y la compilación. Las pruebas cubren el campo opcional, el cuerpo con y sin `cause` y el rechazo de un parche con solo comentarios en la web y la demo. Una comprobación del hook con respuestas simuladas confirmó que conserva el texto ante 400, 403 y 409 y lo limpia cuando el guardado se confirma. La prueba con el backend de la #185 sigue pendiente.
 
 ## Puntos de commit
 
@@ -113,24 +117,27 @@ Ejecutar en cada PR desde `frontend-web/` salvo la comprobación de Git.
 
 | Comprobación | Comando o recorrido | Resultado real |
 | --- | --- | --- |
-| Pruebas unitarias | `npm run test` | 76 pruebas correctas en 9 archivos en la primera PR |
-| Tipos | `npm run typecheck` | Correcto en la primera PR |
-| Lint | `npm run lint` | Correcto en la primera PR |
-| Compilación | `npm run build` | Correcto en la primera PR |
-| Diff | `git diff --check origin/dev...HEAD` desde la raíz | Correcto. La rama parte de `dev` en `1f21263` |
-| Cuerpo de asignación | Ejecutar los validadores de `dev` y la #185 con un doble del validador UUID | Ambos aceptan los cuerpos para la asignación inicial sin técnico, la retirada del técnico y el cambio de departamento y equipo |
+| Pruebas unitarias | `npm run test` | 76 en la #201 y 86 en la segunda rama, en 9 archivos |
+| Tipos | `npm run typecheck` | Correcto en ambas ramas |
+| Lint | `npm run lint` | Correcto en ambas ramas |
+| Compilación | `npm run build` | Correcta en ambas ramas |
+| Diff desde la base de cada rama | `git diff --check origin/dev...HEAD` en la #201 y `git diff --check 3792cc2...HEAD` en la segunda rama | Correcto. El diff de la segunda rama contiene solo cambios de `frontend-web/` |
+| Cuerpo de asignación de la #201 | Ejecutar los validadores de `dev` y la #185 con un doble del validador UUID | Ambos aceptan los cuerpos para la asignación inicial sin técnico, la retirada del técnico y el cambio de departamento y equipo |
+| Reasignación y comentarios de la segunda rama | Ejecutar el validador y el servicio de asignación de la #185 (`bde5326`) con dobles de NestJS y Prisma | La asignación inicial y la reasignación al mismo equipo pasan a `assigned`. El historial recibe el comentario recortado o `null`. El validador rechaza un cuerpo que solo contiene `cause` |
 | Primera PR con el backend de `dev` | Cargar el listado, abrir el detalle, guardar una asignación con departamento y equipo y comprobar el aviso al resto de perfiles | Pendiente. El motor de Docker y el backend local estaban inactivos |
 | Primera PR con el backend de la #185 | Cargar y abrir incidencias en los estados nuevos, comprobar la prioridad y guardar una asignación con el cuerpo vigente | Pendiente. La #185 sigue abierta y falta probar el flujo en un entorno con su backend |
-| Segunda PR con la #185 integrada | Reasignar una reabierta al mismo equipo y guardar con y sin comentario | Pendiente |
+| Segunda PR con la #185 integrada | Reasignar una reabierta al mismo equipo y guardar con y sin comentario | Pendiente. Docker y el backend local estaban inactivos |
 
 - [x] Revisar el diff de la primera PR y registrar las comprobaciones de sus criterios en el plan. Los cambios están confinados a `frontend-web/`.
+- [x] Revisar los commits de la segunda rama y contrastar sus peticiones con el contrato de la #185.
+- [ ] Trasladar los commits de la segunda rama al `dev` actualizado y repetir las comprobaciones antes de publicarla.
 - [ ] Si la #198 está presente, comprobar que se puede filtrar por un estado nuevo sin romper la paginación existente.
 
 ## Confirmación de implementación
 
-- **Estado final.** Primera PR implementada con prueba real pendiente. Segunda PR pendiente.
+- **Estado final.** Ambas fases implementadas con prueba real pendiente. La segunda sigue en su rama local.
 - **Fecha de revisión.** 2026-11-20.
-- **Resultado entregado.** Plan y especificación, lectura de los cuatro estados nuevos, prioridad visible, acceso provisional al listado y selección de departamento y equipo obligatoria para guardar.
-- **Evidencia y comprobaciones.** Los estados y la prioridad se comprobaron con pruebas del servicio y del detalle. El acceso se comprobó por rol y la asignación se comprobó en el formulario, la demo y los validadores de los dos contratos. La rama completa pasó las comprobaciones indicadas arriba.
+- **Resultado entregado.** La #201 adapta la lectura de los estados, la prioridad, el acceso al listado y la selección de asignación. La segunda rama habilita la reasignación de reabiertas y el campo «Comentarios adicionales».
+- **Evidencia y comprobaciones.** Las dos ramas pasaron las pruebas del frontend y se contrastaron con el contrato. La segunda también se comprobó ejecutando la lógica de asignación e historial de la #185 con dobles, y verificando el borrador ante rechazos simulados.
 - **Decisiones y desviaciones.** La compatibilidad web entra antes de la #185 y las funciones del contrato nuevo entran después, con commits individuales a cargo de Artina. Se han respetado los nombres de rama indicados por Artina.
-- **Limitaciones y pendientes.** Prueba del flujo con el backend y tareas 4 y 5 de la segunda PR. La #198 sigue abierta y el selector de estados queda por coordinar cuando se integre.
+- **Limitaciones y pendientes.** Traslado de la segunda rama al `dev` que incluya la #185 y prueba del flujo con el backend. El selector de estados se coordinará al integrar la #198.
