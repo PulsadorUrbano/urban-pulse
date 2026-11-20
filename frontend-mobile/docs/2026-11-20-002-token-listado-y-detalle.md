@@ -25,8 +25,8 @@ Implementación del plan de `docs/spec/bugs/mis-incidencias/20-11-26-token-lista
 - [x] ST3 Lint, typecheck y tests.
 - [x] ST4 Documentación de cierre.
 - [x] Prueba manual contra el backend de la PR #185: login, `POST /incidents` 201, `GET /incidents` 200 y `GET /incidents/:id` 200 sin ningún 401. Las fotos no se pudieron subir (503) porque el entorno local no tiene S3 configurado; se comentó en la PR #185 junto con `DB_SYNC` en Docker y `API_PORT=3001`.
-- [ ] Añadir el enlace a la #200 en la descripción de la #193.
-- [ ] Cerrar la #158 una vez mergeada la #193.
+- [x] Añadir el enlace a la #200 en la descripción de la #193.
+- [ ] Cerrar la #158 una vez mergeada la #193. La #158 ya tiene un comentario que indica dónde quedó el arreglo y sigue abierta hasta el merge.
 
 ## Estado / Verificación
 
