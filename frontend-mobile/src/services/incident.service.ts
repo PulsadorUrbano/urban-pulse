@@ -37,6 +37,9 @@ const SESSION_EXPIRED_MESSAGE =
   'Tu sesión ha caducado. Vuelve a iniciar sesión para registrar la incidencia.';
 const MISSING_BACKEND_TOKEN_MESSAGE =
   'No se pudo verificar tu sesión. Vuelve a iniciar sesión para registrar la incidencia.';
+// Mensajes de sesión propios de la consulta (listado y detalle).
+const QUERY_SESSION_EXPIRED_MESSAGE = 'Tu sesión ha caducado. Vuelve a iniciar sesión.';
+export const QUERY_MISSING_TOKEN_MESSAGE = 'No se pudo identificar tu sesión. Vuelve a iniciar sesión.';
 export const IMAGES_UPLOAD_ERROR_MESSAGE =
   'La incidencia se registró, pero no se pudieron subir las fotos.';
 
@@ -420,15 +423,29 @@ async function fetchMyIncidentsFromMock(civicId: string): Promise<FetchMyInciden
   return { incidents, source: 'mock' };
 }
 
-// Obtiene las incidencias propias del ciudadano `civicId`, intentando primero
-// el backend real y cayendo al mock solo si no hay conexión (timeout o red).
-// Un `!ok` del backend (p. ej. 400/500) se trata como error genérico, sin mock.
-export async function fetchMyIncidents(civicId: string): Promise<FetchMyIncidentsResult> {
+// Obtiene las incidencias propias del ciudadano `civicId`. Con sesión mock va
+// directa al mock (su token no sirve contra el backend); sin token lanza error
+// de sesión sin petición. Con token del backend lo envía como Bearer y cae al
+// mock solo si no hay conexión (timeout o red), sin cabecera Authorization.
+// Un 401 es sesión caducada (sin mock) y otro `!ok` un error genérico, sin mock.
+export async function fetchMyIncidents(
+  civicId: string,
+  token: AuthToken | null,
+): Promise<FetchMyIncidentsResult> {
+  if (token?.source === 'mock') {
+    return fetchMyIncidentsFromMock(civicId);
+  }
+
+  if (token == null) {
+    throw new Error(QUERY_MISSING_TOKEN_MESSAGE);
+  }
+
   let response: Response;
 
   try {
     response = await fetchWithTimeout(`${BACKEND_INCIDENTS_ENDPOINT}?civicId=${civicId}`, {
       method: 'GET',
+      headers: { Authorization: `Bearer ${token.accessToken}` },
     });
   } catch (error) {
     // Sin conexión con el backend: se cae al mock. El motivo real se deja en
@@ -437,6 +454,10 @@ export async function fetchMyIncidents(civicId: string): Promise<FetchMyIncident
       console.warn('[incident.service] Fallback a mock, fallo al conectar con el backend:', error);
     }
     return fetchMyIncidentsFromMock(civicId);
+  }
+
+  if (response.status === 401) {
+    throw new Error(QUERY_SESSION_EXPIRED_MESSAGE);
   }
 
   if (!response.ok) {
@@ -550,16 +571,29 @@ async function fetchIncidentDetailFromMock(id: string): Promise<FetchIncidentDet
   return { incident, source: 'mock' };
 }
 
-// Obtiene el detalle de una incidencia por `id`, intentando primero el
-// backend real y cayendo al mock solo si no hay conexión (timeout o red). Un
-// 404 (la incidencia no existe) nunca cae al mock: es una respuesta
-// definitiva. Un `!ok` por otro motivo (p. ej. 400/500) es error genérico.
-export async function fetchIncidentById(id: string): Promise<FetchIncidentDetailResult> {
+// Obtiene el detalle de una incidencia por `id`. Con sesión mock va directo al
+// mock; sin token lanza error de sesión sin petición. Con token del backend lo
+// envía como Bearer y cae al mock solo si no hay conexión (timeout o red), sin
+// cabecera Authorization. Un 401 es sesión caducada (sin mock); un 404 (la
+// incidencia no existe) nunca cae al mock; otro `!ok` es error genérico.
+export async function fetchIncidentById(
+  id: string,
+  token: AuthToken | null,
+): Promise<FetchIncidentDetailResult> {
+  if (token?.source === 'mock') {
+    return fetchIncidentDetailFromMock(id);
+  }
+
+  if (token == null) {
+    throw new Error(QUERY_MISSING_TOKEN_MESSAGE);
+  }
+
   let response: Response;
 
   try {
     response = await fetchWithTimeout(`${BACKEND_INCIDENTS_ENDPOINT}/${id}`, {
       method: 'GET',
+      headers: { Authorization: `Bearer ${token.accessToken}` },
     });
   } catch (error) {
     // Sin conexión con el backend: se cae al mock. El motivo real se deja en
@@ -568,6 +602,10 @@ export async function fetchIncidentById(id: string): Promise<FetchIncidentDetail
       console.warn('[incident.service] Fallback a mock, fallo al conectar con el backend:', error);
     }
     return fetchIncidentDetailFromMock(id);
+  }
+
+  if (response.status === 401) {
+    throw new Error(QUERY_SESSION_EXPIRED_MESSAGE);
   }
 
   if (response.status === 404) {
