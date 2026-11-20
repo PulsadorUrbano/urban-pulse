@@ -8,7 +8,7 @@
 - **Herramientas.** React 19, Vite 8, TypeScript 5, Tailwind CSS 3 y Vitest 5.
 - **Especificación.** [Contrato y criterios de aceptación](./spec.md).
 - **Ramas propuestas.** `fix/compatibilidad-incidencias-web` para la primera PR y `feature/completar-asignaciones-web` para la segunda. Crear cada rama desde el `origin/dev` vigente cuando empiece su fase. Borrador preparado en la copia local de `dev`.
-- **Estado.** Plan revisado por Artina. Especificación redactada e implementación pendiente.
+- **Estado.** Primera PR en curso. Los estados nuevos del listado y el detalle están implementados y verificados con pruebas unitarias.
 
 ## Restricciones generales
 
@@ -50,15 +50,18 @@ Rutas relativas a la raíz del repositorio.
 
 - [x] Revisar la estructura de documentación del frontend web, los planes existentes, la #192 y los contratos de listado, detalle y asignaciones de la #185.
 - [x] Confirmar el plan y redactar `spec.md`.
-- [ ] Revisar los criterios de aceptación de la especificación antes de cambiar código.
-- [ ] Actualizar las referencias de Git, verificar la base y preparar la rama de la primera PR. Consultar el estado de la #198 y revisar los archivos afectados.
-- [ ] Registrar el resultado inicial de `npm run typecheck`, `npm run lint`, `npm run test` y `npm run build` para distinguir fallos previos.
+- [x] Revisar los criterios de aceptación de la especificación antes de cambiar código.
+- [x] Comprobar la rama `fix/compatibilidad-incidencias-web` y su base `1f21263` en `dev`. La #198 seguía abierta y su selector no estaba en la base.
+- [x] Registrar la línea de partida. Pasaron `npm run typecheck`, `npm run lint`, `npm run test` (60 pruebas) y `npm run build`.
 
 ## Tarea 1. Aceptar los estados nuevos en el panel (primera PR)
 
-- [ ] Extender `IncidentStatus` y la validación de las respuestas para incluir `in_progress`, `resolved`, `reopened` y `closed`.
-- [ ] Añadir «En progreso», «Resuelta», «Reabierta» y «Cerrada». Mostrar la prioridad de una incidencia tramitada según su estado y respuesta, con independencia de si la asignación es editable.
-- [ ] Verificar un listado con estados anteriores y nuevos y la apertura de los cuatro estados nuevos. Si la #198 ya está en la base, incluir los estados nuevos en `STATUS_FILTER_OPTIONS` en esta PR. Si sigue abierta, coordinar con Alejandro la actualización del selector al integrar la #198, que aporta ese componente.
+- [x] Extender `IncidentStatus` y la validación de las respuestas para incluir `in_progress`, `resolved`, `reopened` y `closed`.
+- [x] Añadir «En progreso», «Resuelta», «Reabierta» y «Cerrada». Mostrar la prioridad de una incidencia tramitada según su estado y respuesta, con independencia de si la asignación es editable.
+- [x] Verificar con pruebas unitarias una página con estados anteriores y nuevos, la carga del detalle para los cuatro estados nuevos y el estado y la prioridad visibles de una incidencia resuelta.
+- [ ] Coordinar con Alejandro los estados del selector al integrar la #198. El selector sigue en esa rama.
+
+**Verificación del bloque.** Las seis pruebas nuevas reprodujeron los fallos antes del cambio. Después pasaron las 66 pruebas, el typecheck, el lint, la compilación y `git diff --check`. La comprobación se hizo con respuestas simuladas y renderizado del detalle. La prueba manual del flujo completo permanece pendiente.
 
 ## Tarea 2. Aplicar el acceso provisional (primera PR)
 
@@ -117,9 +120,9 @@ Ejecutar en cada PR desde `frontend-web/` salvo la comprobación de Git.
 
 ## Confirmación de implementación
 
-- **Estado final.** Pendiente.
+- **Estado final.** Implementación parcial.
 - **Fecha de revisión.** Pendiente.
-- **Resultado entregado.** Plan revisado y especificación redactada.
-- **Evidencia y comprobaciones.** Registrar aquí los resultados de cada criterio y comando al ejecutar el plan.
+- **Resultado entregado.** Plan y especificación, lectura de los cuatro estados nuevos y prioridad visible en el detalle.
+- **Evidencia y comprobaciones.** El bloque de estados pasó las pruebas unitarias, el typecheck, el lint y la compilación. El detalle de esas comprobaciones figura en la tarea 1.
 - **Decisiones y desviaciones.** La compatibilidad web entra antes de la #185 y las funciones del contrato nuevo entran después, con commits individuales a cargo de Artina. Se han respetado los nombres de rama indicados por Artina.
-- **Limitaciones y pendientes.** Revisión de la especificación, verificación de la rama de partida e implementación.
+- **Limitaciones y pendientes.** Commit del bloque de estados, tareas 2 a 5 y prueba del flujo con el backend.

@@ -10,7 +10,7 @@ El panel web debe adaptarse al contrato de la #185 y a las reglas de asignación
 
 ## Alcance
 
-Preparar el plan y la especificación de las dos PRs web.
+Preparar el plan y la especificación de las dos PRs web y adaptar el listado y el detalle a los estados nuevos.
 
 ## Decisiones clave
 
@@ -22,8 +22,10 @@ Preparar el plan y la especificación de las dos PRs web.
 
 | Archivo | Cambio |
 | --- | --- |
-| [Plan de implementación](spec/features/20-11-26-adaptar-incidencias-contrato/plan.md) | Borrador con el mapa de archivos, las tareas, los puntos de commit y las verificaciones |
+| [Plan de implementación](spec/features/20-11-26-adaptar-incidencias-contrato/plan.md) | Tareas, puntos de commit y verificación del bloque de estados |
 | [Especificación](spec/features/20-11-26-adaptar-incidencias-contrato/spec.md) | Contrato del panel y criterios de aceptación de ambas PRs |
+| `src/types/incident.ts`, `src/services/incident.service.ts`, `src/constants/incident-labels.ts` | Estados nuevos y etiquetas en las respuestas del listado y el detalle |
+| `src/components/incident-validation-view.tsx`, `src/__tests__/` | Prioridad visible en incidencias tramitadas y pruebas de regresión |
 
 ## Checklist de la sesión
 
@@ -32,7 +34,9 @@ Preparar el plan y la especificación de las dos PRs web.
 - [x] Ajustar el orden a dos PRs web, una antes y otra después de la #185.
 - [x] Revisar el plan con Artina.
 - [x] Crear la especificación tras su aprobación.
-- [ ] Hacer el commit de documentación en la rama de la primera PR.
+- [x] Hacer el commit de documentación en `fix/compatibilidad-incidencias-web` (`c58c5c5`).
+- [x] Implementar y comprobar los estados nuevos del listado y el detalle.
+- [ ] Hacer el commit del bloque de estados.
 
 ## Documentos actualizados
 
@@ -40,8 +44,8 @@ Preparar el plan y la especificación de las dos PRs web.
 
 ## Estado / Verificación
 
-Plan revisado y especificación redactada. Las comprobaciones del código y del flujo real quedan pendientes de la implementación.
+Pasaron las 66 pruebas unitarias, el typecheck, el lint y la compilación. La verificación del flujo con el backend queda pendiente.
 
 ## Pendiente / diferido
 
-Primer commit de documentación e implementación de la PR web de compatibilidad.
+Commit del bloque de estados. El siguiente bloque de la primera PR es el acceso provisional al listado.

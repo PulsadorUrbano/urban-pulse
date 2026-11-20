@@ -77,6 +77,7 @@ export function IncidentValidationView({
   }
 
   const { latitude, longitude, accuracy } = incident.location;
+  const hasAssignedPriority = incident.status !== 'reported' && incident.status !== 'rejected';
 
   return (
     <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
@@ -160,7 +161,7 @@ export function IncidentValidationView({
               <dd className="font-bold text-zinc-900 dark:text-zinc-100">{STATUS_LABELS[incident.status]}</dd>
               <dt className="text-zinc-500 dark:text-zinc-400">Prioridad</dt>
               <dd className="font-bold text-zinc-900 dark:text-zinc-100">
-                {canEditAssignment(incident.status) ? PRIORITY_LABELS[incident.priority] : 'Sin asignar'}
+                {hasAssignedPriority ? PRIORITY_LABELS[incident.priority] : 'Sin asignar'}
               </dd>
               <dt className="text-zinc-500 dark:text-zinc-400">Registrada</dt>
               <dd className="font-semibold text-zinc-900 dark:text-zinc-100">{formatDate(incident.createdAt)}</dd>

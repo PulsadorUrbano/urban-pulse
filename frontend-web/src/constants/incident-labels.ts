@@ -7,4 +7,8 @@ export const STATUS_LABELS: Record<IncidentStatus, string> = {
   validated: 'Validada',
   rejected: 'Descartada',
   assigned: 'Asignada',
+  in_progress: 'En progreso',
+  resolved: 'Resuelta',
+  reopened: 'Reabierta',
+  closed: 'Cerrada',
 };

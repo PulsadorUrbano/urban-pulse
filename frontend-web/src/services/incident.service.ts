@@ -1,15 +1,15 @@
 // Incidencias del panel web contra el backend real (backend/src/incidents/incidents.controller.ts).
 // Mismos nombres de función y errores que frontend-mobile/src/services/incident.service.ts.
 import { resolveBackendApiUrl } from '../constants/config';
-import type {
-  ChangeIncidentPriorityInput,
-  ChangeIncidentStatusInput,
-  CreatedIncidentImage,
-  IncidentDetail,
-  IncidentLocation,
-  IncidentPriority,
-  IncidentStatus,
-  IncidentSummary,
+import {
+  INCIDENT_STATUSES,
+  type ChangeIncidentPriorityInput,
+  type ChangeIncidentStatusInput,
+  type CreatedIncidentImage,
+  type IncidentDetail,
+  type IncidentLocation,
+  type IncidentPriority,
+  type IncidentSummary,
 } from '../types/incident';
 import {
   bearerHeader,
@@ -24,7 +24,6 @@ import {
 
 const incidentsEndpoint = (): string => `${resolveBackendApiUrl()}/incidents`;
 
-const INCIDENT_STATUSES: readonly IncidentStatus[] = ['reported', 'validated', 'rejected', 'assigned'];
 const INCIDENT_PRIORITIES: readonly IncidentPriority[] = ['low', 'medium', 'high'];
 const IMAGE_MIME_TYPES: readonly CreatedIncidentImage['mimeType'][] = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -97,8 +96,7 @@ export function isIncidentDetail(value: unknown): value is IncidentDetail {
     isIncidentLocation(value.location) &&
     Array.isArray(value.images) &&
     value.images.every(isIncidentImage) &&
-    typeof value.status === 'string' &&
-    (INCIDENT_STATUSES as readonly string[]).includes(value.status) &&
+    INCIDENT_STATUSES.some((status) => status === value.status) &&
     typeof value.priority === 'string' &&
     (INCIDENT_PRIORITIES as readonly string[]).includes(value.priority) &&
     typeof value.createdAt === 'string'
@@ -125,8 +123,7 @@ function isIncidentSummary(value: unknown): value is IncidentSummary {
   return isRecord(value)
     && typeof value.id === 'string'
     && typeof value.title === 'string'
-    && typeof value.status === 'string'
-    && (INCIDENT_STATUSES as readonly string[]).includes(value.status)
+    && INCIDENT_STATUSES.some((status) => status === value.status)
     && typeof value.createdAt === 'string';
 }
 

@@ -1,0 +1,55 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+import { expect, it, vi } from 'vitest';
+
+import { IncidentValidationView } from '../../components/incident-validation-view';
+import type { IncidentDetail } from '../../types/incident';
+import type { SessionUser } from '../../types/user';
+
+const user: SessionUser = {
+  id: 'usuario-prueba',
+  username: 'admin',
+  email: 'admin@example.test',
+  role: 'admin',
+  source: 'backend',
+  phone: null,
+};
+
+const incident: Omit<IncidentDetail, 'status'> = {
+  id: 'incidencia-prueba',
+  title: 'Farola apagada',
+  description: null,
+  civicId: 'ciudadano-prueba',
+  categoryId: null,
+  category: null,
+  urbanAssetId: null,
+  departmentId: null,
+  teamId: null,
+  technicianId: null,
+  location: { latitude: null, longitude: null, accuracy: null, createdAt: '2026-11-20T10:00:00Z' },
+  images: [],
+  priority: 'high',
+  createdAt: '2026-11-20T10:00:00Z',
+};
+
+const useIncidentValidation = vi.hoisted(() => vi.fn());
+
+vi.mock('../../hooks/use-incident-validation', () => ({ useIncidentValidation }));
+vi.mock('../../components/resolution-form', () => ({ ResolutionForm: () => null }));
+
+it('muestra el estado y la prioridad guardada de una incidencia resuelta', () => {
+  useIncidentValidation.mockReturnValue({ incident: { ...incident, status: 'resolved' }, loading: false });
+
+  const detail = renderToStaticMarkup(
+    <IncidentValidationView
+      incidentId={incident.id}
+      user={user}
+      token="token-prueba"
+      isDarkMode={false}
+      onToggleTheme={vi.fn()}
+      onLogout={vi.fn()}
+    />,
+  );
+
+  expect(detail).toMatch(/<dd[^>]*>Resuelta<\/dd>/);
+  expect(detail).toMatch(/<dd[^>]*>Alta<\/dd>/);
+});
