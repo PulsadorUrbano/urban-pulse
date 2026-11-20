@@ -49,7 +49,7 @@ Table Incident {
   title varchar [not null]
   description varchar
   civicId uuid [not null]
-  categoryId uuid [not null]
+  categoryId uuid
   urbanAssetId uuid
   departmentId uuid
   teamId uuid

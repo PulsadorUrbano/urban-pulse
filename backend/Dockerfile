@@ -24,8 +24,10 @@ RUN corepack enable && corepack prepare pnpm@10.34.8 --activate
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --prod --frozen-lockfile
 
-# Copiar la compilación generada en la etapa anterior
+# Copiar la compilación y los archivos que usa Prisma al arrancar
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma7.config.ts ./prisma7.config.ts
 
 # Levantar el servidor compilado
 CMD ["pnpm", "run", "start:prod"]

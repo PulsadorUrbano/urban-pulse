@@ -23,6 +23,10 @@ export class AlmacenamientoFotosS3Service {
     private readonly config: ConfigService,
   ) {}
 
+  comprobarConfiguracion(): void {
+    this.bucket();
+  }
+
   private bucket(): string {
     try {
       const bucket = this.config.getOrThrow<string>('S3_BUCKET');

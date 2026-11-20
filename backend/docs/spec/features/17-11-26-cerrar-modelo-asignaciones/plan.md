@@ -35,3 +35,9 @@
 - `pnpm test`: 342 pruebas correctas en 27 archivos. Incluye el catálogo activo y el alta y la lectura sin categoría con una descripción corta.
 - `pnpm run build` y `prisma validate`: correctos. `pnpm run lint`: correcto con dos avisos previos.
 - Las migraciones de esta revisión quedan pendientes de aplicar en PostgreSQL.
+
+## Correcciones de la prueba con Docker Compose
+
+- La imagen de producción instala Prisma CLI y contiene su configuración, el esquema y las migraciones. `DB_SYNC=deploy` usa `prisma7.config.ts` y detiene el arranque si falla.
+- El ejemplo de Compose publica la API en el puerto 3000. La subida sin configuración S3 responde 503 antes de intentar escribir o borrar objetos.
+- Verificación local: 348 pruebas, compilación y lint con dos avisos previos. `docker compose config` confirmó el puerto publicado. Se ejecutaron las nueve migraciones en PGlite y se verificaron las diez categorías activas y la conservación de una incidencia histórica sin categoría y con descripción corta, además de una nueva. Queda pendiente arrancar la imagen completa con Docker.

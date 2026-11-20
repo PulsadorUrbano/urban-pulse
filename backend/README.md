@@ -44,7 +44,7 @@ Configura el entorno y prepara la base de datos antes del arranque. El ejemplo d
 pnpm exec prisma generate --config prisma7.config.ts
 ```
 
-Los scripts `start`, `start:dev` y `build` generan el cliente Prisma con `prisma7.config.ts`. La imagen Docker lo genera durante el build y arranca con `pnpm run start:prod`.
+Los scripts `start`, `start:dev` y `build` generan el cliente Prisma con `prisma7.config.ts`. La imagen Docker lo genera durante el build y arranca con `pnpm run start:prod`. Con `DB_SYNC=deploy`, el backend espera a que Prisma aplique las migraciones y detiene el arranque si fallan.
 
 Swagger se publica en `http://localhost:3000/`. `GET /health` devuelve `{ "status": "ok" }`; no consulta PostgreSQL. Ajusta la dirección si defines otro `PORT`.
 
@@ -69,7 +69,7 @@ La PR #158 permite al frontend móvil crear incidencias mediante JSON y JWT. La 
 | `PATCH /incidents/:id/assignment` | Asignar departamento y equipo con motivo e historial. |
 | `GET /incidents/:id/assignments` | Consultar el historial de asignaciones según el ámbito del usuario. |
 
-El alta recibe JSON con `title` de 4 a 35 caracteres y coordenadas obligatorias. La categoría, la descripción, el activo y la dirección son opcionales. Si se indica una categoría debe estar activa. La descripción no tiene longitud mínima. `civicId` procede de la sesión y no se admite en el cuerpo. Tampoco se admiten `images`, archivos ni multipart en esa ruta. Devuelve `201`, el recurso y la cabecera `Location`. Las fotos se suben después por `POST /incidents/:id/images`; el detalle incluye URL de lectura temporales.
+El alta recibe JSON con `title` de 4 a 35 caracteres y coordenadas obligatorias. La categoría, la descripción, el activo y la dirección son opcionales. Si se indica una categoría debe estar activa. La descripción no tiene longitud mínima. `civicId` procede de la sesión y no se admite en el cuerpo. Tampoco se admiten `images`, archivos ni multipart en esa ruta. Devuelve `201`, el recurso y la cabecera `Location`. Las fotos se suben después por `POST /incidents/:id/images`; el detalle incluye URL de lectura temporales. Sin `S3_BUCKET` o `S3_REGION`, la subida devuelve `503` con un mensaje de configuración y la incidencia se puede crear sin fotos.
 
 `GET /auth/me` y las rutas de incidencia individuales utilizan `JwtAuthGuard`; el listado y el filtro `civicId` siguen sin requerir autenticación. El listado usa cursor keyset, no OFFSET. El arranque no configura CORS explícitamente.
 
