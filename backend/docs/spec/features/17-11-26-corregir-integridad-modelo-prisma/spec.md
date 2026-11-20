@@ -1,13 +1,13 @@
 # 2026-11-17 — Especificación: corregir la integridad del modelo Prisma
 
-> Documento de la primera fase. Las decisiones y comprobaciones finales de esta PR se actualizan en [cierre del modelo](../specs/2026-11-17-cerrar-modelo-asignaciones-spec.md) y su [plan](../plans/2026-11-17-cerrar-modelo-asignaciones-plan.md).
+> Documento de la primera fase. Las decisiones y comprobaciones finales de esta PR se actualizan en [cierre del modelo](../17-11-26-cerrar-modelo-asignaciones/spec.md) y su [plan](../17-11-26-cerrar-modelo-asignaciones/plan.md).
 
 - Desarrollador responsable: equipo Urban Pulse.
 - Asistente de IA: Codex.
 - Modelo exacto: no disponible en el entorno.
 - Rama: `fix/prisma-model-integrity`.
 - Estado: implementado; migración pendiente de comprobación contra PostgreSQL.
-- Plan: [Plan de implementación](../plans/2026-11-17-corregir-integridad-modelo-prisma-plan.md).
+- Plan: [Plan de implementación](plan.md).
 - Referencias: issues #178, #179 y #180.
 
 ## Objetivo y alcance

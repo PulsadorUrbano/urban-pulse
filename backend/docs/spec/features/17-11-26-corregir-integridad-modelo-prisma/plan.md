@@ -1,9 +1,9 @@
 # 2026-11-17 — Plan de implementación: corregir la integridad del modelo Prisma
 
-> Documento de la primera fase. Las decisiones y comprobaciones finales de esta PR se actualizan en [cierre del modelo](../specs/2026-11-17-cerrar-modelo-asignaciones-spec.md) y su [plan](../plans/2026-11-17-cerrar-modelo-asignaciones-plan.md).
+> Documento de la primera fase. Las decisiones y comprobaciones finales de esta PR se actualizan en [cierre del modelo](../17-11-26-cerrar-modelo-asignaciones/spec.md) y su [plan](../17-11-26-cerrar-modelo-asignaciones/plan.md).
 
 - Rama: `fix/prisma-model-integrity`, desde `dev`.
-- Especificación: [Contrato y criterios](../specs/2026-11-17-corregir-integridad-modelo-prisma-spec.md).
+- Especificación: [Contrato y criterios](spec.md).
 - Estado: implementado; verificación con base de datos pendiente.
 
 ## Preparación

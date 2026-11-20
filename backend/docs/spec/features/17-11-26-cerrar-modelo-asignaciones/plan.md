@@ -1,7 +1,7 @@
 # 2026-11-17 — Plan para cerrar el modelo y auditar asignaciones
 
 - PR: #185, sobre fix/prisma-model-integrity.
-- [Especificación](../specs/2026-11-17-cerrar-modelo-asignaciones-spec.md).
+- [Especificación](spec.md).
 - Implementar migración incremental, categorías y ubicación obligatorias, perfiles compatibles y pertenencias.
 - Aplicar matriz de estados y registrar asignaciones atómicamente.
 - Actualizar contratos, diagrama, SQL de referencia y pruebas unitarias.
@@ -20,3 +20,9 @@
 - Cambio de contrato: categoría y coordenadas obligatorias en el alta; cause obligatorio y equipo requerido al asignar. Frontends pendientes de adaptación.
 - Revisión posterior: la migración conserva el UUID del alias cuando no existe ya el nombre canónico; si ambos existen, activa el canónico sin chocar con los índices únicos y mantiene el histórico inactivo. También detiene la migración ante estados históricos que carecen de la asignación que exigiría el trigger.
 - El detalle comprueba una pertenencia real al departamento y aplica el acceso por equipo solo a los roles de equipo y técnico. Se retiró `analyst` de la ruta, pues el servicio no le concede acceso. Vitest: 327 pruebas correctas en 27 archivos; lint sin errores, con los dos avisos previos. Las siete migraciones se aplicaron en un PostgreSQL 16 temporal vacío; en otra base temporal, la última migración también se aplicó con `Iluminación` y `Alumbrado público` coexistiendo. Quedaron 10 categorías activas y la antigua inactiva. No se modificó la base del proyecto.
+
+## Cambios tras la revisión de la PR
+
+- Incorporar la protección de `GET /incidents` de la #170 conservando las reglas de asignación e historial de la #185. El acceso global es de `admin` y `administrative`; los demás roles autorizados solo pueden listar la identidad ciudadana que tienen vinculada.
+- Actualizar el mensaje y las pruebas del validador de estados. Mantener el modelo como referencia para las adaptaciones de la #192 (web) y la #193 (móvil).
+- Aplicar a los documentos de la #185 la organización por funcionalidad acordada en la #181 y recuperar el workflow de backend de la #167.
