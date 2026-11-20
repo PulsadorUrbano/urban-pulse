@@ -23,12 +23,15 @@ function obtenerPuertoSolicitado(): number {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     instrument: ObserveInstrument,
+    cors: {
+      origin: ['http://localhost:8081', 'http://127.0.0.1:8081'],
+    },
   });
   app.use(registrarPeticion);
 
   const config = new DocumentBuilder()
     .setTitle('Urban Pulse Backend API')
-    .setDescription('Documentación de la API de Urban Pulse')
+    .setDescription('Documentaci�n de la API de Urban Pulse')
     .setVersion('development')
     .addBearerAuth()
     .build();

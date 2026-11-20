@@ -13,8 +13,8 @@ import { RegisterCitizenDto } from './dto/register-citizen.dto.js';
 import type { TokenPayload } from './token-payload.js';
 
 const BCRYPT_COST = 10;
-const MENSAJE_CREDENCIALES = 'Usuario o contraseña incorrectos';
-const MENSAJE_DUPLICADO = 'Ya existe un usuario con ese nombre, email o teléfono';
+const MENSAJE_CREDENCIALES = 'Usuario o contrase�a incorrectos';
+const MENSAJE_DUPLICADO = 'Ya existe un usuario con ese nombre, email o tel�fono';
 
 const publicUserSelect = {
   id: true,
@@ -42,13 +42,13 @@ export class AuthService {
     private readonly jwt: JwtService,
   ) {}
 
-  /** Crea un ciudadano (rol civic) y su fila en citizens en una única transacción. */
+  /** Crea un ciudadano (rol civic) y su fila en citizens en una �nica transacci�n. */
   async registrarCiudadano(input: RegisterCitizenDto): Promise<PublicUserDto> {
     const passwordHash = await hash(input.password, BCRYPT_COST);
 
     try {
       const usuario = await this.prisma.$transaction(async (tx) => {
-        const creado = await tx.users.create({
+        const creado = await tx.user.create({
           data: {
             username: input.username,
             email: input.email,
@@ -58,7 +58,7 @@ export class AuthService {
           select: publicUserSelect,
         });
 
-        await tx.citizens.create({
+        await tx.citizen.create({
           data: { user_id: creado.id, phone: input.phone ?? null },
         });
 
@@ -80,7 +80,7 @@ export class AuthService {
   /** Valida credenciales y devuelve un JWT firmado. */
   async login(usernameOrEmail: string, password: string): Promise<string> {
     const identificador = usernameOrEmail.trim();
-    const usuario = await this.prisma.users.findFirst({
+    const usuario = await this.prisma.user.findFirst({
       where: {
         OR: [
           { username: identificador },
@@ -91,9 +91,9 @@ export class AuthService {
     });
 
     const hashComparado = usuario?.password ?? (await this.hashReferencia);
-    const contraseñaValida = await compare(password, hashComparado);
+    const contrase�aValida = await compare(password, hashComparado);
 
-    if (!usuario || !contraseñaValida) {
+    if (!usuario || !contrase�aValida) {
       throw new UnauthorizedException(MENSAJE_CREDENCIALES);
     }
 
@@ -109,13 +109,13 @@ export class AuthService {
 
   /** Devuelve los datos actuales del usuario del token; falla si ya no existe. */
   async obtenerUsuarioActual(payload: TokenPayload): Promise<PublicUserDto> {
-    const usuario = await this.prisma.users.findUnique({
+    const usuario = await this.prisma.user.findUnique({
       where: { id: payload.userId },
       select: publicUserSelect,
     });
 
     if (!usuario) {
-      throw new UnauthorizedException('Token inválido o expirado');
+      throw new UnauthorizedException('Token inv�lido o expirado');
     }
 
     return this.aDtoPublico(usuario);
