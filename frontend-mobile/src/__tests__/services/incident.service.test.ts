@@ -910,7 +910,7 @@ describe('fetchMyIncidents', () => {
 
   describe('camino backend', () => {
     it('pide las incidencias al backend con el civicId recibido y devuelve source "backend"', async () => {
-      await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
 
       expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
       expect(readRequestUrlAt(0)).toBe(BACKEND_LIST_URL);
@@ -918,7 +918,7 @@ describe('fetchMyIncidents', () => {
     });
 
     it('mapea la respuesta del backend 1:1 como IncidentSummary[] sin reordenarla', async () => {
-      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
 
       expect(result).toEqual({ incidents: backendIncidentSummaries, source: 'backend' });
     });
@@ -926,13 +926,13 @@ describe('fetchMyIncidents', () => {
     it('con lista vacía del backend devuelve incidents vacío con source "backend"', async () => {
       routeMyIncidentsRequests(jsonResponse([], 200));
 
-      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
 
       expect(result).toEqual({ incidents: [], source: 'backend' });
     });
 
     it('con backend OK no consulta el mock', async () => {
-      await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
 
       expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
       expect(readRequestUrlAt(0)).not.toBe(MOCK_LIST_URL);
@@ -943,7 +943,7 @@ describe('fetchMyIncidents', () => {
     it('con RequestTimeoutError cae al mock, ordena desc por createdAt y devuelve source "mock"', async () => {
       routeMyIncidentsRequests(new RequestTimeoutError());
 
-      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
 
       expect(result).toEqual({ incidents: expectedOrderedSummaries, source: 'mock' });
       expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(2);
@@ -953,7 +953,7 @@ describe('fetchMyIncidents', () => {
     it('con error de red (TypeError) cae al mock y devuelve source "mock" con el mismo orden', async () => {
       routeMyIncidentsRequests(new TypeError('Network request failed'));
 
-      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
 
       expect(result.source).toBe('mock');
       expect(result.incidents.map((incident) => incident.id)).toEqual(['1', '2', '3']);
@@ -963,7 +963,7 @@ describe('fetchMyIncidents', () => {
     it('desempata por id ascendente cuando dos incidencias tienen el mismo createdAt', async () => {
       routeMyIncidentsRequests(new RequestTimeoutError());
 
-      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
 
       const tiedIncidentIds = result.incidents
         .filter((incident) => incident.createdAt === LIST_OLDER_CREATED_AT)
@@ -974,7 +974,7 @@ describe('fetchMyIncidents', () => {
     it('con mock sin incidencias devuelve incidents vacío con source "mock"', async () => {
       routeMyIncidentsRequests(new RequestTimeoutError(), jsonResponse([], 200));
 
-      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
 
       expect(result).toEqual({ incidents: [], source: 'mock' });
     });
@@ -988,7 +988,7 @@ describe('fetchMyIncidents', () => {
         jsonResponse([buildMockIncidentRecord({ id: '4', title: 'Registro sin estado' })], 200),
       );
 
-      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
 
       expect(result.incidents).toHaveLength(1);
       expect(result.incidents[0].status).toBe(DEFAULT_INCIDENT_STATUS);
@@ -1009,7 +1009,7 @@ describe('fetchMyIncidents', () => {
         ),
       );
 
-      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID);
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
 
       expect(result.incidents.map((incident) => incident.id)).toEqual(['1', '4', '2', '3']);
       expect(result.incidents[1]).toEqual({
@@ -1027,7 +1027,7 @@ describe('fetchMyIncidents', () => {
       async (status) => {
         routeMyIncidentsRequests(jsonResponse({ message: 'boom' }, status));
 
-        await expect(fetchMyIncidents(CITIZEN_CIVIC_ID)).rejects.toThrow(MESSAGE_MY_INCIDENTS_ERROR);
+        await expect(fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN)).rejects.toThrow(MESSAGE_MY_INCIDENTS_ERROR);
 
         expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
         expect(readRequestUrlAt(0)).toBe(BACKEND_LIST_URL);
@@ -1037,13 +1037,13 @@ describe('fetchMyIncidents', () => {
     it('con mock !ok tras caída del backend lanza error genérico', async () => {
       routeMyIncidentsRequests(new RequestTimeoutError(), jsonResponse({}, 500));
 
-      await expect(fetchMyIncidents(CITIZEN_CIVIC_ID)).rejects.toThrow(MESSAGE_MY_INCIDENTS_ERROR);
+      await expect(fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN)).rejects.toThrow(MESSAGE_MY_INCIDENTS_ERROR);
     });
 
     it('con mock sin conexión tras caída del backend lanza el mensaje de conexión', async () => {
       routeMyIncidentsRequests(new RequestTimeoutError(), new TypeError('Network request failed'));
 
-      await expect(fetchMyIncidents(CITIZEN_CIVIC_ID)).rejects.toThrow(
+      await expect(fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN)).rejects.toThrow(
         'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
       );
     });
@@ -1098,7 +1098,7 @@ describe('motivo del rechazo del backend en fetchMyIncidents', () => {
   it('con backend !ok y message como string añade el motivo entre paréntesis', async () => {
     routeMyIncidentsRequests(rawBodyResponse(400, JSON.stringify({ message: 'civicId must be a UUID' })));
 
-    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID));
+    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN));
 
     expect(error.message).toBe(`${MESSAGE_MY_INCIDENTS_ERROR} (civicId must be a UUID)`);
     expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
@@ -1109,7 +1109,7 @@ describe('motivo del rechazo del backend en fetchMyIncidents', () => {
       rawBodyResponse(400, JSON.stringify({ message: ['status must be a string', 'civicId is required'] })),
     );
 
-    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID));
+    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN));
 
     expect(error.message).toBe(
       `${MESSAGE_MY_INCIDENTS_ERROR} (status must be a string; civicId is required)`,
@@ -1119,7 +1119,7 @@ describe('motivo del rechazo del backend en fetchMyIncidents', () => {
   it('con backend !ok y cuerpo no JSON lanza solo el mensaje genérico', async () => {
     routeMyIncidentsRequests(rawBodyResponse(500, 'Internal Server Error'));
 
-    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID));
+    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN));
 
     expect(error.message).toBe(MESSAGE_MY_INCIDENTS_ERROR);
   });
@@ -1127,7 +1127,7 @@ describe('motivo del rechazo del backend en fetchMyIncidents', () => {
   it('con backend !ok y JSON sin message lanza solo el mensaje genérico', async () => {
     routeMyIncidentsRequests(rawBodyResponse(500, JSON.stringify({ error: 'Internal', statusCode: 500 })));
 
-    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID));
+    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN));
 
     expect(error.message).toBe(MESSAGE_MY_INCIDENTS_ERROR);
   });
@@ -1135,7 +1135,7 @@ describe('motivo del rechazo del backend en fetchMyIncidents', () => {
   it('con backend !ok y message vacío lanza solo el mensaje genérico, sin paréntesis vacíos', async () => {
     routeMyIncidentsRequests(rawBodyResponse(400, JSON.stringify({ message: '' })));
 
-    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID));
+    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN));
 
     expect(error.message).toBe(MESSAGE_MY_INCIDENTS_ERROR);
   });
@@ -1143,7 +1143,7 @@ describe('motivo del rechazo del backend en fetchMyIncidents', () => {
   it('con backend !ok y cuerpo ilegible lanza solo el mensaje genérico', async () => {
     routeMyIncidentsRequests(unreadableBodyResponse(500));
 
-    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID));
+    const error = await captureRejection(fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN));
 
     expect(error.message).toBe(MESSAGE_MY_INCIDENTS_ERROR);
     expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
@@ -1224,7 +1224,7 @@ describe('mensajes genéricos independientes entre createIncident y fetchMyIncid
     fetchWithTimeoutMock.mockImplementation(async () => rawBodyResponse(500, JSON.stringify({ message: 'boom' })));
 
     const registerError = await captureRejection(createIncident(fullInput, BACKEND_AUTHOR));
-    const listError = await captureRejection(fetchMyIncidents(TEST_CIVIC_ID));
+    const listError = await captureRejection(fetchMyIncidents(TEST_CIVIC_ID, BACKEND_TOKEN));
 
     expect(MESSAGE_REGISTER_ERROR).not.toBe(MESSAGE_MY_INCIDENTS_ERROR);
     expect(registerError.message).toBe(`${MESSAGE_REGISTER_ERROR} (boom)`);
@@ -1279,8 +1279,8 @@ describe('aislamiento del civicId entre llamadas sucesivas', () => {
   it('dos civicId distintos en fetchMyIncidents consultan cada uno su propio listado', async () => {
     fetchWithTimeoutMock.mockImplementation(async () => jsonResponse([], 200));
 
-    await fetchMyIncidents(FIRST_CIVIC_ID);
-    await fetchMyIncidents(SECOND_CIVIC_ID);
+    await fetchMyIncidents(FIRST_CIVIC_ID, BACKEND_TOKEN);
+    await fetchMyIncidents(SECOND_CIVIC_ID, BACKEND_TOKEN);
 
     expect(readRequestUrlAt(0)).toBe(`${BACKEND_API_URL}/incidents?civicId=${FIRST_CIVIC_ID}`);
     expect(readRequestUrlAt(1)).toBe(`${BACKEND_API_URL}/incidents?civicId=${SECOND_CIVIC_ID}`);
@@ -1301,7 +1301,7 @@ describe('fetchIncidentById', () => {
 
   describe('camino backend', () => {
     it('pide el detalle a `${BACKEND_API_URL}/incidents/:id` y devuelve source "backend"', async () => {
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
 
       expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
       expect(readRequestUrlAt(0)).toBe(BACKEND_DETAIL_URL);
@@ -1310,7 +1310,7 @@ describe('fetchIncidentById', () => {
     });
 
     it('con backend OK no consulta imágenes, categorías ni el mock', async () => {
-      await fetchIncidentById(DETAIL_INCIDENT_ID);
+      await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
 
       expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
       expect(mockedFetchCategories).not.toHaveBeenCalled();
@@ -1321,7 +1321,7 @@ describe('fetchIncidentById', () => {
     it('404 real lanza IncidentNotFoundError y no hace segunda petición al mock', async () => {
       routeIncidentDetailRequests({ backend: jsonResponse({ message: 'Not Found' }, 404) });
 
-      await expect(fetchIncidentById(DETAIL_INCIDENT_ID)).rejects.toBeInstanceOf(
+      await expect(fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN)).rejects.toBeInstanceOf(
         IncidentNotFoundError,
       );
 
@@ -1334,7 +1334,7 @@ describe('fetchIncidentById', () => {
     it('con RequestTimeoutError cae al mock y devuelve source "mock"', async () => {
       routeIncidentDetailRequests({ backend: new RequestTimeoutError() });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
 
       expect(result.source).toBe('mock');
       expect(result.incident.id).toBe(DETAIL_INCIDENT_ID);
@@ -1345,7 +1345,7 @@ describe('fetchIncidentById', () => {
     it('con error de red (TypeError) cae al mock y devuelve source "mock"', async () => {
       routeIncidentDetailRequests({ backend: new TypeError('Network request failed') });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
 
       expect(result.source).toBe('mock');
       expect(result.incident.title).toBe('Farola fundida');
@@ -1357,7 +1357,7 @@ describe('fetchIncidentById', () => {
         mockDetail: jsonResponse({ message: 'Not Found' }, 404),
       });
 
-      await expect(fetchIncidentById(DETAIL_INCIDENT_ID)).rejects.toBeInstanceOf(
+      await expect(fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN)).rejects.toBeInstanceOf(
         IncidentNotFoundError,
       );
     });
@@ -1368,7 +1368,7 @@ describe('fetchIncidentById', () => {
         mockDetail: jsonResponse({}, 500),
       });
 
-      const error = await fetchIncidentById(DETAIL_INCIDENT_ID).catch((caught: unknown) => caught);
+      const error = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN).catch((caught: unknown) => caught);
 
       expect(error).toBeInstanceOf(Error);
       expect(error).not.toBeInstanceOf(IncidentNotFoundError);
@@ -1381,7 +1381,7 @@ describe('fetchIncidentById', () => {
         mockDetail: new TypeError('Network request failed'),
       });
 
-      await expect(fetchIncidentById(DETAIL_INCIDENT_ID)).rejects.toThrow(
+      await expect(fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN)).rejects.toThrow(
         'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
       );
     });
@@ -1393,7 +1393,7 @@ describe('fetchIncidentById', () => {
       async (status) => {
         routeIncidentDetailRequests({ backend: jsonResponse({ message: 'boom' }, status) });
 
-        const error = await fetchIncidentById(DETAIL_INCIDENT_ID).catch((caught: unknown) => caught);
+        const error = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN).catch((caught: unknown) => caught);
 
         expect(error).toBeInstanceOf(Error);
         expect(error).not.toBeInstanceOf(IncidentNotFoundError);
@@ -1409,7 +1409,7 @@ describe('fetchIncidentById', () => {
     });
 
     it('ensambla el detalle completo con categoría resuelta por categoryId', async () => {
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
 
       expect(result).toEqual({
         incident: {
@@ -1436,14 +1436,14 @@ describe('fetchIncidentById', () => {
     });
 
     it('pide las imágenes a `${IMAGES_ENDPOINT}?incidentId=:id`', async () => {
-      await fetchIncidentById(DETAIL_INCIDENT_ID);
+      await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
 
       const requestedUrls = fetchWithTimeoutMock.mock.calls.map(([requestUrl]) => requestUrl);
       expect(requestedUrls).toContain(DETAIL_IMAGES_URL);
     });
 
     it('mapea imágenes con mimeType según la extensión y createdAt igual al de la incidencia', async () => {
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
 
       expect(result.incident.images).toEqual(expectedDetailImages);
       result.incident.images.forEach((image) => {
@@ -1457,7 +1457,7 @@ describe('fetchIncidentById', () => {
         mockImages: new TypeError('Network request failed'),
       });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
 
       expect(result.incident.images).toEqual([]);
       expect(result.incident.title).toBe('Farola fundida');
@@ -1471,7 +1471,7 @@ describe('fetchIncidentById', () => {
         mockImages: jsonResponse({}, 500),
       });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
 
       expect(result.incident.images).toEqual([]);
       expect(result.incident.id).toBe(DETAIL_INCIDENT_ID);
@@ -1489,14 +1489,14 @@ describe('fetchIncidentById', () => {
         mockDetail: jsonResponse({ ...mockDetailRecord, category: 'Vallado' }, 200),
       });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
 
       expect(result.incident.category).toBe('Vallado');
       expect(mockedFetchCategories).not.toHaveBeenCalled();
     });
 
     it('con solo categoryId llama a fetchCategories y resuelve el nombre por id', async () => {
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
 
       expect(mockedFetchCategories).toHaveBeenCalledTimes(1);
       expect(result.incident.category).toBe('Alumbrado público');
@@ -1508,7 +1508,7 @@ describe('fetchIncidentById', () => {
         mockDetail: jsonResponse({ ...mockDetailRecord, category: '' }, 200),
       });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
 
       expect(mockedFetchCategories).toHaveBeenCalledTimes(1);
       expect(result.incident.category).toBe('Alumbrado público');
@@ -1520,7 +1520,7 @@ describe('fetchIncidentById', () => {
         mockDetail: jsonResponse({ ...mockDetailRecord, categoryId: '99' }, 200),
       });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
 
       expect(result.incident.category).toBeNull();
     });
@@ -1528,7 +1528,7 @@ describe('fetchIncidentById', () => {
     it('si fetchCategories falla devuelve category null sin romper el detalle ni las imágenes', async () => {
       mockedFetchCategories.mockRejectedValue(new Error('No se pudieron cargar las categorías.'));
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
 
       expect(result.incident.category).toBeNull();
       expect(result.incident.title).toBe('Farola fundida');
@@ -1541,7 +1541,7 @@ describe('fetchIncidentById', () => {
         mockDetail: jsonResponse({ ...mockDetailRecord, categoryId: null, category: null }, 200),
       });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
 
       expect(mockedFetchCategories).not.toHaveBeenCalled();
       expect(result.incident.category).toBeNull();
@@ -1555,7 +1555,7 @@ describe('fetchIncidentById', () => {
         mockDetail: jsonResponse({ ...mockDetailRecord, description: '' }, 200),
       });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
 
       expect(result.incident.description).toBeNull();
     });
@@ -1575,7 +1575,7 @@ describe('fetchIncidentById', () => {
         mockImages: jsonResponse([], 200),
       });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
 
       expect(result).toEqual({
         incident: {
@@ -1607,7 +1607,7 @@ describe('fetchIncidentById', () => {
         ),
       });
 
-      const result = await fetchIncidentById(DETAIL_INCIDENT_ID);
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
 
       expect(result.incident.status).toBe(DEFAULT_INCIDENT_STATUS);
       expect(result.incident.createdAt).toBe(FIXED_NOW_ISO);
@@ -1618,5 +1618,161 @@ describe('fetchIncidentById', () => {
         FIXED_NOW_ISO,
       ]);
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Token de sesión en la consulta de incidencias (ST1 del bug 20-11-26).
+// fetchMyIncidents y fetchIncidentById reciben `AuthToken | null`, igual que
+// createIncident: backend con Bearer, mock directo con sesión mock, sin token
+// no hay petición y el 401 es sesión caducada (nunca cae al mock).
+// ---------------------------------------------------------------------------
+
+const SESSION_ERROR_PATTERN = /sesión/i;
+
+// Cabecera Authorization de una llamada concreta (undefined si no se envió).
+function readSentAuthorizationHeader(callIndex = 0): unknown {
+  const sentHeaders = readSentInit(callIndex).headers as Record<string, unknown> | undefined;
+  return sentHeaders?.Authorization;
+}
+
+// Todas las URLs pedidas hasta ahora a fetchWithTimeout.
+function readAllRequestedUrls(): string[] {
+  return fetchWithTimeoutMock.mock.calls.map(([requestUrl]) => requestUrl);
+}
+
+describe('token de sesión en fetchMyIncidents', () => {
+  beforeEach(() => {
+    fetchWithTimeoutMock.mockReset();
+    routeMyIncidentsRequests(jsonResponse(backendIncidentSummaries, 200));
+  });
+
+  it('con token del backend pide el listado con Authorization Bearer y el accessToken recibido', async () => {
+    await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
+
+    expect(readRequestUrlAt(0)).toBe(BACKEND_LIST_URL);
+    expect(readSentInit(0).headers).toMatchObject({
+      Authorization: `Bearer ${BACKEND_TOKEN.accessToken}`,
+    });
+  });
+
+  it.each([
+    ['timeout', () => new RequestTimeoutError()],
+    ['error de red', () => new TypeError('Network request failed')],
+  ])(
+    'con backend caído (%s) el GET de respaldo al mock no lleva Authorization',
+    async (_failureName, buildFailure) => {
+      routeMyIncidentsRequests(buildFailure());
+
+      const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
+
+      expect(result.source).toBe('mock');
+      expect(readRequestUrlAt(1)).toBe(MOCK_LIST_URL);
+      expect(readSentAuthorizationHeader(1)).toBeUndefined();
+    },
+  );
+
+  it('con sesión mock va directa al mock, no llama al backend y devuelve source "mock"', async () => {
+    const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, MOCK_TOKEN);
+
+    expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+    expect(readRequestUrlAt(0)).toBe(MOCK_LIST_URL);
+    expect(readAllRequestedUrls()).not.toContain(BACKEND_LIST_URL);
+    expect(result.source).toBe('mock');
+    expect(result.incidents.map((incident) => incident.id)).toEqual(['1', '2', '3']);
+  });
+
+  it('sin token (null) no hace ninguna petición y rechaza con error de sesión', async () => {
+    await expect(fetchMyIncidents(CITIZEN_CIVIC_ID, null)).rejects.toThrow(SESSION_ERROR_PATTERN);
+
+    expect(fetchWithTimeoutMock).not.toHaveBeenCalled();
+  });
+
+  it('con 401 del backend lanza error de sesión caducada y no llama al mock', async () => {
+    routeMyIncidentsRequests(jsonResponse({ message: 'Unauthorized', statusCode: 401 }, 401));
+
+    await expect(fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN)).rejects.toThrow(
+      SESSION_ERROR_PATTERN,
+    );
+
+    expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+    expect(readAllRequestedUrls()).not.toContain(MOCK_LIST_URL);
+  });
+});
+
+describe('token de sesión en fetchIncidentById', () => {
+  beforeEach(() => {
+    fetchWithTimeoutMock.mockReset();
+    mockedFetchCategories.mockReset();
+    mockedFetchCategories.mockResolvedValue({
+      categories: catalogCategories,
+      source: 'backend',
+      backendErrorMessage: null,
+    });
+    routeIncidentDetailRequests({ backend: jsonResponse(backendIncidentDetail, 200) });
+  });
+
+  it('con token del backend pide el detalle con Authorization Bearer y el accessToken recibido', async () => {
+    await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
+
+    expect(readRequestUrlAt(0)).toBe(BACKEND_DETAIL_URL);
+    expect(readSentInit(0).headers).toMatchObject({
+      Authorization: `Bearer ${BACKEND_TOKEN.accessToken}`,
+    });
+  });
+
+  it.each([
+    ['timeout', () => new RequestTimeoutError()],
+    ['error de red', () => new TypeError('Network request failed')],
+  ])(
+    'con backend caído (%s) el GET de respaldo al mock no lleva Authorization',
+    async (_failureName, buildFailure) => {
+      routeIncidentDetailRequests({ backend: buildFailure() });
+
+      const result = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN);
+
+      expect(result.source).toBe('mock');
+      expect(readRequestUrlAt(1)).toBe(MOCK_DETAIL_URL);
+      expect(readSentAuthorizationHeader(1)).toBeUndefined();
+    },
+  );
+
+  it('con sesión mock va directa al mock, no llama al backend y devuelve source "mock"', async () => {
+    const result = await fetchIncidentById(DETAIL_INCIDENT_ID, MOCK_TOKEN);
+
+    expect(readRequestUrlAt(0)).toBe(MOCK_DETAIL_URL);
+    expect(readAllRequestedUrls()).not.toContain(BACKEND_DETAIL_URL);
+    expect(result.source).toBe('mock');
+  });
+
+  it('sin token (null) no hace ninguna petición y rechaza con error de sesión', async () => {
+    await expect(fetchIncidentById(DETAIL_INCIDENT_ID, null)).rejects.toThrow(SESSION_ERROR_PATTERN);
+
+    expect(fetchWithTimeoutMock).not.toHaveBeenCalled();
+  });
+
+  it('con 401 del backend lanza error de sesión caducada, no IncidentNotFoundError, y no llama al mock', async () => {
+    routeIncidentDetailRequests({ backend: jsonResponse({ message: 'Unauthorized', statusCode: 401 }, 401) });
+
+    const error = await fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN).catch(
+      (caught: unknown) => caught,
+    );
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error).not.toBeInstanceOf(IncidentNotFoundError);
+    expect((error as Error).message).toMatch(SESSION_ERROR_PATTERN);
+    expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+    expect(readAllRequestedUrls()).not.toContain(MOCK_DETAIL_URL);
+  });
+
+  it('con 404 del backend lanza IncidentNotFoundError y no llama al mock', async () => {
+    routeIncidentDetailRequests({ backend: jsonResponse({ message: 'Not Found' }, 404) });
+
+    await expect(fetchIncidentById(DETAIL_INCIDENT_ID, BACKEND_TOKEN)).rejects.toBeInstanceOf(
+      IncidentNotFoundError,
+    );
+
+    expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+    expect(readAllRequestedUrls()).not.toContain(MOCK_DETAIL_URL);
   });
 });
