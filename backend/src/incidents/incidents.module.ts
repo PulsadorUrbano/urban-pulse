@@ -12,6 +12,7 @@ import {
   S3_CLIENT,
 } from './services/almacenamiento-fotos-s3.service.js';
 import { FotosIncidenciaService } from './services/fotos-incidencia.service.js';
+import { GeocodificacionInversaService } from './services/geocodificacion-inversa.service.js';
 
 @Module({
   imports: [AuthModule],
@@ -19,6 +20,7 @@ import { FotosIncidenciaService } from './services/fotos-incidencia.service.js';
   providers: [
     CategoriesService,
     IncidentsService,
+    GeocodificacionInversaService,
     AccesoIncidenciasGuard,
     FotosIncidenciaService,
     AlmacenamientoFotosS3Service,

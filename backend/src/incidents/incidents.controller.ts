@@ -178,7 +178,8 @@ export class IncidentsController {
     description: 'JWT inválido o usuario inexistente.',
   })
   @ApiForbiddenResponse({
-    description: 'Se requiere rol admin, administrative o department autorizado.',
+    description:
+      'Se requiere rol admin, administrative o department autorizado.',
   })
   @ApiServiceUnavailableResponse({
     description: 'PostgreSQL no está disponible.',
@@ -320,7 +321,7 @@ export class IncidentsController {
   @ApiOperation({
     summary: 'Crear una incidencia del ciudadano autenticado',
     description:
-      'Acepta exclusivamente JSON. El propietario procede de la identidad autenticada; civicId e imágenes se rechazan en el cuerpo. Incidencia y ubicación se guardan de forma asíncrona y atómica en PostgreSQL.',
+      'Acepta exclusivamente JSON. El propietario procede de la identidad autenticada; civicId e imágenes se rechazan en el cuerpo. Si no se envía address, se intenta resolver la dirección desde las coordenadas mediante geocodificación inversa best-effort. Incidencia y ubicación se guardan atómicamente en PostgreSQL.',
   })
   @ApiBody({
     schema: {
@@ -351,7 +352,7 @@ export class IncidentsController {
   })
   @ApiCreatedResponse({
     description:
-      'Incidencia y ubicación persistidas en PostgreSQL. images comienza vacío; las fotos se añaden después.',
+      'Incidencia y ubicación persistidas en PostgreSQL; location.address puede ser null si no se resolvió. images comienza vacío; las fotos se añaden después.',
     schema: incidentSchema,
     headers: {
       Location: {
@@ -397,7 +398,8 @@ export class IncidentsController {
   @ApiHeader({
     name: 'Idempotency-Key',
     required: false,
-    description: 'UUID v4 de la tanda. Reutilizarlo al reintentar la misma subida.',
+    description:
+      'UUID v4 de la tanda. Reutilizarlo al reintentar la misma subida.',
   })
   @ApiBody({
     schema: {
@@ -417,7 +419,8 @@ export class IncidentsController {
     description: 'Lista completa de fotos con URL temporales de lectura.',
   })
   @ApiBadRequestResponse({
-    description: 'Archivo ausente o inválido, o clave de idempotencia inválida.',
+    description:
+      'Archivo ausente o inválido, o clave de idempotencia inválida.',
   })
   @ApiUnauthorizedResponse({ description: 'JWT inválido o ausente.' })
   @ApiForbiddenResponse({
@@ -440,7 +443,9 @@ export class IncidentsController {
     if (
       claveIdempotencia !== undefined &&
       (typeof claveIdempotencia !== 'string' ||
-        !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(claveIdempotencia))
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          claveIdempotencia,
+        ))
     ) {
       throw new BadRequestException('Idempotency-Key debe ser un UUID v4.');
     }
@@ -600,7 +605,8 @@ export class IncidentsController {
     description: 'JWT inválido o usuario inexistente.',
   })
   @ApiForbiddenResponse({
-    description: 'Se requiere rol admin, administrative o department autorizado.',
+    description:
+      'Se requiere rol admin, administrative o department autorizado.',
   })
   @ApiNotFoundResponse({ description: 'La incidencia no existe.' })
   @ApiConflictResponse({
