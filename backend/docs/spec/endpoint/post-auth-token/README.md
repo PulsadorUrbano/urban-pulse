@@ -20,5 +20,5 @@ Cualquiera que conociera un `userId` obtenía un token de ese usuario, incluido 
 
 ## Referencias
 
-- Especificación: [autenticación de ciudadanía](../../specs/2026-10-25-auth-ciudadania.md).
-- Plan: [plan de implementación](../../plans/2026-10-25-auth-ciudadania-plan.md).
+- Especificación: [autenticación de ciudadanía](../../features/25-10-26-auth-ciudadania/spec.md).
+- Plan: [plan de implementación](../../features/25-10-26-auth-ciudadania/plan.md).

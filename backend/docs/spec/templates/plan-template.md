@@ -1,11 +1,11 @@
 # {{fecha}} — Plan de implementación: {{descripción de la acción o cambio}}
 
-> Crear únicamente este plan y su especificación. Copiar a backend/docs/spec/features/plans/{{fecha}}-{{descripcion-del-cambio}}-plan.md. Usar una descripción concreta de la acción en el nombre y la fecha AAAA-MM-DD en el nombre y el título. Sustituir los marcadores antes de implementar. Los pasos empiezan pendientes; marcar únicamente trabajo realizado.
+> Crear este plan y su especificación en backend/docs/spec/features/DD-MM-YY-{{descripcion-del-cambio}}/plan.md y spec.md. Usar la fecha de inicio en la carpeta y AAAA-MM-DD en el título. Sustituir los marcadores antes de implementar; marcar únicamente trabajo realizado.
 
 - Objetivo: {{resultado observable definido por la especificación}}.
 - Arquitectura: {{diseño mínimo y componentes existentes reutilizados}}.
 - Herramientas: {{versiones y dependencias ya disponibles}}.
-- Especificación: [Contrato y criterios](../specs/{{fecha}}-{{descripcion-del-cambio}}-spec.md).
+- Especificación: [Contrato y criterios](spec.md).
 - Rama: {{rama de trabajo}}.
 - Estado: pendiente de implementación y verificación.
 
@@ -62,9 +62,9 @@ Ejecutar desde backend/ para cambios de código o dependencias; marcar no aplica
 
 | Comprobación | Comando | Resultado real |
 | --- | --- | --- |
-| Unitarias | npm test | Pendiente |
-| Compilación | npm run build | Pendiente |
-| Lint | npm run lint | Pendiente |
+| Unitarias | pnpm test | Pendiente |
+| Compilación | pnpm run build | Pendiente |
+| Lint | pnpm run lint | Pendiente |
 | Diff, desde la raíz | git diff --check | Pendiente |
 
 - [ ] Mantener el catálogo backend/docs/spec/endpoint/ coherente con los contratos implementados, sin documentar una propuesta como activa.
