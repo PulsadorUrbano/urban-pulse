@@ -1,0 +1,1321 @@
+[
+  {
+    "archivo": "accesibilidad/coche-en-acera.jpg",
+    "categoria": "accesibilidad",
+    "activo": "Acera",
+    "titulos": [
+      "Obstáculo en itinerario accesible"
+    ],
+    "autor": "Erica Fischer",
+    "licencia": "CC BY 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Sidewalk_obstructions_-_Pristina,_Kosovo_June_2023.jpg",
+    "tituloOriginal": "File:Sidewalk obstructions - Pristina, Kosovo June 2023.jpg"
+  },
+  {
+    "archivo": "accesibilidad/motos-en-acera.jpg",
+    "categoria": "accesibilidad",
+    "activo": "Acera",
+    "titulos": [
+      "Obstáculo en itinerario accesible"
+    ],
+    "autor": "OAlmenarense",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Poste_bloqueando_a_cal%C3%A7ada_na_Avenida_Olindo_de_Miranda,_Almenara.jpg",
+    "tituloOriginal": "File:Poste bloqueando a calçada na Avenida Olindo de Miranda, Almenara.jpg"
+  },
+  {
+    "archivo": "accesibilidad/pavimento-roto-itinerario.jpg",
+    "categoria": "accesibilidad",
+    "activo": "Acera",
+    "titulos": [
+      "Paso de peatones sin rebaje"
+    ],
+    "autor": "Kreuz und quer",
+    "licencia": "CC0",
+    "licenciaUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "origen": "https://commons.wikimedia.org/wiki/File:Germantown_Johnson_St_bricks_walkway_2026-06-19.jpg",
+    "tituloOriginal": "File:Germantown Johnson St bricks walkway 2026-06-19.jpg"
+  },
+  {
+    "archivo": "accesibilidad/rampa-acceso.jpg",
+    "categoria": "accesibilidad",
+    "activo": "Rampa",
+    "titulos": [
+      "Rampa de acceso deteriorada"
+    ],
+    "autor": "Globetrotter19",
+    "licencia": "CC BY-SA 3.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Budai_Stra%C3%9Fe_Pfarrkirche,_N_Eingang,_2022_Budakal%C3%A1sz.jpg",
+    "tituloOriginal": "File:Budai Straße Pfarrkirche, N Eingang, 2022 Budakalász.jpg"
+  },
+  {
+    "archivo": "agua_saneamiento/calle-inundada.jpg",
+    "categoria": "agua_saneamiento",
+    "activo": "Imbornal",
+    "titulos": [
+      "Imbornal obstruido",
+      "Alcantarilla atascada"
+    ],
+    "autor": "nick hoke",
+    "licencia": "CC BY 3.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by/3.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Storm_drains_clogged_-_heavy_rain_on_7th_avenue_%3D_flooding_-_panoramio.jpg",
+    "tituloOriginal": "File:Storm drains clogged - heavy rain on 7th avenue = flooding - panoramio.jpg"
+  },
+  {
+    "archivo": "agua_saneamiento/fuga-agua-1.jpg",
+    "categoria": "agua_saneamiento",
+    "activo": null,
+    "titulos": [
+      "Fuga de agua en la vía pública"
+    ],
+    "autor": "Thomas Booker (CoderThomasB)",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:A_photo_of_a_water_leak_on_Camberwell_Place_2022-10-08_10.jpg",
+    "tituloOriginal": "File:A photo of a water leak on Camberwell Place 2022-10-08 10.jpg"
+  },
+  {
+    "archivo": "agua_saneamiento/fuga-agua-2.jpg",
+    "categoria": "agua_saneamiento",
+    "activo": null,
+    "titulos": [
+      "Fuga de agua en la vía pública"
+    ],
+    "autor": "Thomas Booker (CoderThomasB)",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:A_photo_of_a_water_leak_on_Camberwell_Place_2022-10-08_9.jpg",
+    "tituloOriginal": "File:A photo of a water leak on Camberwell Place 2022-10-08 9.jpg"
+  },
+  {
+    "archivo": "agua_saneamiento/rejilla-acera.jpg",
+    "categoria": "agua_saneamiento",
+    "activo": "Imbornal",
+    "titulos": [
+      "Imbornal obstruido"
+    ],
+    "autor": "Lewis Clarke",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Tiverton_,_Bampton_Street_Water_Leak_-_geograph.org.uk_-_1436412.jpg",
+    "tituloOriginal": "File:Tiverton , Bampton Street Water Leak - geograph.org.uk - 1436412.jpg"
+  },
+  {
+    "archivo": "agua_saneamiento/tapas-alcantarilla.jpg",
+    "categoria": "agua_saneamiento",
+    "activo": "Alcantarilla",
+    "titulos": [
+      "Tapa de alcantarilla suelta",
+      "Alcantarilla atascada"
+    ],
+    "autor": "Unregistrierter Nutzer",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Gullydeckel_locker_(2024-11-02).jpg",
+    "tituloOriginal": "File:Gullydeckel locker (2024-11-02).jpg"
+  },
+  {
+    "archivo": "alumbrado/calle-de-noche.jpg",
+    "categoria": "alumbrado",
+    "activo": null,
+    "titulos": [
+      "Calle sin iluminación"
+    ],
+    "autor": "Andy",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Broken_Street_Light_Stevenage_(The_White_Way_Lamppost_26)_-_geograph.org.uk_-_8268947.jpg",
+    "tituloOriginal": "File:Broken Street Light Stevenage (The White Way Lamppost 26) - geograph.org.uk - 8268947.jpg"
+  },
+  {
+    "archivo": "alumbrado/farola-caida-acera.jpg",
+    "categoria": "alumbrado",
+    "activo": "Farola",
+    "titulos": [
+      "Farola con el poste dañado"
+    ],
+    "autor": "Calistemon",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Damaged_street_light_in_Aries_Park,_Rockingham,_August_2024.jpg",
+    "tituloOriginal": "File:Damaged street light in Aries Park, Rockingham, August 2024.jpg"
+  },
+  {
+    "archivo": "alumbrado/farola-caida-mediana.jpg",
+    "categoria": "alumbrado",
+    "activo": "Farola",
+    "titulos": [
+      "Farola con el poste dañado"
+    ],
+    "autor": "Simon Johnston",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Broken_lamppost_-_streetlight_collision_on_A899_Livingston_Road_-_geograph.org.uk_-_990599.jpg",
+    "tituloOriginal": "File:Broken lamppost - streetlight collision on A899 Livingston Road - geograph.org.uk - 990599.jpg"
+  },
+  {
+    "archivo": "alumbrado/farola-derribada-escombros.jpg",
+    "categoria": "alumbrado",
+    "activo": "Farola",
+    "titulos": [
+      "Farola con el poste dañado"
+    ],
+    "autor": "Mjrmtg",
+    "licencia": "CC0",
+    "licenciaUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "origen": "https://commons.wikimedia.org/wiki/File:Hurricane_Helene,_Valdosta,_damaged_lamp_post_and_fallen_bricks,_E_Hill_Ave.jpg",
+    "tituloOriginal": "File:Hurricane Helene, Valdosta, damaged lamp post and fallen bricks, E Hill Ave.jpg"
+  },
+  {
+    "archivo": "alumbrado/farola-doblada-jardin.jpg",
+    "categoria": "alumbrado",
+    "activo": "Farola",
+    "titulos": [
+      "Farola con el poste dañado"
+    ],
+    "autor": "Donald Trung Quoc Don",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Zernikeplaats_damaged_street_light,_Ommoord,_Rotterdam_(2022)_04.jpg",
+    "tituloOriginal": "File:Zernikeplaats damaged street light, Ommoord, Rotterdam (2022) 04.jpg"
+  },
+  {
+    "archivo": "alumbrado/farola-inclinada.jpg",
+    "categoria": "alumbrado",
+    "activo": "Farola",
+    "titulos": [
+      "Farola apagada",
+      "Farola parpadeando"
+    ],
+    "autor": "Simon Johnston",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Broken_lamppost_-_streetlight_on_A899_Livingston_Road_-_geograph.org.uk_-_957464.jpg",
+    "tituloOriginal": "File:Broken lamppost - streetlight on A899 Livingston Road - geograph.org.uk - 957464.jpg"
+  },
+  {
+    "archivo": "alumbrado/farola-registro-abierto.jpg",
+    "categoria": "alumbrado",
+    "activo": "Farola",
+    "titulos": [
+      "Farola apagada",
+      "Farola parpadeando"
+    ],
+    "autor": "Unregistrierter Nutzer",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Deckel_am_Mast_ist_abgefallen_und_das_Lampenglas_fehlt_(2024-07-01)_01.jpg",
+    "tituloOriginal": "File:Deckel am Mast ist abgefallen und das Lampenglas fehlt (2024-07-01) 01.jpg"
+  },
+  {
+    "archivo": "limpieza/acera-con-papeles.jpg",
+    "categoria": "limpieza",
+    "activo": null,
+    "titulos": [
+      "Acera con suciedad acumulada"
+    ],
+    "autor": "Picture by User:Ld.",
+    "licencia": "CC BY-SA 3.0",
+    "licenciaUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+    "origen": "https://commons.wikimedia.org/wiki/File:Flyers_sobe_2.jpg",
+    "tituloOriginal": "File:Flyers sobe 2.jpg"
+  },
+  {
+    "archivo": "limpieza/bolsas-y-basura-acera.jpg",
+    "categoria": "limpieza",
+    "activo": null,
+    "titulos": [
+      "Restos de botellón en la plaza",
+      "Acera con suciedad acumulada"
+    ],
+    "autor": "Acabashi",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Litter_bin_rubbish_Tottenham,_London,_England_1.jpg",
+    "tituloOriginal": "File:Litter bin rubbish Tottenham, London, England 1.jpg"
+  },
+  {
+    "archivo": "limpieza/papelera-desbordada-1.jpg",
+    "categoria": "limpieza",
+    "activo": "Papelera",
+    "titulos": [
+      "Papelera desbordada"
+    ],
+    "autor": "Acabashi",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Litter_bin_rubbish_Lordship_Lane_Tottenham,_London,_England_1.jpg",
+    "tituloOriginal": "File:Litter bin rubbish Lordship Lane Tottenham, London, England 1.jpg"
+  },
+  {
+    "archivo": "limpieza/papelera-desbordada-2.jpg",
+    "categoria": "limpieza",
+    "activo": "Papelera",
+    "titulos": [
+      "Papelera desbordada"
+    ],
+    "autor": "Ian Paterson",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Overflowing_litter_bin_at_Holdingham,_Sleaford,_Lincolnshire.jpg",
+    "tituloOriginal": "File:Overflowing litter bin at Holdingham, Sleaford, Lincolnshire.jpg"
+  },
+  {
+    "archivo": "limpieza/pintadas-1.jpg",
+    "categoria": "limpieza",
+    "activo": null,
+    "titulos": [
+      "Pintadas en fachada pública"
+    ],
+    "autor": "Mutney",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Graffiti_on_public_toilets_building,_Higher_Bore_Street,_Bodmin,_Cornwall_-_May_2023.jpg",
+    "tituloOriginal": "File:Graffiti on public toilets building, Higher Bore Street, Bodmin, Cornwall - May 2023.jpg"
+  },
+  {
+    "archivo": "limpieza/pintadas-2.jpg",
+    "categoria": "limpieza",
+    "activo": null,
+    "titulos": [
+      "Pintadas en fachada pública"
+    ],
+    "autor": "Dietmar Rabich",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:M%C3%BCnster,_Graffiti_im_Hafen_--_2015_--_5852.jpg",
+    "tituloOriginal": "File:Münster, Graffiti im Hafen -- 2015 -- 5852.jpg"
+  },
+  {
+    "archivo": "mobiliario/banco-destrozado.jpg",
+    "categoria": "mobiliario",
+    "activo": "Banco",
+    "titulos": [
+      "Banco roto",
+      "Banco sin tablas"
+    ],
+    "autor": "Karen Roe from Bury St Edmunds, Suffolk, UK",
+    "licencia": "CC BY 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Ickworth_Park,_Suffolk,_England_-broken_bench-2March2012.jpg",
+    "tituloOriginal": "File:Ickworth Park, Suffolk, England -broken bench-2March2012.jpg"
+  },
+  {
+    "archivo": "mobiliario/banco-deteriorado.jpg",
+    "categoria": "mobiliario",
+    "activo": "Banco",
+    "titulos": [
+      "Banco sin tablas"
+    ],
+    "autor": "Acabashi",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Old_bench_at_High_Beach_Cricket_Club_2.jpg",
+    "tituloOriginal": "File:Old bench at High Beach Cricket Club 2.jpg"
+  },
+  {
+    "archivo": "mobiliario/banco-roto-precinto.jpg",
+    "categoria": "mobiliario",
+    "activo": "Banco",
+    "titulos": [
+      "Banco roto"
+    ],
+    "autor": "Rob Swystun from Winnipeg, Canada",
+    "licencia": "CC BY 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Broken_Bench_(20949764078).jpg",
+    "tituloOriginal": "File:Broken Bench (20949764078).jpg"
+  },
+  {
+    "archivo": "mobiliario/banco-tablas-rotas.jpg",
+    "categoria": "mobiliario",
+    "activo": "Banco",
+    "titulos": [
+      "Banco roto",
+      "Banco sin tablas"
+    ],
+    "autor": "Tomwsulcer",
+    "licencia": "Public domain",
+    "licenciaUrl": "",
+    "origen": "https://commons.wikimedia.org/wiki/File:Broken_bench_Briant_Pond_Park_Summit_NJ_2009.jpg",
+    "tituloOriginal": "File:Broken bench Briant Pond Park Summit NJ 2009.jpg"
+  },
+  {
+    "archivo": "mobiliario/fuente-beber.jpg",
+    "categoria": "mobiliario",
+    "activo": "Fuente",
+    "titulos": [
+      "Fuente sin agua",
+      "Fuente pierde agua"
+    ],
+    "autor": "TheAriAlvarez",
+    "licencia": "CC BY-SA 3.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Broken_drinking_water_fountain_in_Joiner_Park.jpg",
+    "tituloOriginal": "File:Broken drinking water fountain in Joiner Park.jpg"
+  },
+  {
+    "archivo": "mobiliario/fuente-columna.jpg",
+    "categoria": "mobiliario",
+    "activo": "Fuente",
+    "titulos": [
+      "Fuente sin agua",
+      "Fuente pierde agua"
+    ],
+    "autor": "Justinc (usuario de Wikimedia Commons)",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Fountain_Camden_churchyard_vandalised.jpg",
+    "tituloOriginal": "File:Fountain Camden churchyard vandalised.jpg"
+  },
+  {
+    "archivo": "mobiliario/papelera-quemada.jpg",
+    "categoria": "mobiliario",
+    "activo": "Papelera",
+    "titulos": [
+      "Papelera arrancada"
+    ],
+    "autor": "Donald Trung Quoc Don",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Rubbish_container_affected_by_fire,_Oude_Pekela_(2020)_03.jpg",
+    "tituloOriginal": "File:Rubbish container affected by fire, Oude Pekela (2020) 03.jpg"
+  },
+  {
+    "archivo": "mobiliario/papelera-tirada.jpg",
+    "categoria": "mobiliario",
+    "activo": "Papelera",
+    "titulos": [
+      "Papelera arrancada"
+    ],
+    "autor": "Peggy Vargas",
+    "licencia": "CC BY 3.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by/3.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Vandalism_bench_104930288.jpg",
+    "tituloOriginal": "File:Vandalism bench 104930288.jpg"
+  },
+  {
+    "archivo": "otros/carril-fisurado.jpg",
+    "categoria": "otros",
+    "activo": null,
+    "titulos": [
+      "Vía de metro dañada"
+    ],
+    "autor": "Grendelkhan",
+    "licencia": "CC BY-SA 3.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Damaged_rail_on_Union_Pacific_tracks_in_Santa_Cruz.gk.jpg",
+    "tituloOriginal": "File:Damaged rail on Union Pacific tracks in Santa Cruz.gk.jpg"
+  },
+  {
+    "archivo": "otros/carril-partido.jpg",
+    "categoria": "otros",
+    "activo": null,
+    "titulos": [
+      "Vía de metro dañada"
+    ],
+    "autor": "Paweł Zdziarski from Rumia, Poland",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:2007.05.16_-_002_Broken_rail_weld_-_Flickr_-_faxepl.jpg",
+    "tituloOriginal": "File:2007.05.16 - 002 Broken rail weld - Flickr - faxepl.jpg"
+  },
+  {
+    "archivo": "otros/carril-roto.jpg",
+    "categoria": "otros",
+    "activo": null,
+    "titulos": [
+      "Vía de metro dañada"
+    ],
+    "autor": "MLIT Japan (国土交通省)",
+    "licencia": "CC BY 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Broken_rail_at_Noto_Railway_Anamizu_Station_(2024_Noto_Earthquake).jpg",
+    "tituloOriginal": "File:Broken rail at Noto Railway Anamizu Station (2024 Noto Earthquake).jpg"
+  },
+  {
+    "archivo": "otros/cucaracha-1.jpg",
+    "categoria": "otros",
+    "activo": null,
+    "titulos": [
+      "Plaga de cucarachas en la plaza"
+    ],
+    "autor": "Syrio",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Blatta_orientalis_Trento_03.jpg",
+    "tituloOriginal": "File:Blatta orientalis Trento 03.jpg"
+  },
+  {
+    "archivo": "otros/cucaracha-2.jpg",
+    "categoria": "otros",
+    "activo": null,
+    "titulos": [
+      "Plaga de cucarachas en la plaza"
+    ],
+    "autor": "Alvesgaspar",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Cockroach_May_2007-1.jpg",
+    "tituloOriginal": "File:Cockroach May 2007-1.jpg"
+  },
+  {
+    "archivo": "otros/gaviota-muerta.jpg",
+    "categoria": "otros",
+    "activo": null,
+    "titulos": [
+      "Animal muerto en la vía"
+    ],
+    "autor": "Derek Harper",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Dead_seagull,_Barton_Road_-_geograph.org.uk_-_5850450.jpg",
+    "tituloOriginal": "File:Dead seagull, Barton Road - geograph.org.uk - 5850450.jpg"
+  },
+  {
+    "archivo": "otros/junta-carril-rota.jpg",
+    "categoria": "otros",
+    "activo": null,
+    "titulos": [
+      "Vía de metro dañada"
+    ],
+    "autor": "B.A.",
+    "licencia": "CC BY-SA 3.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Schienenbruch.jpg",
+    "tituloOriginal": "File:Schienenbruch.jpg"
+  },
+  {
+    "archivo": "otros/obras-nocturnas-1.jpg",
+    "categoria": "otros",
+    "activo": null,
+    "titulos": [
+      "Ruido nocturno de obras"
+    ],
+    "autor": "OathOn",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Night-time_excavation_and_road_preparation_works_at_Chatham_Waterfront_Bus_Station_showing_JCB_wheeled_loader,_workers_and_road_closure_on_Globe_Lane,_Chatham,_Kent,_England.jpg",
+    "tituloOriginal": "File:Night-time excavation and road preparation works at Chatham Waterfront Bus Station showing JCB wheeled loader, workers and road closure on Globe Lane, Chatham, Kent, England.jpg"
+  },
+  {
+    "archivo": "otros/obras-nocturnas-2.jpg",
+    "categoria": "otros",
+    "activo": null,
+    "titulos": [
+      "Ruido nocturno de obras"
+    ],
+    "autor": "OathOn",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Night-time_road_closure_and_improvement_works_at_Chatham_Waterfront_Bus_Station_showing_workers,_warning_signs,_safety_barriers_and_JCB_excavator_on_Globe_Lane,_Chatham,_Kent,_England.jpg",
+    "tituloOriginal": "File:Night-time road closure and improvement works at Chatham Waterfront Bus Station showing workers, warning signs, safety barriers and JCB excavator on Globe Lane, Chatham, Kent, England.jpg"
+  },
+  {
+    "archivo": "otros/obras-nocturnas-3.jpg",
+    "categoria": "otros",
+    "activo": null,
+    "titulos": [
+      "Ruido nocturno de obras"
+    ],
+    "autor": "Neil Owen",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Night_works_on_Malago_Road_-_geograph.org.uk_-_7839547.jpg",
+    "tituloOriginal": "File:Night works on Malago Road - geograph.org.uk - 7839547.jpg"
+  },
+  {
+    "archivo": "otros/paloma-muerta.jpg",
+    "categoria": "otros",
+    "activo": null,
+    "titulos": [
+      "Animal muerto en la vía"
+    ],
+    "autor": "Gaurav Dhwaj Khadka",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Dead_Pigeon_1.jpg",
+    "tituloOriginal": "File:Dead Pigeon 1.jpg"
+  },
+  {
+    "archivo": "otros/via-danada-estacion.jpg",
+    "categoria": "otros",
+    "activo": null,
+    "titulos": [
+      "Vía de metro dañada"
+    ],
+    "autor": "Katorisi",
+    "licencia": "CC BY-SA 3.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Track_of_Fukushima_Rinkai_Railway,Iwaki-city,Japan.jpg",
+    "tituloOriginal": "File:Track of Fukushima Rinkai Railway,Iwaki-city,Japan.jpg"
+  },
+  {
+    "archivo": "otros/via-deformada.jpg",
+    "categoria": "otros",
+    "activo": null,
+    "titulos": [
+      "Vía de metro dañada"
+    ],
+    "autor": "Archives New Zealand",
+    "licencia": "CC BY 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Railway_line_damage_-_%C4%AAnangahua_Earthquake,_1968.jpg",
+    "tituloOriginal": "File:Railway line damage - Īnangahua Earthquake, 1968.jpg"
+  },
+  {
+    "archivo": "otros/via-destrozada.jpg",
+    "categoria": "otros",
+    "activo": null,
+    "titulos": [
+      "Vía de metro dañada"
+    ],
+    "autor": "ChiefHira",
+    "licencia": "CC BY-SA 3.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Destroyed_railway_track.JPG",
+    "tituloOriginal": "File:Destroyed railway track.JPG"
+  },
+  {
+    "archivo": "otros/via-hundida.jpg",
+    "categoria": "otros",
+    "activo": null,
+    "titulos": [
+      "Vía de metro dañada"
+    ],
+    "autor": "Dquai",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:The_ruined_track_in_Erwanping.jpg",
+    "tituloOriginal": "File:The ruined track in Erwanping.jpg"
+  },
+  {
+    "archivo": "otros/via-tranvia-levantada.jpg",
+    "categoria": "otros",
+    "activo": null,
+    "titulos": [
+      "Vía de metro dañada"
+    ],
+    "autor": "Philip Mallis from Melbourne",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Art_tram_outside_former_tram_depot_at_the_Carris_Museum_in_Lisbon,_Portugal_(55121581003).jpg",
+    "tituloOriginal": "File:Art tram outside former tram depot at the Carris Museum in Lisbon, Portugal (55121581003).jpg"
+  },
+  {
+    "archivo": "otros/vias-desplazadas.jpg",
+    "categoria": "otros",
+    "activo": null,
+    "titulos": [
+      "Vía de metro dañada"
+    ],
+    "autor": "Ministry of Railways, Japan / 鉄道省",
+    "licencia": "Public domain",
+    "licenciaUrl": "",
+    "origen": "https://commons.wikimedia.org/wiki/File:Damage_of_Arakawa_railway_bridge_Tohoku_mainline_caused_by_Great_Kanto_earthquake.jpg",
+    "tituloOriginal": "File:Damage of Arakawa railway bridge Tohoku mainline caused by Great Kanto earthquake.jpg"
+  },
+  {
+    "archivo": "pavimentos/acera-levantada-arbol.jpg",
+    "categoria": "pavimentos",
+    "activo": "Acera",
+    "titulos": [
+      "Baldosas levantadas en la acera"
+    ],
+    "autor": "LBM1948",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:La_Habana,_plantas_(1983)_04.jpg",
+    "tituloOriginal": "File:La Habana, plantas (1983) 04.jpg"
+  },
+  {
+    "archivo": "pavimentos/adoquines-hundidos.jpg",
+    "categoria": "pavimentos",
+    "activo": "Acera",
+    "titulos": [
+      "Baldosas levantadas en la acera"
+    ],
+    "autor": "Klapka paradaja",
+    "licencia": "CC BY 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Uszkodzona_nawierzchnia_w_Ustce_02.jpg",
+    "tituloOriginal": "File:Uszkodzona nawierzchnia w Ustce 02.jpg"
+  },
+  {
+    "archivo": "pavimentos/bache-paso-peatones.jpg",
+    "categoria": "pavimentos",
+    "activo": "Calzada",
+    "titulos": [
+      "Bache en la calzada"
+    ],
+    "autor": "Miguel Tremblay",
+    "licencia": "Public domain",
+    "licenciaUrl": "",
+    "origen": "https://commons.wikimedia.org/wiki/File:Pothole_in_Villeray,_Montr%C3%A9al.jpg",
+    "tituloOriginal": "File:Pothole in Villeray, Montréal.jpg"
+  },
+  {
+    "archivo": "pavimentos/baldosas-levantadas-raices.jpg",
+    "categoria": "pavimentos",
+    "activo": "Acera",
+    "titulos": [
+      "Baldosas levantadas en la acera"
+    ],
+    "autor": "Marek Ślusarczyk (Tupungato) Photo portfolio",
+    "licencia": "CC BY 3.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by/3.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:031_Sidewalk_environmental_damage_-_dangerous_sidewalk_with_concrete_paving_tiles,_Bytom,_Poland.jpg",
+    "tituloOriginal": "File:031 Sidewalk environmental damage - dangerous sidewalk with concrete paving tiles, Bytom, Poland.jpg"
+  },
+  {
+    "archivo": "pavimentos/bordillo-partido.jpg",
+    "categoria": "pavimentos",
+    "activo": "Acera",
+    "titulos": [
+      "Bordillo roto"
+    ],
+    "autor": "inkknife_2000 (7.5 million views +)",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Prospect_Park,_Irrigation_Curb,_2005_(6589245583).jpg",
+    "tituloOriginal": "File:Prospect Park, Irrigation Curb, 2005 (6589245583).jpg"
+  },
+  {
+    "archivo": "pavimentos/bordillo-roto-jardin.jpg",
+    "categoria": "pavimentos",
+    "activo": "Acera",
+    "titulos": [
+      "Bordillo roto"
+    ],
+    "autor": "Klapka paradaja",
+    "licencia": "CC BY 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Uszkodzona_nawierzchnia_w_Ustce_03.jpg",
+    "tituloOriginal": "File:Uszkodzona nawierzchnia w Ustce 03.jpg"
+  },
+  {
+    "archivo": "pavimentos/bordillo-roto-raices.jpg",
+    "categoria": "pavimentos",
+    "activo": "Acera",
+    "titulos": [
+      "Bordillo roto"
+    ],
+    "autor": "Junkyardsparkle",
+    "licencia": "CC0",
+    "licenciaUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "origen": "https://commons.wikimedia.org/wiki/File:San_Fernando_Valley_sidewalk_vs._tree_2015-05-02.jpg",
+    "tituloOriginal": "File:San Fernando Valley sidewalk vs. tree 2015-05-02.jpg"
+  },
+  {
+    "archivo": "pavimentos/calzada-agrietada.jpg",
+    "categoria": "pavimentos",
+    "activo": "Calzada",
+    "titulos": [
+      "Bache en la calzada"
+    ],
+    "autor": "Martin Luff",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Earthquake_damage_-_road.jpg",
+    "tituloOriginal": "File:Earthquake damage - road.jpg"
+  },
+  {
+    "archivo": "pavimentos/calzada-con-baches.jpg",
+    "categoria": "pavimentos",
+    "activo": "Calzada",
+    "titulos": [
+      "Bache en la calzada"
+    ],
+    "autor": "Mateusz Konieczny",
+    "licencia": "CC0",
+    "licenciaUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "origen": "https://commons.wikimedia.org/wiki/File:Damaged_asphalt_surface_5.jpg",
+    "tituloOriginal": "File:Damaged asphalt surface 5.jpg"
+  },
+  {
+    "archivo": "pavimentos/grieta-calzada.jpg",
+    "categoria": "pavimentos",
+    "activo": "Calzada",
+    "titulos": [
+      "Bache en la calzada"
+    ],
+    "autor": "Martin Luff from Christchurch, New Zealand",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Damage_to_road_beside_the_Avon_River,_from_the_2010_Canterbury_earthquake.jpg",
+    "tituloOriginal": "File:Damage to road beside the Avon River, from the 2010 Canterbury earthquake.jpg"
+  },
+  {
+    "archivo": "pavimentos/hundimiento-asfalto-1.jpg",
+    "categoria": "pavimentos",
+    "activo": "Calzada",
+    "titulos": [
+      "Hundimiento en el asfalto"
+    ],
+    "autor": "Computerfan0",
+    "licencia": "CC0",
+    "licenciaUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "origen": "https://commons.wikimedia.org/wiki/File:Pothole_on_local_Road_in_County_Monaghan.jpg",
+    "tituloOriginal": "File:Pothole on local Road in County Monaghan.jpg"
+  },
+  {
+    "archivo": "pavimentos/hundimiento-asfalto-2.jpg",
+    "categoria": "pavimentos",
+    "activo": "Calzada",
+    "titulos": [
+      "Hundimiento en el asfalto"
+    ],
+    "autor": "Mallikarjunasj",
+    "licencia": "CC0",
+    "licenciaUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "origen": "https://commons.wikimedia.org/wiki/File:Potholes_in_Bengaluru_road.jpg",
+    "tituloOriginal": "File:Potholes in Bengaluru road.jpg"
+  },
+  {
+    "archivo": "pavimentos/socavon-calzada.jpg",
+    "categoria": "pavimentos",
+    "activo": "Calzada",
+    "titulos": [
+      "Bache en la calzada"
+    ],
+    "autor": "Роман Рябенко",
+    "licencia": "CC0",
+    "licenciaUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "origen": "https://commons.wikimedia.org/wiki/File:A_pothole_in_Dilova_Street_in_Kyiv.jpg",
+    "tituloOriginal": "File:A pothole in Dilova Street in Kyiv.jpg"
+  },
+  {
+    "archivo": "residuos/colchon-en-acera.jpg",
+    "categoria": "residuos",
+    "activo": null,
+    "titulos": [
+      "Enseres abandonados en la calle"
+    ],
+    "autor": "Kaga tau",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Abandoned_mattress_in_Ostia.jpg",
+    "tituloOriginal": "File:Abandoned mattress in Ostia.jpg"
+  },
+  {
+    "archivo": "residuos/colchon-y-televisor.jpg",
+    "categoria": "residuos",
+    "activo": null,
+    "titulos": [
+      "Enseres abandonados en la calle"
+    ],
+    "autor": "Alan Stanton",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Carew_Alley_-_Dumped_mattress_%26_TV.jpg",
+    "tituloOriginal": "File:Carew Alley - Dumped mattress & TV.jpg"
+  },
+  {
+    "archivo": "residuos/colchones-somieres.jpg",
+    "categoria": "residuos",
+    "activo": null,
+    "titulos": [
+      "Enseres abandonados en la calle"
+    ],
+    "autor": "Alan Stanton",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Dumped_by_invisible_people%3F.jpg",
+    "tituloOriginal": "File:Dumped by invisible people?.jpg"
+  },
+  {
+    "archivo": "residuos/contenedor-calcinado-calzada.jpg",
+    "categoria": "residuos",
+    "activo": "Contenedor",
+    "titulos": [
+      "Contenedor quemado"
+    ],
+    "autor": "Kaga tau",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Burned_dumpster_in_Ostia_(Rome).jpg",
+    "tituloOriginal": "File:Burned dumpster in Ostia (Rome).jpg"
+  },
+  {
+    "archivo": "residuos/contenedor-derretido.jpg",
+    "categoria": "residuos",
+    "activo": "Contenedor",
+    "titulos": [
+      "Contenedor con la tapa rota",
+      "Contenedor quemado"
+    ],
+    "autor": "Kris Roderburg",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Overzicht_van_een_container_die_dicht_bij_de_hooischuur_stond_-_Onvelte_-_20425486_-_RCE.jpg",
+    "tituloOriginal": "File:Overzicht van een container die dicht bij de hooischuur stond - Onvelte - 20425486 - RCE.jpg"
+  },
+  {
+    "archivo": "residuos/contenedor-desbordado-1.jpg",
+    "categoria": "residuos",
+    "activo": "Contenedor",
+    "titulos": [
+      "Contenedor desbordado"
+    ],
+    "autor": "SuperJew",
+    "licencia": "CC BY-SA 3.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Overflowing_Bin_Talpiot_01.jpg",
+    "tituloOriginal": "File:Overflowing Bin Talpiot 01.jpg"
+  },
+  {
+    "archivo": "residuos/contenedor-desbordado-2.jpg",
+    "categoria": "residuos",
+    "activo": "Contenedor",
+    "titulos": [
+      "Contenedor desbordado"
+    ],
+    "autor": "Acabashi",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Overflowing_wheelie_bin_Bethnal_Green_Road_Shoreditch_London_England_01.jpg",
+    "tituloOriginal": "File:Overflowing wheelie bin Bethnal Green Road Shoreditch London England 01.jpg"
+  },
+  {
+    "archivo": "residuos/contenedor-quemado-1.jpg",
+    "categoria": "residuos",
+    "activo": "Contenedor",
+    "titulos": [
+      "Contenedor quemado"
+    ],
+    "autor": "Citobun",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:2016-2-9_MK_protests_5.jpg",
+    "tituloOriginal": "File:2016-2-9 MK protests 5.jpg"
+  },
+  {
+    "archivo": "residuos/contenedor-quemado-2.jpg",
+    "categoria": "residuos",
+    "activo": "Contenedor",
+    "titulos": [
+      "Contenedor quemado"
+    ],
+    "autor": "Pacopac",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:2020-01-10_Contenidor_de_fem_cremat_a_Val%C3%A8ncia.jpg",
+    "tituloOriginal": "File:2020-01-10 Contenidor de fem cremat a València.jpg"
+  },
+  {
+    "archivo": "residuos/contenedor-quemado-3.jpg",
+    "categoria": "residuos",
+    "activo": "Contenedor",
+    "titulos": [
+      "Contenedor quemado"
+    ],
+    "autor": "Nylki",
+    "licencia": "CC0",
+    "licenciaUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "origen": "https://commons.wikimedia.org/wiki/File:Abgebrannte_M%C3%BClltonne,_M%C3%BClleimer,_abgerissen_oder_zerst%C3%B6rt,_2025-01-13.jpeg",
+    "tituloOriginal": "File:Abgebrannte Mülltonne, Mülleimer, abgerissen oder zerstört, 2025-01-13.jpeg"
+  },
+  {
+    "archivo": "residuos/contenedor-quemado-4.jpg",
+    "categoria": "residuos",
+    "activo": "Contenedor",
+    "titulos": [
+      "Contenedor quemado"
+    ],
+    "autor": "Chmee2",
+    "licencia": "CC BY-SA 3.0",
+    "licenciaUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+    "origen": "https://commons.wikimedia.org/wiki/File:Burned_container.jpg",
+    "tituloOriginal": "File:Burned container.jpg"
+  },
+  {
+    "archivo": "residuos/contenedor-quemado-5.jpg",
+    "categoria": "residuos",
+    "activo": "Contenedor",
+    "titulos": [
+      "Contenedor quemado"
+    ],
+    "autor": "P4K1T0",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Contenedor_quemado_en_Cartagena_(20190624_102958).jpg",
+    "tituloOriginal": "File:Contenedor quemado en Cartagena (20190624 102958).jpg"
+  },
+  {
+    "archivo": "residuos/contenedor-tapa-rota.jpg",
+    "categoria": "residuos",
+    "activo": "Contenedor",
+    "titulos": [
+      "Contenedor con la tapa rota"
+    ],
+    "autor": "Livioandronico2013",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Dumpster_roman_burned.JPG",
+    "tituloOriginal": "File:Dumpster roman burned.JPG"
+  },
+  {
+    "archivo": "residuos/contenedor-volcado-quemado.jpg",
+    "categoria": "residuos",
+    "activo": "Contenedor",
+    "titulos": [
+      "Contenedor con la tapa rota",
+      "Contenedor quemado"
+    ],
+    "autor": "Domsau2",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Poubelle_br%C3%BBl%C3%A9e_en_France.jpg",
+    "tituloOriginal": "File:Poubelle brûlée en France.jpg"
+  },
+  {
+    "archivo": "residuos/contenedores-desbordados-jaula.jpg",
+    "categoria": "residuos",
+    "activo": "Contenedor",
+    "titulos": [
+      "Contenedor desbordado"
+    ],
+    "autor": "E961",
+    "licencia": "CC BY 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Sorted_waste_containers_close-up.jpg",
+    "tituloOriginal": "File:Sorted waste containers close-up.jpg"
+  },
+  {
+    "archivo": "residuos/enseres-junto-a-contenedor.jpg",
+    "categoria": "residuos",
+    "activo": null,
+    "titulos": [
+      "Enseres abandonados en la calle"
+    ],
+    "autor": "Kaga tau",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Burned_plastic_and_metals_waste_container_-_via_Umberto_Cagni.jpg",
+    "tituloOriginal": "File:Burned plastic and metals waste container - via Umberto Cagni.jpg"
+  },
+  {
+    "archivo": "residuos/enseres-junto-a-edificio.jpg",
+    "categoria": "residuos",
+    "activo": null,
+    "titulos": [
+      "Enseres abandonados en la calle"
+    ],
+    "autor": "Arsons Den",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:No_Fly_Tipping_at_the_Elephant_and_Castle_-_geograph.org.uk_-_1289337.jpg",
+    "tituloOriginal": "File:No Fly Tipping at the Elephant and Castle - geograph.org.uk - 1289337.jpg"
+  },
+  {
+    "archivo": "residuos/sofa-abandonado.jpg",
+    "categoria": "residuos",
+    "activo": null,
+    "titulos": [
+      "Enseres abandonados en la calle"
+    ],
+    "autor": "Michael McCauslin from San Francisco, CA, USA",
+    "licencia": "CC BY 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:One-way_to_the_love_seat_-_Flickr_-_michale.jpg",
+    "tituloOriginal": "File:One-way to the love seat - Flickr - michale.jpg"
+  },
+  {
+    "archivo": "senalizacion/atasco-avenida.jpg",
+    "categoria": "senalizacion",
+    "activo": null,
+    "titulos": [
+      "Atasco por semáforo averiado",
+      "Atasco diario en el cruce"
+    ],
+    "autor": "Sky 269",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Traffic_jam_Bangkok.JPG",
+    "tituloOriginal": "File:Traffic jam Bangkok.JPG"
+  },
+  {
+    "archivo": "senalizacion/atasco-centro.jpg",
+    "categoria": "senalizacion",
+    "activo": null,
+    "titulos": [
+      "Atasco por semáforo averiado",
+      "Atasco diario en el cruce"
+    ],
+    "autor": "S.M.M.Musabbir Uddin",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Traffic_Jam_in_Dhaka_City.jpg",
+    "tituloOriginal": "File:Traffic Jam in Dhaka City.jpg"
+  },
+  {
+    "archivo": "senalizacion/atasco-cruce.jpg",
+    "categoria": "senalizacion",
+    "activo": null,
+    "titulos": [
+      "Atasco por semáforo averiado",
+      "Atasco diario en el cruce"
+    ],
+    "autor": "Sam Hidayat",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Traffic_jam_at_the_Adipura_Monument,_Yogyakarta.jpg",
+    "tituloOriginal": "File:Traffic jam at the Adipura Monument, Yogyakarta.jpg"
+  },
+  {
+    "archivo": "senalizacion/atasco-nocturno.jpg",
+    "categoria": "senalizacion",
+    "activo": null,
+    "titulos": [
+      "Atasco por semáforo averiado",
+      "Atasco diario en el cruce"
+    ],
+    "autor": "Aykhan Zayedzadeh",
+    "licencia": "CC BY 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Traffic_congestion_in_Uzeyir_Hajibeyov_Street_(38493).jpg",
+    "tituloOriginal": "File:Traffic congestion in Uzeyir Hajibeyov Street (38493).jpg"
+  },
+  {
+    "archivo": "senalizacion/paso-de-cebra-gastado.jpg",
+    "categoria": "senalizacion",
+    "activo": null,
+    "titulos": [
+      "Paso de cebra borrado"
+    ],
+    "autor": "Alan Stanton",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Fading_road_crossing_in_Park_View_Road_N17.jpg",
+    "tituloOriginal": "File:Fading road crossing in Park View Road N17.jpg"
+  },
+  {
+    "archivo": "senalizacion/retenciones-autovia.jpg",
+    "categoria": "senalizacion",
+    "activo": null,
+    "titulos": [
+      "Atasco por semáforo averiado",
+      "Atasco diario en el cruce"
+    ],
+    "autor": "Андрей Романенко",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Traffic_congestion_on_the_road_A2_in_Germany_02.jpg",
+    "tituloOriginal": "File:Traffic congestion on the road A2 in Germany 02.jpg"
+  },
+  {
+    "archivo": "senalizacion/semaforo-derribado.jpg",
+    "categoria": "senalizacion",
+    "activo": "Semáforo",
+    "titulos": [
+      "Semáforo no funciona"
+    ],
+    "autor": "Famartin",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:2026-10-18_09_05_42_A_damaged_traffic_signal_after_a_traffic_accident_along_Mercer_County_Route_579_(Bear_Tavern_Road)_at_Mountain_View_Road_in_the_Mountainview_section_of_Ewing_Township,_Mercer_County,_New_Jersey.jpg",
+    "tituloOriginal": "File:2026-10-18 09 05 42 A damaged traffic signal after a traffic accident along Mercer County Route 579 (Bear Tavern Road) at Mountain View Road in the Mountainview section of Ewing Township, Mercer County, New Jersey.jpg"
+  },
+  {
+    "archivo": "senalizacion/semaforo-en-el-suelo.jpg",
+    "categoria": "senalizacion",
+    "activo": "Semáforo",
+    "titulos": [
+      "Semáforo no funciona",
+      "Semáforo peatonal sin sonido"
+    ],
+    "autor": "Famartin",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:2026-10-18_09_05_49_A_damaged_traffic_signal_after_a_traffic_accident_along_Mercer_County_Route_579_(Bear_Tavern_Road)_at_Mountain_View_Road_in_the_Mountainview_section_of_Ewing_Township,_Mercer_County,_New_Jersey.jpg",
+    "tituloOriginal": "File:2026-10-18 09 05 49 A damaged traffic signal after a traffic accident along Mercer County Route 579 (Bear Tavern Road) at Mountain View Road in the Mountainview section of Ewing Township, Mercer County, New Jersey.jpg"
+  },
+  {
+    "archivo": "senalizacion/semaforo-golpeado.jpg",
+    "categoria": "senalizacion",
+    "activo": "Semáforo",
+    "titulos": [
+      "Semáforo no funciona"
+    ],
+    "autor": "Derek Harper",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Damaged_traffic_lights,_Wandsworth_-_geograph.org.uk_-_3668182.jpg",
+    "tituloOriginal": "File:Damaged traffic lights, Wandsworth - geograph.org.uk - 3668182.jpg"
+  },
+  {
+    "archivo": "senalizacion/senal-arrancada.jpg",
+    "categoria": "senalizacion",
+    "activo": "Señal",
+    "titulos": [
+      "Señal de tráfico caída"
+    ],
+    "autor": "Daniel Di Palma",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Hurricane_Irma_2017_-_Miami_Beach_-_South_Beach_Fallen_Street_Signs.jpg",
+    "tituloOriginal": "File:Hurricane Irma 2017 - Miami Beach - South Beach Fallen Street Signs.jpg"
+  },
+  {
+    "archivo": "senalizacion/senal-caida-acera.jpg",
+    "categoria": "senalizacion",
+    "activo": "Señal",
+    "titulos": [
+      "Señal de tráfico caída"
+    ],
+    "autor": "DGtal",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Fallen_traffic_signpost_in_Lod.jpg",
+    "tituloOriginal": "File:Fallen traffic signpost in Lod.jpg"
+  },
+  {
+    "archivo": "senalizacion/senal-caida-rotonda.jpg",
+    "categoria": "senalizacion",
+    "activo": "Señal",
+    "titulos": [
+      "Señal de tráfico caída"
+    ],
+    "autor": "Kenneth Allen",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Fallen_road_sign,_Swinging_Bars_Roundabout,_Omagh_-_geograph.org.uk_-_4962869.jpg",
+    "tituloOriginal": "File:Fallen road sign, Swinging Bars Roundabout, Omagh - geograph.org.uk - 4962869.jpg"
+  },
+  {
+    "archivo": "senalizacion/senal-entre-arboles.jpg",
+    "categoria": "senalizacion",
+    "activo": "Señal",
+    "titulos": [
+      "Señal tapada por vegetación"
+    ],
+    "autor": "Dietmar Rabich",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:D%C3%BClmen,_Kirchspiel,_ehem._Munitionslager_Visbeck,_Bunker_--_2026_--_1574.jpg",
+    "tituloOriginal": "File:Dülmen, Kirchspiel, ehem. Munitionslager Visbeck, Bunker -- 2026 -- 1574.jpg"
+  },
+  {
+    "archivo": "senalizacion/senal-tapada-ramas.jpg",
+    "categoria": "senalizacion",
+    "activo": "Señal",
+    "titulos": [
+      "Señal tapada por vegetación"
+    ],
+    "autor": "Albert Bridge",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Hidden_road_sign,_Belfast_-_geograph.org.uk_-_1594704.jpg",
+    "tituloOriginal": "File:Hidden road sign, Belfast - geograph.org.uk - 1594704.jpg"
+  },
+  {
+    "archivo": "zonas_verdes/arbol-caido-acceso.jpg",
+    "categoria": "zonas_verdes",
+    "activo": "Árbol",
+    "titulos": [
+      "Árbol caído"
+    ],
+    "autor": "Retired electrician",
+    "licencia": "CC0",
+    "licenciaUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "origen": "https://commons.wikimedia.org/wiki/File:Moscow,_Donskaya_Street,_fallen_tree_June_2022_03.jpg",
+    "tituloOriginal": "File:Moscow, Donskaya Street, fallen tree June 2022 03.jpg"
+  },
+  {
+    "archivo": "zonas_verdes/arbol-caido-barrera.jpg",
+    "categoria": "zonas_verdes",
+    "activo": "Árbol",
+    "titulos": [
+      "Árbol caído"
+    ],
+    "autor": "Retired electrician",
+    "licencia": "CC0",
+    "licenciaUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "origen": "https://commons.wikimedia.org/wiki/File:Moscow,_Donskaya_Street,_fallen_tree_June_2022_01.jpg",
+    "tituloOriginal": "File:Moscow, Donskaya Street, fallen tree June 2022 01.jpg"
+  },
+  {
+    "archivo": "zonas_verdes/arbol-caido-valla.jpg",
+    "categoria": "zonas_verdes",
+    "activo": "Árbol",
+    "titulos": [
+      "Árbol caído"
+    ],
+    "autor": "Nvss132",
+    "licencia": "CC0",
+    "licenciaUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "origen": "https://commons.wikimedia.org/wiki/File:Fallen_tree,_16th_Street_NW.jpg",
+    "tituloOriginal": "File:Fallen tree, 16th Street NW.jpg"
+  },
+  {
+    "archivo": "zonas_verdes/cesped-seco-1.jpg",
+    "categoria": "zonas_verdes",
+    "activo": "Zona ajardinada",
+    "titulos": [
+      "Césped sin mantenimiento",
+      "Riego averiado en jardín"
+    ],
+    "autor": "Famartin",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:2023-06-10_12_51_51_A_browning_lawn_during_a_dry_spell_within_Ann_M._Banchoff_Park_in_the_Mountainview_section_of_Ewing_Township,_Mercer_County,_New_Jersey.jpg",
+    "tituloOriginal": "File:2023-06-10 12 51 51 A browning lawn during a dry spell within Ann M. Banchoff Park in the Mountainview section of Ewing Township, Mercer County, New Jersey.jpg"
+  },
+  {
+    "archivo": "zonas_verdes/cesped-seco-2.jpg",
+    "categoria": "zonas_verdes",
+    "activo": "Zona ajardinada",
+    "titulos": [
+      "Césped sin mantenimiento",
+      "Riego averiado en jardín"
+    ],
+    "autor": "Mr Ignavy",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:A_very_dry_Brooklands_Lawn_-_geograph.org.uk_-_8388972.jpg",
+    "tituloOriginal": "File:A very dry Brooklands Lawn - geograph.org.uk - 8388972.jpg"
+  },
+  {
+    "archivo": "zonas_verdes/columpio-roto.jpg",
+    "categoria": "zonas_verdes",
+    "activo": "Juego infantil",
+    "titulos": [
+      "Columpio roto en el parque"
+    ],
+    "autor": "Donald Trung Quoc Don",
+    "licencia": "CC BY-SA 4.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Unchained_swing,_Provenierswijk,_Rotterdam_(2023)_02.jpg",
+    "tituloOriginal": "File:Unchained swing, Provenierswijk, Rotterdam (2023) 02.jpg"
+  },
+  {
+    "archivo": "zonas_verdes/rama-colgando.jpg",
+    "categoria": "zonas_verdes",
+    "activo": "Árbol",
+    "titulos": [
+      "Rama a punto de caer"
+    ],
+    "autor": "John Sparshatt",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Storm_Damage_-_geograph.org.uk_-_755531.jpg",
+    "tituloOriginal": "File:Storm Damage - geograph.org.uk - 755531.jpg"
+  },
+  {
+    "archivo": "zonas_verdes/tronco-partido.jpg",
+    "categoria": "zonas_verdes",
+    "activo": "Árbol",
+    "titulos": [
+      "Rama a punto de caer"
+    ],
+    "autor": "Evelyn Simak",
+    "licencia": "CC BY-SA 2.0",
+    "licenciaUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "origen": "https://commons.wikimedia.org/wiki/File:Storm_damaged_tree_-_geograph.org.uk_-_1132878.jpg",
+    "tituloOriginal": "File:Storm damaged tree - geograph.org.uk - 1132878.jpg"
+  }
+]
