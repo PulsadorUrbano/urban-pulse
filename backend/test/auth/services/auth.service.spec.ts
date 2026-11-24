@@ -50,8 +50,9 @@ describe('AuthService', () => {
       phone: '+34612345678',
     };
 
-    it('crea el usuario civic con contrase�a hasheada y su registro de ciudadano', async () => {
+    it('crea el usuario civic con contraseña hasheada y su registro de ciudadano', async () => {
       prisma.user.create.mockResolvedValue({
+        isActive: true,
         id: ID_CIUDADANO,
         username: entrada.username,
         email: entrada.email,
@@ -80,6 +81,7 @@ describe('AuthService', () => {
 
     it('guarda phone como null cuando no se indica', async () => {
       prisma.user.create.mockResolvedValue({
+        isActive: true,
         id: ID_CIUDADANO,
         username: entrada.username,
         email: entrada.email,
@@ -98,7 +100,7 @@ describe('AuthService', () => {
       expect(resultado.phone).toBeNull();
     });
 
-    it('responde con conflicto cuando la base de datos rechaza un valor �nico duplicado', async () => {
+    it('responde con conflicto cuando la base de datos rechaza un valor único duplicado', async () => {
       prisma.user.create.mockRejectedValue(
         Object.assign(new Error('Unique constraint failed'), { code: 'P2002' }),
       );
@@ -110,17 +112,18 @@ describe('AuthService', () => {
     });
 
     it('propaga errores que no son de unicidad', async () => {
-      prisma.user.create.mockRejectedValue(new Error('conexi�n perdida'));
+      prisma.user.create.mockRejectedValue(new Error('conexión perdida'));
 
       await expect(service.registrarCiudadano(entrada)).rejects.toThrow(
-        'conexi�n perdida',
+        'conexión perdida',
       );
     });
   });
 
   describe('login', () => {
-    it('devuelve un JWT con las claims del usuario cuando las credenciales son v�lidas', async () => {
+    it('devuelve un JWT con las claims del usuario cuando las credenciales son válidas', async () => {
       prisma.user.findFirst.mockResolvedValue({
+        isActive: true,
         id: ID_CIUDADANO,
         username: 'ciudadano',
         role: 'civic',
@@ -138,7 +141,7 @@ describe('AuthService', () => {
       });
     });
 
-    it('busca por email en min�sculas cuando el identificador contiene una arroba', async () => {
+    it('busca por email en minúsculas cuando el identificador contiene una arroba', async () => {
       prisma.user.findFirst.mockResolvedValue(null);
 
       await service.login('Ciudadano@Example.com', 'x').catch(() => undefined);
@@ -155,8 +158,9 @@ describe('AuthService', () => {
       );
     });
 
-    it('rechaza una contrase�a incorrecta con el mensaje gen�rico', async () => {
+    it('rechaza una contraseña incorrecta con el mensaje genérico', async () => {
       prisma.user.findFirst.mockResolvedValue({
+        isActive: true,
         id: ID_CIUDADANO,
         username: 'ciudadano',
         role: 'civic',
@@ -164,15 +168,15 @@ describe('AuthService', () => {
       });
 
       await expect(service.login('ciudadano', 'otra')).rejects.toThrow(
-        new UnauthorizedException('Usuario o contrase�a incorrectos'),
+        new UnauthorizedException('Usuario o contraseña incorrectos'),
       );
     });
 
-    it('rechaza un usuario inexistente con el mismo mensaje gen�rico', async () => {
+    it('rechaza un usuario inexistente con el mismo mensaje genérico', async () => {
       prisma.user.findFirst.mockResolvedValue(null);
 
       await expect(service.login('nadie', 'clave')).rejects.toThrow(
-        new UnauthorizedException('Usuario o contrase�a incorrectos'),
+        new UnauthorizedException('Usuario o contraseña incorrectos'),
       );
     });
   });
@@ -185,8 +189,9 @@ describe('AuthService', () => {
       role: 'civic',
     };
 
-    it('devuelve los datos actuales del usuario, incluido el tel�fono', async () => {
+    it('devuelve los datos actuales del usuario, incluido el teléfono', async () => {
       prisma.user.findUnique.mockResolvedValue({
+        isActive: true,
         id: ID_CIUDADANO,
         username: 'ciudadano',
         email: 'ciudadano@example.com',
@@ -214,9 +219,10 @@ describe('AuthService', () => {
 
   afterEach(() => vi.restoreAllMocks());
   it.each(['persona', 'Persona@Example.com'])(
-    'emite token con identidad p�blica y una hora de vida para %s',
+    'emite token con identidad pública y una hora de vida para %s',
     async (identificador) => {
       prisma.user.findFirst.mockResolvedValue({
+        isActive: true,
         id: ID_CIUDADANO,
         username: 'persona',
         role: 'civic',
@@ -251,6 +257,7 @@ describe('AuthService', () => {
   });
   it('propaga un fallo de firma sin emitir token de respaldo', async () => {
     prisma.user.findFirst.mockResolvedValue({
+      isActive: true,
       id: ID_CIUDADANO,
       username: 'persona',
       role: 'civic',
@@ -262,6 +269,7 @@ describe('AuthService', () => {
   });
   it('me devuelve el perfil actual, no el rol o nombre antiguo del JWT', async () => {
     prisma.user.findUnique.mockResolvedValue({
+      isActive: true,
       id: ID_CIUDADANO,
       username: 'nombre.actual',
       email: 'actual@example.com',

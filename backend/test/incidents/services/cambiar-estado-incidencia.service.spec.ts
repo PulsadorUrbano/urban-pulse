@@ -36,13 +36,16 @@ describe('Cambio de estado de incidencias', () => {
     async (status) => {
       await configurar();
       const creada = await servicio.create({
+        category: 'Iluminación',
+        latitude: 36.72,
+        longitude: -4.42,
         title: 'Farola apagada',
         civicId: propietario,
       });
       const actualizada = await servicio.cambiarEstado(
         creada.id,
         { status, cause: '  Revisada por el equipo  ' },
-        actor.toUpperCase(),
+        { id: actor.toLowerCase(), role: 'admin', ciudadanoId: null },
       );
 
       expect(actualizada).toEqual({ ...creada, status });
@@ -52,6 +55,7 @@ describe('Cambio de estado de incidencias', () => {
       await expect(
         servicio.consultarCambiosEstado(creada.id),
       ).resolves.toMatchObject([
+        { nuevoEstado: 'reported', actorId: propietario },
         {
           incidenciaId: creada.id,
           actorId: actor,
@@ -65,12 +69,19 @@ describe('Cambio de estado de incidencias', () => {
   it('solo permite una de dos transiciones concurrentes desde reported', async () => {
     await configurar();
     const creada = await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
       title: 'Banco roto',
       civicId: propietario,
     });
     const resultados = await Promise.allSettled(
       (['validated', 'rejected'] as const).map((status) =>
-        servicio.cambiarEstado(creada.id, { status, cause: 'Revisada' }, actor),
+        servicio.cambiarEstado(
+          creada.id,
+          { status, cause: 'Revisada' },
+          { id: actor, role: 'admin', ciudadanoId: null },
+        ),
       ),
     );
     expect(
@@ -84,7 +95,7 @@ describe('Cambio de estado de incidencias', () => {
     );
     await expect(
       servicio.consultarCambiosEstado(creada.id),
-    ).resolves.toHaveLength(1);
+    ).resolves.toHaveLength(2);
   });
 
   it('devuelve 404 para una incidencia ausente', async () => {
@@ -93,7 +104,7 @@ describe('Cambio de estado de incidencias', () => {
       servicio.cambiarEstado(
         propietario,
         { status: 'validated', cause: 'Revisada' },
-        actor,
+        { id: actor, role: 'admin', ciudadanoId: null },
       ),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
@@ -101,6 +112,9 @@ describe('Cambio de estado de incidencias', () => {
   it('rechaza motivos vacíos sin cambiar el estado', async () => {
     await configurar();
     const creada = await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
       title: 'Banco roto',
       civicId: propietario,
     });
@@ -108,7 +122,7 @@ describe('Cambio de estado de incidencias', () => {
       servicio.cambiarEstado(
         creada.id,
         { status: 'rejected', cause: '   ' },
-        actor,
+        { id: actor, role: 'admin', ciudadanoId: null },
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
     await expect(servicio.findOne(creada.id, operador)).resolves.toEqual(
@@ -119,6 +133,9 @@ describe('Cambio de estado de incidencias', () => {
   it('revierte el cambio de estado si falla el alta de historial', async () => {
     await configurar(new Error('constraint detail must not leak'));
     const creada = await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
       title: 'Banco roto',
       civicId: propietario,
     });
@@ -126,7 +143,7 @@ describe('Cambio de estado de incidencias', () => {
       servicio.cambiarEstado(
         creada.id,
         { status: 'validated', cause: 'Revisada' },
-        actor,
+        { id: actor, role: 'admin', ciudadanoId: null },
       ),
     ).rejects.toMatchObject({
       status: 503,
@@ -135,8 +152,80 @@ describe('Cambio de estado de incidencias', () => {
     await expect(servicio.findOne(creada.id, operador)).resolves.toEqual(
       creada,
     );
-    await expect(servicio.consultarCambiosEstado(creada.id)).resolves.toEqual(
-      [],
-    );
+    await expect(servicio.consultarCambiosEstado(creada.id)).resolves.toEqual([
+      expect.objectContaining({ nuevoEstado: 'reported' }),
+    ]);
+  });
+});
+
+describe('Matriz de estados y permisos', () => {
+  const usuario = {
+    id: actor,
+    role: 'technician',
+    ciudadanoId: propietario,
+    equipoId: propietario,
+    esTecnico: true,
+  } as const;
+  it.each([
+    ['assigned', 'in_progress', usuario],
+    ['in_progress', 'resolved', usuario],
+    ['resolved', 'closed', operador],
+    ['resolved', 'reopened', operador],
+    ['closed', 'reopened', operador],
+  ] as const)(
+    'autoriza %s a %s con actor válido',
+    async (origen, destino, actorActual) => {
+      const fake = crearPrismaIncidenciasFake();
+      const servicio = new IncidentsService(fake.prisma);
+      const creada = await servicio.create({
+        title: 'Banco roto',
+        civicId: propietario,
+        category: 'Iluminación',
+        latitude: 0,
+        longitude: 0,
+      });
+      Object.assign(fake.incidencias[0], {
+        status: origen,
+        departmentId: propietario,
+        teamId: propietario,
+        technicianId: actor,
+      });
+      await expect(
+        servicio.cambiarEstado(
+          creada.id,
+          { status: destino, cause: 'Actuación comprobada' },
+          actorActual,
+        ),
+      ).resolves.toMatchObject({ status: destino });
+      expect(fake.cambiosEstado.at(-1)).toMatchObject({
+        actorId: actor,
+        nuevoEstado: destino,
+      });
+    },
+  );
+  it('un técnico distinto no puede resolver y no altera el historial', async () => {
+    const fake = crearPrismaIncidenciasFake();
+    const servicio = new IncidentsService(fake.prisma);
+    const creada = await servicio.create({
+      title: 'Banco roto',
+      civicId: propietario,
+      category: 'Iluminación',
+      latitude: 0,
+      longitude: 0,
+    });
+    Object.assign(fake.incidencias[0], {
+      status: 'in_progress',
+      teamId: propietario,
+      technicianId: propietario,
+    });
+    await expect(
+      servicio.cambiarEstado(
+        creada.id,
+        { status: 'resolved', cause: 'Reparada' },
+        usuario,
+      ),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(fake.incidencias[0].status).toBe('in_progress');
+    expect(fake.cambiosEstado).toHaveLength(1);
   });
 });

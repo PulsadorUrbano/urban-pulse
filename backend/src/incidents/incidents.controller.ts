@@ -1,8 +1,10 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   ForbiddenException,
   Get,
+  Headers,
   Logger,
   UploadedFiles,
   UseInterceptors,
@@ -17,6 +19,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiHeader,
   ApiBadGatewayResponse,
   ApiBearerAuth,
   ApiBody,
@@ -35,7 +38,11 @@ import {
 import type { Response } from 'express';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
-import { IncidentPriority, IncidentStatus } from '../generated/prisma/enums.js';
+import {
+  AddressDistrict,
+  IncidentPriority,
+  IncidentStatus,
+} from '../generated/prisma/enums.js';
 import { CambiarEstadoIncidenciaPipe } from './cambiar-estado-incidencia.pipe.js';
 import { CambiarPrioridadIncidenciaPipe } from './cambiar-prioridad-incidencia.pipe.js';
 import { AsignarIncidenciaPipe } from './asignar-incidencia.pipe.js';
@@ -99,12 +106,22 @@ const incidentSchema = {
     urbanAssetId: { type: 'string', format: 'uuid', nullable: true },
     location: {
       type: 'object',
-      required: ['latitude', 'longitude', 'accuracy', 'createdAt'],
+      required: ['latitude', 'longitude', 'accuracy', 'createdAt', 'address'],
       properties: {
-        latitude: { type: 'number', nullable: true },
-        longitude: { type: 'number', nullable: true },
+        latitude: { type: 'number' },
+        longitude: { type: 'number' },
         accuracy: { type: 'number', nullable: true },
         createdAt: { type: 'string', format: 'date-time' },
+        address: {
+          type: 'object',
+          nullable: true,
+          required: ['street', 'zipCode', 'district'],
+          properties: {
+            street: { type: 'string' },
+            zipCode: { type: 'string', pattern: '^[0-9]{5}$' },
+            district: { type: 'string', enum: Object.values(AddressDistrict) },
+          },
+        },
       },
     },
     images: {
@@ -149,7 +166,7 @@ export class IncidentsController {
 
   @Get('assignment-options')
   @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
-  @SetMetadata('rolesIncidencias', ['admin', 'administrative'])
+  @SetMetadata('rolesIncidencias', ['admin', 'administrative', 'department'])
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Consultar departamentos, equipos y técnicos asignables',
@@ -161,20 +178,32 @@ export class IncidentsController {
     description: 'JWT inválido o usuario inexistente.',
   })
   @ApiForbiddenResponse({
-    description: 'Se requiere rol admin o administrative.',
+    description: 'Se requiere rol admin, administrative o department autorizado.',
   })
   @ApiServiceUnavailableResponse({
     description: 'PostgreSQL no está disponible.',
   })
-  opcionesAsignacion(): Promise<OpcionesAsignacion> {
-    return this.incidentsService.opcionesAsignacion();
+  opcionesAsignacion(
+    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
+  ): Promise<OpcionesAsignacion> {
+    return this.incidentsService.opcionesAsignacion(usuario);
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
+  @SetMetadata('rolesIncidencias', [
+    'civic',
+    'admin',
+    'administrative',
+    'department',
+    'team',
+    'technician',
+  ])
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Consultar todas las incidencias o filtrarlas por ciudadano',
     description:
-      'Sin civicId devuelve todas las incidencias. Con civicId devuelve solo las de ese ciudadano. Prototipo sin autenticación: civicId es un filtro del cliente, no acredita identidad ni propiedad (DEUDA-27-01). No devuelve trazabilidad.',
+      'Requiere JWT. Admin y administrative pueden consultar todas las incidencias o filtrar por ciudadano. Los demás roles autorizados solo pueden consultar su propio civicId si tienen perfil ciudadano. No devuelve trazabilidad.',
   })
   @ApiQuery({ name: 'civicId', required: false, type: String, format: 'uuid' })
   @ApiQuery({
@@ -232,13 +261,30 @@ export class IncidentsController {
     description:
       'Parámetros inválidos o desconocidos, limit fuera del rango 1–100 o cursor inválido.',
   })
+  @ApiUnauthorizedResponse({
+    description: 'JWT inválido o usuario inexistente.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Rol insuficiente o filtro ciudadano ausente o ajeno.',
+  })
   @ApiServiceUnavailableResponse({
     description: 'PostgreSQL no está disponible.',
   })
   listar(
     @Query(new ListarIncidenciasPipe()) consulta: ConsultaListadoIncidencias,
     @Res({ passthrough: true }) response: Response,
+    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
   ): Promise<ResumenIncidencia[]> {
+    const puedeConsultarGlobal =
+      usuario.role === 'admin' || usuario.role === 'administrative';
+    if (
+      !puedeConsultarGlobal &&
+      (usuario.ciudadanoId === null || consulta.civicId !== usuario.ciudadanoId)
+    ) {
+      throw new ForbiddenException(
+        'El ciudadano solo puede consultar sus incidencias',
+      );
+    }
     return this.incidentsService
       .listarPagina(consulta.limit, consulta.cursor, consulta.civicId)
       .then((pagina) => {
@@ -280,7 +326,7 @@ export class IncidentsController {
     schema: {
       type: 'object',
       additionalProperties: false,
-      required: ['title'],
+      required: ['title', 'latitude', 'longitude'],
       properties: {
         title: { type: 'string', minLength: 4, maxLength: 35 },
         description: { type: 'string' },
@@ -290,12 +336,22 @@ export class IncidentsController {
         longitude: { type: 'number', minimum: -180, maximum: 180 },
         accuracy: { type: 'number', minimum: 0 },
         urbanAssetId: { type: 'string', format: 'uuid' },
+        address: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['street', 'zipCode', 'district'],
+          properties: {
+            street: { type: 'string', minLength: 1 },
+            zipCode: { type: 'string', pattern: '^[0-9]{5}$' },
+            district: { type: 'string', enum: Object.values(AddressDistrict) },
+          },
+        },
       },
     },
   })
   @ApiCreatedResponse({
     description:
-      'Incidencia y ubicación persistidas en PostgreSQL. images se conserva temporalmente y siempre vale [].',
+      'Incidencia y ubicación persistidas en PostgreSQL. images comienza vacío; las fotos se añaden después.',
     schema: incidentSchema,
     headers: {
       Location: {
@@ -338,6 +394,11 @@ export class IncidentsController {
   @ApiBearerAuth()
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Añadir fotos a una incidencia propia' })
+  @ApiHeader({
+    name: 'Idempotency-Key',
+    required: false,
+    description: 'UUID v4 de la tanda. Reutilizarlo al reintentar la misma subida.',
+  })
   @ApiBody({
     schema: {
       type: 'object',
@@ -356,7 +417,7 @@ export class IncidentsController {
     description: 'Lista completa de fotos con URL temporales de lectura.',
   })
   @ApiBadRequestResponse({
-    description: 'Archivo ausente, inválido o superior a 5 MiB.',
+    description: 'Archivo ausente o inválido, o clave de idempotencia inválida.',
   })
   @ApiUnauthorizedResponse({ description: 'JWT inválido o ausente.' })
   @ApiForbiddenResponse({
@@ -372,13 +433,22 @@ export class IncidentsController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @UploadedFiles() archivos: ArchivoFoto[],
     @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
+    @Headers('idempotency-key') claveIdempotencia?: string,
   ) {
     if (!usuario.ciudadanoId)
       throw new ForbiddenException('Se requiere un ciudadano vinculado');
+    if (
+      claveIdempotencia !== undefined &&
+      (typeof claveIdempotencia !== 'string' ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(claveIdempotencia))
+    ) {
+      throw new BadRequestException('Idempotency-Key debe ser un UUID v4.');
+    }
     return this.fotosService.subir(
       id,
       usuario.ciudadanoId,
       validarFotosIncidencia(archivos ?? []),
+      claveIdempotencia?.toLowerCase(),
     );
   }
 
@@ -392,11 +462,17 @@ export class IncidentsController {
       'El rol actual o la vinculación ciudadana no permite la operación.',
   })
   @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
-  @SetMetadata('rolesIncidencias', ['admin', 'administrative'])
+  @SetMetadata('rolesIncidencias', [
+    'admin',
+    'administrative',
+    'department',
+    'team',
+    'technician',
+  ])
   @ApiOperation({
-    summary: 'Validar o rechazar una incidencia con motivo',
+    summary: 'Cambiar el estado de una incidencia con motivo',
     description:
-      'Solo admin o administrative actuales. El actor de auditoría procede de la identidad autenticada y el cambio se persiste atómicamente con su historial.',
+      'Aplica la matriz de transiciones y el ámbito del departamento o técnico asignado. El actor procede del token y el cambio se persiste con su historial.',
   })
   @ApiBody({
     schema: {
@@ -404,7 +480,17 @@ export class IncidentsController {
       additionalProperties: false,
       required: ['status', 'cause'],
       properties: {
-        status: { type: 'string', enum: ['validated', 'rejected'] },
+        status: {
+          type: 'string',
+          enum: [
+            'validated',
+            'rejected',
+            'in_progress',
+            'resolved',
+            'reopened',
+            'closed',
+          ],
+        },
         cause: { type: 'string', minLength: 1 },
       },
     },
@@ -413,7 +499,7 @@ export class IncidentsController {
   @ApiBadRequestResponse({ description: 'UUID o cuerpo inválido.' })
   @ApiNotFoundResponse({ description: 'La incidencia no existe.' })
   @ApiConflictResponse({
-    description: 'La incidencia ya no está en estado reported.',
+    description: 'La transición no está permitida o la incidencia cambió.',
   })
   @ApiServiceUnavailableResponse({
     description: 'PostgreSQL no está disponible.',
@@ -427,7 +513,7 @@ export class IncidentsController {
     const incidencia = await this.incidentsService.cambiarEstado(
       idIncidencia,
       entrada,
-      usuario.id,
+      usuario,
     );
     return this.responderConFotos(incidencia);
   }
@@ -484,7 +570,7 @@ export class IncidentsController {
 
   @Patch(':id/assignment')
   @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
-  @SetMetadata('rolesIncidencias', ['admin', 'administrative'])
+  @SetMetadata('rolesIncidencias', ['admin', 'administrative', 'department'])
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Asignar departamento, equipo y técnico a una incidencia',
@@ -493,8 +579,13 @@ export class IncidentsController {
     schema: {
       type: 'object',
       additionalProperties: false,
-      minProperties: 1,
+      anyOf: [
+        { required: ['departmentId'] },
+        { required: ['teamId'] },
+        { required: ['technicianId'] },
+      ],
       properties: {
+        cause: { type: 'string', description: 'Comentarios adicionales' },
         departmentId: { type: 'string', format: 'uuid', nullable: true },
         teamId: { type: 'string', format: 'uuid', nullable: true },
         technicianId: { type: 'string', format: 'uuid', nullable: true },
@@ -509,7 +600,7 @@ export class IncidentsController {
     description: 'JWT inválido o usuario inexistente.',
   })
   @ApiForbiddenResponse({
-    description: 'Se requiere rol admin o administrative.',
+    description: 'Se requiere rol admin, administrative o department autorizado.',
   })
   @ApiNotFoundResponse({ description: 'La incidencia no existe.' })
   @ApiConflictResponse({
@@ -521,9 +612,28 @@ export class IncidentsController {
   async asignar(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body(new AsignarIncidenciaPipe()) cambio: CambioAsignacionIncidencia,
+    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
   ): Promise<Incident> {
-    const incidencia = await this.incidentsService.asignar(id, cambio);
+    const incidencia = await this.incidentsService.asignar(id, cambio, usuario);
     return this.responderConFotos(incidencia);
+  }
+
+  @Get(':id/assignments')
+  @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
+  @SetMetadata('rolesIncidencias', [
+    'admin',
+    'administrative',
+    'department',
+    'team',
+    'technician',
+  ])
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Consultar el historial de asignaciones' })
+  consultarAsignaciones(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @UsuarioIncidenciasActual() usuario: UsuarioIncidencias,
+  ) {
+    return this.incidentsService.consultarCambiosAsignacion(id, usuario);
   }
 
   private async responderConFotos(incidencia: Incident): Promise<Incident> {
@@ -548,11 +658,18 @@ export class IncidentsController {
       'El rol actual o la vinculación ciudadana no permite la operación.',
   })
   @UseGuards(JwtAuthGuard, AccesoIncidenciasGuard)
-  @SetMetadata('rolesIncidencias', ['civic', 'admin', 'administrative'])
+  @SetMetadata('rolesIncidencias', [
+    'civic',
+    'admin',
+    'administrative',
+    'department',
+    'team',
+    'technician',
+  ])
   @ApiOperation({
     summary: 'Consultar una incidencia por identificador',
     description:
-      'Los operadores pueden consultar cualquier incidencia. Un ciudadano solo puede consultar las suyas; una ajena responde 404 para no revelar su existencia.',
+      'Cada operador consulta incidencias de su ámbito. Un ciudadano puede consultar las suyas; una ajena responde 404 para no revelar su existencia.',
   })
   @ApiOkResponse({ schema: incidentSchema })
   @ApiBadRequestResponse({ description: 'El identificador no es un UUID.' })

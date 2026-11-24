@@ -5,6 +5,15 @@ import {
 } from '@nestjs/common';
 import type { CambiarEstadoIncidenciaInput } from './incident.js';
 
+const estadosPermitidos: readonly string[] = [
+  'validated',
+  'rejected',
+  'in_progress',
+  'resolved',
+  'reopened',
+  'closed',
+];
+
 @Injectable()
 export class CambiarEstadoIncidenciaPipe implements PipeTransform<
   unknown,
@@ -19,15 +28,19 @@ export class CambiarEstadoIncidenciaPipe implements PipeTransform<
         (campo) => !['status', 'cause'].includes(campo),
       ) ||
       !('status' in entrada) ||
-      (entrada.status !== 'validated' && entrada.status !== 'rejected') ||
+      typeof entrada.status !== 'string' ||
+      !estadosPermitidos.includes(entrada.status) ||
       !('cause' in entrada) ||
       typeof entrada.cause !== 'string' ||
       !entrada.cause.trim()
     ) {
       throw new BadRequestException(
-        'Se requieren status validated o rejected y cause no vacío, sin otros campos',
+        `Se requiere status con uno de estos valores: ${estadosPermitidos.join(', ')}. cause debe ser no vacío y el cuerpo no admite otros campos.`,
       );
     }
-    return { status: entrada.status, cause: entrada.cause.trim() };
+    return {
+      status: entrada.status as CambiarEstadoIncidenciaInput['status'],
+      cause: entrada.cause.trim(),
+    };
   }
 }

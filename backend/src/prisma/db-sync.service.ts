@@ -6,7 +6,10 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 /** Comandos del CLI de Prisma disponibles en DB_SYNC. */
-const SYNC_COMMANDS = { dbpush: 'db push', deploy: 'migrate deploy' } as const;
+const SYNC_COMMANDS = {
+  dbpush: ['db', 'push'],
+  deploy: ['migrate', 'deploy'],
+} as const;
 export type DbSyncMode = keyof typeof SYNC_COMMANDS;
 
 const exec = promisify(execFile);
@@ -19,24 +22,19 @@ export class DbSyncService implements OnModuleInit {
   constructor(private readonly config: ConfigService) {}
 
   async onModuleInit(): Promise<void> {
-    const mode = this.config.get<string>('DB_SYNC') as DbSyncMode | undefined;
-    if (!mode || !(mode in SYNC_COMMANDS)) return;
+    const mode = this.config.get<DbSyncMode>('DB_SYNC');
+    if (mode !== 'dbpush' && mode !== 'deploy') return;
 
     const cli = join('node_modules', 'prisma', 'build', 'index.js');
     if (!existsSync(cli)) {
-      this.logger.warn(`DB_SYNC=${mode}: no se encontró el CLI de Prisma`);
-      return;
+      throw new Error(`DB_SYNC=${mode}: no se encontró el CLI de Prisma`);
     }
 
-    try {
-      const { stdout } = await exec(
-        process.execPath,
-        [cli, ...SYNC_COMMANDS[mode].split(' ')],
-        { cwd: process.cwd() },
-      );
-      this.logger.log(`DB_SYNC=${mode}: ${stdout.trim().split('\n').pop()}`);
-    } catch (error) {
-      this.logger.error(`DB_SYNC=${mode} falló: ${String(error)}`);
-    }
+    const { stdout } = await exec(
+      process.execPath,
+      [cli, ...SYNC_COMMANDS[mode], '--config', 'prisma7.config.ts'],
+      { cwd: process.cwd() },
+    );
+    this.logger.log(`DB_SYNC=${mode}: ${stdout.trim().split('\n').pop()}`);
   }
 }

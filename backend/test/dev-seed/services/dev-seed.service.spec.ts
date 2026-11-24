@@ -42,7 +42,7 @@ describe('DevSeedService', () => {
     expect(prisma.user.upsert).not.toHaveBeenCalled();
   });
 
-  it('crea el admin y un ciudadano civic con contrase�a hasheada en development', async () => {
+  it('crea el admin y un ciudadano civic con contraseña hasheada en development', async () => {
     config.get.mockReturnValue('development');
 
     await crearServicio().onModuleInit();
@@ -63,7 +63,7 @@ describe('DevSeedService', () => {
 
   it('registra un aviso y no lanza error si la base de datos falla', async () => {
     config.get.mockReturnValue('development');
-    prisma.user.upsert.mockRejectedValue(new Error('sin conexi�n'));
+    prisma.user.upsert.mockRejectedValue(new Error('sin conexión'));
 
     await expect(crearServicio().onModuleInit()).resolves.toBeUndefined();
     expect(warnSpy).toHaveBeenCalled();

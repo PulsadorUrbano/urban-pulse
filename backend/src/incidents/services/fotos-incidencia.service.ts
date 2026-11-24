@@ -27,11 +27,16 @@ export class FotosIncidenciaService {
     idIncidencia: string,
     idCiudadano: string,
     fotos: FotoValidada[],
+    claveIdempotencia?: string,
   ): Promise<ImagenIncidencia[]> {
     const id = idIncidencia.toLowerCase();
     const ciudadano = idCiudadano.toLowerCase();
     let existente: { civicId: string } | null;
     let cantidad: number;
+    let repetida = false;
+    const lote = claveIdempotencia
+      ? { incidentId: id, idempotencyKey: claveIdempotencia }
+      : undefined;
     try {
       [existente, cantidad] = await Promise.all([
         this.prisma.incident.findUnique({
@@ -40,6 +45,15 @@ export class FotosIncidenciaService {
         }),
         this.prisma.incidentImage.count({ where: { incidentId: id } }),
       ]);
+      // Consultar la clave después del recuento por si otra petición acaba de confirmar el lote.
+      if (existente?.civicId === ciudadano && lote) {
+        repetida = Boolean(
+          await this.prisma.incidentImage.findFirst({
+            where: lote,
+            select: { id: true },
+          }),
+        );
+      }
     } catch {
       throw new ServiceUnavailableException(
         'El almacenamiento de incidencias no está disponible.',
@@ -47,9 +61,11 @@ export class FotosIncidenciaService {
     }
     if (!existente || existente.civicId !== ciudadano)
       throw new NotFoundException('La incidencia no existe');
+    if (repetida) return this.listar(id);
     if (cantidad + fotos.length > LIMITE_FOTOS)
       throw new ConflictException('La incidencia ya tiene el máximo de fotos.');
 
+    this.almacenamiento.comprobarConfiguracion();
     const fecha = new Date();
     const filas = fotos.map((foto) => {
       const idFoto = randomUUID();
@@ -58,6 +74,7 @@ export class FotosIncidenciaService {
         incidentId: id,
         objectKey: `incidents/${id}/${idFoto}.${foto.extension}`,
         mimeType: foto.mimeType,
+        idempotencyKey: claveIdempotencia ?? null,
         createdAt: fecha,
       };
     });
@@ -77,7 +94,7 @@ export class FotosIncidenciaService {
     }
 
     try {
-      await this.prisma.$transaction(async (tx) => {
+      const insertadas = await this.prisma.$transaction(async (tx) => {
         const bloqueada = await tx.$queryRaw<
           { id: string }[]
         >`SELECT "id" FROM "Incident" WHERE "id" = ${id}::uuid FOR UPDATE`;
@@ -89,6 +106,15 @@ export class FotosIncidenciaService {
         });
         if (!actual || actual.civicId !== ciudadano)
           throw new NotFoundException('La incidencia no existe');
+        if (
+          lote &&
+          (await tx.incidentImage.findFirst({
+            where: lote,
+            select: { id: true },
+          }))
+        ) {
+          return false;
+        }
         const total = await tx.incidentImage.count({
           where: { incidentId: id },
         });
@@ -97,7 +123,9 @@ export class FotosIncidenciaService {
             'La incidencia ya tiene el máximo de fotos.',
           );
         await tx.incidentImage.createMany({ data: filas });
+        return true;
       });
+      if (!insertadas) await this.limpiar(intentadas);
     } catch (error) {
       if (
         error instanceof NotFoundException ||

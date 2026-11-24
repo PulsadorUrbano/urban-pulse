@@ -10,7 +10,7 @@ export class CategoriesController {
 
   @Get()
   @ApiOkResponse({
-    description: 'Available categories from the temporary in-memory catalog.',
+    description: 'Categorías persistidas en PostgreSQL.',
     schema: {
       type: 'array',
       items: {
@@ -24,7 +24,7 @@ export class CategoriesController {
       },
     },
   })
-  findAll(): Category[] {
+  findAll(): Promise<Category[]> {
     return this.categoriesService.findAll();
   }
 }

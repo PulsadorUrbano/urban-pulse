@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   NotFoundException,
   ServiceUnavailableException,
@@ -67,6 +68,129 @@ describe('IncidentsService', () => {
       priority: 'low',
     });
     expect(await service.findOne(created.id, propietario)).toEqual(created);
+    await module.close();
+  });
+
+  it('no concede una incidencia sin asignar a un departamento sin pertenencia', async () => {
+    const module = await crearServicio();
+    const created = await service.create(input);
+    await expect(
+      service.findOne(created.id, {
+        id: randomUUID(),
+        role: 'department',
+        ciudadanoId: null,
+        departamentoId: null,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    await module.close();
+  });
+
+  it('limita el acceso por equipo a sus roles y conserva el acceso ciudadano propio', async () => {
+    const module = await crearServicio();
+    const created = await service.create(input);
+    const teamId = randomUUID();
+    prisma.incidencias[0].teamId = teamId;
+
+    await expect(
+      service.findOne(created.id, {
+        id: randomUUID(),
+        role: 'civic',
+        ciudadanoId: randomUUID(),
+        equipoId: teamId,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      service.findOne(created.id, {
+        id: randomUUID(),
+        role: 'technician',
+        ciudadanoId: null,
+        equipoId: teamId,
+      }),
+    ).resolves.toMatchObject({ id: created.id });
+    await module.close();
+  });
+
+  it('rechaza una incidencia sin ubicación y no escribe filas', async () => {
+    const module = await crearServicio();
+    await expect(
+      service.create({
+        title: 'Farola apagada',
+        civicId: input.civicId,
+        category: 'Iluminación',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.ubicaciones).toHaveLength(0);
+    expect(prisma.incidencias).toHaveLength(0);
+    await module.close();
+  });
+
+  it('guarda y consulta una incidencia sin categoría y con descripción corta', async () => {
+    const module = await crearServicio();
+    const { categoryId: _categoryId, category: _category, ...sinCategoria } = input;
+    const creada = await service.create({ ...sinCategoria, description: 'Rota' });
+
+    expect(prisma.incidencias[0]).toMatchObject({ categoryId: null, description: 'Rota' });
+    expect(creada).toMatchObject({ categoryId: null, category: null, description: 'Rota' });
+    expect(await service.findOne(creada.id, propietario)).toEqual(creada);
+    await module.close();
+  });
+
+  it('rechaza una categoría inexistente sin guardar la incidencia', async () => {
+    const module = await crearServicio(
+      crearPrismaIncidenciasFake({ categoriaInexistente: true }),
+    );
+    await expect(service.create(input)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    expect(prisma.incidencias).toHaveLength(0);
+    await module.close();
+  });
+
+  it('rechaza un activo urbano inexistente sin guardar la incidencia', async () => {
+    const module = await crearServicio(
+      crearPrismaIncidenciasFake({ activoInexistente: true }),
+    );
+    await expect(
+      service.create({ ...input, urbanAssetId: randomUUID() }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.incidencias).toHaveLength(0);
+    await module.close();
+  });
+
+  it('enlaza una categoría indicada solo por nombre', async () => {
+    const module = await crearServicio();
+    const created = await service.create({
+      latitude: 36.72,
+      longitude: -4.42,
+      title: 'Farola apagada',
+      civicId: input.civicId,
+      category: 'Iluminación',
+    });
+    expect(created.categoryId).toBe('10000000-0000-4000-8000-000000000001');
+    expect(created.category).toBe('Iluminación');
+    await module.close();
+  });
+
+  it('guarda una dirección normalizada con la ubicación', async () => {
+    const module = await crearServicio();
+    const created = await service.create({
+      category: 'Iluminación',
+      title: 'Farola apagada',
+      civicId: input.civicId,
+      latitude: 36.7213,
+      longitude: -4.4214,
+      address: {
+        street: 'Calle Larios',
+        zipCode: '29005',
+        district: 'centro',
+      },
+    });
+
+    expect(created.location.address).toEqual({
+      street: 'Calle Larios',
+      zipCode: '29005',
+      district: 'centro',
+    });
     await module.close();
   });
 

@@ -17,7 +17,7 @@ export const DEV_CITIZEN_USERNAME = 'ciudadano';
 export const DEV_CITIZEN_PASSWORD = 'ciudadano';
 
 /** Garantiza usuarios de prueba (admin y ciudadano) al arrancar en modo development.
- *  Por defecto (sin NODE_ENV) la app se considera producci�n y no se ejecuta. */
+ *  Por defecto (sin NODE_ENV) la app se considera producción y no se ejecuta. */
 @Injectable()
 export class DevSeedService implements OnModuleInit {
   private readonly logger = new Logger(DevSeedService.name);

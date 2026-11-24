@@ -13,12 +13,29 @@ datasource db {
   provider = "postgresql"
 }
 
-// Temporary incident aggregate. No database or migrations are activated.
 enum IncidentStatus {
   reported
   validated
   rejected
   assigned
+  in_progress
+  resolved
+  reopened
+  closed
+}
+
+enum AddressDistrict {
+  centro
+  este
+  ciudad_jardin
+  bailen_miraflores
+  palma_palmilla
+  cruz_del_humilladero
+  carretera_de_cadiz
+  churriana
+  campanillas
+  puerto_de_la_torre
+  teatinos_universidad
 }
 
 enum IncidentPriority {
@@ -28,113 +45,173 @@ enum IncidentPriority {
 }
 
 model Incident {
-  id               String            @id @default(uuid()) @db.Uuid
-  title            String
-  description      String?
-  civicId          String            @db.Uuid
-  categoryId       String?           @db.Uuid
-  category         String?
-  urbanAssetId     String?           @db.Uuid
-  departmentId     String?           @db.Uuid
-  teamId           String?           @db.Uuid
-  technicianId     String?           @db.Uuid
-  department       Department?       @relation(fields: [departmentId], references: [id], onDelete: Restrict)
-  team             Team?             @relation(fields: [teamId], references: [id], onDelete: Restrict)
-  technician       User?             @relation("IncidentTechnician", fields: [technicianId], references: [id], onDelete: Restrict)
-  status           IncidentStatus    @default(reported)
-  priority         IncidentPriority  @default(low)
-  createdAt        DateTime          @default(now())
-  location         IncidentLocation?
-  images           IncidentImage[]
-  cambiosEstado    CambioEstado[]
-  cambiosPrioridad CambioPrioridad[]
+  id                String             @id @default(uuid()) @db.Uuid
+  title             String
+  description       String?
+  civicId           String             @db.Uuid
+  civic             Citizen           @relation(fields: [civicId], references: [user_id], onDelete: Restrict)
+  categoryId        String?            @db.Uuid
+  categoria         Category?          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  urbanAssetId      String?            @db.Uuid
+  urbanAsset        UrbanAsset?        @relation(fields: [urbanAssetId], references: [id], onDelete: Restrict)
+  departmentId      String?            @db.Uuid
+  teamId            String?            @db.Uuid
+  technicianId      String?            @db.Uuid
+  department        Department?        @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  team              Team?              @relation(fields: [teamId, departmentId], references: [id, departmentId], onDelete: Restrict)
+  technician        TeamMember?        @relation(fields: [technicianId, teamId], references: [userId, teamId], onDelete: Restrict)
+  status            IncidentStatus     @default(reported)
+  priority          IncidentPriority   @default(low)
+  createdAt         DateTime           @default(now())
+  location          IncidentLocation?
+  cambiosEstado     CambioEstado[]
+  cambiosPrioridad  CambioPrioridad[]
+  cambiosAsignacion CambioAsignacion[]
+  images            IncidentImage[]
 
   @@index([departmentId])
+  @@index([civicId, createdAt, id])
+  @@index([categoryId])
+  @@index([urbanAssetId])
   @@index([teamId])
-  @@index([technicianId])
+  @@index([technicianId, teamId])
 }
 
-model Department {
+model Category {
+  code           String     @unique
+  isActive       Boolean    @default(true)
+  id             String     @id @default(uuid()) @db.Uuid
+  name           String     @unique
+  normalizedName String     @unique
+  createdAt      DateTime   @default(now())
+  incidents      Incident[]
+}
+
+model UrbanAsset {
   id        String     @id @default(uuid()) @db.Uuid
-  name      String     @unique
-  teams     Team[]
+  name      String?    @unique
   incidents Incident[]
 }
 
+model Department {
+  departamentoNuevoCambios    CambioAsignacion[] @relation("DepartamentoNuevo")
+  departamentoAnteriorCambios CambioAsignacion[] @relation("DepartamentoAnterior")
+  members                     DepartmentMember[]
+  isActive                    Boolean            @default(true)
+  id                          String             @id @default(uuid()) @db.Uuid
+  name                        String             @unique
+  teams                       Team[]
+  incidents                   Incident[]
+}
+
 model Team {
-  id           String       @id @default(uuid()) @db.Uuid
-  name         String
-  departmentId String       @db.Uuid
-  department   Department   @relation(fields: [departmentId], references: [id])
-  members      TeamMember[]
-  incidents    Incident[]
+  equipoNuevoCambios    CambioAsignacion[] @relation("EquipoNuevo")
+  equipoAnteriorCambios CambioAsignacion[] @relation("EquipoAnterior")
+  isActive              Boolean            @default(true)
+  id                    String             @id @default(uuid()) @db.Uuid
+  name                  String
+  departmentId          String             @db.Uuid
+  department            Department         @relation(fields: [departmentId], references: [id])
+  members               TeamMember[]
+  incidents             Incident[]
 
   @@unique([departmentId, name])
+  @@unique([id, departmentId])
   @@index([departmentId])
 }
 
 model TeamMember {
-  userId       String  @db.Uuid
-  teamId       String  @db.Uuid
-  isTechnician Boolean @default(false)
-  user         User    @relation(fields: [userId], references: [id])
-  team         Team    @relation(fields: [teamId], references: [id])
+  isActive     Boolean    @default(true)
+  userId       String     @db.Uuid
+  teamId       String     @db.Uuid
+  isTechnician Boolean    @default(false)
+  user         User      @relation(fields: [userId], references: [id])
+  team         Team       @relation(fields: [teamId], references: [id])
+  incidents    Incident[]
 
   @@id([userId, teamId])
+  @@unique([userId])
   @@index([teamId])
 }
 
 model IncidentLocation {
-  incidentId String   @id @db.Uuid
-  incident   Incident @relation(fields: [incidentId], references: [id])
-  latitude   Float?
-  longitude  Float?
-  accuracy   Float?
-  createdAt  DateTime @default(now())
+  incidentId   String        @id @db.Uuid
+  incident     Incident      @relation(fields: [incidentId], references: [id])
+  latitude     Float
+  longitude    Float
+  accuracy     Float?
+  createdAt    DateTime      @default(now())
+  addressId    String?       @db.Uuid
+  address      Address?      @relation(fields: [addressId], references: [id], onDelete: Restrict)
+  urbanContext UrbanContext?
+
+  @@index([addressId])
+}
+
+model Address {
+  id        String             @id @default(uuid()) @db.Uuid
+  street    String
+  zipCode   String             @db.VarChar(5)
+  district  AddressDistrict
+  locations IncidentLocation[]
+
+  @@unique([street, zipCode, district])
+}
+
+model UrbanContext {
+  id          String           @id @default(uuid()) @db.Uuid
+  locationId  String           @unique @db.Uuid
+  location    IncidentLocation @relation(fields: [locationId], references: [incidentId], onDelete: Cascade)
+  weather     String?
+  traffic     String?
+  mobility    String?
+  environment String?
+  demography  Int?
 }
 
 model IncidentImage {
-  id         String   @id @default(uuid()) @db.Uuid
-  incidentId String   @db.Uuid
-  objectKey  String   @unique
-  mimeType   String
-  createdAt  DateTime @default(now())
-  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Restrict)
+  id             String   @id @default(uuid()) @db.Uuid
+  incidentId     String   @db.Uuid
+  objectKey      String   @unique
+  mimeType       String
+  idempotencyKey String?  @db.Uuid
+  createdAt      DateTime @default(now())
+  incident       Incident @relation(fields: [incidentId], references: [id], onDelete: Restrict)
 
   @@index([incidentId])
 }
-
-// Historial temporal: actor declarado por el cliente, sin identidad verificada.
 model CambioEstado {
   id            String         @id @default(uuid()) @db.Uuid
   incidenciaId  String         @map("incident_id") @db.Uuid
   incidencia    Incident       @relation(fields: [incidenciaId], references: [id])
   actorId       String         @map("user_id") @db.Uuid
+  actor         User          @relation("ActorEstado", fields: [actorId], references: [id], onDelete: Restrict)
   nuevoEstado   IncidentStatus @map("new_status")
   motivo        String         @map("cause")
   fechaCreacion DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@index([incidenciaId])
+  @@index([actorId])
   @@index([fechaCreacion])
   @@map("status_changes")
 }
 
-// Decisiones manuales en memoria; actor declarado, sin identidad verificada.
 model CambioPrioridad {
   id             String           @id @default(uuid()) @db.Uuid
-  esManual       Boolean          @default(true) @map("is_manual")
+  esManual       Boolean          @map("is_manual")
   nuevaPrioridad IncidentPriority @map("new_priority")
   motivo         String           @map("cause")
   fechaCreacion  DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   incidenciaId   String           @map("incident_id") @db.Uuid
   incidencia     Incident         @relation(fields: [incidenciaId], references: [id])
-  actorId        String           @map("user_id") @db.Uuid
+  actorId        String?          @map("user_id") @db.Uuid
+  actor          User?           @relation("ActorPrioridad", fields: [actorId], references: [id], onDelete: Restrict)
 
   @@index([incidenciaId])
+  @@index([actorId])
   @@map("priority_changes")
 }
 
-// Identidad de token-backend; las incidencias siguen almacen�ndose en memoria.
 enum profile_role {
   administrative
   department
@@ -146,24 +223,65 @@ enum profile_role {
 }
 
 model User {
-  id                String       @id @default(uuid()) @db.Uuid
-  username          String       @unique
-  email             String       @unique
-  password          String
-  created_at        DateTime     @default(now())
-  role              profile_role
-  citizen           Citizen?
-  teamMemberships   TeamMember[]
-  assignedIncidents Incident[]   @relation("IncidentTechnician")
-
+  tecnicoNuevoCambios    CambioAsignacion[] @relation("TecnicoNuevo")
+  tecnicoAnteriorCambios CambioAsignacion[] @relation("TecnicoAnterior")
+  isActive               Boolean            @default(true)
+  departmentMembership   DepartmentMember?
+  cambiosAsignacion      CambioAsignacion[] @relation("ActorAsignacion")
+  id                     String             @id @default(uuid()) @db.Uuid
+  username               String             @unique
+  email                  String             @unique
+  password               String
+  created_at             DateTime           @default(now())
+  role                   profile_role
+  citizen                Citizen?
+  teamMemberships        TeamMember[]
+  cambiosEstado          CambioEstado[]     @relation("ActorEstado")
+  cambiosPrioridad       CambioPrioridad[]  @relation("ActorPrioridad")
   @@map("users")
 }
 
 model Citizen {
-  user_id    String   @id @db.Uuid
-  phone      String?  @unique
-  created_at DateTime @default(now())
-  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
+  user_id    String     @id @db.Uuid
+  phone      String?    @unique
+  created_at DateTime   @default(now())
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  incidents  Incident[]
   @@map("citizens")
+}
+
+model DepartmentMember {
+  userId       String     @id @db.Uuid
+  departmentId String     @db.Uuid
+  user         User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+
+  @@index([departmentId])
+}
+
+// Los destinos son instantáneas de UUID: no dependen de la membresía vigente.
+model CambioAsignacion {
+  id                     String      @id @default(uuid()) @db.Uuid
+  incidenciaId           String      @db.Uuid
+  incidencia             Incident    @relation(fields: [incidenciaId], references: [id], onDelete: Restrict)
+  actorId                String      @db.Uuid
+  actor                  User       @relation("ActorAsignacion", fields: [actorId], references: [id], onDelete: Restrict)
+  departamentoAnteriorId String?     @db.Uuid
+  departamentoAnterior   Department? @relation("DepartamentoAnterior", fields: [departamentoAnteriorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  equipoAnteriorId       String?     @db.Uuid
+  equipoAnterior         Team?       @relation("EquipoAnterior", fields: [equipoAnteriorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  tecnicoAnteriorId      String?     @db.Uuid
+  tecnicoAnterior        User?      @relation("TecnicoAnterior", fields: [tecnicoAnteriorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  departamentoNuevoId    String?     @db.Uuid
+  departamentoNuevo      Department? @relation("DepartamentoNuevo", fields: [departamentoNuevoId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  equipoNuevoId          String?     @db.Uuid
+  equipoNuevo            Team?       @relation("EquipoNuevo", fields: [equipoNuevoId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  tecnicoNuevoId         String?     @db.Uuid
+  tecnicoNuevo           User?      @relation("TecnicoNuevo", fields: [tecnicoNuevoId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  motivo                 String?
+  fechaCreacion          DateTime    @default(now()) @db.Timestamptz(3)
+
+  @@index([incidenciaId, fechaCreacion, id])
+  @@index([actorId])
+  @@map("assignment_changes")
 }

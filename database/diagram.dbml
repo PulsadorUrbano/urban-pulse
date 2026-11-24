@@ -1,17 +1,9 @@
-// Use DBML to define your database structure
-// Docs: https://dbml.dbdiagram.io/docs
-
-// Enums
-enum incident_priority {
-  low
-  medium
-  high
-}
-
-enum incident_status {
-  reported
-  rejected
+// Modelo físico. Fuente: Prisma y migraciones versionadas.
+// Los CHECK y triggers SQL complementan las relaciones mostradas.
+Enum IncidentStatus {
+reported
   validated
+  rejected
   assigned
   in_progress
   resolved
@@ -19,8 +11,8 @@ enum incident_status {
   closed
 }
 
-enum address_district {
-  centro
+Enum AddressDistrict {
+centro
   este
   ciudad_jardin
   bailen_miraflores
@@ -33,179 +25,188 @@ enum address_district {
   teatinos_universidad
 }
 
-enum profile_role {
-  administrative     
+Enum IncidentPriority {
+low
+  medium
+  high
+}
+
+Enum profile_role {
+administrative
   department
   team
   technician
   civic
   admin
-  analyst            
+  analyst
 }
 
-// Relacionados con los usuarios --------------------------------------
-Table users {
-  id uuid 
-  username varchar [unique]
-  email varchar 
-  password varchar
-  created_at timestamp [default: 'now()']
-  role profile_role
-
-  indexes {
-    id [pk]
-    email [unique]
+Table Incident {
+  checks {
+    `char_length(title) BETWEEN 4 AND 35` [name: 'Incident_title_length_check']
   }
-}
-
-Table civics {
-  user_id uuid [pk, ref: - users.id]
-  phone varchar 
-} 
-
-Table department_members {
-  user_id uuid [pk, ref: - users.id]
-  department_id uuid [ref: > departments.id, not null]
-}
-
-// Puede haber un técnico o un miembro de equipo
-Table team_members {
-  user_id uuid [pk, ref: - users.id]
-  team_id uuid [ref: > teams.id, not null]
-  is_technician boolean [default: false, not null]
-}
-
-// Relacionados con el reporte de incidencias --------------------
-
-
-Table incidents {
-  id uuid
+  id uuid [pk]
   title varchar [not null]
   description varchar
-  priority incident_priority [not null, default: `low`]
-  status incident_status [not null, default: `reported`]
-  created_at timestamp [default: `now()`]
-  civic_id uuid [ref: > civics.user_id, not null]
-  location_id uuid [ref: > locations.id, not null]
-  urban_asset_id uuid [ref: >? urban_assets.id]
-  category_id uuid [ref: > categories.id, not null]
-
-  // una asociación
-  department_id uuid [ref: >? departments.id]
-  team_id uuid [ref: >? teams.id]
-  technician_id uuid [ref: >? team_members.user_id]
-
-  indexes {
-    id [pk]
-  }
-
-  checks {
-    `length(title) >= 4 AND length(title) <= 25` [name: 'title_length']
-    `description IS NULL OR length(description) >= 10` [name: 'description_reqs']
-  }
+  civicId uuid [not null]
+  categoryId uuid
+  urbanAssetId uuid
+  departmentId uuid
+  teamId uuid
+  technicianId uuid
+  status IncidentStatus [not null]
+  priority IncidentPriority [not null]
+  createdAt timestamp [not null]
 }
 
-Table status_changes {
+Table Category {
+  code varchar [not null, unique]
+  isActive boolean [not null]
   id uuid [pk]
-  incident_id uuid [ref: > incidents.id, not null]
-  user_id uuid [ref: > users.id, not null]
-  new_status incident_status [not null]
-  cause varchar [not null] // Motivo obligatorio del cambio de estado
-  created_at timestamp [default: `now()`]
-
-  indexes {
-    incident_id
-    created_at
-  }
+  name varchar [not null, unique]
+  normalizedName varchar [not null, unique]
+  createdAt timestamp [not null]
 }
 
-Table urban_assets {
-  id uuid 
+Table UrbanAsset {
+  id uuid [pk]
   name varchar [unique]
-
-  indexes {
-    id [pk]
-  }
 }
 
-Table categories {
-  id uuid
-  name varchar [unique, not null]
-
-  indexes {
-    id [pk]
-  }
-}
-
-Table priority_changes {
+Table Department {
+  isActive boolean [not null]
   id uuid [pk]
-  is_manual boolean [not null, default: `true`]
-  new_priority incident_priority [not null]
-  cause varchar [not null]
-  created_at timestamp [default: `now()`]
-  incident_id uuid [ref: > incidents.id, not null]
-  user_id uuid [ref: > users.id, not null]
-
-  indexes {
-    incident_id
-  }
+  name varchar [not null, unique]
 }
 
-// Relacionados con la localización ------------------------------
-Table urban_contexts {
-  id uuid
+Table Team {
+  indexes {
+    (id, departmentId) [unique]
+  }
+  isActive boolean [not null]
+  id uuid [pk]
+  name varchar [not null]
+  departmentId uuid [not null]
+}
+
+Table TeamMember {
+  indexes {
+    userId [unique]
+    (userId, teamId) [pk]
+  }
+  isActive boolean [not null]
+  userId uuid [not null]
+  teamId uuid [not null]
+  isTechnician boolean [not null]
+}
+
+Table IncidentLocation {
+  incidentId uuid [pk]
+  latitude double [not null]
+  longitude double [not null]
+  accuracy double
+  createdAt timestamp [not null]
+  addressId uuid
+}
+
+Table Address {
+  indexes {
+    (street, zipCode, district) [unique]
+  }
+  id uuid [pk]
+  street varchar [not null]
+  zipCode varchar [not null]
+  district AddressDistrict [not null]
+}
+
+Table UrbanContext {
+  id uuid [pk]
+  locationId uuid [not null, unique]
   weather varchar
   traffic varchar
   mobility varchar
   environment varchar
-  demography int 
-  location_id uuid [ref: - locations.id, not null, unique]
-
-  indexes {
-    id [pk]
-  }
+  demography int
 }
 
-Table locations {
-  id uuid
-  position geography [not null]
-  address_id uuid [ref: >? addresses.id] 
-
-  indexes {
-    id [pk]
-    position [unique]
-  }
+Table status_changes {
+  id uuid [pk]
+  incident_id uuid [not null]
+  user_id uuid [not null]
+  new_status IncidentStatus [not null]
+  cause varchar [not null]
+  created_at timestamp [not null]
 }
 
-Table addresses {
-  id uuid 
-  street varchar [not null]
-  zip_code int [not null]
-  disctrict address_district [not null]
-
-  indexes {
-    id [pk]
-  }
+Table priority_changes {
+  id uuid [pk]
+  is_manual boolean [not null]
+  new_priority IncidentPriority [not null]
+  cause varchar [not null]
+  created_at timestamp [not null]
+  incident_id uuid [not null]
+  user_id uuid
 }
 
-// Asocian una incidencia a un equipo
-Table departments {
-  id uuid
-  name varchar [not null, unique]
-
-  indexes {
-    id [pk]
-  }
+Table users {
+  isActive boolean [not null]
+  id uuid [pk]
+  username varchar [not null, unique]
+  email varchar [not null, unique]
+  password varchar [not null]
+  created_at timestamp [not null]
+  role profile_role [not null]
 }
 
-// Asocian una incidencia a un técnico
-Table teams {
-  id uuid 
-  name varchar [not null]
-  department_id uuid [ref: > departments.id, not null]
-
-  indexes {
-    id [pk]
-  }
+Table citizens {
+  user_id uuid [pk]
+  phone varchar [unique]
+  created_at timestamp [not null]
 }
 
+Table DepartmentMember {
+  userId uuid [pk]
+  departmentId uuid [not null]
+}
+
+Table assignment_changes {
+  id uuid [pk]
+  incidenciaId uuid [not null]
+  actorId uuid [not null]
+  departamentoAnteriorId uuid
+  equipoAnteriorId uuid
+  tecnicoAnteriorId uuid
+  departamentoNuevoId uuid
+  equipoNuevoId uuid
+  tecnicoNuevoId uuid
+  motivo varchar
+  fechaCreacion timestamp [not null]
+}
+
+Ref: Incident.civicId > citizens.user_id
+Ref: Incident.categoryId > Category.id
+Ref: Incident.urbanAssetId > UrbanAsset.id
+Ref: Incident.departmentId > Department.id
+Ref: Incident.(teamId, departmentId) > Team.(id, departmentId)
+Ref: Incident.(technicianId, teamId) > TeamMember.(userId, teamId)
+Ref: Team.departmentId > Department.id
+Ref: TeamMember.userId > users.id
+Ref: TeamMember.teamId > Team.id
+Ref: IncidentLocation.incidentId > Incident.id
+Ref: IncidentLocation.addressId > Address.id
+Ref: UrbanContext.locationId > IncidentLocation.incidentId
+Ref: status_changes.incident_id > Incident.id
+Ref: status_changes.user_id > users.id
+Ref: priority_changes.incident_id > Incident.id
+Ref: priority_changes.user_id > users.id
+Ref: citizens.user_id > users.id
+Ref: DepartmentMember.userId > users.id
+Ref: DepartmentMember.departmentId > Department.id
+Ref: assignment_changes.incidenciaId > Incident.id
+Ref: assignment_changes.actorId > users.id
+Ref: assignment_changes.departamentoAnteriorId > Department.id
+Ref: assignment_changes.equipoAnteriorId > Team.id
+Ref: assignment_changes.tecnicoAnteriorId > users.id
+Ref: assignment_changes.departamentoNuevoId > Department.id
+Ref: assignment_changes.equipoNuevoId > Team.id
+Ref: assignment_changes.tecnicoNuevoId > users.id

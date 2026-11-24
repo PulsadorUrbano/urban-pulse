@@ -47,7 +47,7 @@ describe('Acceso a incidencias con identidad actual', () => {
 
   beforeEach(() => vi.resetAllMocks());
 
-  it('rechaza una petici�n que no pas� la validaci�n JWT', async () => {
+  it('rechaza una petición que no pasó la validación JWT', async () => {
     const { context, request } = contexto(['admin']);
     delete request.user;
     await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
@@ -68,6 +68,8 @@ describe('Acceso a incidencias con identidad actual', () => {
 
   it('deniega por defecto sin metadata de roles', async () => {
     prisma.user.findUnique.mockResolvedValue({
+      isActive: true,
+      teamMemberships: [],
       id,
       role: 'admin',
       citizen: null,
@@ -80,11 +82,17 @@ describe('Acceso a incidencias con identidad actual', () => {
   it.each(Object.values(profile_role))(
     'usa el rol actual %s de PostgreSQL, no el rol antiguo del JWT',
     async (role) => {
-      prisma.user.findUnique.mockResolvedValue({ id, role, citizen: null });
+      prisma.user.findUnique.mockResolvedValue({
+        isActive: true,
+        teamMemberships: [],
+        id,
+        role,
+        citizen: null,
+      });
       const { context, request } = contexto(['admin', 'administrative']);
       if (role === 'admin' || role === 'administrative') {
         await expect(guard.canActivate(context)).resolves.toBe(true);
-        expect(request.usuarioIncidencias).toEqual({
+        expect(request.usuarioIncidencias).toMatchObject({
           id,
           role,
           ciudadanoId: null,
@@ -99,21 +107,25 @@ describe('Acceso a incidencias con identidad actual', () => {
 
   it('vincula al ciudadano real aunque el token conserve un rol antiguo', async () => {
     prisma.user.findUnique.mockResolvedValue({
+      isActive: true,
+      teamMemberships: [],
       id,
       role: 'civic',
       citizen: { user_id: id },
     });
     const { context, request } = contexto(['civic']);
     await expect(guard.canActivate(context)).resolves.toBe(true);
-    expect(request.usuarioIncidencias).toEqual({
+    expect(request.usuarioIncidencias).toMatchObject({
       id,
       role: 'civic',
       ciudadanoId: id,
     });
   });
 
-  it('rechaza un ciudadano sin perfil ciudadano', async () => {
+  it('rechaza un ciudadano sin relación citizens', async () => {
     prisma.user.findUnique.mockResolvedValue({
+      isActive: true,
+      teamMemberships: [],
       id,
       role: 'civic',
       citizen: null,
@@ -131,5 +143,51 @@ describe('Acceso a incidencias con identidad actual', () => {
     const { context, request } = contexto(['admin']);
     await expect(guard.canActivate(context)).rejects.toBe(error);
     expect(request.usuarioIncidencias).toBeUndefined();
+  });
+});
+
+describe('Perfil ciudadano compatible con operario', () => {
+  it('permite reportar con perfil ciudadano y rol de técnico', async () => {
+    const prisma = {
+      user: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({
+            id,
+            role: 'technician',
+            isActive: true,
+            citizen: { user_id: id },
+            departmentMembership: null,
+            teamMemberships: [{ teamId: id, isTechnician: true }],
+          }),
+      },
+    };
+    const guard = new AccesoIncidenciasGuard(
+      prisma as unknown as PrismaService,
+      new Reflector(),
+    );
+    const { context, request } = contexto(['civic']);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(request.usuarioIncidencias).toMatchObject({
+      role: 'technician',
+      ciudadanoId: id,
+      equipoId: id,
+    });
+  });
+  it('rechaza también un token válido si el usuario se desactivó', async () => {
+    const prisma = {
+      user: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ id, role: 'admin', isActive: false }),
+      },
+    };
+    const guard = new AccesoIncidenciasGuard(
+      prisma as unknown as PrismaService,
+      new Reflector(),
+    );
+    await expect(
+      guard.canActivate(contexto(['admin']).context),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });

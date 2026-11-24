@@ -10,6 +10,10 @@ export type UserRole =
   | 'admin'
   | 'analyst';
 
+export function isAdministrativeRole(role: UserRole): boolean {
+  return role === 'admin' || role === 'administrative';
+}
+
 // Respuesta pública del backend (PublicUserDto) en GET /auth/me.
 export interface BackendPublicUserDto {
   userId: string;

@@ -50,6 +50,9 @@ importers:
       dotenv:
         specifier: ^18.0.7
         version: 18.0.7
+      prisma:
+        specifier: 7.10.1
+        version: 7.10.1(@types/node@24.19.2)(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3)
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -90,9 +93,6 @@ importers:
       prettier:
         specifier: ^3.4.2
         version: 3.9.9
-      prisma:
-        specifier: 7.10.1
-        version: 7.10.1(@types/node@24.19.2)(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3)
       source-map-support:
         specifier: ^0.5.21
         version: 0.5.21

@@ -1,9 +1,12 @@
 import { useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
 
 import { STATUS_LABELS } from '../constants/incident-labels';
+import { useIncidentFilters } from '../hooks/use-incident-filters';
 import { useIncidentList } from '../hooks/use-incident-list';
-import type { SessionUser } from '../types/user';
+import { isAdministrativeRole, type SessionUser } from '../types/user';
 import { AppHeader } from './app-header';
+import { IncidentFilters } from './incident-filters';
 import { LogoutModal } from './logout-modal';
 
 interface IncidentListViewProps {
@@ -17,10 +20,14 @@ interface IncidentListViewProps {
 }
 
 export function IncidentListView({
-  user, token, isDarkMode, onToggleTheme, onLogout, onOpenIncident, onOpenAssignmentDemo,
+  user, token: sessionToken, isDarkMode, onToggleTheme, onLogout, onOpenIncident, onOpenAssignmentDemo,
 }: IncidentListViewProps) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const canViewGlobalList = isAdministrativeRole(user.role);
+  const token = user.source === 'backend' && canViewGlobalList ? sessionToken : null;
   const { items, hasMore, loading, error, loadMore, retry } = useIncidentList(token);
+  const filterControls = useIncidentFilters(items, hasMore);
+  const { visibleItems, isActive, isPartial } = filterControls;
 
   return (
     <>
@@ -36,17 +43,40 @@ export function IncidentListView({
         </h2>
         {!token && (
           <div className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-            <p>Inicia sesión con el backend para consultar las incidencias.</p>
-            {onOpenAssignmentDemo && (
+            <p>
+              {canViewGlobalList
+                ? 'Inicia sesión con el backend para consultar las incidencias.'
+                : 'El listado de incidencias está disponible para administración.'}
+            </p>
+            {canViewGlobalList && onOpenAssignmentDemo && (
               <button type="button" onClick={onOpenAssignmentDemo} className="mt-2 font-semibold underline">
                 Abrir demostración de asignaciones
               </button>
             )}
           </div>
         )}
-        {items.length > 0 && (
+        {token && <IncidentFilters controls={filterControls} />}
+        {isActive && items.length > 0 && (
+          <p role="status" className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
+            {visibleItems.length} de {items.length} incidencias cargadas coinciden con los filtros.
+          </p>
+        )}
+        {isPartial && (
+          <div className="mb-4 p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 rounded-xl flex items-start gap-2.5 text-amber-800 dark:text-amber-300 text-xs">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+            <p className="font-semibold">
+              {error
+                ? 'Los filtros solo se aplican a las incidencias cargadas. Pulsa «Reintentar» para seguir cargando.'
+                : 'Los filtros solo se aplican a las incidencias cargadas. Pulsa «Cargar más» para completar el resultado.'}
+            </p>
+          </div>
+        )}
+        {isActive && items.length > 0 && visibleItems.length === 0 && (
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">Ninguna incidencia cargada coincide con los filtros.</p>
+        )}
+        {token && visibleItems.length > 0 && (
           <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900/40">
-            {items.map((incident) => (
+            {visibleItems.map((incident) => (
               <li key={incident.id}>
                 <button
                   type="button"
@@ -65,17 +95,19 @@ export function IncidentListView({
             ))}
           </ul>
         )}
-        {loading && <p role="status" className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">Cargando incidencias…</p>}
+        {token && loading && (
+          <p role="status" className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">Cargando incidencias…</p>
+        )}
         {token && !loading && !error && items.length === 0 && (
           <p className="text-sm text-zinc-600 dark:text-zinc-400">No hay incidencias.</p>
         )}
-        {error && (
+        {token && error && (
           <div className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-300">
             <p role="alert">{error}</p>
             <button type="button" onClick={retry} className="mt-2 font-semibold underline">Reintentar</button>
           </div>
         )}
-        {hasMore && !error && (
+        {token && hasMore && !error && (
           <button
             type="button"
             onClick={loadMore}

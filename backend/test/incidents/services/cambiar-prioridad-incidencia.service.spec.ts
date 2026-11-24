@@ -33,13 +33,16 @@ describe('Asignación manual de prioridad', () => {
 
   async function crearValidada() {
     const creada = await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
       title: 'Farola apagada',
       civicId: propietario,
     });
     return servicio.cambiarEstado(
       creada.id,
       { status: 'validated', cause: 'Reporte confirmado' },
-      actor,
+      { id: actor, role: 'admin', ciudadanoId: null },
     );
   }
 
@@ -82,10 +85,31 @@ describe('Asignación manual de prioridad', () => {
     ]);
   });
 
+  it('registra una decisión automática sin usuario y sin marcarla como manual', async () => {
+    const validada = await crearValidada();
+    await servicio.cambiarPrioridadAutomatica(validada.id, {
+      priority: 'high',
+      cause: 'Clasificación automática',
+    });
+
+    await expect(
+      servicio.consultarCambiosPrioridad(validada.id),
+    ).resolves.toMatchObject([
+      {
+        nuevaPrioridad: 'high',
+        actorId: null,
+        esManual: false,
+      },
+    ]);
+  });
+
   it.each(['reported', 'rejected'] as const)(
     'bloquea una incidencia en estado %s',
     async (status) => {
       const creada = await servicio.create({
+        category: 'Iluminación',
+        latitude: 36.72,
+        longitude: -4.42,
         title: 'Banco roto',
         civicId: propietario,
       });
@@ -93,7 +117,7 @@ describe('Asignación manual de prioridad', () => {
         await servicio.cambiarEstado(
           creada.id,
           { status, cause: 'Duplicada' },
-          actor,
+          { id: actor, role: 'admin', ciudadanoId: null },
         );
       }
       await expect(

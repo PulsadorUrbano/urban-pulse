@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Linking } from 'react-native';
+import { Linking, Platform } from 'react-native';
 
 import { MOCK_FALLBACK_NOTICE } from '@/constants/messages';
 import {
@@ -16,36 +16,50 @@ export interface UseIncidentLocationSubmitParams {
   title: string;
   description: string;
   categoryId: string | null;
-  category: string | null;
   selectedPhotoUris: string[];
   submitIncident: (
     input: CreateIncidentInput,
     imageUris?: string[],
   ) => Promise<CreateIncidentResult | null>;
+  uploadPendingImages: (result: CreateIncidentResult) => Promise<CreateIncidentResult>;
 }
 
 export interface UseIncidentLocationSubmitResult {
-  // `true` mientras hay un envío en curso: resolución de ubicación, diálogo de confirmación a la
-  // espera de respuesta de la usuaria o petición de registro.
+  // `true` mientras hay un envío en curso: resolución de ubicación o petición de registro.
   isResolvingLocation: boolean;
-  // Aviso sobre la ubicación (o su ausencia) de la incidencia registrada.
-  locationNotice: string | null;
   // Aviso de que el registro se hizo en el mock por falta de conexión al backend.
   backendFallbackNotice: string | null;
-  // Mensaje amigable si el flujo de ubicación o envío falló de forma inesperada.
+  // Mensaje amigable si no se pudo registrar (p. ej. sin ubicación); el botón
+  // queda liberado para reintentar.
   submitErrorMessage: string | null;
   // Incidencia creada tras un envío correcto.
   createdIncident: CreatedIncident | null;
+  // Motivo por el que no se pudieron subir las fotos de la incidencia creada.
+  imagesUploadErrorMessage: string | null;
+  // `true` mientras se reintenta la subida de las fotos pendientes.
+  isRetryingImageUpload: boolean;
   // Punto de entrada del envío: resuelve la ubicación y registra la incidencia.
   startSubmit: () => void;
+  // Reintenta subir solo las fotos pendientes, sin volver a crear la incidencia.
+  retryImageUpload: () => void;
 }
 
 const UNEXPECTED_SUBMIT_ERROR_MESSAGE =
   'No se pudo registrar la incidencia. Inténtalo de nuevo.';
 
+export const LOCATION_DISABLED_MESSAGE =
+  'La ubicación es obligatoria para registrar la incidencia. Actívala e inténtalo de nuevo.';
+export const DEVICE_LOCATION_DISABLED_MESSAGE =
+  'La ubicación del dispositivo está desactivada. Sin ubicación no se puede registrar la incidencia: actívala en los Ajustes e inténtalo de nuevo.';
+export const LOCATION_PERMISSION_DENIED_MESSAGE =
+  'No hay permiso de ubicación. Sin ubicación no se puede registrar la incidencia: concede el permiso en los Ajustes e inténtalo de nuevo.';
+export const LOCATION_UNAVAILABLE_MESSAGE =
+  'No se pudo obtener tu ubicación y sin ella no se puede registrar la incidencia. Inténtalo de nuevo.';
+export const CATEGORY_REQUIRED_MESSAGE = 'Elige una categoría del catálogo para registrar la incidencia.';
+
 // Orquesta la resolución de ubicación (preferencia, servicios del dispositivo y
-// permisos) antes de registrar una incidencia, degradando a un registro sin
-// posición cuando algo falla, y expone el estado resultante para la pantalla.
+// permisos) antes de registrar una incidencia. La ubicación es obligatoria: si
+// falta, no se envía nada y se explica el motivo para que se pueda reintentar.
 export function useIncidentLocationSubmit(
   params: UseIncidentLocationSubmitParams,
 ): UseIncidentLocationSubmitResult {
@@ -54,22 +68,24 @@ export function useIncidentLocationSubmit(
     title,
     description,
     categoryId,
-    category,
     selectedPhotoUris,
     submitIncident,
+    uploadPendingImages,
   } = params;
 
-  const [createdIncident, setCreatedIncident] = useState<CreatedIncident | null>(null);
-  const [locationNotice, setLocationNotice] = useState<string | null>(null);
+  const [creationResult, setCreationResult] = useState<CreateIncidentResult | null>(null);
   const [backendFallbackNotice, setBackendFallbackNotice] = useState<string | null>(null);
   const [submitErrorMessage, setSubmitErrorMessage] = useState<string | null>(null);
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
+  const [isRetryingImageUpload, setIsRetryingImageUpload] = useState(false);
 
   // Bloqueo síncrono contra el doble envío. El ref es imprescindible: dos
   // toques en el mismo tick leerían el mismo estado (aún `false`) y pasarían
   // ambos. El estado `isResolvingLocation` se mantiene solo para que la UI
   // pueda deshabilitar el botón; el guardián real es el ref.
   const isSubmittingRef = useRef(false);
+  // Mismo motivo para el reintento de la subida de fotos.
+  const isRetryingImageUploadRef = useRef(false);
 
   const lockSubmit = () => {
     isSubmittingRef.current = true;
@@ -81,27 +97,35 @@ export function useIncidentLocationSubmit(
     setIsResolvingLocation(false);
   };
 
-  // Convierte cualquier fallo inesperado en un mensaje para la UI.
-  // El mensaje es fijo y en español: un `Error` inesperado puede traer texto técnico.
-  const reportSubmitFailure = () => {
-    setSubmitErrorMessage(UNEXPECTED_SUBMIT_ERROR_MESSAGE);
+  // Ofrece abrir los Ajustes del sistema para conceder el permiso. Solo en
+  // native: en web no hay Ajustes que abrir y basta con el mensaje en pantalla.
+  const offerOpenSettings = () => {
+    if (Platform.OS === 'web') return;
+
+    confirmAction({
+      title: 'Permiso de ubicación',
+      message: LOCATION_PERMISSION_DENIED_MESSAGE,
+      cancel: { text: 'Cerrar', onPress: () => {} },
+      confirm: {
+        text: 'Abrir Ajustes',
+        onPress: () => {
+          Linking.openSettings().catch(() => setSubmitErrorMessage(UNEXPECTED_SUBMIT_ERROR_MESSAGE));
+        },
+      },
+    });
   };
 
-  // Envía la incidencia con las coordenadas indicadas (o sin ellas) y conserva los
-  // avisos asociados (ubicación) para mostrarlos en la pantalla de confirmación.
-  const submitWithCoordinates = async (
-    coordinates: LocationCoordinates | null,
-    notice: string | null = null,
-  ) => {
+  // Envía la incidencia con las coordenadas resueltas y conserva el resultado
+  // (incluido el estado de la subida de fotos) para la pantalla de confirmación.
+  const submitWithCoordinates = async (coordinates: LocationCoordinates, selectedCategoryId: string) => {
     const result = await submitIncident(
       {
         title,
         description,
-        categoryId,
-        category,
-        latitude: coordinates?.latitude ?? null,
-        longitude: coordinates?.longitude ?? null,
-        accuracy: coordinates?.accuracy ?? null,
+        categoryId: selectedCategoryId,
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        accuracy: coordinates.accuracy,
       },
       selectedPhotoUris,
     );
@@ -110,113 +134,83 @@ export function useIncidentLocationSubmit(
       return;
     }
 
-    setLocationNotice(notice);
     setBackendFallbackNotice(result.source === 'mock' ? MOCK_FALLBACK_NOTICE : null);
-    setCreatedIncident(result.incident);
-  };
-
-  // Envío lanzado desde un botón del diálogo de confirmación: mantiene el bloqueo hasta que
-  // termina, captura los errores y libera el bloqueo al final.
-  const submitFromAlert = (notice: string) => {
-    setSubmitErrorMessage(null);
-    submitWithCoordinates(null, notice)
-      .catch(reportSubmitFailure)
-      .finally(releaseSubmit);
+    setCreationResult(result);
   };
 
   // Resuelve la ubicación según la preferencia, los servicios del dispositivo y
-  // los permisos. Devuelve `true` si ya terminó el envío y se puede liberar el
-  // bloqueo, o `false` si queda un diálogo de confirmación abierto que lo libera por
-  // su cuenta (en web el diálogo es síncrono, en native es asíncrono).
-  const resolveLocationAndSubmit = async (): Promise<boolean> => {
+  // los permisos. Si no se consigue, deja un mensaje explicando por qué no se
+  // envía; nunca registra la incidencia sin coordenadas.
+  const resolveLocationAndSubmit = async (): Promise<void> => {
+    if (categoryId == null) {
+      setSubmitErrorMessage(CATEGORY_REQUIRED_MESSAGE);
+      return;
+    }
+
     if (!isLocationEnabled) {
-      await submitWithCoordinates(null);
-      return true;
+      setSubmitErrorMessage(LOCATION_DISABLED_MESSAGE);
+      return;
     }
 
     const isDeviceLocationEnabled = await areLocationServicesEnabled();
     if (!isDeviceLocationEnabled) {
-      confirmAction({
-        title: 'Ubicación del dispositivo desactivada',
-        message:
-          'La ubicación del dispositivo está desactivada. Actívala en los Ajustes para registrar la incidencia con su posición.',
-        cancel: { text: 'Cancelar', onPress: releaseSubmit },
-        confirm: {
-          text: 'Enviar sin ubicación',
-          onPress: () =>
-            submitFromAlert(
-              'La incidencia se registró sin ubicación porque la ubicación del dispositivo está desactivada.',
-            ),
-        },
-      });
-      return false;
+      setSubmitErrorMessage(DEVICE_LOCATION_DISABLED_MESSAGE);
+      return;
     }
 
     const isPermissionGranted = await requestLocationPermission();
     if (!isPermissionGranted) {
-      confirmAction({
-        title: 'Permiso de ubicación',
-        message:
-          'No podemos acceder a tu ubicación. Actívala en los Ajustes para registrar la incidencia con su posición.',
-        cancel: { text: 'Cancelar', onPress: releaseSubmit },
-        nativeOnlyOptions: [
-          {
-            text: 'Abrir Ajustes',
-            onPress: () => {
-              // Se sale a Ajustes: se libera el bloqueo para poder reintentar al volver.
-              releaseSubmit();
-              Linking.openSettings().catch(reportSubmitFailure);
-            },
-          },
-        ],
-        confirm: {
-          text: 'Enviar sin ubicación',
-          onPress: () =>
-            submitFromAlert(
-              'La incidencia se registró sin ubicación porque no hay permiso de ubicación.',
-            ),
-        },
-      });
-      return false;
+      setSubmitErrorMessage(LOCATION_PERMISSION_DENIED_MESSAGE);
+      offerOpenSettings();
+      return;
     }
 
     const coordinates = await getCurrentCoordinates();
     if (!coordinates) {
-      await submitWithCoordinates(
-        null,
-        'No se pudo obtener la ubicación; la incidencia se registró sin posición.',
-      );
-      return true;
+      setSubmitErrorMessage(LOCATION_UNAVAILABLE_MESSAGE);
+      return;
     }
 
-    await submitWithCoordinates(coordinates);
-    return true;
+    await submitWithCoordinates(coordinates, categoryId);
   };
 
   // Punto de entrada del envío: ignora llamadas mientras haya un envío o una
-  // resolución en curso y libera el bloqueo al terminar (éxito o error). Si
-  // queda un diálogo de confirmación abierto, el bloqueo lo libera el propio diálogo.
+  // resolución en curso y libera el bloqueo al terminar (éxito o error).
   const startSubmit = () => {
     if (isSubmittingRef.current) return;
 
     lockSubmit();
     setSubmitErrorMessage(null);
     resolveLocationAndSubmit()
-      .then((canRelease) => {
-        if (canRelease) releaseSubmit();
-      })
       .catch(() => {
-        reportSubmitFailure();
-        releaseSubmit();
+        setSubmitErrorMessage(UNEXPECTED_SUBMIT_ERROR_MESSAGE);
+      })
+      .finally(releaseSubmit);
+  };
+
+  // Reintenta solo la subida de las fotos pendientes de la incidencia creada.
+  const retryImageUpload = () => {
+    if (isRetryingImageUploadRef.current || !creationResult) return;
+    if (creationResult.pendingImageUris.length === 0) return;
+
+    isRetryingImageUploadRef.current = true;
+    setIsRetryingImageUpload(true);
+    uploadPendingImages(creationResult)
+      .then(setCreationResult)
+      .finally(() => {
+        isRetryingImageUploadRef.current = false;
+        setIsRetryingImageUpload(false);
       });
   };
 
   return {
     isResolvingLocation,
-    locationNotice,
     backendFallbackNotice,
     submitErrorMessage,
-    createdIncident,
+    createdIncident: creationResult?.incident ?? null,
+    imagesUploadErrorMessage: creationResult?.imagesUploadErrorMessage ?? null,
+    isRetryingImageUpload,
     startSubmit,
+    retryImageUpload,
   };
 }

@@ -13,11 +13,13 @@ import { RegisterCitizenDto } from './dto/register-citizen.dto.js';
 import type { TokenPayload } from './token-payload.js';
 
 const BCRYPT_COST = 10;
-const MENSAJE_CREDENCIALES = 'Usuario o contrase�a incorrectos';
-const MENSAJE_DUPLICADO = 'Ya existe un usuario con ese nombre, email o tel�fono';
+const MENSAJE_CREDENCIALES = 'Usuario o contraseña incorrectos';
+const MENSAJE_DUPLICADO =
+  'Ya existe un usuario con ese nombre, email o teléfono';
 
 const publicUserSelect = {
   id: true,
+  isActive: true,
   username: true,
   email: true,
   role: true,
@@ -42,7 +44,7 @@ export class AuthService {
     private readonly jwt: JwtService,
   ) {}
 
-  /** Crea un ciudadano (rol civic) y su fila en citizens en una �nica transacci�n. */
+  /** Crea un ciudadano (rol civic) y su fila en citizens en una única transacción. */
   async registrarCiudadano(input: RegisterCitizenDto): Promise<PublicUserDto> {
     const passwordHash = await hash(input.password, BCRYPT_COST);
 
@@ -87,13 +89,19 @@ export class AuthService {
           { email: identificador.toLowerCase() },
         ],
       },
-      select: { id: true, username: true, role: true, password: true },
+      select: {
+        id: true,
+        username: true,
+        role: true,
+        password: true,
+        isActive: true,
+      },
     });
 
     const hashComparado = usuario?.password ?? (await this.hashReferencia);
-    const contrase�aValida = await compare(password, hashComparado);
+    const contraseñaValida = await compare(password, hashComparado);
 
-    if (!usuario || !contrase�aValida) {
+    if (!usuario || !usuario.isActive || !contraseñaValida) {
       throw new UnauthorizedException(MENSAJE_CREDENCIALES);
     }
 
@@ -114,8 +122,8 @@ export class AuthService {
       select: publicUserSelect,
     });
 
-    if (!usuario) {
-      throw new UnauthorizedException('Token inv�lido o expirado');
+    if (!usuario || !usuario.isActive) {
+      throw new UnauthorizedException('Token inválido o expirado');
     }
 
     return this.aDtoPublico(usuario);

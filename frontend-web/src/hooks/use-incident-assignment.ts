@@ -7,14 +7,16 @@ import {
   saveBackendAssignment,
   saveDemoAssignment,
 } from '../services/assignment.service';
-import type { AssignmentOptions, AssignmentPatch, AssignmentSelection } from '../types/assignment';
-import type { IncidentDetail, IncidentStatus } from '../types/incident';
+import {
+  canEditAssignment,
+  hasAssignmentFields,
+  type AssignmentOptions,
+  type AssignmentPatch,
+  type AssignmentSelection,
+} from '../types/assignment';
+import type { IncidentDetail } from '../types/incident';
 
 export type AssignmentMode = { token: string } | { demoOptions: AssignmentOptions };
-
-export function canEditAssignment(status: IncidentStatus): boolean {
-  return status === 'validated' || status === 'assigned';
-}
 
 function selectionOf(incident: IncidentDetail): AssignmentSelection {
   return {
@@ -34,19 +36,33 @@ export function changeTeam(selection: AssignmentSelection, teamId: string | null
   return { ...selection, teamId, technicianId: null };
 }
 
-export function buildAssignmentPatch(incident: IncidentDetail, selection: AssignmentSelection): AssignmentPatch {
+export function buildAssignmentPatch(
+  incident: IncidentDetail,
+  selection: AssignmentSelection,
+  comments = '',
+): AssignmentPatch {
   const patch: AssignmentPatch = {};
   if (incident.departmentId !== selection.departmentId) patch.departmentId = selection.departmentId;
   if (incident.teamId !== selection.teamId) patch.teamId = selection.teamId;
   if (incident.technicianId !== selection.technicianId) patch.technicianId = selection.technicianId;
+  if (incident.status === 'reopened' && selection.teamId && !hasAssignmentFields(patch)) {
+    patch.teamId = selection.teamId;
+  }
+  const cause = comments.trim();
+  if (cause && hasAssignmentFields(patch)) patch.cause = cause;
   return patch;
 }
 
-export function isValidSelection(selection: AssignmentSelection, options: AssignmentOptions): boolean {
-  if (selection.departmentId && !options.departments.some((department) => department.id === selection.departmentId)) return false;
-  if (selection.teamId && !options.teams.some((team) => team.id === selection.teamId && team.departmentId === selection.departmentId)) return false;
-  if (selection.technicianId && !options.technicians.some((technician) => technician.id === selection.technicianId && technician.teamId === selection.teamId)) return false;
-  return true;
+export function isValidSelection(
+  { departmentId, teamId, technicianId }: AssignmentSelection,
+  options: AssignmentOptions,
+): boolean {
+  if (!departmentId || !teamId) return false;
+
+  return options.departments.some((department) => department.id === departmentId)
+    && options.teams.some((team) => team.id === teamId && team.departmentId === departmentId)
+    && (technicianId === null
+      || options.technicians.some((technician) => technician.id === technicianId && technician.teamId === teamId));
 }
 
 export function useIncidentAssignment(
@@ -66,6 +82,7 @@ export function useIncidentAssignment(
     error: Error | null;
   } | null>(null);
   const [selection, setSelection] = useState(() => selectionOf(incident));
+  const [comments, setComments] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<Error | null>(null);
   const [saved, setSaved] = useState(false);
@@ -93,10 +110,10 @@ export function useIncidentAssignment(
   const accessStatus = error instanceof AssignmentAccessError ? error.status : null;
   const teams = options?.teams.filter((team) => team.departmentId === selection.departmentId) ?? [];
   const technicians = options?.technicians.filter((technician) => technician.teamId === selection.teamId) ?? [];
-  const patch = buildAssignmentPatch(incident, selection);
+  const patch = buildAssignmentPatch(incident, selection, comments);
   const canSave = Boolean(
     !disabled && !saving && !conflict && accessStatus === null && canEditAssignment(incident.status)
-    && options && isValidSelection(selection, options) && Object.keys(patch).length > 0,
+    && options && isValidSelection(selection, options) && hasAssignmentFields(patch),
   );
 
   const save = async (): Promise<void> => {
@@ -111,6 +128,7 @@ export function useIncidentAssignment(
         ? await saveBackendAssignment(incident.id, patch, token)
         : await saveDemoAssignment(patch);
       setSelection(selectionOf(updated));
+      setComments('');
       onSaved(updated);
       setSaved(true);
     } catch (error) {
@@ -128,7 +146,7 @@ export function useIncidentAssignment(
   };
 
   return {
-    options, selection, teams, technicians, saving, canSave, saved, save, conflict, accessStatus,
+    options, selection, comments, teams, technicians, saving, canSave, saved, save, conflict, accessStatus,
     loading: Boolean(token && !currentCatalog),
     catalogError,
     error: saveError ? `${saveError.message} No se ha guardado la asignación.` : catalogError?.message,
@@ -136,6 +154,10 @@ export function useIncidentAssignment(
     setDepartment: (id: string | null) => updateSelection((current) => changeDepartment(current, id)),
     setTeam: (id: string | null) => updateSelection((current) => changeTeam(current, id)),
     setTechnician: (id: string | null) => updateSelection((current) => ({ ...current, technicianId: id })),
+    setComments: (text: string) => {
+      setComments(text);
+      setSaved(false);
+    },
   };
 }
 

@@ -34,15 +34,27 @@ describe('Listado de incidencias por ciudadano', () => {
   it('filtra por ciudadano normalizado, ordena y devuelve únicamente el resumen', async () => {
     vi.setSystemTime(new Date('2026-10-23T08:00:00Z'));
     const antigua = await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
       title: 'Farola apagada',
       civicId: idCiudadano,
     });
     vi.setSystemTime(new Date('2026-10-23T09:00:00Z'));
     const reciente = await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
       title: 'Banco roto',
       civicId: idCiudadano,
     });
-    await servicio.create({ title: 'Otra incidencia', civicId: otroCiudadano });
+    await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
+      title: 'Otra incidencia',
+      civicId: otroCiudadano,
+    });
 
     await expect(
       servicio.listarPorCiudadano(idCiudadano.toUpperCase()),
@@ -58,7 +70,13 @@ describe('Listado de incidencias por ciudadano', () => {
 
   it('devuelve una lista vacía si no hay coincidencias', async () => {
     await expect(servicio.listarPorCiudadano(idCiudadano)).resolves.toEqual([]);
-    await servicio.create({ title: 'Otra incidencia', civicId: otroCiudadano });
+    await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
+      title: 'Otra incidencia',
+      civicId: otroCiudadano,
+    });
     await expect(servicio.listarPorCiudadano(idCiudadano)).resolves.toEqual([]);
   });
 });
@@ -88,11 +106,17 @@ describe('Listado de todas las incidencias', () => {
   it('devuelve resúmenes de todos los ciudadanos, ordenados del más reciente', async () => {
     vi.setSystemTime(new Date('2026-11-08T08:00:00Z'));
     const antigua = await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
       title: 'Farola apagada',
       civicId: idCiudadano,
     });
     vi.setSystemTime(new Date('2026-11-08T09:00:00Z'));
     const reciente = await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
       title: 'Banco roto',
       civicId: otroCiudadano,
     });
@@ -117,6 +141,9 @@ describe('Listado de todas las incidencias', () => {
 
   it('devuelve resúmenes aislados que no permiten alterar el almacenamiento', async () => {
     const creada = await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
       title: 'Farola apagada',
       civicId: idCiudadano,
     });
@@ -137,16 +164,25 @@ describe('Listado de todas las incidencias', () => {
   it('pagina con cursor keyset sin repetir registros y considera la primera página la 0', async () => {
     vi.setSystemTime(new Date('2026-11-08T08:00:00Z'));
     const primera = await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
       title: 'Primera incidencia',
       civicId: idCiudadano,
     });
     vi.setSystemTime(new Date('2026-11-08T09:00:00Z'));
     const segunda = await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
       title: 'Segunda incidencia',
       civicId: otroCiudadano,
     });
     vi.setSystemTime(new Date('2026-11-08T10:00:00Z'));
     const tercera = await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
       title: 'Tercera incidencia',
       civicId: idCiudadano,
     });
@@ -183,8 +219,20 @@ describe('Listado de todas las incidencias', () => {
   });
 
   it('mantiene el filtro por ciudadano al paginar', async () => {
-    await servicio.create({ title: 'Ciudadano A', civicId: idCiudadano });
-    await servicio.create({ title: 'Ciudadano B', civicId: otroCiudadano });
+    await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
+      title: 'Ciudadano A',
+      civicId: idCiudadano,
+    });
+    await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
+      title: 'Ciudadano B',
+      civicId: otroCiudadano,
+    });
     expect(
       (await servicio.listarPagina(10, undefined, idCiudadano)).items,
     ).toHaveLength(1);

@@ -35,29 +35,52 @@ export class AccesoIncidenciasGuard implements CanActivate {
     );
     if (!roles?.length) {
       throw new ForbiddenException(
-        'Esta operaci�n no tiene permisos definidos',
+        'Esta operación no tiene permisos definidos',
       );
     }
 
     const usuario = await this.prisma.user.findUnique({
       where: { id: request.user.userId.toLowerCase() },
-      select: { id: true, role: true, citizen: { select: { user_id: true } } },
+      select: {
+        id: true,
+        role: true,
+        citizen: { select: { user_id: true } },
+        isActive: true,
+        departmentMembership: {
+          include: { department: { select: { isActive: true } } },
+        },
+        teamMemberships: {
+          where: {
+            isActive: true,
+            team: { isActive: true, department: { isActive: true } },
+          },
+          select: { teamId: true, isTechnician: true },
+        },
+      },
     });
-    if (!usuario) {
+    if (!usuario || !usuario.isActive) {
       throw new UnauthorizedException('El usuario autenticado ya no existe');
     }
     if (
-      !roles.includes(usuario.role) ||
+      !(
+        roles.includes(usuario.role) ||
+        (roles.length === 1 && roles[0] === 'civic' && usuario.citizen)
+      ) ||
       (usuario.role === 'civic' && !usuario.citizen)
     ) {
       throw new ForbiddenException(
-        'El usuario no tiene permiso para esta operaci�n',
+        'El usuario no tiene permiso para esta operación',
       );
     }
 
     request.usuarioIncidencias = {
       id: usuario.id.toLowerCase(),
       role: usuario.role,
+      departamentoId: usuario.departmentMembership?.department.isActive
+        ? usuario.departmentMembership.departmentId
+        : null,
+      equipoId: usuario.teamMemberships?.[0]?.teamId ?? null,
+      esTecnico: usuario.teamMemberships?.[0]?.isTechnician ?? false,
       ciudadanoId: usuario.citizen?.user_id.toLowerCase() ?? null,
     };
     return true;

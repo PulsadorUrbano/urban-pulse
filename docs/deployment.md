@@ -12,7 +12,7 @@ El `docker-compose.yml` de la raíz define PostgreSQL/PostGIS, backend y fronten
 
 Los servicios utilizan `restart: always` y la red bridge `urbanpulse_net`. El backend depende de que PostgreSQL supere su healthcheck; el frontend espera a que el backend se inicie.
 
-El Dockerfile del backend usa dos etapas con `node:22-alpine`. La primera instala las dependencias y ejecuta `pnpm run build` para generar el cliente Prisma y compilar la API. La segunda instala las dependencias de producción, copia la compilación y arranca con `pnpm run start:prod`.
+El Dockerfile del backend usa dos etapas con `node:22-alpine`. La primera instala las dependencias y ejecuta `pnpm run build` para generar el cliente Prisma y compilar la API. La segunda instala las dependencias de producción, copia la compilación, el esquema, las migraciones y la configuración de Prisma, y arranca con `pnpm run start:prod`.
 
 El Dockerfile del frontend compila la aplicación con Vite y sirve los archivos con Nginx. Nginx resuelve las rutas de la aplicación y reenvía las peticiones `/api/` al backend, quitando ese prefijo.
 
@@ -26,15 +26,19 @@ Copy-Item .env.example .env
 
 Configura `DB_NAME`, `DB_USER` y `DB_PASSWORD` para PostgreSQL, y `JWT_SECRET` y `JWT_EXPIRES_IN` para la autenticación. Compose construye la conexión del backend a `database:5432` con los valores `DB_*`.
 
-`API_PORT` y `WEB_PORT` configuran los puertos del backend y del panel web. `.env.example` usa `3001` y `8080`, respectivamente. PostgreSQL está accesible desde el equipo local en `127.0.0.1:5432`.
+`API_PORT` y `WEB_PORT` configuran los puertos del backend y del panel web. `.env.example` usa `3000` para el backend y `8080` para el panel web. El mock móvil usa `3001`. Si tu `.env` ya tiene `API_PORT=3001`, cámbialo a `3000` antes de arrancar ambos servicios. PostgreSQL está accesible desde el equipo local en `127.0.0.1:5432`.
 
-Para usar las cuentas de prueba locales, configura `NODE_ENV=development` en el `.env` de la raíz. Deja `DB_SYNC` vacío y aplica las migraciones desde el equipo local, donde está instalado Prisma CLI.
+Para usar las cuentas de prueba locales, configura `NODE_ENV=development` en el `.env` de la raíz. Puedes usar `DB_SYNC=deploy` para aplicar las migraciones al arrancar el contenedor. Si prefieres aplicarlas desde el equipo local, deja `DB_SYNC` vacío y sigue el procedimiento manual de abajo.
 
 El `.env` de la raíz configura Compose. `backend/.env` se usa para ejecutar el backend o Prisma desde el equipo local. No subas estos archivos al repositorio.
 
 ## Construcción y arranque
 
-### Primera ejecución con una base de datos vacía
+### Migraciones automáticas en Compose
+
+Ajusta `DB_SYNC=deploy` en el `.env` de la raíz y ejecuta `docker compose up -d --build`. Compose espera al healthcheck de PostgreSQL. El backend aplica las migraciones antes de servir peticiones y detiene el arranque si fallan.
+
+### Migraciones manuales desde el equipo local
 
 1. Desde la raíz, inicia PostgreSQL y espera a que esté disponible:
 
@@ -70,13 +74,13 @@ Desde la raíz, inicia la base de datos, el backend y el panel web:
 docker compose up -d --build
 ```
 
-Con los puertos de `.env.example`, abre el [panel web](http://localhost:8080) o accede directamente a la [API](http://localhost:3001). Si configuraste `NODE_ENV=development`, puedes probar el panel con `admin` / `admin`.
+Con los puertos de `.env.example`, abre el [panel web](http://localhost:8080) o accede directamente a la [API](http://localhost:3000). Si configuraste `NODE_ENV=development`, puedes probar el panel con `admin` / `admin`.
 
 ## Salud y logs
 
 El healthcheck de PostgreSQL ejecuta `pg_isready` con el usuario y la base configurados cada 5 segundos, con timeout de 5 segundos y 5 reintentos. Comprueba disponibilidad de PostgreSQL, no la presencia de las tablas del dominio.
 
-Con el `API_PORT` de `.env.example`, Swagger está disponible en `http://localhost:3001/`. `GET http://localhost:3001/health` devuelve `{ "status": "ok" }` sin consultar PostgreSQL. Si cambias `API_PORT`, usa ese puerto en ambas URL. Compose no define un healthcheck para el backend.
+Con el `API_PORT` de `.env.example`, Swagger está disponible en `http://localhost:3000/`. `GET http://localhost:3000/health` devuelve `{ "status": "ok" }` sin consultar PostgreSQL. Si cambias `API_PORT`, usa ese puerto en ambas URL. Compose no define un healthcheck para el backend.
 
 ```bash
 docker compose ps
@@ -93,6 +97,6 @@ docker compose down
 
 `stop` detiene los contenedores; `down` retira los contenedores y la red, conservando por defecto el volumen nombrado. `pgdata` conserva PostgreSQL entre recreaciones. Eliminar el volumen, incluido mediante `docker compose down -v`, elimina sus datos.
 
-La API mantiene usuarios, incidencias, ubicaciones e historiales en PostgreSQL. Reiniciar el backend no elimina esos registros. No existe directorio ni volumen de imágenes: la API no acepta ni almacena archivos de incidencias.
+La API mantiene usuarios, incidencias, ubicaciones e historiales en PostgreSQL. Reiniciar el backend no elimina esos registros. Las fotos se guardan en S3. Sin `S3_BUCKET` o `S3_REGION`, el alta de incidencias sigue disponible y la subida de fotos devuelve `503` con el mensaje «El almacenamiento de fotos no está configurado».
 
 Guías: [arquitectura](architecture.md), [desarrollo](development.md) y [backend](../backend/README.md).
