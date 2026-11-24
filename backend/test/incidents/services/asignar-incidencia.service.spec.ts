@@ -50,7 +50,7 @@ function preparar() {
     },
     department: { findUnique: vi.fn(async () => ({ id: departamento })) },
     team: { findUnique: vi.fn(async () => ({ departmentId: departamento })) },
-    users: { findUnique: vi.fn(async () => ({ id: tecnico })) },
+    user: { findUnique: vi.fn(async () => ({ id: tecnico })) },
     teamMember: {
       findUnique: vi.fn(async () => ({ isTechnician: true, isActive: true })),
     },

@@ -39,7 +39,7 @@ export class AccesoIncidenciasGuard implements CanActivate {
       );
     }
 
-    const usuario = await this.prisma.users.findUnique({
+    const usuario = await this.prisma.user.findUnique({
       where: { id: request.user.userId.toLowerCase() },
       select: {
         id: true,

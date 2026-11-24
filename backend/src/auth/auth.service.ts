@@ -50,7 +50,7 @@ export class AuthService {
 
     try {
       const usuario = await this.prisma.$transaction(async (tx) => {
-        const creado = await tx.users.create({
+        const creado = await tx.user.create({
           data: {
             username: input.username,
             email: input.email,
@@ -60,7 +60,7 @@ export class AuthService {
           select: publicUserSelect,
         });
 
-        await tx.citizens.create({
+        await tx.citizen.create({
           data: { user_id: creado.id, phone: input.phone ?? null },
         });
 
@@ -82,7 +82,7 @@ export class AuthService {
   /** Valida credenciales y devuelve un JWT firmado. */
   async login(usernameOrEmail: string, password: string): Promise<string> {
     const identificador = usernameOrEmail.trim();
-    const usuario = await this.prisma.users.findFirst({
+    const usuario = await this.prisma.user.findFirst({
       where: {
         OR: [
           { username: identificador },
@@ -117,7 +117,7 @@ export class AuthService {
 
   /** Devuelve los datos actuales del usuario del token; falla si ya no existe. */
   async obtenerUsuarioActual(payload: TokenPayload): Promise<PublicUserDto> {
-    const usuario = await this.prisma.users.findUnique({
+    const usuario = await this.prisma.user.findUnique({
       where: { id: payload.userId },
       select: publicUserSelect,
     });

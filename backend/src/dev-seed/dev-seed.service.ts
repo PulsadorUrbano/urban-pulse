@@ -43,7 +43,7 @@ export class DevSeedService implements OnModuleInit {
   private async sembrarAdmin(): Promise<void> {
     const password = await hash(DEV_ADMIN_PASSWORD, 10);
 
-    await this.prisma.users.upsert({
+    await this.prisma.user.upsert({
       where: { id: DEV_ADMIN_ID },
       update: { role: profile_role.admin, password },
       create: {
@@ -62,7 +62,7 @@ export class DevSeedService implements OnModuleInit {
   private async sembrarCiudadano(): Promise<void> {
     const password = await hash(DEV_CITIZEN_PASSWORD, 10);
 
-    await this.prisma.users.upsert({
+    await this.prisma.user.upsert({
       where: { id: DEV_CITIZEN_ID },
       update: { role: profile_role.civic, password },
       create: {

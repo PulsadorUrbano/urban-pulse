@@ -432,7 +432,7 @@ export class IncidentsService {
           }
         }
         if (technicianId) {
-          const user = await tx.users.findUnique({
+          const user = await tx.user.findUnique({
             where: { id: technicianId, isActive: true },
             select: { id: true },
           });

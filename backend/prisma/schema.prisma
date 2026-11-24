@@ -49,7 +49,7 @@ model Incident {
   title             String
   description       String?
   civicId           String             @db.Uuid
-  civic             citizens           @relation(fields: [civicId], references: [user_id], onDelete: Restrict)
+  civic             Citizen           @relation(fields: [civicId], references: [user_id], onDelete: Restrict)
   categoryId        String?            @db.Uuid
   categoria         Category?          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   urbanAssetId      String?            @db.Uuid
@@ -125,7 +125,7 @@ model TeamMember {
   userId       String     @db.Uuid
   teamId       String     @db.Uuid
   isTechnician Boolean    @default(false)
-  user         users      @relation(fields: [userId], references: [id])
+  user         User      @relation(fields: [userId], references: [id])
   team         Team       @relation(fields: [teamId], references: [id])
   incidents    Incident[]
 
@@ -185,7 +185,7 @@ model CambioEstado {
   incidenciaId  String         @map("incident_id") @db.Uuid
   incidencia    Incident       @relation(fields: [incidenciaId], references: [id])
   actorId       String         @map("user_id") @db.Uuid
-  actor         users          @relation("ActorEstado", fields: [actorId], references: [id], onDelete: Restrict)
+  actor         User          @relation("ActorEstado", fields: [actorId], references: [id], onDelete: Restrict)
   nuevoEstado   IncidentStatus @map("new_status")
   motivo        String         @map("cause")
   fechaCreacion DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -205,7 +205,7 @@ model CambioPrioridad {
   incidenciaId   String           @map("incident_id") @db.Uuid
   incidencia     Incident         @relation(fields: [incidenciaId], references: [id])
   actorId        String?          @map("user_id") @db.Uuid
-  actor          users?           @relation("ActorPrioridad", fields: [actorId], references: [id], onDelete: Restrict)
+  actor          User?           @relation("ActorPrioridad", fields: [actorId], references: [id], onDelete: Restrict)
 
   @@index([incidenciaId])
   @@index([actorId])
@@ -222,7 +222,7 @@ enum profile_role {
   analyst
 }
 
-model users {
+model User {
   tecnicoNuevoCambios    CambioAsignacion[] @relation("TecnicoNuevo")
   tecnicoAnteriorCambios CambioAsignacion[] @relation("TecnicoAnterior")
   isActive               Boolean            @default(true)
@@ -234,24 +234,26 @@ model users {
   password               String
   created_at             DateTime           @default(now())
   role                   profile_role
-  citizen                citizens?
+  citizen                Citizen?
   teamMemberships        TeamMember[]
   cambiosEstado          CambioEstado[]     @relation("ActorEstado")
   cambiosPrioridad       CambioPrioridad[]  @relation("ActorPrioridad")
+  @@map("users")
 }
 
-model citizens {
+model Citizen {
   user_id    String     @id @db.Uuid
   phone      String?    @unique
   created_at DateTime   @default(now())
-  user       users      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
   incidents  Incident[]
+  @@map("citizens")
 }
 
 model DepartmentMember {
   userId       String     @id @db.Uuid
   departmentId String     @db.Uuid
-  user         users      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Restrict)
   department   Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
 
   @@index([departmentId])
@@ -263,19 +265,19 @@ model CambioAsignacion {
   incidenciaId           String      @db.Uuid
   incidencia             Incident    @relation(fields: [incidenciaId], references: [id], onDelete: Restrict)
   actorId                String      @db.Uuid
-  actor                  users       @relation("ActorAsignacion", fields: [actorId], references: [id], onDelete: Restrict)
+  actor                  User       @relation("ActorAsignacion", fields: [actorId], references: [id], onDelete: Restrict)
   departamentoAnteriorId String?     @db.Uuid
   departamentoAnterior   Department? @relation("DepartamentoAnterior", fields: [departamentoAnteriorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   equipoAnteriorId       String?     @db.Uuid
   equipoAnterior         Team?       @relation("EquipoAnterior", fields: [equipoAnteriorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   tecnicoAnteriorId      String?     @db.Uuid
-  tecnicoAnterior        users?      @relation("TecnicoAnterior", fields: [tecnicoAnteriorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  tecnicoAnterior        User?      @relation("TecnicoAnterior", fields: [tecnicoAnteriorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   departamentoNuevoId    String?     @db.Uuid
   departamentoNuevo      Department? @relation("DepartamentoNuevo", fields: [departamentoNuevoId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   equipoNuevoId          String?     @db.Uuid
   equipoNuevo            Team?       @relation("EquipoNuevo", fields: [equipoNuevoId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   tecnicoNuevoId         String?     @db.Uuid
-  tecnicoNuevo           users?      @relation("TecnicoNuevo", fields: [tecnicoNuevoId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  tecnicoNuevo           User?      @relation("TecnicoNuevo", fields: [tecnicoNuevoId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   motivo                 String?
   fechaCreacion          DateTime    @default(now()) @db.Timestamptz(3)
 
