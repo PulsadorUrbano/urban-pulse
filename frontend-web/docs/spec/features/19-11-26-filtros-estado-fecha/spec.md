@@ -9,6 +9,7 @@
 - Estado: implementado y verificado con pruebas unitarias; prueba manual en navegador pendiente.
 - Plan: [Plan de implementación](./plan.md#confirmación-de-implementación).
 - Referencias: issue #173 (filtros del dashboard), sub-issues #194 (estado) y #195 (fecha), issue #44 (filtrado en el backend) y ADR 0002.
+- Sustituida en parte por [25-11-26-filtros-estado-fecha-servidor](../25-11-26-filtros-estado-fecha-servidor/spec.md): desde la #214 los filtros se aplican en el backend.
 
 ## Objetivo y decisiones vigentes
 

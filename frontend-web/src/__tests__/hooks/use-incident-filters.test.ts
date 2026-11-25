@@ -26,19 +26,18 @@ beforeEach(() => {
 });
 afterEach(() => harness.unmount());
 
-it('envía prioridad/categoría al listado sin descartar resúmenes que no incluyen esos campos', () => {
+it('envía prioridad y categoría al listado y devuelve las incidencias tal como llegan del servidor', () => {
   let result = harness.render(() => useIncidentFilters('token'));
   result.setPriority('high');
   result = harness.render(() => useIncidentFilters('token'));
   result.setCategory('categoría-1');
   result = harness.render(() => useIncidentFilters('token'));
   expect(mocks.useIncidentList).toHaveBeenLastCalledWith('token', { priority: 'high', categoryId: 'categoría-1' });
-  expect(result.visibleItems.map(({ id }) => id)).toEqual(['a']);
+  expect(result.items.map(({ id }: { id: string }) => id)).toEqual(['a']);
   expect(result.isActive).toBe(true);
-  expect(result.isPartial).toBe(false);
 });
 
-it('conserva estado/fecha/orden al cambiar prioridad y categoría y limpia todos los criterios', () => {
+it('envía también estado, fechas y orden al servidor y limpia todos los criterios', () => {
   let result = harness.render(() => useIncidentFilters('token'));
   result.setStatus('validated');
   result.setOrder('oldest');
@@ -51,14 +50,25 @@ it('conserva estado/fecha/orden al cambiar prioridad y categoría y limpia todos
     status: 'validated', order: 'oldest', from: '2026-11-01', to: '2026-11-30',
     priority: 'medium', categoryId: 'categoría-2',
   });
-  expect(result.visibleItems).toEqual([]);
-  expect(result.isPartial).toBe(true);
+  expect(mocks.useIncidentList).toHaveBeenLastCalledWith('token', {
+    status: 'validated', order: 'oldest', from: '2026-11-01', to: '2026-11-30',
+    priority: 'medium', categoryId: 'categoría-2',
+  });
   result.reset();
   result = harness.render(() => useIncidentFilters('token'));
   expect(result.filters).toEqual(DEFAULT_INCIDENT_FILTERS);
   expect(result.isActive).toBe(false);
   expect(result.reload).toHaveBeenCalledTimes(1);
-  expect(mocks.useIncidentList).toHaveBeenLastCalledWith('token', { priority: undefined, categoryId: undefined });
+  expect(mocks.useIncidentList).toHaveBeenLastCalledWith('token', {});
+});
+
+it('envía el rango ordenado aunque las fechas se elijan al revés', () => {
+  let result = harness.render(() => useIncidentFilters('token'));
+  result.setTo('2026-11-10');
+  result.setFrom('2026-11-20');
+  result = harness.render(() => useIncidentFilters('token'));
+  expect(result.filters).toMatchObject({ from: '2026-11-10', to: '2026-11-20' });
+  expect(mocks.useIncidentList).toHaveBeenLastCalledWith('token', { from: '2026-11-10', to: '2026-11-20' });
 });
 
 it('todas y prioridad desconocida omiten filtros del servidor', () => {
@@ -68,5 +78,5 @@ it('todas y prioridad desconocida omiten filtros del servidor', () => {
   result = harness.render(() => useIncidentFilters('token'));
   expect(result.filters.priority).toBe('all');
   expect(result.filters.categoryId).toBeNull();
-  expect(mocks.useIncidentList).toHaveBeenLastCalledWith('token', { priority: undefined, categoryId: undefined });
+  expect(mocks.useIncidentList).toHaveBeenLastCalledWith('token', {});
 });

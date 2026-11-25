@@ -139,6 +139,10 @@ export async function fetchIncidentPage(token: string, cursor?: string, filters:
 }> {
   const parameters = new URLSearchParams();
   if (cursor) parameters.set('cursor', cursor);
+  if (filters.status) parameters.set('status', filters.status);
+  if (filters.from) parameters.set('from', filters.from);
+  if (filters.to) parameters.set('to', filters.to);
+  if (filters.order) parameters.set('order', filters.order);
   if (filters.priority) parameters.set('priority', filters.priority);
   if (filters.categoryId) parameters.set('categoryId', filters.categoryId);
   const query = parameters.size ? `?${parameters}` : '';

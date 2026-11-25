@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
 
 import { STATUS_LABELS } from '../constants/incident-labels';
 import { useIncidentCategories } from '../hooks/use-incident-categories';
@@ -26,7 +25,7 @@ export function IncidentListView({
   const canViewGlobalList = isAdministrativeRole(user.role);
   const token = user.source === 'backend' && canViewGlobalList ? sessionToken : null;
   const filterControls = useIncidentFilters(token);
-  const { items, hasMore, loading, error, loadMore, retry, visibleItems, isActive, isPartial } = filterControls;
+  const { items, hasMore, loading, error, loadMore, retry, isActive } = filterControls;
   const categories = useIncidentCategories(Boolean(token));
 
   return (
@@ -56,27 +55,9 @@ export function IncidentListView({
           </div>
         )}
         {token && <IncidentFilters controls={filterControls} categories={categories} />}
-        {isActive && items.length > 0 && (
-          <p role="status" className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
-            {visibleItems.length} de {items.length} incidencias cargadas coinciden con los filtros.
-          </p>
-        )}
-        {isPartial && (
-          <div className="mb-4 p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 rounded-xl flex items-start gap-2.5 text-amber-800 dark:text-amber-300 text-xs">
-            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
-            <p className="font-semibold">
-              {error
-                ? 'El estado, las fechas y el orden se aplican a las incidencias cargadas. Pulsa «Reintentar» para seguir cargando.'
-                : 'El estado, las fechas y el orden se aplican a las incidencias cargadas. Pulsa «Cargar más» para completar el resultado.'}
-            </p>
-          </div>
-        )}
-        {isActive && items.length > 0 && visibleItems.length === 0 && (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">Ninguna incidencia cargada coincide con los filtros.</p>
-        )}
-        {token && visibleItems.length > 0 && (
+        {token && items.length > 0 && (
           <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900/40">
-            {visibleItems.map((incident) => (
+            {items.map((incident) => (
               <li key={incident.id}>
                 <button
                   type="button"

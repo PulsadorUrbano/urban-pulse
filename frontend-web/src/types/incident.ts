@@ -62,7 +62,12 @@ export interface IncidentSummary {
 }
 
 // Criterios que GET /incidents aplica antes de paginar. Omitir un criterio equivale a «todas».
+// `from` y `to` son días AAAA-MM-DD que el backend interpreta en UTC; `order` por defecto es `newest`.
 export interface IncidentPageFilters {
+  status?: IncidentStatus;
+  from?: string;
+  to?: string;
+  order?: IncidentSortOrder;
   priority?: IncidentPriority;
   categoryId?: string;
 }
@@ -73,11 +78,11 @@ export interface IncidentCategory {
   createdAt: string;
 }
 
-// Estado/fecha/orden siguen siendo locales; prioridad y categoría se envían al servidor.
+// Valores de los controles del listado; se traducen a IncidentPageFilters para la petición.
 export type IncidentStatusFilter = IncidentStatus | 'all';
 export type IncidentSortOrder = 'newest' | 'oldest';
 
-// `from` y `to` son días AAAA-MM-DD de un <input type="date">, en hora local.
+// `from` y `to` son días AAAA-MM-DD de un <input type="date">.
 export interface IncidentListFilters {
   status: IncidentStatusFilter;
   order: IncidentSortOrder;
