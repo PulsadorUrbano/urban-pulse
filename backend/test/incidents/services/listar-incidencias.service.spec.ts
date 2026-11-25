@@ -202,6 +202,7 @@ describe('Listado de todas las incidencias', () => {
       createdAt: string;
       pagina: number;
       civicId: string | null;
+      filtros: { order: 'newest' | 'oldest' };
     };
     const paginaUno = await servicio.listarPagina(2, cursor);
     expect(paginaUno.pagina).toBe(1);
@@ -242,6 +243,159 @@ describe('Listado de todas las incidencias', () => {
     });
   });
 
+  it('aplica estado, prioridad, categoría y fechas en la consulta antes de paginar', async () => {
+    const categoria = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+    vi.setSystemTime(new Date('2026-11-25T00:00:00.000Z'));
+    const primera = await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
+      title: 'Primera válida',
+      civicId: idCiudadano,
+    });
+    vi.setSystemTime(new Date('2026-11-25T23:59:59.999Z'));
+    const segunda = await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
+      title: 'Segunda válida',
+      civicId: idCiudadano,
+    });
+    vi.setSystemTime(new Date('2026-11-26T00:00:00.000Z'));
+    await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
+      title: 'Fuera de fecha',
+      civicId: idCiudadano,
+    });
+    for (const row of prisma.incidencias.slice(0, 2)) {
+      row.status = 'validated';
+      row.priority = 'high';
+      row.categoryId = categoria;
+    }
+    const filtros = {
+      order: 'newest' as const,
+      status: 'validated' as const,
+      from: '2026-11-25',
+      to: '2026-11-25',
+      priority: 'high' as const,
+      categoryId: categoria,
+    };
+    const pagina = await servicio.listarPagina(
+      1,
+      undefined,
+      idCiudadano,
+      filtros,
+    );
+    expect(pagina.items.map(({ id }) => id)).toEqual([segunda.id]);
+    expect(prisma.consultasIncidencias.at(-1)).toMatchObject({
+      where: {
+        civicId: idCiudadano,
+        status: 'validated',
+        priority: 'high',
+        categoryId: categoria,
+        createdAt: {
+          gte: new Date('2026-11-25T00:00:00.000Z'),
+          lt: new Date('2026-11-26T00:00:00.000Z'),
+        },
+      },
+      take: 2,
+    });
+    const cursor = JSON.parse(
+      Buffer.from(pagina.nextCursor!, 'base64url').toString('utf8'),
+    ) as import('../../../src/incidents/incident.js').CursorIncidencias;
+    expect(cursor.filtros).toEqual(filtros);
+    const siguiente = await servicio.listarPagina(
+      1,
+      cursor,
+      idCiudadano,
+      filtros,
+    );
+    expect(siguiente.items.map(({ id }) => id)).toEqual([primera.id]);
+    await expect(
+      servicio.listarPagina(1, cursor, idCiudadano, {
+        ...filtros,
+        priority: 'low',
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('cada filtro individual limita el resultado y oldest pagina con desempate por id', async () => {
+    vi.setSystemTime(new Date('2026-11-24T12:00:00.000Z'));
+    const primera = await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
+      title: 'Primera',
+      civicId: idCiudadano,
+    });
+    const segunda = await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
+      title: 'Segunda',
+      civicId: idCiudadano,
+    });
+    vi.setSystemTime(new Date('2026-11-25T12:00:00.000Z'));
+    const tercera = await servicio.create({
+      category: 'Iluminación',
+      latitude: 36.72,
+      longitude: -4.42,
+      title: 'Tercera',
+      civicId: idCiudadano,
+    });
+    const categoria = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+    Object.assign(prisma.incidencias[2], {
+      status: 'validated',
+      priority: 'high',
+      categoryId: categoria,
+    });
+    for (const filtro of [
+      { status: 'validated' as const },
+      { priority: 'high' as const },
+      { categoryId: categoria },
+      { from: '2026-11-25' },
+      { to: '2026-11-25', from: '2026-11-25' },
+    ]) {
+      expect(
+        (
+          await servicio.listarPagina(10, undefined, undefined, {
+            order: 'newest',
+            ...filtro,
+          })
+        ).items.map(({ id }) => id),
+      ).toEqual([tercera.id]);
+    }
+    expect(
+      (await servicio.listarPagina(10, undefined, undefined, {
+        order: 'newest',
+        to: '2026-11-24',
+      })).items.map(({ id }) => id),
+    ).toEqual([primera.id, segunda.id].sort());
+    const pagina = await servicio.listarPagina(1, undefined, undefined, {
+      order: 'oldest',
+    });
+    const empatadas = [primera.id, segunda.id].sort();
+    expect(pagina.items.map(({ id }) => id)).toEqual([empatadas[0]]);
+    const cursor = JSON.parse(
+      Buffer.from(pagina.nextCursor!, 'base64url').toString('utf8'),
+    ) as import('../../../src/incidents/incident.js').CursorIncidencias;
+    const siguiente = await servicio.listarPagina(1, cursor, undefined, {
+      order: 'oldest',
+    });
+    expect(siguiente.items.map(({ id }) => id)).toEqual([empatadas[1]]);
+    expect(prisma.consultasIncidencias.at(-1)).toMatchObject({
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      where: {
+        OR: [
+          { createdAt: { gt: expect.any(Date) } },
+          { createdAt: expect.any(Date), id: { gt: empatadas[0] } },
+        ],
+      },
+    });
+  });
+
   it('rechaza reutilizar un cursor con otro filtro', async () => {
     await expect(
       servicio.listarPagina(
@@ -251,6 +405,7 @@ describe('Listado de todas las incidencias', () => {
           createdAt: new Date().toISOString(),
           pagina: 1,
           civicId: idCiudadano,
+          filtros: { order: 'newest' },
         },
         otroCiudadano,
       ),

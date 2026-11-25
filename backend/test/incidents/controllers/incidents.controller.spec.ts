@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, ForbiddenException, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
 import {
   GUARDS_METADATA,
   METHOD_METADATA,
@@ -294,7 +299,12 @@ describe('IncidentsController autenticado', () => {
     };
 
     const clave = '12345678-abcd-4123-8123-123456789abc';
-    await controlador.subirFotos(incidencia.id, [archivo] as never, civic, clave.toUpperCase());
+    await controlador.subirFotos(
+      incidencia.id,
+      [archivo] as never,
+      civic,
+      clave.toUpperCase(),
+    );
 
     expect(fotos.subir).toHaveBeenCalledWith(
       incidencia.id,
@@ -302,8 +312,14 @@ describe('IncidentsController autenticado', () => {
       [{ contenido: archivo.buffer, mimeType: 'image/jpeg', extension: 'jpg' }],
       clave,
     );
-    expect(() => controlador.subirFotos(incidencia.id, [archivo] as never, civic, 'inválida'))
-      .toThrow(BadRequestException);
+    expect(() =>
+      controlador.subirFotos(
+        incidencia.id,
+        [archivo] as never,
+        civic,
+        'inválida',
+      ),
+    ).toThrow(BadRequestException);
   });
 });
 
@@ -331,7 +347,11 @@ describe('Listado paginado de incidencias', () => {
       controlador.listar({ limit: 10 }, response, ciudadano),
     ).toThrow(ForbiddenException);
     expect(() =>
-      controlador.listar({ civicId: operador.id, limit: 10 }, response, ciudadano),
+      controlador.listar(
+        { civicId: operador.id, limit: 10 },
+        response,
+        ciudadano,
+      ),
     ).toThrow(ForbiddenException);
     expect(() =>
       controlador.listar({ civicId: operador.id, limit: 10 }, response, {
@@ -357,53 +377,104 @@ describe('Listado paginado de incidencias', () => {
     );
     const response = { setHeader: vi.fn() } as unknown as Response;
 
-    await expect(controlador.listar({ limit: 10 }, response, operador))
-      .resolves.toEqual([]);
-    expect(servicio.listarPagina).toHaveBeenCalledWith(10, undefined, undefined);
+    await expect(
+      controlador.listar({ limit: 10 }, response, operador),
+    ).resolves.toEqual([]);
+    expect(servicio.listarPagina).toHaveBeenCalledWith(
+      10,
+      undefined,
+      undefined,
+      {},
+    );
   });
 
-  it.each(['civic', 'technician'] as const)('publica las cabeceras de continuación y conserva el cuerpo como array para el perfil %s', async (role) => {
-    const items = [
-      {
-        id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-        title: 'Farola apagada',
-        status: 'reported' as const,
-        createdAt: '2026-11-12T10:00:00.000Z',
-      },
-    ];
+  it.each(['civic', 'technician'] as const)(
+    'publica las cabeceras de continuación y conserva el cuerpo como array para el perfil %s',
+    async (role) => {
+      const items = [
+        {
+          id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+          title: 'Farola apagada',
+          status: 'reported' as const,
+          createdAt: '2026-11-12T10:00:00.000Z',
+        },
+      ];
+      const servicio = {
+        listarPagina: vi.fn().mockResolvedValue({
+          items,
+          limit: 1,
+          pagina: 0,
+          nextCursor: 'cursor-opaco',
+        }),
+      };
+      const setHeader = vi.fn();
+      const response = { setHeader } as unknown as Response;
+      const controlador = new IncidentsController(
+        servicio as unknown as IncidentsService,
+        { agregarA: vi.fn() } as unknown as FotosIncidenciaService,
+      );
+
+      await expect(
+        controlador.listar({ civicId: items[0].id, limit: 1 }, response, {
+          ...ciudadano,
+          role,
+        }),
+      ).resolves.toBe(items);
+      expect(servicio.listarPagina).toHaveBeenCalledWith(
+        1,
+        undefined,
+        items[0].id,
+        {},
+      );
+      expect(setHeader).toHaveBeenCalledWith('X-Page', '0');
+      expect(setHeader).toHaveBeenCalledWith('X-Limit', '1');
+      expect(setHeader).toHaveBeenCalledWith('X-Next-Cursor', 'cursor-opaco');
+      expect(setHeader).toHaveBeenCalledWith(
+        'Link',
+        `</incidents?limit=1&cursor=cursor-opaco&civicId=${items[0].id}>; rel="next"`,
+      );
+    },
+  );
+
+  it('conserva todos los filtros en el enlace de continuación', async () => {
     const servicio = {
       listarPagina: vi.fn().mockResolvedValue({
-        items,
+        items: [],
         limit: 1,
         pagina: 0,
         nextCursor: 'cursor-opaco',
       }),
     };
     const setHeader = vi.fn();
-    const response = { setHeader } as unknown as Response;
     const controlador = new IncidentsController(
       servicio as unknown as IncidentsService,
-      { agregarA: vi.fn() } as unknown as FotosIncidenciaService,
+      {} as FotosIncidenciaService,
     );
-
-    await expect(
-      controlador.listar(
-        { civicId: items[0].id, limit: 1 },
-        response,
-        { ...ciudadano, role },
-      ),
-    ).resolves.toBe(items);
+    const filtros = {
+      status: 'validated' as const,
+      from: '2026-11-01',
+      to: '2026-11-25',
+      order: 'oldest' as const,
+      priority: 'high' as const,
+      categoryId: ciudadano.ciudadanoId!,
+    };
+    await controlador.listar(
+      { limit: 1, ...filtros },
+      { setHeader } as unknown as Response,
+      operador,
+    );
     expect(servicio.listarPagina).toHaveBeenCalledWith(
       1,
       undefined,
-      items[0].id,
+      undefined,
+      filtros,
     );
-    expect(setHeader).toHaveBeenCalledWith('X-Page', '0');
-    expect(setHeader).toHaveBeenCalledWith('X-Limit', '1');
-    expect(setHeader).toHaveBeenCalledWith('X-Next-Cursor', 'cursor-opaco');
-    expect(setHeader).toHaveBeenCalledWith(
-      'Link',
-      `</incidents?limit=1&cursor=cursor-opaco&civicId=${items[0].id}>; rel="next"`,
-    );
+    const link = setHeader.mock.calls.find(
+      ([nombre]) => nombre === 'Link',
+    )?.[1] as string;
+    const url = new URL(link.match(/<([^>]+)>/)![1], 'http://localhost');
+    for (const [clave, valor] of Object.entries(filtros)) {
+      expect(url.searchParams.get(clave)).toBe(valor);
+    }
   });
 });

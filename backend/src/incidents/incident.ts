@@ -68,11 +68,21 @@ export type ResumenIncidencia = Pick<
   'id' | 'title' | 'status' | 'createdAt'
 >;
 
+export interface FiltrosListadoIncidencias {
+  status?: Incident['status'];
+  from?: string;
+  to?: string;
+  order?: 'newest' | 'oldest';
+  priority?: Incident['priority'];
+  categoryId?: string;
+}
+
 export interface CursorIncidencias {
   id: string;
   createdAt: string;
   pagina: number;
   civicId: string | null;
+  filtros: FiltrosListadoIncidencias;
 }
 
 export interface PaginaIncidencias {
