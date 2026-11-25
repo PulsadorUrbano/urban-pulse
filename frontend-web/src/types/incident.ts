@@ -61,6 +61,18 @@ export interface IncidentSummary {
   createdAt: string;
 }
 
+// Criterios que GET /incidents aplica antes de paginar. Omitir un criterio equivale a «todas».
+export interface IncidentPageFilters {
+  priority?: IncidentPriority;
+  categoryId?: string;
+}
+
+export interface IncidentCategory {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
 // Filtros del listado web. Se aplican en el navegador hasta que GET /incidents filtre (#44).
 export type IncidentStatusFilter = IncidentStatus | 'all';
 export type IncidentSortOrder = 'newest' | 'oldest';
