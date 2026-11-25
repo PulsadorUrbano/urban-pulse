@@ -6,12 +6,12 @@ Se sigue la estructura de [frontend-mobile](../../../frontend-mobile/docs/spec/R
 
 | Ruta desde backend/docs/ | Contenido |
 | --- | --- |
-| spec/features/DD-MM-YY-nombre-feature/spec.md | Alcance, contratos y criterios de aceptación. |
-| spec/features/DD-MM-YY-nombre-feature/plan.md | Tareas, decisiones, verificaciones y confirmación. |
-| spec/bugs/nombre-feature/DD-MM-YY-asunto.md | Síntoma, diagnóstico, corrección y comprobaciones. |
+| spec/features/YY-MM-DD-nombre-feature/spec.md | Alcance, contratos y criterios de aceptación. |
+| spec/features/YY-MM-DD-nombre-feature/plan.md | Tareas, decisiones, verificaciones y confirmación. |
+| spec/bugs/nombre-feature/YY-MM-DD-asunto.md | Síntoma, diagnóstico, corrección y comprobaciones. |
 | spec/bugs/todo.md | Bugs pendientes por funcionalidad. |
-| spec/refactor/nombre-feature/DD-MM-YY-asunto.md | Refactorizaciones de una funcionalidad. |
-| spec/refactor/independent/DD-MM-YY-asunto.md | Refactorizaciones independientes. |
+| spec/refactor/nombre-feature/YY-MM-DD-asunto.md | Refactorizaciones de una funcionalidad. |
+| spec/refactor/independent/YY-MM-DD-asunto.md | Refactorizaciones independientes. |
 | spec/templates/ | Plantillas de especificación, plan, bug y refactor. |
 | spec/endpoint/ | Fichas por método y ruta HTTP. |
 | AAAA-MM-DD-NNN-nombre.md | Nota de sesión; NNN empieza en 001 cada día. |
@@ -20,7 +20,7 @@ Se sigue la estructura de [frontend-mobile](../../../frontend-mobile/docs/spec/R
 
 ## Funcionalidades
 
-1. Crear una carpeta con la fecha de inicio en formato DD-MM-YY y una descripción concreta.
+1. Crear una carpeta con la fecha de inicio en formato YY-MM-DD y una descripción concreta.
 2. Crear spec.md desde la [plantilla de especificación](templates/spec-template.md) y plan.md desde la [plantilla de plan](templates/plan-template.md).
 3. Mantener requisitos y contratos en la especificación; tareas, decisiones y resultados reales en el plan.
 4. Actualizar el [catálogo de endpoints](endpoint/README.md) cuando cambie un contrato.

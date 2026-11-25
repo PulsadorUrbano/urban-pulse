@@ -97,9 +97,10 @@ backend/
 
 Guardar la documentación en backend/docs/. Las rutas siguientes parten de la raíz del repositorio.
 
-- Para funcionalidades nuevas, crear backend/docs/spec/features/DD-MM-YY-nombre-feature/ con spec.md y plan.md a partir de las plantillas de backend/docs/spec/templates/.
+- Para funcionalidades nuevas, crear backend/docs/spec/features/YY-MM-DD-nombre-feature/ con spec.md y plan.md a partir de las plantillas de backend/docs/spec/templates/.
+- Mantener spec.md y plan.md juntos en esa carpeta de funcionalidad; no crear carpetas separadas features/specs/ o features/plans/. Ejemplo: features/26-11-25-filtrar-listado-incidencias/. Esta convención se aplica también a futuras funcionalidades.
 - La especificación recoge alcance, contratos y criterios de aceptación; el plan registra tareas, comprobaciones y confirmación de implementación, sin informes ni archivos de tareas separados.
-- Para bugs, usar backend/docs/spec/bugs/nombre-feature/DD-MM-YY-asunto.md y registrar los pendientes en bugs/todo.md. Para refactorizaciones, usar backend/docs/spec/refactor/nombre-feature/DD-MM-YY-asunto.md o refactor/independent/.
+- Para bugs, usar backend/docs/spec/bugs/nombre-feature/YY-MM-DD-asunto.md y registrar los pendientes en bugs/todo.md. Para refactorizaciones, usar backend/docs/spec/refactor/nombre-feature/YY-MM-DD-asunto.md o refactor/independent/.
 - Los cambios únicamente documentales se registran en una nota backend/docs/AAAA-MM-DD-NNN-nombre.md; no necesitan spec.md ni plan.md. Mantener contexto, alcance, decisiones, archivos, checklist, verificación y pendientes.
 - Incluir fecha y descripción concreta en el nombre de la carpeta de funcionalidad y en los títulos. En documentos nuevos, registrar desarrollador responsable, asistente y modelo de IA sin inventar datos no disponibles.
 - Consultar backend/docs/spec/README.md para la estructura y el archivo histórico backend/docs/old/. Conservar el contenido histórico sin presentar sus instrucciones como vigentes.

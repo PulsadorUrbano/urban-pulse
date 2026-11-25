@@ -4,9 +4,9 @@ Registrar los bugs confirmados por funcionalidad. No inferir bugs a partir de pl
 
 ## Formato
 
-- [ ] Asunto (DD-MM-YY): síntoma, condición y referencia al issue o evidencia.
+- [ ] Asunto (YY-MM-DD): síntoma, condición y referencia al issue o evidencia.
 
-Al corregirlo, marcar la entrada y enlazar bugs/nombre-feature/DD-MM-YY-asunto.md.
+Al corregirlo, marcar la entrada y enlazar bugs/nombre-feature/YY-MM-DD-asunto.md.
 
 ## Pendientes
 

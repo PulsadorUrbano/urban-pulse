@@ -59,6 +59,6 @@ No devuelve token. Para obtenerlo, llamar a `POST /auth/login`.
 
 ## Referencias
 
-- Especificación: [autenticación de ciudadanía](../../features/25-10-26-auth-ciudadania/spec.md).
-- Plan: [plan de implementación](../../features/25-10-26-auth-ciudadania/plan.md).
+- Especificación: [autenticación de ciudadanía](../../features/26-10-25-auth-ciudadania/spec.md).
+- Plan: [plan de implementación](../../features/26-10-25-auth-ciudadania/plan.md).
 - Código: `backend/src/auth/auth.controller.ts`, `backend/src/auth/auth.service.ts`, `backend/src/auth/pipes/register-citizen.pipe.ts`, `backend/src/auth/dto/register-citizen.dto.ts`.
