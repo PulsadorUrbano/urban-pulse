@@ -178,7 +178,8 @@ export class IncidentsController {
     description: 'JWT inválido o usuario inexistente.',
   })
   @ApiForbiddenResponse({
-    description: 'Se requiere rol admin, administrative o department autorizado.',
+    description:
+      'Se requiere rol admin, administrative o department autorizado.',
   })
   @ApiServiceUnavailableResponse({
     description: 'PostgreSQL no está disponible.',
@@ -207,6 +208,40 @@ export class IncidentsController {
   })
   @ApiQuery({ name: 'civicId', required: false, type: String, format: 'uuid' })
   @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: Object.values(IncidentStatus),
+  })
+  @ApiQuery({
+    name: 'from',
+    required: false,
+    type: String,
+    description: 'Fecha AAAA-MM-DD desde las 00:00 UTC.',
+  })
+  @ApiQuery({
+    name: 'to',
+    required: false,
+    type: String,
+    description: 'Fecha AAAA-MM-DD hasta el final del día UTC.',
+  })
+  @ApiQuery({
+    name: 'order',
+    required: false,
+    enum: ['newest', 'oldest'],
+    description: 'Por defecto newest.',
+  })
+  @ApiQuery({
+    name: 'priority',
+    required: false,
+    enum: Object.values(IncidentPriority),
+  })
+  @ApiQuery({
+    name: 'categoryId',
+    required: false,
+    type: String,
+    format: 'uuid',
+  })
+  @ApiQuery({
     name: 'limit',
     required: false,
     type: Number,
@@ -222,7 +257,7 @@ export class IncidentsController {
   })
   @ApiOkResponse({
     description:
-      'Array de resúmenes, ordenados del más reciente al más antiguo. La paginación se comunica mediante cabeceras.',
+      'Array de resúmenes, ordenados por createdAt según order. La paginación se comunica mediante cabeceras.',
     headers: {
       Link: {
         description: 'Enlace rel=next a la página siguiente, si existe.',
@@ -259,7 +294,7 @@ export class IncidentsController {
   })
   @ApiBadRequestResponse({
     description:
-      'Parámetros inválidos o desconocidos, limit fuera del rango 1–100 o cursor inválido.',
+      'Parámetros inválidos o desconocidos, rango de fechas invertido, limit fuera del rango 1–100 o cursor incompatible.',
   })
   @ApiUnauthorizedResponse({
     description: 'JWT inválido o usuario inexistente.',
@@ -285,8 +320,9 @@ export class IncidentsController {
         'El ciudadano solo puede consultar sus incidencias',
       );
     }
+    const { limit, cursor, civicId, ...filtros } = consulta;
     return this.incidentsService
-      .listarPagina(consulta.limit, consulta.cursor, consulta.civicId)
+      .listarPagina(limit, cursor, civicId, filtros)
       .then((pagina) => {
         response.setHeader('X-Page', String(pagina.pagina));
         response.setHeader('X-Limit', String(pagina.limit));
@@ -297,6 +333,9 @@ export class IncidentsController {
             cursor: pagina.nextCursor,
           });
           if (consulta.civicId) parametros.set('civicId', consulta.civicId);
+          for (const [clave, valor] of Object.entries(filtros)) {
+            if (valor) parametros.set(clave, valor);
+          }
           response.setHeader(
             'Link',
             `</incidents?${parametros.toString()}>; rel="next"`,
@@ -397,7 +436,8 @@ export class IncidentsController {
   @ApiHeader({
     name: 'Idempotency-Key',
     required: false,
-    description: 'UUID v4 de la tanda. Reutilizarlo al reintentar la misma subida.',
+    description:
+      'UUID v4 de la tanda. Reutilizarlo al reintentar la misma subida.',
   })
   @ApiBody({
     schema: {
@@ -417,7 +457,8 @@ export class IncidentsController {
     description: 'Lista completa de fotos con URL temporales de lectura.',
   })
   @ApiBadRequestResponse({
-    description: 'Archivo ausente o inválido, o clave de idempotencia inválida.',
+    description:
+      'Archivo ausente o inválido, o clave de idempotencia inválida.',
   })
   @ApiUnauthorizedResponse({ description: 'JWT inválido o ausente.' })
   @ApiForbiddenResponse({
@@ -440,7 +481,9 @@ export class IncidentsController {
     if (
       claveIdempotencia !== undefined &&
       (typeof claveIdempotencia !== 'string' ||
-        !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(claveIdempotencia))
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          claveIdempotencia,
+        ))
     ) {
       throw new BadRequestException('Idempotency-Key debe ser un UUID v4.');
     }
@@ -600,7 +643,8 @@ export class IncidentsController {
     description: 'JWT inválido o usuario inexistente.',
   })
   @ApiForbiddenResponse({
-    description: 'Se requiere rol admin, administrative o department autorizado.',
+    description:
+      'Se requiere rol admin, administrative o department autorizado.',
   })
   @ApiNotFoundResponse({ description: 'La incidencia no existe.' })
   @ApiConflictResponse({

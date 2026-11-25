@@ -27,6 +27,13 @@ function clonar<T>(valor: T): T {
   return structuredClone(valor);
 }
 
+function instante(valor: unknown): number {
+  if (!(valor instanceof Date)) {
+    throw new Error('Fecha inesperada para el doble Prisma');
+  }
+  return valor.getTime();
+}
+
 export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
   const incidencias: Registro[] = [];
   const ubicaciones: Registro[] = [];
@@ -85,13 +92,28 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
       consultasIncidencias.push(clonar(args));
       const where = args.where ? objeto(args.where) : {};
       let rows = incidencias.filter(
-        (row) => where.civicId === undefined || row.civicId === where.civicId,
+        (row) =>
+          (where.civicId === undefined || row.civicId === where.civicId) &&
+          (where.status === undefined || row.status === where.status) &&
+          (where.priority === undefined || row.priority === where.priority) &&
+          (where.categoryId === undefined ||
+            row.categoryId === where.categoryId),
       );
+      if (where.createdAt !== undefined) {
+        const rango = objeto(where.createdAt);
+        rows = rows.filter((row) => {
+          const fecha = instante(row.createdAt);
+          return (
+            (rango.gte === undefined || fecha >= instante(rango.gte)) &&
+            (rango.lt === undefined || fecha < instante(rango.lt))
+          );
+        });
+      }
       if (where.OR !== undefined) {
         const condiciones = lista(where.OR);
         rows = rows.filter((row) =>
           condiciones.some((condicion) => {
-            const fecha = new Date(String(row.createdAt)).getTime();
+            const fecha = instante(row.createdAt);
             const valorFecha = condicion.createdAt;
             if (valorFecha instanceof Date) {
               return (
@@ -99,15 +121,19 @@ export function crearPrismaIncidenciasFake(opciones: OpcionesFalsoPrisma = {}) {
                 String(row.id) > String(objeto(condicion.id).gt)
               );
             }
-            return fecha < new Date(String(objeto(valorFecha).lt)).getTime();
+            const comparacion = objeto(valorFecha);
+            return comparacion.gt !== undefined
+              ? fecha > instante(comparacion.gt)
+              : fecha < instante(comparacion.lt);
           }),
         );
       }
       if (Array.isArray(args.orderBy)) {
         rows = [...rows].sort((left, right) => {
+          const direccion =
+            objeto(lista(args.orderBy)[0]).createdAt === 'asc' ? 1 : -1;
           const fecha =
-            new Date(String(right.createdAt)).getTime() -
-            new Date(String(left.createdAt)).getTime();
+            (instante(left.createdAt) - instante(right.createdAt)) * direccion;
           return fecha || String(left.id).localeCompare(String(right.id));
         });
       }

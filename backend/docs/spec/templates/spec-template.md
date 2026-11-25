@@ -4,7 +4,7 @@
 - Asistente de IA: {{herramienta utilizada o No utilizada}}.
 - Modelo de IA que creó la especificación: {{identificador y versión exactos o No utilizada; si no están disponibles, declararlo sin inventarlos}}.
 
-> Crear esta especificación y su plan en backend/docs/spec/features/DD-MM-YY-{{descripcion-del-cambio}}/spec.md y plan.md. Usar la fecha de inicio en la carpeta y AAAA-MM-DD en el título. Sustituir los marcadores y usar rutas relativas desde el documento. No copiar como vigentes decisiones o resultados históricos.
+> Crear esta especificación y su plan en backend/docs/spec/features/YY-MM-DD-{{descripcion-del-cambio}}/spec.md y plan.md. Usar la fecha de inicio en la carpeta y AAAA-MM-DD en el título. Sustituir los marcadores y usar rutas relativas desde el documento. No copiar como vigentes decisiones o resultados históricos.
 
 - Rama: {{rama de trabajo}}.
 - Última actualización: {{AAAA-MM-DD}}.

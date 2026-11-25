@@ -20,10 +20,10 @@ Si dos peticiones de la misma tanda coinciden, el bloqueo de la incidencia permi
 
 ## Referencias
 
-- [Especificación de idempotencia](../../features/20-11-26-evitar-fotos-duplicadas/spec.md).
-- [Plan de idempotencia](../../features/20-11-26-evitar-fotos-duplicadas/plan.md).
-- [Especificación](../../features/15-11-26-almacenar-fotos-incidencias-s3/spec.md).
-- [Plan](../../features/15-11-26-almacenar-fotos-incidencias-s3/plan.md).
+- [Especificación de idempotencia](../../features/26-11-20-evitar-fotos-duplicadas/spec.md).
+- [Plan de idempotencia](../../features/26-11-20-evitar-fotos-duplicadas/plan.md).
+- [Especificación](../../features/26-11-15-almacenar-fotos-incidencias-s3/spec.md).
+- [Plan](../../features/26-11-15-almacenar-fotos-incidencias-s3/plan.md).
 - [Controlador](../../../../src/incidents/incidents.controller.ts).
 - [Servicio](../../../../src/incidents/services/fotos-incidencia.service.ts).
 - [Guía de conexión](../../../../../docs/conexion-s3-fotos.md).
