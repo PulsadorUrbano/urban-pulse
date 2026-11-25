@@ -16,13 +16,13 @@ La [guía de organización](spec/README.md) define la estructura compartida con 
 
 ## Registro de incidencias
 
-- [Especificación de adaptación](spec/features/21-10-26-adaptar-documentacion-registro-incidencias/spec.md).
-- [Plan y confirmación](spec/features/21-10-26-adaptar-documentacion-registro-incidencias/plan.md).
+- [Especificación de adaptación](spec/features/26-10-21-adaptar-documentacion-registro-incidencias/spec.md).
+- [Plan y confirmación](spec/features/26-10-21-adaptar-documentacion-registro-incidencias/plan.md).
 
 ## Issue #27: consulta por ciudadano
 
-- [Especificación](spec/features/23-10-26-consultar-incidencias-por-ciudadano/spec.md).
-- [Plan y confirmación](spec/features/23-10-26-consultar-incidencias-por-ciudadano/plan.md).
+- [Especificación](spec/features/26-10-23-consultar-incidencias-por-ciudadano/spec.md).
+- [Plan y confirmación](spec/features/26-10-23-consultar-incidencias-por-ciudadano/plan.md).
 - [Contrato GET /incidents](spec/endpoint/get-incidents/README.md).
 
 Los documentos conservan las decisiones de su fecha. Para conocer los contratos actuales, consultar el catálogo y el código de la rama; la documentación no acredita una conexión probada.

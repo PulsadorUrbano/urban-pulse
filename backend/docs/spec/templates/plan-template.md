@@ -1,6 +1,6 @@
 # {{fecha}} — Plan de implementación: {{descripción de la acción o cambio}}
 
-> Crear este plan y su especificación en backend/docs/spec/features/DD-MM-YY-{{descripcion-del-cambio}}/plan.md y spec.md. Usar la fecha de inicio en la carpeta y AAAA-MM-DD en el título. Sustituir los marcadores antes de implementar; marcar únicamente trabajo realizado.
+> Crear este plan y su especificación en backend/docs/spec/features/YY-MM-DD-{{descripcion-del-cambio}}/plan.md y spec.md. Usar la fecha de inicio en la carpeta y AAAA-MM-DD en el título. Sustituir los marcadores antes de implementar; marcar únicamente trabajo realizado.
 
 - Objetivo: {{resultado observable definido por la especificación}}.
 - Arquitectura: {{diseño mínimo y componentes existentes reutilizados}}.

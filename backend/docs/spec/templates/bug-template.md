@@ -4,7 +4,7 @@
 - Asistente de IA: {{herramienta utilizada o No utilizada}}.
 - Modelo de IA: {{identificador exacto; declarar si no está disponible}}.
 
-> Copiar a backend/docs/spec/bugs/nombre-feature/DD-MM-YY-asunto.md. Si estaba registrado en bugs/todo.md, marcarlo como resuelto al terminar.
+> Copiar a backend/docs/spec/bugs/nombre-feature/YY-MM-DD-asunto.md. Si estaba registrado en bugs/todo.md, marcarlo como resuelto al terminar.
 
 - Funcionalidad: {{nombre o independiente}}.
 - Estado: pendiente.
