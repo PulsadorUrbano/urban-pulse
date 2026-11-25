@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 
 import { STATUS_LABELS } from '../constants/incident-labels';
+import { useIncidentCategories } from '../hooks/use-incident-categories';
 import { useIncidentFilters } from '../hooks/use-incident-filters';
-import { useIncidentList } from '../hooks/use-incident-list';
 import { isAdministrativeRole, type SessionUser } from '../types/user';
 import { AppHeader } from './app-header';
 import { IncidentFilters } from './incident-filters';
@@ -25,9 +25,9 @@ export function IncidentListView({
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const canViewGlobalList = isAdministrativeRole(user.role);
   const token = user.source === 'backend' && canViewGlobalList ? sessionToken : null;
-  const { items, hasMore, loading, error, loadMore, retry } = useIncidentList(token);
-  const filterControls = useIncidentFilters(items, hasMore);
-  const { visibleItems, isActive, isPartial } = filterControls;
+  const filterControls = useIncidentFilters(token);
+  const { items, hasMore, loading, error, loadMore, retry, visibleItems, isActive, isPartial } = filterControls;
+  const categories = useIncidentCategories(Boolean(token));
 
   return (
     <>
@@ -55,7 +55,7 @@ export function IncidentListView({
             )}
           </div>
         )}
-        {token && <IncidentFilters controls={filterControls} />}
+        {token && <IncidentFilters controls={filterControls} categories={categories} />}
         {isActive && items.length > 0 && (
           <p role="status" className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
             {visibleItems.length} de {items.length} incidencias cargadas coinciden con los filtros.
@@ -66,8 +66,8 @@ export function IncidentListView({
             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
             <p className="font-semibold">
               {error
-                ? 'Los filtros solo se aplican a las incidencias cargadas. Pulsa «Reintentar» para seguir cargando.'
-                : 'Los filtros solo se aplican a las incidencias cargadas. Pulsa «Cargar más» para completar el resultado.'}
+                ? 'El estado, las fechas y el orden se aplican a las incidencias cargadas. Pulsa «Reintentar» para seguir cargando.'
+                : 'El estado, las fechas y el orden se aplican a las incidencias cargadas. Pulsa «Cargar más» para completar el resultado.'}
             </p>
           </div>
         )}
@@ -99,7 +99,9 @@ export function IncidentListView({
           <p role="status" className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">Cargando incidencias…</p>
         )}
         {token && !loading && !error && items.length === 0 && (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">No hay incidencias.</p>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            {isActive ? 'No hay incidencias que coincidan con los filtros.' : 'No hay incidencias.'}
+          </p>
         )}
         {token && error && (
           <div className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-300">

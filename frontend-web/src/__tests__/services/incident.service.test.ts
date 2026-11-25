@@ -7,11 +7,12 @@ import {
   changeIncidentPriority,
   changeIncidentStatus,
   fetchIncidentPage,
+  fetchIncidentCategories,
   fetchIncidentById,
   IncidentConflictError,
   IncidentNotFoundError,
 } from '../../services/incident.service';
-import type { IncidentDetail } from '../../types/incident';
+import type { IncidentDetail, IncidentPageFilters } from '../../types/incident';
 
 const INCIDENT_ID = '0b6a3b8e-6f1d-4a43-9c55-0d2e6e1b7a10';
 const TOKEN = 'token-prueba';
@@ -50,6 +51,63 @@ afterEach(() => {
 });
 
 describe('incident.service', () => {
+  it.each<IncidentPageFilters>([
+    {},
+    { priority: 'high' },
+    { categoryId: INCIDENT_ID },
+    { priority: 'medium', categoryId: INCIDENT_ID },
+  ])('envía los filtros al servidor y los conserva al continuar: %j', async (filters) => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(jsonResponse(200, [])));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await fetchIncidentPage(TOKEN, undefined, filters);
+    await fetchIncidentPage(TOKEN, 'cursor+/=', filters);
+
+    for (const [index, call] of fetchMock.mock.calls.entries()) {
+      const url = new URL(String(call[0]), 'http://localhost');
+      expect(url.searchParams.get('priority')).toBe(filters.priority ?? null);
+      expect(url.searchParams.get('categoryId')).toBe(filters.categoryId ?? null);
+      expect(url.searchParams.get('cursor')).toBe(index ? 'cursor+/=' : null);
+      expect([...url.searchParams.keys()].sort()).toEqual([
+        ...Object.keys(filters), ...(index ? ['cursor'] : []),
+      ].sort());
+    }
+  });
+
+  it('obtiene el catálogo real sin solicitar detalles de incidencias', async () => {
+    const categories = [{ id: INCIDENT_ID, name: 'Iluminación', createdAt: incident.createdAt }];
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, categories));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchIncidentCategories()).resolves.toEqual(categories);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/categories');
+    expect(fetchMock.mock.calls[0][1].method).toBe('GET');
+  });
+
+  it('admite un catálogo vacío', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(200, [])));
+    await expect(fetchIncidentCategories()).resolves.toEqual([]);
+  });
+
+  it.each([
+    {},
+    [{ name: 'Iluminación', createdAt: incident.createdAt }],
+    [{ id: 'id-inválido', name: 'Iluminación', createdAt: incident.createdAt }],
+    [{ id: INCIDENT_ID, name: '', createdAt: incident.createdAt }],
+    [{ id: INCIDENT_ID, name: 'Iluminación', createdAt: 'ayer' }],
+  ])('rechaza un catálogo que no cumple el contrato: %j', async (body) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(200, body)));
+    await expect(fetchIncidentCategories()).rejects.toBeInstanceOf(BackendContractError);
+  });
+
+  it('propaga el rechazo y la falta de conexión del catálogo sin simular categorías', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(400, { message: 'Catálogo no disponible' })));
+    await expect(fetchIncidentCategories()).rejects.toThrow('Catálogo no disponible');
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValueOnce(new TypeError('Failed to fetch')));
+    await expect(fetchIncidentCategories()).rejects.toBeInstanceOf(BackendUnavailableError);
+  });
+
   it('obtiene la primera página autenticada y devuelve el siguiente cursor', async () => {
     const { id, title, status, createdAt } = incident;
     const items = [{ id, title, status, createdAt }];
