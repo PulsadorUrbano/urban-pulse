@@ -81,13 +81,18 @@
 | Sintaxis del script | `node --check` | Correcta |
 | Ensayo del script de fotos | `docker exec urbanpulse_backend node prisma/seed/fotos-incidencias.mjs --dry-run` | 50.000 incidencias del seed con foto asignable, 0 sin foto compatible, 100/100 fotos usadas (de 91 a 1737 usos por foto); 0 filas `IncidentImage` escritas |
 | Unitarias | `pnpm test` | 273 superadas y 1 fallida; mismo resultado que antes de estos cambios (faltan módulos en el `node_modules` local) |
+| Integración con `dev` (2026-11-26) | `git merge origin/dev` | Un conflicto en `backend/package.json` (scripts): se conservan `perf:baseline` de `dev` y los tres scripts de seed. `dev` no modifica `prisma/`, el servicio de fotos ni el Dockerfile |
+| Build tras integrar `dev` | `pnpm install --frozen-lockfile` y `pnpm run build` | Correcto, sin cambios en el lockfile |
+| Lint tras integrar `dev` | `pnpm run lint` | 0 errores; 2 avisos ya presentes en `dev` (`dev-seed.service.spec.ts` y `auth.service.spec.ts`) |
+| Unitarias tras integrar `dev` | `pnpm test` | 28 archivos y 363 pruebas superadas; el fallo anterior se debía al `node_modules` local incompleto |
+| Sintaxis del script tras integrar `dev` | `node --check prisma/seed/fotos-incidencias.mjs` | Correcta |
 | Diff | `git diff --check` | Sin errores |
 | Primera prueba real (`--limit 20`) | `docker exec urbanpulse_backend node prisma/seed/fotos-incidencias.mjs --limit 20` | `UnknownError` (HTTP 403 en `HeadObject` por falta de `s3:ListBucket`). Corregido: 403 y 404 se tratan como objeto inexistente y los errores muestran el código HTTP |
 
 ## Confirmación de implementación
 
 - Estado final: implementado; falta verificar la subida real a S3 (criterio 5).
-- Fecha de revisión: 2026-11-24.
+- Fecha de revisión: 2026-11-26.
 
 | Criterio de aceptación | Evidencia concreta | Resultado |
 | --- | --- | --- |
@@ -105,3 +110,4 @@
 - Limitaciones y pendientes:
   - El banco de fotos entra en la imagen del backend porque el Dockerfile copia `prisma/` (unos 22 MB más).
   - En la nube hay que ejecutar `pnpm seed:incidencias` (si no está aplicado), `pnpm seed:incidencias:ampliacion` y `pnpm seed:fotos`, con credenciales que tengan `s3:GetObject` y `s3:PutObject` sobre `incidents/*`.
+  - Revisión visual del 2026-11-26: unas 15 fotos encajan peor con su título. Seis de "Vía de metro dañada" muestran catástrofes ferroviarias rurales o históricas (`via-deformada`, `vias-desplazadas`, `via-destrozada`, `via-hundida`, `via-danada-estacion` y `via-tranvia-levantada`). Otras no muestran el problema con claridad (`rampa-acceso`, `calle-de-noche`, `fuente-columna`, `fuente-beber` y `senal-entre-arboles`). El resto son menores: `cucaracha-1` y `cucaracha-2`, primeros planos sin espacio público; `atasco-centro` y `atasco-avenida`, ciudades no españolas; y `senal-arrancada`, un collage. El equipo decide mantenerlas en esta fase; se pueden sustituir más adelante actualizando `manifest.json` y `CREDITOS.md`.
