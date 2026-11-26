@@ -31,11 +31,12 @@ jest.mock('expo-router/ui', () => {
 });
 
 describe('AppTabs (web, src/components/app-tabs.web.tsx)', () => {
-  it('muestra la marca "UrbanPulse" y las etiquetas de ambas pestañas', async () => {
+  it('muestra la marca "UrbanPulse" y las etiquetas de las tres pestañas', async () => {
     await render(<AppTabs />);
 
     expect(screen.getByText('UrbanPulse')).toBeOnTheScreen();
     expect(screen.getByText('Inicio')).toBeOnTheScreen();
+    expect(screen.getByText('Mapa')).toBeOnTheScreen();
     expect(screen.getByText('Mis incidencias')).toBeOnTheScreen();
   });
 });
