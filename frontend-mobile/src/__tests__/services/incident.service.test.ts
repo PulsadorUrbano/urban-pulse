@@ -11,7 +11,9 @@ import {
   MAX_INCIDENT_IMAGES,
   createIncident,
   fetchIncidentById,
+  QUERY_MISSING_TOKEN_MESSAGE,
   fetchMyIncidents,
+  fetchMyMapIncidents,
   uploadIncidentImages,
 } from '@/services/incident.service';
 import {
@@ -1774,5 +1776,586 @@ describe('token de sesión en fetchIncidentById', () => {
 
     expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
     expect(readAllRequestedUrls()).not.toContain(MOCK_DETAIL_URL);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Paginación del listado (fetchAllPages) y mapa de incidencias propias
+// (fetchMyMapIncidents). Reutiliza los helpers de arriba (jsonResponse,
+// rawBodyResponse, routeFetchByUrl, buildMockIncidentRecord, captureRejection).
+// ---------------------------------------------------------------------------
+
+const MAP_QUERY_SESSION_EXPIRED_MESSAGE = 'Tu sesión ha caducado. Vuelve a iniciar sesión.';
+const MAP_BACKEND_DETAIL_PREFIX = `${BACKEND_API_URL}/incidents/`;
+const MAP_MAX_IN_FLIGHT_DETAILS = 4;
+
+// Respuesta de listado paginado: expone la cabecera X-Next-Cursor (null = última página).
+function pagedJsonResponse(body: unknown, nextCursor: string | null): Response {
+  return {
+    ok: true,
+    status: 200,
+    json: async () => body,
+    headers: {
+      get: (headerName: string) => (headerName === 'X-Next-Cursor' ? nextCursor : null),
+    },
+  } as unknown as Response;
+}
+
+// Primera página (cursor null) o página siguiente, con limit=100 como pide fetchAllPages.
+function backendListPageUrl(cursor: string | null = null): string {
+  const cursorParam = cursor == null ? '' : `&cursor=${cursor}`;
+  return `${BACKEND_LIST_URL}&limit=100${cursorParam}`;
+}
+
+function backendDetailUrlFor(incidentId: string): string {
+  return `${MAP_BACKEND_DETAIL_PREFIX}${incidentId}`;
+}
+
+function mockDetailUrlFor(incidentId: string): string {
+  return `${MOCK_INCIDENTS_ENDPOINT}/${incidentId}`;
+}
+
+function mockImagesUrlFor(incidentId: string): string {
+  return `${IMAGES_ENDPOINT}?incidentId=${incidentId}`;
+}
+
+function buildListSummary(incidentId: string, status: IncidentSummary['status']): IncidentSummary {
+  return { id: incidentId, title: `Incidencia ${incidentId}`, status, createdAt: LIST_OLDER_CREATED_AT };
+}
+
+function buildBackendDetail(incidentId: string, overrides: Partial<IncidentDetail> = {}): IncidentDetail {
+  return {
+    id: incidentId,
+    title: `Incidencia ${incidentId}`,
+    description: null,
+    civicId: CITIZEN_CIVIC_ID,
+    categoryId: '2',
+    category: 'Alumbrado público',
+    urbanAssetId: null,
+    location: { latitude: 40.4168, longitude: -3.7038, accuracy: null, createdAt: LIST_OLDER_CREATED_AT },
+    images: [],
+    status: 'reported',
+    priority: 'low',
+    createdAt: LIST_OLDER_CREATED_AT,
+    ...overrides,
+  };
+}
+
+function buildMockRecordForMap(
+  incidentId: string,
+  status: IncidentSummary['status'],
+  latitude: number | null,
+  longitude: number | null,
+): Record<string, unknown> {
+  return buildMockIncidentRecord({
+    id: incidentId,
+    title: `Incidencia ${incidentId}`,
+    status,
+    latitude,
+    longitude,
+    categoryId: '2',
+    createdAt: LIST_OLDER_CREATED_AT,
+  });
+}
+
+// Mapa url -> respuesta; una URL que no esté en la tabla devuelve un Error (fallo de red).
+type OutcomesByUrl = Record<string, EndpointOutcome>;
+
+function routeFetchByUrlTable(outcomesByUrl: OutcomesByUrl): void {
+  routeFetchByUrl((requestUrl) => outcomesByUrl[requestUrl] ?? new Error(`URL no prevista: ${requestUrl}`));
+}
+
+// Respuesta que se resuelve desde fuera, para controlar el orden de finalización de los detalles.
+interface ControlledResponse {
+  promise: Promise<Response>;
+  resolve: (response: Response) => void;
+}
+
+function createControlledResponse(): ControlledResponse {
+  let resolve!: (response: Response) => void;
+  const promise = new Promise<Response>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
+async function flushPendingRequests(): Promise<void> {
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+}
+
+describe('fetchMyIncidents con fetchAllPages (paginación del backend)', () => {
+  beforeEach(() => {
+    fetchWithTimeoutMock.mockReset();
+  });
+
+  it('recorre varias páginas con limit=100 y concatena en orden hasta una cabecera X-Next-Cursor ausente', async () => {
+    const firstPage = [buildListSummary('p1-a', 'reported'), buildListSummary('p1-b', 'validated')];
+    const secondPage = [buildListSummary('p2-a', 'in_progress')];
+    routeFetchByUrlTable({
+      [backendListPageUrl()]: pagedJsonResponse(firstPage, 'cursor-2'),
+      [backendListPageUrl('cursor-2')]: pagedJsonResponse(secondPage, null),
+    });
+
+    const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN, { fetchAllPages: true });
+
+    expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(2);
+    expect(readRequestUrlAt(0)).toBe(backendListPageUrl());
+    expect(readRequestUrlAt(1)).toBe(backendListPageUrl('cursor-2'));
+    expect(result).toEqual({ incidents: [...firstPage, ...secondPage], source: 'backend' });
+  });
+
+  it('con tres páginas sigue el cursor de cada respuesta y no reordena', async () => {
+    routeFetchByUrlTable({
+      [backendListPageUrl()]: pagedJsonResponse([buildListSummary('a', 'reported')], 'cursor-2'),
+      [backendListPageUrl('cursor-2')]: pagedJsonResponse([buildListSummary('b', 'reported')], 'cursor-3'),
+      [backendListPageUrl('cursor-3')]: pagedJsonResponse([buildListSummary('c', 'reported')], null),
+    });
+
+    const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN, { fetchAllPages: true });
+
+    expect(readAllRequestedUrls()).toEqual([
+      backendListPageUrl(),
+      backendListPageUrl('cursor-2'),
+      backendListPageUrl('cursor-3'),
+    ]);
+    expect(result.incidents.map((incident) => incident.id)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('una cabecera X-Next-Cursor vacía detiene la paginación', async () => {
+    routeFetchByUrlTable({
+      [backendListPageUrl()]: pagedJsonResponse([buildListSummary('a', 'reported')], ''),
+    });
+
+    const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN, { fetchAllPages: true });
+
+    expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+    expect(result.incidents.map((incident) => incident.id)).toEqual(['a']);
+  });
+
+  it('un cursor repetido detiene la paginación sin bucle infinito', async () => {
+    routeFetchByUrlTable({
+      [backendListPageUrl()]: pagedJsonResponse([buildListSummary('a', 'reported')], 'cursor-2'),
+      [backendListPageUrl('cursor-2')]: pagedJsonResponse([buildListSummary('b', 'reported')], 'cursor-2'),
+    });
+
+    const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN, { fetchAllPages: true });
+
+    expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(2);
+    expect(result.incidents.map((incident) => incident.id)).toEqual(['a', 'b']);
+  });
+
+  it('sin fetchAllPages la URL es exactamente ?civicId=X aunque la respuesta traiga X-Next-Cursor', async () => {
+    routeFetchByUrlTable({
+      [BACKEND_LIST_URL]: pagedJsonResponse([buildListSummary('a', 'reported')], 'cursor-2'),
+    });
+
+    const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
+
+    expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+    expect(readRequestUrlAt(0)).toBe(`${BACKEND_API_URL}/incidents?civicId=${CITIZEN_CIVIC_ID}`);
+    expect(readRequestUrlAt(0)).not.toContain('limit=');
+    expect(readRequestUrlAt(0)).not.toContain('cursor=');
+    expect(result.incidents.map((incident) => incident.id)).toEqual(['a']);
+  });
+
+  it('si una página posterior falla por red cae al mock con todas las incidencias', async () => {
+    routeFetchByUrlTable({
+      [backendListPageUrl()]: pagedJsonResponse([buildListSummary('a', 'reported')], 'cursor-2'),
+      [backendListPageUrl('cursor-2')]: new TypeError('Network request failed'),
+      [MOCK_LIST_URL]: jsonResponse([buildMockRecordForMap('m-1', 'reported', 40.1, -3.6)], 200),
+    });
+
+    const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN, { fetchAllPages: true });
+
+    expect(result.source).toBe('mock');
+    expect(result.incidents.map((incident) => incident.id)).toEqual(['m-1']);
+    expect(readRequestUrlAt(2)).toBe(MOCK_LIST_URL);
+  });
+});
+
+describe('fetchMyMapIncidents', () => {
+  beforeEach(() => {
+    fetchWithTimeoutMock.mockReset();
+    mockedFetchCategories.mockReset();
+    mockedFetchCategories.mockResolvedValue({
+      categories: catalogCategories,
+      source: 'backend',
+      backendErrorMessage: null,
+    });
+  });
+
+  describe('selección de detalles por estado', () => {
+    it('no pide detalle de resolved ni closed, sí de reported, in_progress y rejected', async () => {
+      routeFetchByUrlTable({
+        [backendListPageUrl()]: pagedJsonResponse(
+          [
+            buildListSummary('a', 'reported'),
+            buildListSummary('b', 'resolved'),
+            buildListSummary('c', 'closed'),
+            buildListSummary('d', 'in_progress'),
+            buildListSummary('e', 'rejected'),
+          ],
+          null,
+        ),
+        [backendDetailUrlFor('a')]: jsonResponse(buildBackendDetail('a'), 200),
+        [backendDetailUrlFor('d')]: jsonResponse(buildBackendDetail('d', { status: 'in_progress' }), 200),
+        [backendDetailUrlFor('e')]: jsonResponse(buildBackendDetail('e', { status: 'rejected' }), 200),
+      });
+
+      const result = await fetchMyMapIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
+
+      expect(readAllRequestedUrls()).toEqual([
+        backendListPageUrl(),
+        backendDetailUrlFor('a'),
+        backendDetailUrlFor('d'),
+        backendDetailUrlFor('e'),
+      ]);
+      expect(result.incidents.map((incident) => incident.id)).toEqual(['a', 'd', 'e']);
+    });
+
+    it('con todas las incidencias resueltas o cerradas no pide ningún detalle', async () => {
+      routeFetchByUrlTable({
+        [backendListPageUrl()]: pagedJsonResponse(
+          [buildListSummary('a', 'resolved'), buildListSummary('b', 'closed')],
+          null,
+        ),
+      });
+
+      const result = await fetchMyMapIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
+
+      expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ incidents: [], source: 'backend' });
+    });
+  });
+
+  describe('concurrencia de detalles', () => {
+    it('nunca tiene más de 4 detalles en vuelo y devuelve las incidencias en el orden del listado', async () => {
+      const unresolvedIds = Array.from({ length: 10 }, (_unused, index) => `inc-${index}`);
+      const listSummaries = unresolvedIds.map((incidentId) => buildListSummary(incidentId, 'reported'));
+      const detailResponses = unresolvedIds.map(() => createControlledResponse());
+      const startedIndexes: number[] = [];
+
+      fetchWithTimeoutMock.mockImplementation((requestUrl: string) => {
+        if (requestUrl === backendListPageUrl()) {
+          return Promise.resolve(pagedJsonResponse(listSummaries, null));
+        }
+        const indexOfRequestedDetail = requestUrl.startsWith(MAP_BACKEND_DETAIL_PREFIX)
+          ? unresolvedIds.indexOf(requestUrl.slice(MAP_BACKEND_DETAIL_PREFIX.length))
+          : -1;
+        if (indexOfRequestedDetail >= 0) {
+          startedIndexes.push(indexOfRequestedDetail);
+          return detailResponses[indexOfRequestedDetail].promise;
+        }
+        return Promise.reject(new Error(`URL no prevista: ${requestUrl}`));
+      });
+
+      const resultPromise = fetchMyMapIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
+      const finishedIndexes = new Set<number>();
+      let maxObservedInFlight = 0;
+
+      while (finishedIndexes.size < unresolvedIds.length) {
+        await flushPendingRequests();
+        const inFlightIndexes = startedIndexes.filter((index) => !finishedIndexes.has(index));
+        maxObservedInFlight = Math.max(maxObservedInFlight, inFlightIndexes.length);
+        expect(inFlightIndexes.length).toBe(
+          Math.min(MAP_MAX_IN_FLIGHT_DETAILS, unresolvedIds.length - finishedIndexes.size),
+        );
+
+        // Se termina la más reciente para forzar finalización fuera de orden.
+        const indexToFinish = inFlightIndexes[inFlightIndexes.length - 1];
+        detailResponses[indexToFinish].resolve(
+          jsonResponse(buildBackendDetail(unresolvedIds[indexToFinish]), 200),
+        );
+        finishedIndexes.add(indexToFinish);
+      }
+
+      const result = await resultPromise;
+
+      expect(maxObservedInFlight).toBe(MAP_MAX_IN_FLIGHT_DETAILS);
+      expect(result.incidents.map((incident) => incident.id)).toEqual(unresolvedIds);
+    });
+  });
+
+  describe('errores de detalle', () => {
+    it('un detalle 404 se omite y el resto de incidencias se mantiene', async () => {
+      routeFetchByUrlTable({
+        [backendListPageUrl()]: pagedJsonResponse(
+          [buildListSummary('a', 'reported'), buildListSummary('b', 'reported'), buildListSummary('c', 'reported')],
+          null,
+        ),
+        [backendDetailUrlFor('a')]: jsonResponse(buildBackendDetail('a'), 200),
+        [backendDetailUrlFor('b')]: jsonResponse({ message: 'Not Found' }, 404),
+        [backendDetailUrlFor('c')]: jsonResponse(buildBackendDetail('c'), 200),
+      });
+
+      const result = await fetchMyMapIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
+
+      expect(result.incidents.map((incident) => incident.id)).toEqual(['a', 'c']);
+      expect(result.source).toBe('backend');
+    });
+
+    it('un 401 en el listado rechaza con sesión caducada sin pedir detalles', async () => {
+      routeFetchByUrlTable({
+        [backendListPageUrl()]: jsonResponse({ message: 'Unauthorized' }, 401),
+      });
+
+      const error = await captureRejection(fetchMyMapIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN));
+
+      expect(error.message).toBe(MAP_QUERY_SESSION_EXPIRED_MESSAGE);
+      expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('un 401 en un detalle rechaza todo el mapa', async () => {
+      routeFetchByUrlTable({
+        [backendListPageUrl()]: pagedJsonResponse(
+          [buildListSummary('a', 'reported'), buildListSummary('b', 'reported')],
+          null,
+        ),
+        [backendDetailUrlFor('a')]: jsonResponse({ message: 'Unauthorized' }, 401),
+        [backendDetailUrlFor('b')]: jsonResponse(buildBackendDetail('b'), 200),
+      });
+
+      const error = await captureRejection(fetchMyMapIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN));
+
+      expect(error.message).toBe(MAP_QUERY_SESSION_EXPIRED_MESSAGE);
+    });
+
+    it('un error genérico del backend en un detalle rechaza todo el mapa', async () => {
+      routeFetchByUrlTable({
+        [backendListPageUrl()]: pagedJsonResponse([buildListSummary('a', 'reported')], null),
+        [backendDetailUrlFor('a')]: jsonResponse({ message: 'boom' }, 500),
+      });
+
+      await expect(fetchMyMapIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN)).rejects.toThrow(
+        MESSAGE_INCIDENT_DETAIL_ERROR,
+      );
+    });
+  });
+
+  describe('descarte por ubicación', () => {
+    it('descarta location null y lat/lng null, pero conserva coordenadas 0', async () => {
+      const detailWithoutLocation = {
+        ...buildBackendDetail('sin-ubicacion'),
+        location: null,
+      } as unknown as IncidentDetail;
+      const detailWithNullLatitude = buildBackendDetail('lat-nula', {
+        location: { latitude: null, longitude: -3.7, accuracy: null, createdAt: LIST_OLDER_CREATED_AT } as unknown as IncidentDetail['location'],
+      });
+      const detailWithNullLongitude = buildBackendDetail('lng-nula', {
+        location: { latitude: 40.4, longitude: null, accuracy: null, createdAt: LIST_OLDER_CREATED_AT } as unknown as IncidentDetail['location'],
+      });
+      routeFetchByUrlTable({
+        [backendListPageUrl()]: pagedJsonResponse(
+          ['ok', 'sin-ubicacion', 'lat-nula', 'lng-nula', 'cero'].map((incidentId) =>
+            buildListSummary(incidentId, 'reported'),
+          ),
+          null,
+        ),
+        [backendDetailUrlFor('ok')]: jsonResponse(buildBackendDetail('ok'), 200),
+        [backendDetailUrlFor('sin-ubicacion')]: jsonResponse(detailWithoutLocation, 200),
+        [backendDetailUrlFor('lat-nula')]: jsonResponse(detailWithNullLatitude, 200),
+        [backendDetailUrlFor('lng-nula')]: jsonResponse(detailWithNullLongitude, 200),
+        [backendDetailUrlFor('cero')]: jsonResponse(
+          buildBackendDetail('cero', {
+            location: { latitude: 0, longitude: 0, accuracy: null, createdAt: LIST_OLDER_CREATED_AT },
+          }),
+          200,
+        ),
+      });
+
+      const result = await fetchMyMapIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
+
+      expect(result.incidents.map((incident) => incident.id)).toEqual(['ok', 'cero']);
+      expect(result.incidents[1]).toMatchObject({ latitude: 0, longitude: 0 });
+    });
+
+    it('mapea cada incidencia a MapIncident con los campos del detalle', async () => {
+      const image = {
+        id: 'img-1',
+        url: 'file:///photos/farola.jpg',
+        mimeType: 'image/jpeg',
+        createdAt: LIST_OLDER_CREATED_AT,
+      };
+      routeFetchByUrlTable({
+        [backendListPageUrl()]: pagedJsonResponse([buildListSummary('a', 'in_progress')], null),
+        [backendDetailUrlFor('a')]: jsonResponse(
+          buildBackendDetail('a', { status: 'in_progress', images: [image] }),
+          200,
+        ),
+      });
+
+      const result = await fetchMyMapIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
+
+      expect(result).toEqual({
+        incidents: [
+          {
+            id: 'a',
+            title: 'Incidencia a',
+            status: 'in_progress',
+            category: 'Alumbrado público',
+            categoryId: '2',
+            latitude: 40.4168,
+            longitude: -3.7038,
+            createdAt: LIST_OLDER_CREATED_AT,
+            images: [image],
+          },
+        ],
+        source: 'backend',
+      });
+    });
+  });
+
+  describe('sesión y origen de los datos', () => {
+    it('sin token lanza el mensaje de sesión sin hacer ninguna petición', async () => {
+      await expect(fetchMyMapIncidents(CITIZEN_CIVIC_ID, null)).rejects.toThrow(QUERY_MISSING_TOKEN_MESSAGE);
+
+      expect(fetchWithTimeoutMock).not.toHaveBeenCalled();
+    });
+
+    it('con sesión mock usa el mock para listado y detalles y devuelve source "mock"', async () => {
+      routeFetchByUrlTable({
+        [MOCK_LIST_URL]: jsonResponse(
+          [
+            buildMockRecordForMap('a', 'reported', 40.1, -3.6),
+            buildMockRecordForMap('b', 'resolved', 40.2, -3.5),
+            buildMockRecordForMap('c', 'validated', 40.3, -3.4),
+          ],
+          200,
+        ),
+        [mockDetailUrlFor('a')]: jsonResponse(buildMockRecordForMap('a', 'reported', 40.1, -3.6), 200),
+        [mockImagesUrlFor('a')]: jsonResponse([], 200),
+        [mockDetailUrlFor('c')]: jsonResponse(buildMockRecordForMap('c', 'validated', 40.3, -3.4), 200),
+        [mockImagesUrlFor('c')]: jsonResponse([], 200),
+      });
+
+      const result = await fetchMyMapIncidents(CITIZEN_CIVIC_ID, MOCK_TOKEN);
+
+      expect(result.source).toBe('mock');
+      expect(result.incidents.map((incident) => incident.id)).toEqual(['a', 'c']);
+      expect(readAllRequestedUrls().some((requestUrl) => requestUrl.startsWith(BACKEND_API_URL))).toBe(false);
+    });
+
+    it('con backend y todo correcto devuelve source "backend"', async () => {
+      routeFetchByUrlTable({
+        [backendListPageUrl()]: pagedJsonResponse([buildListSummary('a', 'reported')], null),
+        [backendDetailUrlFor('a')]: jsonResponse(buildBackendDetail('a'), 200),
+      });
+
+      const result = await fetchMyMapIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
+
+      expect(result.source).toBe('backend');
+    });
+
+    it('si el listado cae a la red devuelve source "mock" y los detalles van directo al mock sin tocar el backend', async () => {
+      routeFetchByUrlTable({
+        [backendListPageUrl()]: new RequestTimeoutError(),
+        [MOCK_LIST_URL]: jsonResponse(
+          [buildMockRecordForMap('a', 'reported', 40.1, -3.6), buildMockRecordForMap('b', 'resolved', 40.2, -3.5)],
+          200,
+        ),
+        [mockDetailUrlFor('a')]: jsonResponse(buildMockRecordForMap('a', 'reported', 40.1, -3.6), 200),
+        [mockImagesUrlFor('a')]: jsonResponse([], 200),
+      });
+
+      const result = await fetchMyMapIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
+
+      expect(result.source).toBe('mock');
+      expect(result.incidents.map((incident) => incident.id)).toEqual(['a']);
+      // El listado cayó al mock: el detalle no intenta el backend (evita un timeout por detalle).
+      expect(readAllRequestedUrls()).toEqual([
+        backendListPageUrl(),
+        MOCK_LIST_URL,
+        mockDetailUrlFor('a'),
+        mockImagesUrlFor('a'),
+      ]);
+    });
+
+    it('si un detalle cae a la red usa el mock para ese detalle y el resultado es source "mock"', async () => {
+      routeFetchByUrlTable({
+        [backendListPageUrl()]: pagedJsonResponse(
+          [buildListSummary('a', 'reported'), buildListSummary('b', 'reported')],
+          null,
+        ),
+        [backendDetailUrlFor('a')]: jsonResponse(buildBackendDetail('a'), 200),
+        [backendDetailUrlFor('b')]: new RequestTimeoutError(),
+        [mockDetailUrlFor('b')]: jsonResponse(buildMockRecordForMap('b', 'reported', 40.2, -3.5), 200),
+        [mockImagesUrlFor('b')]: jsonResponse([], 200),
+      });
+
+      const result = await fetchMyMapIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
+
+      expect(result.source).toBe('mock');
+      expect(result.incidents.map((incident) => incident.id)).toEqual(['a', 'b']);
+      expect(readAllRequestedUrls()).not.toContain(mockDetailUrlFor('a'));
+    });
+  });
+});
+
+describe('fetchMyMapIncidents con listado mock y detalle 404', () => {
+  beforeEach(() => {
+    fetchWithTimeoutMock.mockReset();
+    mockedFetchCategories.mockReset();
+    mockedFetchCategories.mockResolvedValue({
+      categories: catalogCategories,
+      source: 'backend',
+      backendErrorMessage: null,
+    });
+  });
+
+  it('con listado en mock, un detalle mock 404 se omite y no hay ninguna petición al backend de detalle', async () => {
+    routeFetchByUrlTable({
+      [backendListPageUrl()]: new RequestTimeoutError(),
+      [MOCK_LIST_URL]: jsonResponse(
+        [buildMockRecordForMap('a', 'reported', 40.1, -3.6), buildMockRecordForMap('b', 'reported', 40.2, -3.5)],
+        200,
+      ),
+      [mockDetailUrlFor('a')]: jsonResponse(buildMockRecordForMap('a', 'reported', 40.1, -3.6), 200),
+      [mockImagesUrlFor('a')]: jsonResponse([], 200),
+      [mockDetailUrlFor('b')]: jsonResponse({ message: 'Not Found' }, 404),
+    });
+
+    const result = await fetchMyMapIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN);
+
+    expect(result.source).toBe('mock');
+    expect(result.incidents.map((incident) => incident.id)).toEqual(['a']);
+    expect(readAllRequestedUrls().filter((requestUrl) => requestUrl.startsWith(MAP_BACKEND_DETAIL_PREFIX))).toEqual([]);
+    expect(readAllRequestedUrls()).toHaveLength(5);
+    expect(readAllRequestedUrls()).toEqual(
+      expect.arrayContaining([
+        backendListPageUrl(),
+        MOCK_LIST_URL,
+        mockDetailUrlFor('a'),
+        mockImagesUrlFor('a'),
+        mockDetailUrlFor('b'),
+      ]),
+    );
+  });
+});
+
+describe('fetchMyIncidents con tope de páginas (MAX_INCIDENT_PAGES = 50)', () => {
+  beforeEach(() => {
+    fetchWithTimeoutMock.mockReset();
+  });
+
+  it('una cadena de más de 50 cursores distintos se detiene en exactamente 50 peticiones', async () => {
+    const distinctCursorCount = 60;
+    const outcomesByUrl: OutcomesByUrl = {
+      [backendListPageUrl()]: pagedJsonResponse([buildListSummary('item-0', 'reported')], 'cursor-1'),
+    };
+    for (let cursorIndex = 1; cursorIndex <= distinctCursorCount; cursorIndex += 1) {
+      outcomesByUrl[backendListPageUrl(`cursor-${cursorIndex}`)] = pagedJsonResponse(
+        [buildListSummary(`item-${cursorIndex}`, 'reported')],
+        `cursor-${cursorIndex + 1}`,
+      );
+    }
+    routeFetchByUrlTable(outcomesByUrl);
+
+    const result = await fetchMyIncidents(CITIZEN_CIVIC_ID, BACKEND_TOKEN, { fetchAllPages: true });
+
+    expect(fetchWithTimeoutMock).toHaveBeenCalledTimes(50);
+    expect(readRequestUrlAt(49)).toBe(backendListPageUrl('cursor-49'));
+    expect(result.source).toBe('backend');
+    expect(result.incidents).toHaveLength(50);
+    expect(result.incidents[49].id).toBe('item-49');
   });
 });
