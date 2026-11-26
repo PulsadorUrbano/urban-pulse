@@ -61,7 +61,19 @@ export interface IncidentSummary {
   createdAt: string;
 }
 
-// Filtros del listado web. Se aplican en el navegador hasta que GET /incidents filtre (#44).
+// Criterios que GET /incidents aplica antes de paginar. Omitir un criterio equivale a «todas».
+export interface IncidentPageFilters {
+  priority?: IncidentPriority;
+  categoryId?: string;
+}
+
+export interface IncidentCategory {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+// Estado/fecha/orden siguen siendo locales; prioridad y categoría se envían al servidor.
 export type IncidentStatusFilter = IncidentStatus | 'all';
 export type IncidentSortOrder = 'newest' | 'oldest';
 
@@ -71,6 +83,8 @@ export interface IncidentListFilters {
   order: IncidentSortOrder;
   from: string | null;
   to: string | null;
+  priority: IncidentPriority | 'all';
+  categoryId: string | null;
 }
 
 // Cuerpo de PATCH /incidents/:id/status. El backend obtiene el actor de la sesión.

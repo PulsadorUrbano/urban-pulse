@@ -29,6 +29,8 @@ services:
   # 2. Backend / API (NestJS)
   # -----------------------------------------------------------
   backend:
+    image: urban-pulse-backend:latest
+    pull_policy: build
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -51,6 +53,8 @@ services:
   # 3. Frontend web (React + Nginx)
   # -----------------------------------------------------------
   frontend-web:
+    image: urban-pulse-frontend-web:latest
+    pull_policy: build
     build:
       context: ./frontend-web
       dockerfile: Dockerfile

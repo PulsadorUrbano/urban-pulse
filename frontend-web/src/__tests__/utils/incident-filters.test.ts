@@ -97,6 +97,12 @@ describe('filtros del listado de incidencias', () => {
 });
 
 describe('resultado parcial al filtrar sobre páginas cargadas', () => {
+  it('los criterios del servidor activan limpiar sin producir por sí solos un aviso de filtro local parcial', () => {
+    const serverFilters = filters({ priority: 'high', categoryId: 'cat-1' });
+    expect(hasActiveFilters(serverFilters)).toBe(true);
+    expect(isFilterResultPartial(ITEMS, serverFilters, true)).toBe(false);
+    expect(ids(applyIncidentFilters(ITEMS, serverFilters))).toEqual(['d', 'c', 'b', 'a']);
+  });
   it('es completo si no quedan páginas o no hay filtros', () => {
     expect(isFilterResultPartial(ITEMS, filters({ status: 'reported' }), false)).toBe(false);
     expect(isFilterResultPartial(ITEMS, DEFAULT_INCIDENT_FILTERS, true)).toBe(false);

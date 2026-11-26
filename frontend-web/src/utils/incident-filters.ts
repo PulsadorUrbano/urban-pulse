@@ -11,6 +11,8 @@ export const DEFAULT_INCIDENT_FILTERS: IncidentListFilters = {
   order: 'newest',
   from: null,
   to: null,
+  priority: 'all',
+  categoryId: null,
 };
 
 export function parseStatusFilter(value: string): IncidentStatusFilter {
@@ -22,6 +24,10 @@ export function parseSortOrder(value: string): IncidentSortOrder {
 }
 
 export function hasActiveFilters(filters: IncidentListFilters): boolean {
+  return hasActiveLocalFilters(filters) || filters.priority !== 'all' || filters.categoryId !== null;
+}
+
+function hasActiveLocalFilters(filters: IncidentListFilters): boolean {
   return filters.status !== 'all' || filters.order !== 'newest' || filters.from !== null || filters.to !== null;
 }
 
@@ -69,7 +75,7 @@ export function isFilterResultPartial(
   filters: IncidentListFilters,
   hasMore: boolean,
 ): boolean {
-  if (!hasMore || !hasActiveFilters(filters)) return false;
+  if (!hasMore || !hasActiveLocalFilters(filters)) return false;
   const { start } = rangeBounds(filters);
   const rangeLoaded = Number.isFinite(start) && items.some((incident) => timeOf(incident) < start);
   return !rangeLoaded;

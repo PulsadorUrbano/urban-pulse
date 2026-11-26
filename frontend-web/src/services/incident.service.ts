@@ -6,8 +6,10 @@ import {
   type ChangeIncidentPriorityInput,
   type ChangeIncidentStatusInput,
   type CreatedIncidentImage,
+  type IncidentCategory,
   type IncidentDetail,
   type IncidentLocation,
+  type IncidentPageFilters,
   type IncidentPriority,
   type IncidentSummary,
 } from '../types/incident';
@@ -131,11 +133,15 @@ function isIncidentSummaryList(value: unknown): value is IncidentSummary[] {
   return Array.isArray(value) && value.every(isIncidentSummary);
 }
 
-export async function fetchIncidentPage(token: string, cursor?: string): Promise<{
+export async function fetchIncidentPage(token: string, cursor?: string, filters: IncidentPageFilters = {}): Promise<{
   items: IncidentSummary[];
   nextCursor: string | null;
 }> {
-  const query = cursor ? `?${new URLSearchParams({ cursor })}` : '';
+  const parameters = new URLSearchParams();
+  if (cursor) parameters.set('cursor', cursor);
+  if (filters.priority) parameters.set('priority', filters.priority);
+  if (filters.categoryId) parameters.set('categoryId', filters.categoryId);
+  const query = parameters.size ? `?${parameters}` : '';
   const response = await sendToBackend(`${incidentsEndpoint()}${query}`, {
     method: 'GET',
     headers: bearerHeader(token),
@@ -145,6 +151,26 @@ export async function fetchIncidentPage(token: string, cursor?: string): Promise
   }
   const items = await readJson(response, isIncidentSummaryList, 'GET /incidents');
   return { items, nextCursor: response.headers.get('X-Next-Cursor') || null };
+}
+
+function isIncidentCategoryList(value: unknown): value is IncidentCategory[] {
+  return Array.isArray(value) && value.every((category: unknown) => (
+    isRecord(category)
+    && typeof category.id === 'string'
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(category.id)
+    && typeof category.name === 'string'
+    && category.name.trim().length > 0
+    && typeof category.createdAt === 'string'
+    && Number.isFinite(Date.parse(category.createdAt))
+  ));
+}
+
+export async function fetchIncidentCategories(): Promise<IncidentCategory[]> {
+  const response = await sendToBackend(`${resolveBackendApiUrl()}/categories`, { method: 'GET' });
+  if (!response.ok) {
+    throw new Error(await buildBackendRejectionMessage(response, 'No se pudo cargar el catálogo de categorías.'));
+  }
+  return readJson(response, isIncidentCategoryList, 'GET /categories');
 }
 
 // Obtiene el detalle de una incidencia (GET /incidents/:id).

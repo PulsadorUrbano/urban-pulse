@@ -24,6 +24,7 @@ import type {
   CambioAsignacionIncidencia,
   CreateIncidentInput,
   CursorIncidencias,
+  FiltrosListadoIncidencias,
   Incident,
   OpcionesAsignacion,
   PaginaIncidencias,
@@ -195,21 +196,59 @@ export class IncidentsService {
     limit: number,
     cursor?: CursorIncidencias,
     idCiudadano?: string,
+    filtros: FiltrosListadoIncidencias = { order: 'newest' },
   ): Promise<PaginaIncidencias> {
     const civicId = idCiudadano?.toLowerCase() ?? null;
-    if (cursor && cursor.civicId !== civicId) {
-      throw new BadRequestException('civicId no coincide con el cursor');
+    const filtrosAplicados = { order: 'newest' as const, ...filtros };
+    if (
+      cursor &&
+      (cursor.civicId !== civicId ||
+        JSON.stringify(cursor.filtros) !== JSON.stringify(filtrosAplicados))
+    ) {
+      throw new BadRequestException('Los filtros no coinciden con el cursor');
     }
+    const ascendente = filtrosAplicados.order === 'oldest';
+    const fechaHasta = filtrosAplicados.to
+      ? new Date(
+          new Date(`${filtrosAplicados.to}T00:00:00.000Z`).getTime() +
+            86_400_000,
+        )
+      : undefined;
 
     let incidencias;
     try {
       incidencias = await this.prisma.incident.findMany({
         where: {
           ...(civicId ? { civicId } : {}),
+          ...(filtrosAplicados.status
+            ? { status: filtrosAplicados.status }
+            : {}),
+          ...(filtrosAplicados.priority
+            ? { priority: filtrosAplicados.priority }
+            : {}),
+          ...(filtrosAplicados.categoryId
+            ? { categoryId: filtrosAplicados.categoryId }
+            : {}),
+          ...(filtrosAplicados.from || fechaHasta
+            ? {
+                createdAt: {
+                  ...(filtrosAplicados.from
+                    ? {
+                        gte: new Date(`${filtrosAplicados.from}T00:00:00.000Z`),
+                      }
+                    : {}),
+                  ...(fechaHasta ? { lt: fechaHasta } : {}),
+                },
+              }
+            : {}),
           ...(cursor
             ? {
                 OR: [
-                  { createdAt: { lt: new Date(cursor.createdAt) } },
+                  {
+                    createdAt: {
+                      [ascendente ? 'gt' : 'lt']: new Date(cursor.createdAt),
+                    },
+                  },
                   {
                     createdAt: new Date(cursor.createdAt),
                     id: { gt: cursor.id },
@@ -218,7 +257,7 @@ export class IncidentsService {
               }
             : {}),
         },
-        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+        orderBy: [{ createdAt: ascendente ? 'asc' : 'desc' }, { id: 'asc' }],
         take: limit + 1,
         select: { id: true, title: true, status: true, createdAt: true },
       });
@@ -238,6 +277,7 @@ export class IncidentsService {
               createdAt: ultima.createdAt.toISOString(),
               pagina: pagina + 1,
               civicId,
+              filtros: filtrosAplicados,
             }),
           ).toString('base64url')
         : null;
