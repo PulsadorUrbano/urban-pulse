@@ -72,6 +72,27 @@ describe('consulta paginada por prioridad y categoría', () => {
     expect(result.items.map(({ id }) => id)).toEqual(['b']);
   });
 
+  it.each<[IncidentPageFilters, IncidentPageFilters]>([
+    [{ status: 'reported' }, { status: 'assigned' }],
+    [{ from: '2026-11-01' }, { from: '2026-11-01', to: '2026-11-15' }],
+    [{}, { order: 'oldest' }],
+  ])('cambiar estado, fechas u orden vuelve a pedir la primera página con el criterio nuevo: %j -> %j', async (
+    before,
+    after,
+  ) => {
+    mocks.fetchIncidentPage.mockResolvedValueOnce({ items: [incident('a')], nextCursor: 'segunda' });
+    harness.render(() => useIncidentList('token', before));
+    await flushPromises();
+    harness.render(() => useIncidentList('token', before));
+    mocks.fetchIncidentPage.mockResolvedValueOnce({ items: [incident('b')], nextCursor: null });
+    let result = harness.render(() => useIncidentList('token', after));
+    expect(result.items).toEqual([]);
+    expect(mocks.fetchIncidentPage).toHaveBeenLastCalledWith('token', undefined, expect.objectContaining(after));
+    await flushPromises();
+    result = harness.render(() => useIncidentList('token', after));
+    expect(result.items.map(({ id }) => id)).toEqual(['b']);
+  });
+
   it('ignora una página anterior que llega después de cambiar los filtros', async () => {
     const oldPage = deferred<Page>();
     mocks.fetchIncidentPage.mockResolvedValueOnce({ items: [incident('a')], nextCursor: 'otra' });

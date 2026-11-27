@@ -1,33 +1,26 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
-import type { IncidentListFilters, IncidentPageFilters } from '../types/incident';
+import type { IncidentListFilters } from '../types/incident';
 import {
-  applyIncidentFilters,
   DEFAULT_INCIDENT_FILTERS,
   hasActiveFilters,
-  isFilterResultPartial,
   parseSortOrder,
   parseStatusFilter,
+  toPageFilters,
   withDateRange,
 } from '../utils/incident-filters';
 import { useIncidentList } from './use-incident-list';
 
-// Prioridad/categoría filtran en servidor. Estado, fecha y orden conservan la implementación local de #198.
+// Todos los filtros se envían a GET /incidents (#213): cambiar uno vuelve a pedir la primera página
+// y las páginas siguientes llegan ya filtradas y ordenadas por el backend.
 export function useIncidentFilters(token: string | null) {
   const [filters, setFilters] = useState<IncidentListFilters>(DEFAULT_INCIDENT_FILTERS);
-  const pageFilters: IncidentPageFilters = {
-    priority: filters.priority === 'all' ? undefined : filters.priority,
-    categoryId: filters.categoryId ?? undefined,
-  };
-  const list = useIncidentList(token, pageFilters);
-  const visibleItems = useMemo(() => applyIncidentFilters(list.items, filters), [list.items, filters]);
+  const list = useIncidentList(token, toPageFilters(filters));
 
   return {
     ...list,
     filters,
-    visibleItems,
     isActive: hasActiveFilters(filters),
-    isPartial: isFilterResultPartial(list.items, filters, list.hasMore),
     setPriority: (value: string) => setFilters((current) => ({
       ...current,
       priority: value === 'low' || value === 'medium' || value === 'high' ? value : 'all',

@@ -21,9 +21,12 @@ interface ListResult {
 }
 
 export function useIncidentList(token: string | null, filters: IncidentPageFilters = {}) {
-  const { priority, categoryId } = filters;
+  const { status, from, to, order, priority, categoryId } = filters;
   // La identidad cambia solo al cambiar sesión o criterios, no al renderizar ni al cargar otra página.
-  const query = useMemo(() => ({ token, filters: { priority, categoryId } }), [token, priority, categoryId]);
+  const query = useMemo(
+    () => ({ token, filters: { status, from, to, order, priority, categoryId } }),
+    [token, status, from, to, order, priority, categoryId],
+  );
   const [requestedPage, setRequestedPage] = useState<PageRequest | null>(null);
   const [result, setResult] = useState<ListResult | null>(null);
   const request = useMemo(

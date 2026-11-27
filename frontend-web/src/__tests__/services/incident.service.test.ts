@@ -56,6 +56,10 @@ describe('incident.service', () => {
     { priority: 'high' },
     { categoryId: INCIDENT_ID },
     { priority: 'medium', categoryId: INCIDENT_ID },
+    { status: 'assigned' },
+    { from: '2026-11-01', to: '2026-11-30' },
+    { order: 'oldest' },
+    { status: 'reopened', from: '2026-11-01', order: 'oldest', priority: 'high', categoryId: INCIDENT_ID },
   ])('envía los filtros al servidor y los conserva al continuar: %j', async (filters) => {
     const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(jsonResponse(200, [])));
     vi.stubGlobal('fetch', fetchMock);
@@ -67,6 +71,10 @@ describe('incident.service', () => {
       const url = new URL(String(call[0]), 'http://localhost');
       expect(url.searchParams.get('priority')).toBe(filters.priority ?? null);
       expect(url.searchParams.get('categoryId')).toBe(filters.categoryId ?? null);
+      expect(url.searchParams.get('status')).toBe(filters.status ?? null);
+      expect(url.searchParams.get('from')).toBe(filters.from ?? null);
+      expect(url.searchParams.get('to')).toBe(filters.to ?? null);
+      expect(url.searchParams.get('order')).toBe(filters.order ?? null);
       expect(url.searchParams.get('cursor')).toBe(index ? 'cursor+/=' : null);
       expect([...url.searchParams.keys()].sort()).toEqual([
         ...Object.keys(filters), ...(index ? ['cursor'] : []),
