@@ -20,6 +20,11 @@ DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM users WHERE id = '5eed0000-0000-4000-8000-000000000002') THEN
     RAISE EXCEPTION 'Ampliación del seed ya aplicada';
   END IF;
+  -- El primer seed registra sus 5000 incidencias en "SeedIncident". Si no están, se
+  -- aplicó una versión anterior a ese registro: hay que recrear la BD.
+  IF (SELECT count(*) FROM "SeedIncident") <> 5000 THEN
+    RAISE EXCEPTION 'El primer seed no tiene sus 5000 incidencias en "SeedIncident": recrear la BD (docker compose down -v) y ejecutar el seed actual';
+  END IF;
 END $$;
 
 -- Generación reproducible, distinta de la del primer seed (no afecta a gen_random_uuid).
@@ -394,6 +399,10 @@ INSERT INTO "IncidentLocation" ("incidentId", latitude, longitude, accuracy, "cr
 SELECT id, latitude, longitude, accuracy, creada AT TIME ZONE 'UTC', address_id
 FROM seed_incidencias;
 
+-- Registro estable de las incidencias del seed (lo usa prisma/seed/fotos-incidencias.mjs).
+INSERT INTO "SeedIncident" ("incidentId")
+SELECT id FROM seed_incidencias;
+
 -- ---------------------------------------------------------------------------
 -- 7. Historial coherente con el estado final
 -- ---------------------------------------------------------------------------
@@ -467,6 +476,9 @@ DO $$ BEGIN
     SELECT 1 FROM seed_pasos WHERE fecha > now()
   ) THEN
     RAISE EXCEPTION 'Hay cambios de estado con fecha futura';
+  END IF;
+  IF (SELECT count(*) FROM "SeedIncident") <> 50000 THEN
+    RAISE EXCEPTION 'El registro de incidencias del seed no suma 50000';
   END IF;
 END $$;
 

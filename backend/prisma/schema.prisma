@@ -68,6 +68,7 @@ model Incident {
   cambiosPrioridad  CambioPrioridad[]
   cambiosAsignacion CambioAsignacion[]
   images            IncidentImage[]
+  seedIncident      SeedIncident?
 
   @@index([departmentId])
   @@index([civicId, createdAt, id])
@@ -179,6 +180,13 @@ model IncidentImage {
   incident       Incident @relation(fields: [incidentId], references: [id], onDelete: Restrict)
 
   @@index([incidentId])
+}
+
+// Registro de las incidencias generadas por los seeds masivos (prisma/seed/). Permite
+// identificarlas de forma estable sin depender de las cuentas que las crearon.
+model SeedIncident {
+  incidentId String   @id @db.Uuid
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Restrict)
 }
 model CambioEstado {
   id            String         @id @default(uuid()) @db.Uuid

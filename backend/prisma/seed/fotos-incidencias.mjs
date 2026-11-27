@@ -23,8 +23,6 @@ import { copiarYRegistrar } from './reparto-fotos.mjs';
 const DIRECTORIO = dirname(fileURLToPath(import.meta.url));
 const DIRECTORIO_FOTOS = join(DIRECTORIO, 'fotos');
 const PREFIJO_BASE = 'incidents/_seed/base/';
-// Hash bcrypt de seed1234: identifica a las cuentas creadas por los seeds.
-const HASH_SEED = '$2a$10$.luy7bguVO4N2UOgWJ9hN.GjocHQY3gG/7zUHldbyZo41cBz2Hl5i';
 const TAMANO_LOTE = 500;
 
 function leerArgumentos(argv) {
@@ -126,14 +124,12 @@ async function main() {
       `SELECT i.id::text AS id, i.title, c.code AS categoria, ua.name AS activo,
               i."createdAt" AS creada
        FROM "Incident" i
-       JOIN users u ON u.id = i."civicId"
+       JOIN "SeedIncident" s ON s."incidentId" = i.id
        JOIN "Category" c ON c.id = i."categoryId"
        LEFT JOIN "UrbanAsset" ua ON ua.id = i."urbanAssetId"
-       WHERE u.password = $1
-         AND NOT EXISTS (SELECT 1 FROM "IncidentImage" im WHERE im."incidentId" = i.id)
+       WHERE NOT EXISTS (SELECT 1 FROM "IncidentImage" im WHERE im."incidentId" = i.id)
        ORDER BY i.id
        ${opciones.limite ? `LIMIT ${opciones.limite}` : ''}`,
-      HASH_SEED,
     );
 
     const asignaciones = [];

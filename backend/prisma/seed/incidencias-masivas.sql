@@ -393,6 +393,10 @@ INSERT INTO "IncidentLocation" ("incidentId", latitude, longitude, accuracy, "cr
 SELECT id, latitude, longitude, accuracy, creada AT TIME ZONE 'UTC', address_id
 FROM seed_incidencias;
 
+-- Registro estable de las incidencias del seed (lo usa prisma/seed/fotos-incidencias.mjs).
+INSERT INTO "SeedIncident" ("incidentId")
+SELECT id FROM seed_incidencias;
+
 -- ---------------------------------------------------------------------------
 -- 7. Historial coherente con el estado final
 -- ---------------------------------------------------------------------------
