@@ -18,6 +18,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { copiarYRegistrar } from './reparto-fotos.mjs';
 
 const DIRECTORIO = dirname(fileURLToPath(import.meta.url));
 const DIRECTORIO_FOTOS = join(DIRECTORIO, 'fotos');
@@ -166,53 +167,35 @@ async function main() {
     const s3 = new comandos.S3Client({ region: exigirVariable('S3_REGION') });
     await subirFotosBase(s3, comandos, bucket, manifiesto);
 
-    let pendientes = [];
-    let insertadas = 0;
-    let fallidas = 0;
-    const volcar = async () => {
-      if (pendientes.length === 0) return;
-      const lote = pendientes;
-      pendientes = [];
-      await prisma.incidentImage.createMany({ data: lote });
-      insertadas += lote.length;
-    };
-
-    let siguiente = 0;
-    const trabajador = async () => {
-      while (siguiente < asignaciones.length) {
-        const { incidencia, foto } = asignaciones[siguiente++];
+    const { insertadas, fallidas } = await copiarYRegistrar({
+      asignaciones,
+      concurrencia: opciones.concurrencia,
+      tamanoLote: TAMANO_LOTE,
+      copiar: async ({ incidencia, foto }) => {
         const id = randomUUID();
         const objectKey = `incidents/${incidencia.id}/${id}.jpg`;
-        try {
-          await s3.send(
-            new comandos.CopyObjectCommand({
-              Bucket: bucket,
-              Key: objectKey,
-              CopySource: encodeURI(`${bucket}/${PREFIJO_BASE}${foto.archivo}`),
-              ContentType: 'image/jpeg',
-              MetadataDirective: 'REPLACE',
-            }),
-          );
-        } catch (error) {
-          fallidas++;
-          console.error(`No se pudo copiar la foto de ${incidencia.id}: ${describirError(error)}`);
-          continue;
-        }
-        pendientes.push({
+        await s3.send(
+          new comandos.CopyObjectCommand({
+            Bucket: bucket,
+            Key: objectKey,
+            CopySource: encodeURI(`${bucket}/${PREFIJO_BASE}${foto.archivo}`),
+            ContentType: 'image/jpeg',
+            MetadataDirective: 'REPLACE',
+          }),
+        );
+        return {
           id,
           incidentId: incidencia.id,
           objectKey,
           mimeType: 'image/jpeg',
           createdAt: incidencia.creada,
-        });
-        if (pendientes.length >= TAMANO_LOTE) {
-          await volcar();
-          console.log(`Paso B: ${insertadas}/${asignaciones.length} fotos registradas.`);
-        }
-      }
-    };
-    await Promise.all(Array.from({ length: opciones.concurrencia }, trabajador));
-    await volcar();
+        };
+      },
+      registrarLote: (lote) => prisma.incidentImage.createMany({ data: lote }),
+      alFallarCopia: ({ incidencia }, error) =>
+        console.error(`No se pudo copiar la foto de ${incidencia.id}: ${describirError(error)}`),
+      alRegistrarLote: (total) => console.log(`Paso B: ${total}/${asignaciones.length} fotos registradas.`),
+    });
     console.log(`Paso B terminado: ${insertadas} fotos registradas, ${fallidas} copias fallidas.`);
     if (fallidas > 0) process.exitCode = 1;
   } finally {
