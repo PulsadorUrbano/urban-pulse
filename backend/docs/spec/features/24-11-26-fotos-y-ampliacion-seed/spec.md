@@ -25,7 +25,7 @@ Con 5000 incidencias sin fotos no se pueden probar con un volumen realista los l
   - Cada `IncidentImage` necesita su propio objeto porque `objectKey` es único. Las fotos base se suben una vez a `incidents/_seed/base/` y se duplican dentro de S3 con `CopyObject`, sin descargarlas. El prefijo debe estar bajo `incidents/` porque es el único que permiten la política IAM del backend y la distribución de CloudFront.
   - El script de fotos lo ejecuta una persona del equipo con credenciales AWS propias. Las credenciales no se guardan en el repositorio.
 - Suposiciones por validar: que la identidad IAM usada tenga `s3:GetObject` y `s3:PutObject` sobre `pulsadorurbano/incidents/*`, porque `CopyObject` necesita ambos permisos.
-- Fuera de alcance: cambios de esquema y migraciones; categorías nuevas; frontends; fotos de incidencias que no sean del seed.
+- Fuera de alcance: cambios de esquema y migraciones salvo la tabla de registro `SeedIncident` (añadida tras la revisión del PR #219); categorías nuevas; frontends; fotos de incidencias que no sean del seed.
 
 ## Contexto verificado
 
@@ -38,7 +38,8 @@ Con 5000 incidencias sin fotos no se pueden probar con un volumen realista los l
   - `GET /incidents/:id/fotos` firma la lectura de cada `objectKey`.
 - Configuración y dependencias disponibles: `@aws-sdk/client-s3`, `@prisma/adapter-pg`, `dotenv` y Prisma 7.10.1 ya son dependencias. No se añade ninguna.
 - Diferencia entre estado actual y propuesto:
-  - Archivos nuevos: `prisma/seed/incidencias-masivas-ampliacion.sql`, `prisma/seed/fotos-incidencias.mjs` y `prisma/seed/fotos/`.
+  - Archivos nuevos: `prisma/seed/incidencias-masivas-ampliacion.sql`, `prisma/seed/fotos-incidencias.mjs`, `prisma/seed/reparto-fotos.mjs` (con sus tipos en `reparto-fotos.d.mts`), `prisma/seed/fotos/`, la migración `20261127000000_registro_incidencias_seed` y `test/seed/reparto-fotos.spec.ts`.
+  - Archivo modificado: `prisma/seed/incidencias-masivas.sql`, que registra sus incidencias en `SeedIncident`.
   - Comandos nuevos: `pnpm seed:incidencias:ampliacion` y `pnpm seed:fotos`.
 
 ## Contrato HTTP
@@ -47,7 +48,11 @@ No se crean ni se modifican endpoints. Las fotos generadas se leen con el `GET /
 
 ## Modelos y objetos Prisma
 
-No se modifica `schema.prisma` ni se añaden migraciones.
+Se añade un modelo, `SeedIncident`, con la migración `20261127000000_registro_incidencias_seed`. El resto de modelos no cambia.
+
+| Modelo nuevo | Datos generados | Relaciones y valores |
+| --- | --- | --- |
+| `SeedIncident` | Una fila por incidencia generada por los seeds (5000 del primero y 45.000 de la ampliación) | `incidentId` es clave primaria y referencia a `Incident` (`ON DELETE RESTRICT`). Identifica las incidencias del seed sin depender de las cuentas que las crearon |
 
 | Modelo reutilizado | Datos generados | Relaciones y valores |
 | --- | --- | --- |
@@ -70,10 +75,10 @@ No se modifica `schema.prisma` ni se añaden migraciones.
 
 [`incidencias-masivas-ampliacion.sql`](../../../../prisma/seed/incidencias-masivas-ampliacion.sql) es una única transacción:
 
-1. **Guardas:** exige el marcador del primer seed y aborta con `Ampliación del seed ya aplicada` si ya existe su propio marcador. Fija `setseed(0.4242)`.
+1. **Guardas:** exige el marcador del primer seed y aborta con `Ampliación del seed ya aplicada` si ya existe su propio marcador. Exige además que `SeedIncident` tenga las 5000 incidencias del primer seed; si no, se aplicó una versión anterior del primer seed y hay que recrear la BD. Fija `setseed(0.4242)`.
 2. **Usuarios nuevos:** el marcador y 300 ciudadanos, sin chocar con usuarios existentes.
 3. **Actores existentes:** localiza departamentos, responsables, equipos, técnicos, administrativos y ciudadanos del seed por nombre y por el hash común. Si la estructura no está completa, aborta.
-4. **Datos:** las mismas direcciones y plantillas (más las 3 nuevas), las mismas secciones de generación, historial y comprobaciones finales, con `generate_series(1, 45000)`.
+4. **Datos:** las mismas direcciones y plantillas (más las 3 nuevas), las mismas secciones de generación, historial y comprobaciones finales, con `generate_series(1, 45000)`. Registra las incidencias nuevas en `SeedIncident` y comprueba al final que el registro suma 50.000.
 
 ### Banco de fotos
 
@@ -86,10 +91,10 @@ No se modifica `schema.prisma` ni se añaden migraciones.
 [`fotos-incidencias.mjs`](../../../../prisma/seed/fotos-incidencias.mjs):
 
 - **Configuración:** lee `DATABASE_URL`, `S3_BUCKET`, `S3_REGION` y las credenciales de la cadena predeterminada del SDK. Usa el cliente Prisma compilado en `dist/` (`pnpm run build`).
-- **Selección:** incidencias cuyo ciudadano tiene el hash del seed y que no tienen ninguna `IncidentImage`.
+- **Selección:** incidencias registradas en `SeedIncident` que no tienen ninguna `IncidentImage`. No depende del hash de las cuentas: no incluye incidencias creadas a mano con cuentas del seed ni excluye las del seed si cambia una contraseña.
 - **Elección de foto:** primero una foto de la misma plantilla (por título), luego del mismo activo y categoría y, si no hay, de la categoría. Entre las opciones se elige de forma estable a partir del UUID de la incidencia.
 - **Paso A:** `HeadObject` y, si no existe, `PutObject` de cada foto base en `incidents/_seed/base/<archivo>`. La política del backend no concede `s3:ListBucket`, así que S3 responde 403 en lugar de 404 a un objeto inexistente; el script trata ambos códigos como "no existe".
-- **Paso B:** `CopyObject` hacia `incidents/<incidencia>/<uuid>.jpg` con 32 copias concurrentes (configurable). Las filas se insertan con `createMany` en lotes de 500, solo después de que la copia haya ido bien.
+- **Paso B:** `CopyObject` hacia `incidents/<incidencia>/<uuid>.jpg` con 32 copias concurrentes (configurable). Las filas se insertan con `createMany` en lotes de 500, solo después de que la copia haya ido bien. El reparto entre trabajadores está en `reparto-fotos.mjs`: si falla un `createMany`, deja de repartir copias y de registrar lotes, espera a que terminen las copias en curso y relanza el error, de modo que la desconexión de Prisma llega sin trabajadores activos.
 - **Reanudación:** al relanzarlo sigue con las incidencias que aún no tienen foto. Una copia cuya fila no llegó a insertarse queda como objeto huérfano en S3, sin efecto en la aplicación.
 - **Opciones:** `--dry-run` muestra el reparto sin escribir nada; `--limit N` procesa solo N incidencias; `--concurrencia N` cambia el número de copias simultáneas.
 
@@ -117,7 +122,9 @@ pnpm seed:fotos                       # resto
 3. Cada foto del banco tiene licencia libre, autor y origen en el manifiesto, y cada categoría activa tiene al menos una foto.
 4. `pnpm seed:fotos --dry-run` asigna una foto a todas las incidencias del seed sin foto y no escribe en S3 ni en la BD.
 5. Tras la ejecución real, cada incidencia del seed tiene exactamente una `IncidentImage` cuyo objeto existe en S3, y `GET /incidents/:id/fotos` devuelve su URL firmada.
-6. No se modifica el esquema, el código de la aplicación ni las dependencias.
+6. No se modifica el código de la aplicación ni las dependencias. El único cambio de esquema es la tabla `SeedIncident`.
+7. Las incidencias del seed se identifican por `SeedIncident`; si el primer seed aplicado no las registró, la ampliación aborta sin escribir nada.
+8. Si falla el registro en la BD durante el paso B, no empieza ninguna copia ni ningún lote nuevo, y el script no desconecta Prisma mientras haya copias en curso.
 
 ## Documentación de endpoints
 
@@ -125,7 +132,7 @@ No aplica: no se crean ni se modifican endpoints.
 
 ## Estrategia de verificación
 
-No cambia código de la aplicación, así que no se añaden pruebas unitarias. La verificación se hace contra el PostgreSQL local:
+No cambia código de la aplicación. Se añaden pruebas unitarias del reparto de fotos (`test/seed/reparto-fotos.spec.ts`), con el caso normal y el fallo de la BD. El resto se verifica contra el PostgreSQL local:
 
 - Ensayo de la ampliación con `ROLLBACK`, ejecución real y reejecución.
 - Validación del manifiesto con `jq`: archivos existentes, licencias y categorías.
