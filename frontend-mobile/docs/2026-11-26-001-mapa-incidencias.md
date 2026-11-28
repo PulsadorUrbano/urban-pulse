@@ -65,3 +65,26 @@ Feature "Mapa de incidencias" propias con clusters, filtros y sheet. Rama `featu
 
 - Modificados: `db.json`, `package.json`, `pnpm-lock.yaml`, `src/components/app-tabs.tsx`, `src/components/app-tabs.web.tsx`, `src/services/incident.service.ts`, `src/__tests__/components/app-tabs.test.tsx`, `src/__tests__/components/app-tabs.web.test.tsx`, `src/__tests__/services/incident.service.test.ts`.
 - Nuevos: `src/app/(tabs)/map.tsx`; componentes `incident-map(.web)`, `incident-map-marker`, `incident-cluster-marker`, `incident-map-sheet`, `incident-map-filter-bar`, `locate-me-button`; hooks `use-map-incidents`, `use-incident-map-filters`; `src/types/incident-map.ts`; `src/utils/map/`; `src/utils/run-with-concurrency.ts`; `assets/images/tabIcons/map{,@2x,@3x}.png`; tests correspondientes en `src/__tests__/` (app/tabs, components, hooks, utils/map, run-with-concurrency); spec y plan en `docs/spec/features/26-11-26-mapa-incidencias/`.
+
+## Sesión 2026-11-28 — Correcciones de la revisión de la PR #218
+
+### Checklist
+
+- [x] ST12a Recargar el mapa al recuperar el foco (`useFocusEffect` en `src/app/(tabs)/map.tsx`, patrón de `my-incidents.tsx`; el primer foco no recarga).
+- [x] ST12a Añadido `useFocusEffect: jest.fn()` al mock de `expo-router` en `map-screen.test.tsx`.
+- [x] ST12a Test nuevo `map-focus-reload.test.tsx` (4 casos; sin `reload()` fallan 2 de los 4 en la prueba de mutación).
+- [x] ST12b Mock reproducible: `db.example.json` con datos ficticios e instrucciones en `README.md` (`cp db.example.json db.json`).
+- [x] Spec: criterios 10 y 11. Plan: sección ST12 y aclaración en ST3 (`db.json` ya no se versiona).
+- [ ] PENDIENTE: nueva revisión de artina09 en la PR #218.
+- [ ] PENDIENTE (usuaria): prueba manual en Expo Go y Android contra el mock (ya estaba pendiente).
+
+### Verificación (compiler: verificado)
+
+- `pnpm expo lint`: 0 errores y 0 avisos. `pnpm tsc --noEmit`: 0 errores. `git diff --check`: limpio.
+- `pnpm test --ci`: 77 suites / 1018 tests passed.
+- `db.example.json`: JSON válido; json-server sobre una copia responde `/users?username=demo`, `/incidents?civicId=` (8), `/incidents/demo-incident-03` e `/images?incidentId=demo-incident-01`; la plantilla no se modifica.
+
+### Archivos tocados
+
+- Modificados: `src/app/(tabs)/map.tsx`, `src/__tests__/app/tabs/map-screen.test.tsx`, `README.md`, `docs/spec/features/26-11-26-mapa-incidencias/spec.md`, `docs/spec/features/26-11-26-mapa-incidencias/plan.md`.
+- Nuevos: `src/__tests__/app/tabs/map-focus-reload.test.tsx`, `db.example.json`.

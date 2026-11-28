@@ -65,6 +65,7 @@ Archivos: `src/utils/map/incident-map-filters.ts`, `incident-clusters.ts`, `cate
 Archivos: `db.json`. Criterios: 1-3.
 - [x] Variar status, createdAt, categorías, coordenadas cercanas/lejanas e imágenes picsum: 7 incidencias nuevas (`mapCentro01-05`, `mapTeatinos01`, `mapElPalo01`), 8 existentes con status/createdAt variados, 6 imágenes picsum (`mapImg01-06`).
 - [x] Comprobar que los tests existentes que usan el mock siguen pasando (db.json es JSON válido).
+- Aclaración (2026-11-28, ST12): `db.json` dejó de versionarse (commit `5bcb401b`, llevaba contraseñas reales en claro). Los datos de ejemplo del mock viven ahora en `db.example.json` (datos ficticios); la primera vez se crea `db.json` con `cp db.example.json db.json`. Lo descrito arriba sobre enriquecer `db.json` queda como historia de la iteración.
 - Verificación del compiler (ST1-ST3): `pnpm test` 65 suites / 848 tests passed, `tsc` exit 0, `lint` exit 0.
 
 ### ST4: Servicio `fetchMyMapIncidents` — DONE
@@ -114,6 +115,20 @@ Archivos: `src/app/(tabs)/map.tsx`, `app-tabs.tsx`, `app-tabs.web.tsx`, `assets/
 - [x] `pnpm test`, `pnpm tsc --noEmit`, `pnpm expo lint`, `git diff --check`.
 - [ ] PENDIENTE (usuaria): prueba manual en dispositivo/Expo Go contra el mock (clusters, filtros, sheet, Ver detalle, ubicación, aviso de fallback).
 - [x] Confirmación de implementación rellenada con resultados automáticos.
+
+### ST12: Correcciones de la revisión de la PR #218 (2026-11-28) — DONE
+Archivos: `src/app/(tabs)/map.tsx`, `src/__tests__/app/tabs/map-screen.test.tsx`, `src/__tests__/app/tabs/map-focus-reload.test.tsx`, `db.example.json`, `README.md`. Criterios: 10, 11.
+(Nota de numeración: ya existía ST11 de cierre, por eso esta es ST12.)
+- [x] ST12a: recargar el mapa al recuperar el foco.
+  - [x] `useFocusEffect` en `src/app/(tabs)/map.tsx` con el patrón de `my-incidents.tsx` (ignorar el primer foco, recargar con `reload()` en los siguientes; antes del `Redirect` condicional; comentario en español).
+  - [x] Añadir `useFocusEffect: jest.fn()` al mock de `expo-router` en `map-screen.test.tsx`.
+  - [x] Test `src/__tests__/app/tabs/map-focus-reload.test.tsx`: montaje + primer foco = 1 petición; al reenfocar se hace otra y se pinta la incidencia nueva; cada reenfoque genera una petición; sin token no se llama al servicio.
+- [x] ST12b: mock reproducible desde un clon nuevo.
+  - [x] Crear `db.example.json` con datos ficticios (usuario demo, civic, 3 categorías, ~8 incidencias en Málaga con estados y categorías variados y varias cercanas para cluster, 2-3 imágenes picsum, `locations: []`).
+  - [x] Documentar en `README.md` (sección "Servidor simulado" y fila de `pnpm run mock`): `cp db.example.json db.json`, usuario de demo y aviso de fechas fijas (los filtros 7/30/90 días las irán excluyendo; "Todas" siempre las muestra).
+  - [x] Verificar: JSON válido y prueba del mock sobre una copia temporal.
+- [x] Re-verificar `pnpm test --ci`, `pnpm tsc --noEmit`, `pnpm expo lint`, `git diff --check`.
+  - Verificación (compiler, 2026-11-28): `pnpm expo lint` 0 errores y 0 avisos; `pnpm tsc --noEmit` 0 errores; `pnpm test --ci` 77 suites / 1018 tests passed; `db.example.json` JSON válido; `git diff --check` limpio. Mock probado con json-server sobre una copia (`/users?username=demo`, `/incidents?civicId=` 8 resultados, `/incidents/demo-incident-03`, `/images?incidentId=demo-incident-01`) sin modificar la plantilla. Prueba de mutación del tester: sin `reload()` fallan 2 de los 4 tests nuevos.
 
 ## Observaciones
 

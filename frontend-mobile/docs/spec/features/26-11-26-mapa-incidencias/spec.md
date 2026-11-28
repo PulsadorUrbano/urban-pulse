@@ -49,6 +49,8 @@ La ciudadanía ve en un mapa a pantalla completa (estilo Waze) sus propias incid
 
 Entidad `incidents` ya existe (8 registros) con `categories` (3). Se ajusta el contenido, no el esquema.
 
+Actualización 2026-11-28 (revisión de la PR #218): `db.json` ya no se versiona. Los datos de ejemplo, inventados, están en `db.example.json`: un usuario demo, 3 categorías, 8 incidencias (6 visibles en el mapa, 1 `resolved` y 1 `closed`) y 3 imágenes `picsum.photos`. El `db.json` local se crea con `cp db.example.json db.json`.
+
 | Campo | Tipo | Obligatorio | Validación y normalización | Omisión y null |
 | --- | --- | --- | --- | --- |
 | `status` | string | sí | variar entre abiertos y `resolved`/`closed`/`rejected` | n/a |
@@ -96,6 +98,8 @@ Entidad `incidents` ya existe (8 registros) con `categories` (3). Se ajusta el c
 7. En web se muestra el aviso "Mapa disponible solo en la app móvil" sin importar `react-native-maps`.
 8. La pestaña "Mapa" aparece en `app-tabs` y `app-tabs.web`.
 9. `pnpm expo lint`, `pnpm tsc --noEmit` y `pnpm test` pasan.
+10. Al volver a la pestaña "Mapa" tras salir de ella (p. ej. después de crear una incidencia) los datos se recargan y se muestran las incidencias nuevas; el primer foco no genera una petición adicional.
+11. El mock es arrancable desde un clon nuevo: `db.json` no se versiona y `db.example.json` (datos ficticios) más las instrucciones del `README.md` (`cp db.example.json db.json`) permiten usar `pnpm run mock`.
 
 ## Estrategia de verificación
 
