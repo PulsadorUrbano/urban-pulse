@@ -1,5 +1,5 @@
-import { Redirect } from 'expo-router';
-import { useState } from 'react';
+import { Redirect, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -30,6 +30,21 @@ export default function MapScreen() {
   const { categories } = useCategories();
   const { age, categoryIds, setAge, toggleCategory, clearCategories, filteredIncidents } =
     useIncidentMapFilters(incidents);
+
+  // Las tabs no desmontan esta pantalla: tras crear una incidencia y volver, el
+  // mapa quedaba obsoleto porque `useMapIncidents` solo carga al montar. El
+  // primer foco se ignora (la carga inicial ya la hace el `useEffect` del hook)
+  // y los reenfoques posteriores fuerzan un `reload()`.
+  const hasFocusedOnceRef = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocusedOnceRef.current) {
+        hasFocusedOnceRef.current = true;
+        return;
+      }
+      reload();
+    }, [reload]),
+  );
 
   const [selectedIncident, setSelectedIncident] = useState<MapIncident | null>(null);
   const [focusCoordinates, setFocusCoordinates] = useState<LocationCoordinates | null>(null);

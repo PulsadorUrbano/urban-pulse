@@ -35,6 +35,7 @@ jest.mock('expo-router', () => {
       push: jest.fn(),
       back: jest.fn(),
     },
+    useFocusEffect: jest.fn(),
     Redirect: ({ href }: { href: string }) =>
       mockReact.createElement(MockText, null, `redirect:${href}`),
   };
