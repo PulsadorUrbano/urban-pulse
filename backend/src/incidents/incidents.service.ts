@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Inject,
   Logger,
   NotFoundException,
   ServiceUnavailableException,
@@ -32,6 +33,7 @@ import type {
 } from './incident.js';
 import type { UsuarioIncidencias } from './types/usuario-incidencias.js';
 import { normalizeCategoryName } from './category.js';
+import { GeocodificacionInversaService } from './services/geocodificacion-inversa.service.js';
 
 const incluirAgregado = {
   location: { include: { address: true } },
@@ -47,7 +49,14 @@ type IncidenciaConAgregado = PrismaIncident & {
 export class IncidentsService {
   private readonly logger = new Logger(IncidentsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(GeocodificacionInversaService)
+    private readonly geocodificador: Pick<
+      GeocodificacionInversaService,
+      'resolver'
+    >,
+  ) {}
 
   async create(input: CreateIncidentInput): Promise<Incident> {
     if (input.latitude === undefined || input.longitude === undefined) {
@@ -94,6 +103,19 @@ export class IncidentsService {
       if (error instanceof BadRequestException) throw error;
       throw this.errorPersistencia('validar los catálogos de la incidencia');
     }
+    let address = input.address ?? null;
+    if (!address) {
+      try {
+        address = await this.geocodificador.resolver(
+          input.latitude,
+          input.longitude,
+        );
+      } catch {
+        this.logger.warn(
+          'No se pudo normalizar la dirección de una incidencia; se guardará solo la ubicación.',
+        );
+      }
+    }
     const id = randomUUID();
     const createdAt = new Date();
     const ubicacion =
@@ -118,14 +140,14 @@ export class IncidentsService {
     let creada: IncidenciaConAgregado;
     try {
       creada = await this.prisma.$transaction(async (tx) => {
-        const addressId = input.address
+        const addressId = address
           ? (
               await tx.address.upsert({
                 where: {
-                  street_zipCode_district: input.address,
+                  street_zipCode_district: address,
                 },
                 update: {},
-                create: input.address,
+                create: address,
               })
             ).id
           : null;

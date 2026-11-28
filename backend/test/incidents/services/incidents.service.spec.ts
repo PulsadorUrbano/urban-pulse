@@ -7,7 +7,9 @@ import {
 import { Test, type TestingModule } from '@nestjs/testing';
 import { randomUUID } from 'node:crypto';
 import { IncidentsService } from '../../../src/incidents/incidents.service.js';
+import { GeocodificacionInversaService } from '../../../src/incidents/services/geocodificacion-inversa.service.js';
 import { PrismaService } from '../../../src/prisma/prisma.service.js';
+import { crearGeocodificadorInversoFalso } from './geocodificador-inverso.fake.js';
 import { crearPrismaIncidenciasFake } from './prisma-incidencias.fake.js';
 
 describe('IncidentsService', () => {
@@ -34,13 +36,22 @@ describe('IncidentsService', () => {
 
   let service: IncidentsService;
   let prisma: ReturnType<typeof crearPrismaIncidenciasFake>;
+  let geocodificador: ReturnType<typeof crearGeocodificadorInversoFalso>;
 
-  async function crearServicio(fake = crearPrismaIncidenciasFake()) {
+  async function crearServicio(
+    fake = crearPrismaIncidenciasFake(),
+    resolverFalso = crearGeocodificadorInversoFalso(),
+  ) {
     prisma = fake;
+    geocodificador = resolverFalso;
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         IncidentsService,
         { provide: PrismaService, useValue: prisma.prisma },
+        {
+          provide: GeocodificacionInversaService,
+          useValue: geocodificador,
+        },
       ],
     }).compile();
     service = module.get(IncidentsService);
@@ -126,11 +137,25 @@ describe('IncidentsService', () => {
 
   it('guarda y consulta una incidencia sin categoría y con descripción corta', async () => {
     const module = await crearServicio();
-    const { categoryId: _categoryId, category: _category, ...sinCategoria } = input;
-    const creada = await service.create({ ...sinCategoria, description: 'Rota' });
+    const {
+      categoryId: _categoryId,
+      category: _category,
+      ...sinCategoria
+    } = input;
+    const creada = await service.create({
+      ...sinCategoria,
+      description: 'Rota',
+    });
 
-    expect(prisma.incidencias[0]).toMatchObject({ categoryId: null, description: 'Rota' });
-    expect(creada).toMatchObject({ categoryId: null, category: null, description: 'Rota' });
+    expect(prisma.incidencias[0]).toMatchObject({
+      categoryId: null,
+      description: 'Rota',
+    });
+    expect(creada).toMatchObject({
+      categoryId: null,
+      category: null,
+      description: 'Rota',
+    });
     expect(await service.findOne(creada.id, propietario)).toEqual(creada);
     await module.close();
   });
@@ -172,7 +197,11 @@ describe('IncidentsService', () => {
   });
 
   it('guarda una dirección normalizada con la ubicación', async () => {
-    const module = await crearServicio();
+    const resolver = vi.fn(async () => null);
+    const module = await crearServicio(
+      crearPrismaIncidenciasFake(),
+      crearGeocodificadorInversoFalso(resolver),
+    );
     const created = await service.create({
       category: 'Iluminación',
       title: 'Farola apagada',
@@ -191,13 +220,54 @@ describe('IncidentsService', () => {
       zipCode: '29005',
       district: 'centro',
     });
+    expect(resolver).not.toHaveBeenCalled();
+    await module.close();
+  });
+
+  it('resuelve y persiste la dirección si no se proporciona una manual', async () => {
+    const resolver = vi.fn(async () => ({
+      street: 'Calle Larios, 12',
+      zipCode: '29005',
+      district: 'centro' as const,
+    }));
+    const module = await crearServicio(
+      crearPrismaIncidenciasFake(),
+      crearGeocodificadorInversoFalso(resolver),
+    );
+    const created = await service.create(input);
+
+    expect(resolver).toHaveBeenCalledWith(input.latitude, input.longitude);
+    expect(created.location.address).toEqual({
+      street: 'Calle Larios, 12',
+      zipCode: '29005',
+      district: 'centro',
+    });
+    expect(prisma.ubicaciones[0]).toMatchObject({
+      addressId: '10000000-0000-4000-8000-000000000099',
+    });
+    await module.close();
+  });
+
+  it('crea la incidencia sin dirección si falla la geocodificación', async () => {
+    const resolver = vi.fn(async () => {
+      throw new Error('geocodificador no disponible');
+    });
+    const module = await crearServicio(
+      crearPrismaIncidenciasFake(),
+      crearGeocodificadorInversoFalso(resolver),
+    );
+    const created = await service.create(input);
+
+    expect(created.location.address).toBeNull();
+    expect(prisma.incidencias).toHaveLength(1);
+    expect(prisma.ubicaciones[0]).not.toHaveProperty('addressId');
     await module.close();
   });
 
   it('conserva registros confirmados entre instancias con el mismo Prisma', async () => {
     const module = await crearServicio();
     const created = await service.create(input);
-    const secondService = new IncidentsService(prisma.prisma);
+    const secondService = new IncidentsService(prisma.prisma, geocodificador);
 
     await expect(secondService.findOne(created.id, operador)).resolves.toEqual(
       created,

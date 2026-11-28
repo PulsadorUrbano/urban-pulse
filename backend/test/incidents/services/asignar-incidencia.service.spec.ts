@@ -6,6 +6,7 @@ import {
 import type { PrismaService } from '../../../src/prisma/prisma.service.js';
 import { IncidentsService } from '../../../src/incidents/incidents.service.js';
 import type { UsuarioIncidencias } from '../../../src/incidents/types/usuario-incidencias.js';
+import { crearGeocodificadorInversoFalso } from './geocodificador-inverso.fake.js';
 
 const departamento = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const equipo = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
@@ -82,7 +83,10 @@ function preparar() {
     },
   };
   return {
-    servicio: new IncidentsService(prisma as unknown as PrismaService),
+    servicio: new IncidentsService(
+      prisma as unknown as PrismaService,
+      crearGeocodificadorInversoFalso(),
+    ),
     fila,
     historial,
     estados,

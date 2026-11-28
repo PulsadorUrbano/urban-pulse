@@ -359,7 +359,7 @@ export class IncidentsController {
   @ApiOperation({
     summary: 'Crear una incidencia del ciudadano autenticado',
     description:
-      'Acepta exclusivamente JSON. El propietario procede de la identidad autenticada; civicId e imágenes se rechazan en el cuerpo. Incidencia y ubicación se guardan de forma asíncrona y atómica en PostgreSQL.',
+      'Acepta exclusivamente JSON. El propietario procede de la identidad autenticada; civicId e imágenes se rechazan en el cuerpo. Si no se envía address, se intenta resolver la dirección desde las coordenadas mediante geocodificación inversa best-effort. Incidencia y ubicación se guardan atómicamente en PostgreSQL.',
   })
   @ApiBody({
     schema: {
@@ -390,7 +390,7 @@ export class IncidentsController {
   })
   @ApiCreatedResponse({
     description:
-      'Incidencia y ubicación persistidas en PostgreSQL. images comienza vacío; las fotos se añaden después.',
+      'Incidencia y ubicación persistidas en PostgreSQL; location.address puede ser null si no se resolvió. images comienza vacío; las fotos se añaden después.',
     schema: incidentSchema,
     headers: {
       Location: {

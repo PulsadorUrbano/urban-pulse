@@ -114,6 +114,7 @@ Table Address {
     (street, zipCode, district) [unique]
   }
   id uuid [pk]
+  // Línea de dirección normalizada; incluye vía y número cuando el proveedor lo devuelve.
   street varchar [not null]
   zipCode varchar [not null]
   district AddressDistrict [not null]

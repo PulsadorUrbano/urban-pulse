@@ -5,7 +5,9 @@ import {
 } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { IncidentsService } from '../../../src/incidents/incidents.service.js';
+import { GeocodificacionInversaService } from '../../../src/incidents/services/geocodificacion-inversa.service.js';
 import { PrismaService } from '../../../src/prisma/prisma.service.js';
+import { crearGeocodificadorInversoFalso } from './geocodificador-inverso.fake.js';
 import { crearPrismaIncidenciasFake } from './prisma-incidencias.fake.js';
 
 const propietario = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -22,6 +24,10 @@ describe('Cambio de estado de incidencias', () => {
       providers: [
         IncidentsService,
         { provide: PrismaService, useValue: prisma.prisma },
+        {
+          provide: GeocodificacionInversaService,
+          useValue: crearGeocodificadorInversoFalso(),
+        },
       ],
     }).compile();
     servicio = modulo.get(IncidentsService);
@@ -176,7 +182,10 @@ describe('Matriz de estados y permisos', () => {
     'autoriza %s a %s con actor válido',
     async (origen, destino, actorActual) => {
       const fake = crearPrismaIncidenciasFake();
-      const servicio = new IncidentsService(fake.prisma);
+      const servicio = new IncidentsService(
+        fake.prisma,
+        crearGeocodificadorInversoFalso(),
+      );
       const creada = await servicio.create({
         title: 'Banco roto',
         civicId: propietario,
@@ -205,7 +214,10 @@ describe('Matriz de estados y permisos', () => {
   );
   it('un técnico distinto no puede resolver y no altera el historial', async () => {
     const fake = crearPrismaIncidenciasFake();
-    const servicio = new IncidentsService(fake.prisma);
+    const servicio = new IncidentsService(
+      fake.prisma,
+      crearGeocodificadorInversoFalso(),
+    );
     const creada = await servicio.create({
       title: 'Banco roto',
       civicId: propietario,

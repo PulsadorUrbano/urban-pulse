@@ -4,7 +4,9 @@ import {
 } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { IncidentsService } from '../../../src/incidents/incidents.service.js';
+import { GeocodificacionInversaService } from '../../../src/incidents/services/geocodificacion-inversa.service.js';
 import { PrismaService } from '../../../src/prisma/prisma.service.js';
+import { crearGeocodificadorInversoFalso } from './geocodificador-inverso.fake.js';
 import { crearPrismaIncidenciasFake } from './prisma-incidencias.fake.js';
 
 const idCiudadano = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -21,6 +23,10 @@ describe('Listado de incidencias por ciudadano', () => {
       providers: [
         IncidentsService,
         { provide: PrismaService, useValue: prisma.prisma },
+        {
+          provide: GeocodificacionInversaService,
+          useValue: crearGeocodificadorInversoFalso(),
+        },
       ],
     }).compile();
     servicio = modulo.get(IncidentsService);
@@ -93,6 +99,10 @@ describe('Listado de todas las incidencias', () => {
       providers: [
         IncidentsService,
         { provide: PrismaService, useValue: prisma.prisma },
+        {
+          provide: GeocodificacionInversaService,
+          useValue: crearGeocodificadorInversoFalso(),
+        },
       ],
     }).compile();
     servicio = modulo.get(IncidentsService);

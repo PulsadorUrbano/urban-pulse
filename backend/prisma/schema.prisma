@@ -150,6 +150,7 @@ model IncidentLocation {
 
 model Address {
   id        String             @id @default(uuid()) @db.Uuid
+  /// Línea de dirección normalizada; incluye vía y número cuando se resuelve automáticamente.
   street    String
   zipCode   String             @db.VarChar(5)
   district  AddressDistrict
