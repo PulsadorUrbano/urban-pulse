@@ -15,40 +15,6 @@ Esta es una aplicación móvil Expo/React Native. Prioriza patrones mobile-first
 
 ---
 
-## Stack tecnológico
-
-- **Plataforma:** React Native + Expo (SDK objetivo especificado en `package.json`)
-- **Lenguaje:** TypeScript (modo estricto, cero `any`)
-- **Rutas:** Expo Router (navegación basada en archivos)
-- **Estilos:** NativeWind (Tailwind CSS para React Native)
-- **Estado y obtención de datos:** servidor mock local (`json-server`) vía `db.json`, con backend real (NestJS) disponible como se describe en *Integración con backend y datos mock*.
-
-### Arquitectura general del proyecto completo
-
-- **Framework frontend móvil:** React Native + Expo // NativeWind
-- **Framework frontend web:** React
-- **Framework backend:** NestJS (TypeScript)
-- **Base de datos:** PostgreSQL
-
----
-
-## Estructura del proyecto
-
-- `assets/` — Recursos estáticos: imágenes, fuentes, iconos y splash screens.
-- `src/app/` — Navegación basada en archivos de Expo Router únicamente; contiene los archivos de pantalla y los navegadores `_layout.tsx`. La raíz es un `Stack` y las pestañas viven agrupadas en `src/app/(tabs)/` (ver *Navegación y rutas*).
-- `src/components/` — Componentes de UI reutilizables y modulares, desacoplados de la lógica de navegación.
-- `src/hooks/` — Hooks de React personalizados que encapsulan lógica con estado y capacidades del dispositivo.
-- `src/services/` — Funciones del cliente HTTP y capa de comunicación con el backend NestJS.
-- `src/types/` — Definiciones de TypeScript compartidas, interfaces y contratos de la API.
-- `src/constants/` — Configuración global, design tokens y paletas de tema.
-- `src/utils/` — Funciones puras de ayuda, parseadores de fechas y validadores de entrada.
-- `db.json` — Archivo fixture de la base de datos local para los endpoints mock de `json-server`.
-- `docs/` — Notas de sesión y listas de tareas (con subtareas); incluye `docs/spec/` con la trazabilidad de specs, planes, bugs y refactors (ver `docs/spec/README.md`).
-
-Nota: `backend/` y `database/` (fuera de `frontend-mobile/`) son de solo lectura — ver *Qué NO hacer*.
-
----
-
 ## Expo ha cambiado — no te fíes de tu memoria de entrenamiento
 
 Expo y las librerías móviles cambian con frecuencia entre versiones. **No te bases en la memoria de entrenamiento para APIs de Expo o React Native.**
@@ -103,13 +69,6 @@ Levanta esto solo para pruebas y únicamente cuando el usuario lo pida explícit
 docker compose up --build
 ```
 
-
-- Requiere Node.js 22+ y npm 10+ (ver `backend/package.json`).
-- La API escucha por defecto en `http://localhost:3000` (configurable con la variable `PORT`; copia `backend/.env.example` a `backend/.env` si hace falta cambiarla).
-- Swagger se publica en `/` y `GET /health` responde `{ "status": "ok" }` para verificar que el backend está arriba.
-- Endpoints relevantes para la feature de registro de incidencias: `GET /categories`, `POST /incidents` (multipart/form-data), `GET /incidents/:id`.
-- Los datos viven solo en memoria y se pierden al reiniciar el backend; no hay autenticación ni persistencia real todavía.
-
 ---
 
 ## Integración con backend y datos mock
@@ -147,37 +106,6 @@ docker compose up --build
 - **Prefiere los módulos recomendados de Expo** sobre librerías de terceros, y revisa tus skills disponibles antes de añadir dependencias. Docs: `https://docs.expo.dev/versions/latest/index.md`
 - **Investigación autónoma de errores:** ante errores poco familiares de build, Metro o runtime nativo durante la ejecución de una tarea, consulta Fetcher (o Context7) con los logs exactos del error y las issues recientes de GitHub antes de adivinar o intentar arreglos a ciegas.
 - **Idioma de nombres y comentarios:** todos los identificadores (variables, funciones, tipos y nombres de componentes) deben escribirse en inglés. Sin embargo, todos los comentarios en el código que expliquen lógica y detalles de implementación deben escribirse en español.
-
----
-
-## Navegación y rutas
-
-- Usa **Expo Router** para toda la navegación. Las rutas viven en `src/app/` — cada archivo ahí es una pantalla, y los archivos `_layout.tsx` definen navegadores. Mantén el código que no sea de ruta (componentes, hooks, utils) fuera de `src/app/`.
-- Importa `Link`, `router` y `useLocalSearchParams` desde `expo-router`.
-- Docs: `https://docs.expo.dev/router/introduction.md`
-
-### Stack raíz + grupo `(tabs)` (estructura obligatoria)
-
-Las pestañas nativas (`expo-router/unstable-native-tabs`) **no pueden empujar pantallas** — no tienen stack ni cabecera propia. Por eso la raíz **debe** ser un `Stack` y las pestañas deben vivir dentro de un grupo de rutas `(tabs)`:
-
-```text
-src/app/
-  _layout.tsx          → <Stack>            (raíz: empuja pantallas sobre las tabs)
-  (tabs)/
-    _layout.tsx        → <AppTabs />        (NativeTabs: secciones fijas)
-    index.tsx           (tab Home)
-    my-incidents.tsx    (tab Mis incidencias)
-  incidents/
-    new.tsx            → ruta /incidents/new (se empuja desde las tabs)
-```
-
-Reglas:
-
-- **Las secciones de primer nivel** (siempre accesibles) van como tabs en `(tabs)/_layout.tsx` mediante `NativeTabs.Trigger`.
-- **Las pantallas de detalle, formularios y flujos** van fuera de `(tabs)/` como carpetas/rutas propias (p. ej. `incidents/new.tsx`) y se abren con `router.push('/incidents/new')` o `<Link href="/incidents/new">`. Se apilan encima de la tab bar con botón de atrás.
-- Registra las pantallas empujadas en el `Stack` raíz con `Stack.Screen name="..."` cuando necesites opciones (título, `presentation: 'modal'`, etc.).
-- El grupo `(tabs)` no aparece en la URL; sí aparece el nombre de la carpeta de la ruta empujada (`/incidents/new`).
-- No anides otro navegador de tabs dentro de las pestañas nativas.
 
 ---
 
