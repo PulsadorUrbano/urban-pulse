@@ -33,10 +33,11 @@ jest.mock('expo-router/unstable-native-tabs', () => {
 });
 
 describe('AppTabs (nativo, src/components/app-tabs.tsx)', () => {
-  it('muestra las etiquetas "Inicio" y "Mis incidencias"', async () => {
+  it('muestra las etiquetas "Inicio", "Mapa" y "Mis incidencias"', async () => {
     await render(<AppTabs />);
 
     expect(screen.getByText('Inicio')).toBeOnTheScreen();
+    expect(screen.getByText('Mapa')).toBeOnTheScreen();
     expect(screen.getByText('Mis incidencias')).toBeOnTheScreen();
   });
 
@@ -45,5 +46,12 @@ describe('AppTabs (nativo, src/components/app-tabs.tsx)', () => {
 
     expect(screen.getByTestId('tab-trigger-index')).toBeOnTheScreen();
     expect(screen.getByTestId('tab-trigger-my-incidents')).toBeOnTheScreen();
+  });
+
+  it('declara el trigger "map" con la etiqueta "Mapa" entre "Inicio" y "Mis incidencias"', async () => {
+    await render(<AppTabs />);
+
+    expect(screen.getByTestId('tab-trigger-map')).toBeOnTheScreen();
+    expect(screen.getByTestId('tab-trigger-map')).toHaveTextContent('Mapa');
   });
 });

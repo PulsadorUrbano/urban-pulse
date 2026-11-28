@@ -1,0 +1,158 @@
+{
+  "$schema": "./node_modules/json-server/schema.json",
+  "users": [
+    {
+      "id": "7c1e5b3a-4d2f-4a86-9b0e-3f6a2d8c91e4",
+      "username": "demo",
+      "email": "demo@example.com",
+      "password": "demo1234",
+      "role": "civic",
+      "civicId": "7c1e5b3a-4d2f-4a86-9b0e-3f6a2d8c91e4"
+    }
+  ],
+  "civics": [
+    {
+      "id": "civic-demo-01",
+      "userId": "7c1e5b3a-4d2f-4a86-9b0e-3f6a2d8c91e4",
+      "phone": "+34600000000"
+    }
+  ],
+  "categories": [
+    {
+      "id": "1",
+      "name": "Transporte"
+    },
+    {
+      "id": "2",
+      "name": "Alumbrado público"
+    },
+    {
+      "id": "3",
+      "name": "Objetos urbanos"
+    }
+  ],
+  "incidents": [
+    {
+      "id": "demo-incident-01",
+      "title": "Farola apagada en Calle Larios",
+      "description": "La farola lleva varios días sin funcionar.",
+      "latitude": 36.7213,
+      "longitude": -4.4203,
+      "accuracy": 15,
+      "civicId": "7c1e5b3a-4d2f-4a86-9b0e-3f6a2d8c91e4",
+      "categoryId": "2",
+      "category": null,
+      "status": "reported",
+      "createdAt": "2026-11-26T09:15:00.000Z"
+    },
+    {
+      "id": "demo-incident-02",
+      "title": "Parada de autobús dañada",
+      "description": "El cristal de la marquesina está roto.",
+      "latitude": 36.7218,
+      "longitude": -4.4212,
+      "accuracy": 15,
+      "civicId": "7c1e5b3a-4d2f-4a86-9b0e-3f6a2d8c91e4",
+      "categoryId": "1",
+      "category": null,
+      "status": "in_progress",
+      "createdAt": "2026-11-20T17:40:00.000Z"
+    },
+    {
+      "id": "demo-incident-03",
+      "title": "Papelera volcada",
+      "description": "La papelera está tirada y hay basura en el suelo.",
+      "latitude": 36.7208,
+      "longitude": -4.4195,
+      "accuracy": 15,
+      "civicId": "7c1e5b3a-4d2f-4a86-9b0e-3f6a2d8c91e4",
+      "categoryId": "3",
+      "category": null,
+      "status": "rejected",
+      "createdAt": "2026-11-15T11:05:00.000Z"
+    },
+    {
+      "id": "demo-incident-04",
+      "title": "Banco roto en la plaza",
+      "description": "Faltan tablones en el banco.",
+      "latitude": 36.7222,
+      "longitude": -4.4198,
+      "accuracy": 15,
+      "civicId": "7c1e5b3a-4d2f-4a86-9b0e-3f6a2d8c91e4",
+      "categoryId": "3",
+      "category": null,
+      "status": "validated",
+      "createdAt": "2026-10-28T08:30:00.000Z"
+    },
+    {
+      "id": "demo-incident-05",
+      "title": "Semáforo sin funcionar en Teatinos",
+      "description": "El semáforo del cruce permanece apagado.",
+      "latitude": 36.7165,
+      "longitude": -4.4785,
+      "accuracy": 15,
+      "civicId": "7c1e5b3a-4d2f-4a86-9b0e-3f6a2d8c91e4",
+      "categoryId": "1",
+      "category": null,
+      "status": "assigned",
+      "createdAt": "2026-10-05T19:20:00.000Z"
+    },
+    {
+      "id": "demo-incident-06",
+      "title": "Alumbrado intermitente en El Palo",
+      "description": "Las luces del paseo parpadean por la noche.",
+      "latitude": 36.7214,
+      "longitude": -4.3552,
+      "accuracy": 15,
+      "civicId": "7c1e5b3a-4d2f-4a86-9b0e-3f6a2d8c91e4",
+      "categoryId": "2",
+      "category": null,
+      "status": "reopened",
+      "createdAt": "2026-09-12T21:10:00.000Z"
+    },
+    {
+      "id": "demo-incident-07",
+      "title": "Contenedor desbordado en El Ejido",
+      "description": "El contenedor lleva días sin vaciarse.",
+      "latitude": 36.7249,
+      "longitude": -4.4133,
+      "accuracy": 15,
+      "civicId": "7c1e5b3a-4d2f-4a86-9b0e-3f6a2d8c91e4",
+      "categoryId": "3",
+      "category": null,
+      "status": "resolved",
+      "createdAt": "2026-08-18T07:45:00.000Z"
+    },
+    {
+      "id": "demo-incident-08",
+      "title": "Señal de tráfico caída",
+      "description": "La señal de stop está tumbada en la acera.",
+      "latitude": 36.719,
+      "longitude": -4.426,
+      "accuracy": 15,
+      "civicId": "7c1e5b3a-4d2f-4a86-9b0e-3f6a2d8c91e4",
+      "categoryId": "1",
+      "category": null,
+      "status": "closed",
+      "createdAt": "2026-08-03T13:00:00.000Z"
+    }
+  ],
+  "images": [
+    {
+      "id": "demo-image-01",
+      "incidentId": "demo-incident-01",
+      "url": "https://picsum.photos/seed/urbanpulse-demo-1/800/600"
+    },
+    {
+      "id": "demo-image-02",
+      "incidentId": "demo-incident-02",
+      "url": "https://picsum.photos/seed/urbanpulse-demo-2/800/600"
+    },
+    {
+      "id": "demo-image-03",
+      "incidentId": "demo-incident-03",
+      "url": "https://picsum.photos/seed/urbanpulse-demo-3/800/600"
+    }
+  ],
+  "locations": []
+}

@@ -33,11 +33,14 @@ Las variables permiten indicar la URL completa del servicio, incluido su puerto.
 
 ### Servidor simulado
 
-Los servicios de autenticación, categorías e incidencias intentan utilizar el backend y disponen de rutas alternativas hacia datos simulados. El mock usa `db.json` y json-server. Para iniciarlo, abre otra terminal en `frontend-mobile/`:
+Los servicios de autenticación, categorías e incidencias intentan utilizar el backend y disponen de rutas alternativas hacia datos simulados. El mock usa `db.json` y json-server. `db.json` no se versiona; la primera vez se crea desde la plantilla con `cp db.example.json db.json` en `frontend-mobile/`. json-server escribe en `db.json`, por lo que `db.example.json` no se modifica. Para iniciarlo, abre otra terminal en `frontend-mobile/`:
 
 ```bash
+cp db.example.json db.json  # solo la primera vez
 pnpm run mock
 ```
+
+Los datos de ejemplo incluyen un usuario demo (`demo` / `demo1234`). Sus fechas son fijas, así que con el tiempo los filtros de 7, 30 y 90 días del mapa las irán dejando fuera; "Todas" siempre las muestra.
 
 El script escucha en `0.0.0.0:3001`. El arranque del backend se explica en su [README](../backend/README.md) y la ejecución con contenedores, en [despliegue](../docs/deployment.md).
 
@@ -51,7 +54,7 @@ Desde `frontend-mobile/`:
 | `pnpm run web` | Abrir en navegador. |
 | `pnpm run android` | Abrir Android con el entorno preparado. |
 | `pnpm run ios` | Abrir el simulador iOS con el entorno preparado. |
-| `pnpm run mock` | Iniciar json-server con `db.json`. |
+| `pnpm run mock` | Iniciar json-server con `db.json` (créalo desde `db.example.json`). |
 | `pnpm run lint` | Analizar el código con Expo y la configuración ESLint del componente. |
 | `pnpm exec tsc --noEmit` | Comprobar tipos sin emitir archivos. |
 | `pnpm run test --watch=false` | Ejecutar Jest sin modo observación. |

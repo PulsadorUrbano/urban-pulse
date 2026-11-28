@@ -19,11 +19,14 @@ import {
   type UploadIncidentImagesResult,
 } from '@/types/incident';
 import type { IncidentImage } from '@/types/incident-image';
+import type { FetchMapIncidentsResult, MapIncident } from '@/types/incident-map';
 import type { AuthToken } from '@/types/token';
 
 import { fetchCategories } from './category.service';
 import { buildBackendRejectionMessage, fetchWithTimeout, toConnectionErrorMessage } from './http';
 import { IMAGES_ENDPOINT, createImage } from './image.service';
+import { isUnresolvedIncident } from '@/utils/map/incident-map-filters';
+import { runWithConcurrency } from '@/utils/run-with-concurrency';
 
 const BACKEND_INCIDENTS_ENDPOINT = `${BACKEND_API_URL}/incidents`;
 const MOCK_INCIDENTS_ENDPOINT = `${API_BASE_URL}/incidents`;
@@ -423,6 +426,18 @@ async function fetchMyIncidentsFromMock(civicId: string): Promise<FetchMyInciden
   return { incidents, source: 'mock' };
 }
 
+// Opciones de fetchMyIncidents. `fetchAllPages` recorre todas las páginas del
+// backend (limit 100 + cabecera X-Next-Cursor); el mock ya devuelve todo.
+interface FetchMyIncidentsOptions {
+  fetchAllPages?: boolean;
+}
+
+// Tamaño máximo de página que admite el backend (1-100, por defecto 10).
+const MAX_PAGE_SIZE = 100;
+
+// Guarda anti-bucle de la paginación: máximo de páginas que se recorren.
+const MAX_INCIDENT_PAGES = 50;
+
 // Obtiene las incidencias propias del ciudadano `civicId`. Con sesión mock va
 // directa al mock (su token no sirve contra el backend); sin token lanza error
 // de sesión sin petición. Con token del backend lo envía como Bearer y cae al
@@ -431,6 +446,7 @@ async function fetchMyIncidentsFromMock(civicId: string): Promise<FetchMyInciden
 export async function fetchMyIncidents(
   civicId: string,
   token: AuthToken | null,
+  options: FetchMyIncidentsOptions = {},
 ): Promise<FetchMyIncidentsResult> {
   if (token?.source === 'mock') {
     return fetchMyIncidentsFromMock(civicId);
@@ -440,36 +456,68 @@ export async function fetchMyIncidents(
     throw new Error(QUERY_MISSING_TOKEN_MESSAGE);
   }
 
-  let response: Response;
+  // Por defecto solo se pide la primera página (comportamiento original, URL
+  // sin `limit`). Con `fetchAllPages` se pide limit=100 y se sigue el cursor.
+  const incidents: IncidentSummary[] = [];
+  let cursor: string | null = null;
+  const seenCursors = new Set<string>();
+  let pagesFetched = 0;
 
-  try {
-    response = await fetchWithTimeout(`${BACKEND_INCIDENTS_ENDPOINT}?civicId=${civicId}`, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${token.accessToken}` },
-    });
-  } catch (error) {
-    // Sin conexión con el backend: se cae al mock. El motivo real se deja en
-    // consola porque el aviso en pantalla es genérico.
-    if (__DEV__) {
-      console.warn('[incident.service] Fallback a mock, fallo al conectar con el backend:', error);
+  do {
+    pagesFetched += 1;
+    const query = new URLSearchParams({ civicId });
+    if (options.fetchAllPages) {
+      query.set('limit', String(MAX_PAGE_SIZE));
+      if (cursor != null) {
+        query.set('cursor', cursor);
+      }
     }
-    return fetchMyIncidentsFromMock(civicId);
-  }
 
-  if (response.status === 401) {
-    throw new Error(QUERY_SESSION_EXPIRED_MESSAGE);
-  }
+    let response: Response;
 
-  if (!response.ok) {
-    throw new Error(
-      await buildBackendRejectionMessage(
-        response,
-        FETCH_INCIDENTS_ERROR_MESSAGE,
-      ),
-    );
-  }
+    try {
+      response = await fetchWithTimeout(
+        `${BACKEND_INCIDENTS_ENDPOINT}?${query.toString()}`,
+        {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token.accessToken}` },
+        },
+      );
+    } catch (error) {
+      // Sin conexión con el backend: se cae al mock (con todas las incidencias,
+      // descartando lo ya paginado). El motivo real se deja en consola porque
+      // el aviso en pantalla es genérico.
+      if (__DEV__) {
+        console.warn('[incident.service] Fallback a mock, fallo al conectar con el backend:', error);
+      }
+      return fetchMyIncidentsFromMock(civicId);
+    }
 
-  const incidents = (await response.json()) as IncidentSummary[];
+    if (response.status === 401) {
+      throw new Error(QUERY_SESSION_EXPIRED_MESSAGE);
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        await buildBackendRejectionMessage(
+          response,
+          FETCH_INCIDENTS_ERROR_MESSAGE,
+        ),
+      );
+    }
+
+    incidents.push(...((await response.json()) as IncidentSummary[]));
+    cursor = options.fetchAllPages ? response.headers.get('X-Next-Cursor') : null;
+
+    // Anti-bucle: se detiene si el cursor ya se vio o se superan las páginas máximas.
+    if (cursor != null && cursor !== '') {
+      if (seenCursors.has(cursor) || pagesFetched >= MAX_INCIDENT_PAGES) {
+        break;
+      }
+      seenCursors.add(cursor);
+    }
+  } while (cursor != null && cursor !== '');
+
   return { incidents, source: 'backend' };
 }
 
@@ -618,4 +666,82 @@ export async function fetchIncidentById(
 
   const incident = (await response.json()) as IncidentDetail;
   return { incident, source: 'backend' };
+}
+
+// Número máximo de detalles pedidos a la vez al construir el mapa.
+const MAP_DETAIL_CONCURRENCY = 4;
+
+// Convierte un detalle en MapIncident; devuelve null si no tiene coordenadas.
+function toMapIncident(incident: IncidentDetail): MapIncident | null {
+  const latitude = incident.location?.latitude;
+  const longitude = incident.location?.longitude;
+
+  if (latitude == null || longitude == null) {
+    return null;
+  }
+
+  return {
+    id: incident.id,
+    title: incident.title,
+    status: incident.status,
+    category: incident.category,
+    categoryId: incident.categoryId,
+    latitude,
+    longitude,
+    createdAt: incident.createdAt,
+    images: incident.images,
+  };
+}
+
+// Obtiene las incidencias propias sin resolver con coordenadas, listas para el
+// mapa. El listado (todas las páginas) no trae ubicación, por lo que se
+// descartan resolved/closed por resumen y se piden los detalles con
+// concurrencia limitada. Un detalle inexistente (404) se omite; cualquier otro
+// error (p. ej. sesión caducada) se propaga. `source` es 'mock' si el listado
+// o cualquier detalle usó el mock.
+export async function fetchMyMapIncidents(
+  civicId: string,
+  token: AuthToken | null,
+): Promise<FetchMapIncidentsResult> {
+  const { incidents: summaries, source: listSource } = await fetchMyIncidents(civicId, token, {
+    fetchAllPages: true,
+  });
+
+  const unresolvedSummaries = summaries.filter((summary) => isUnresolvedIncident(summary.status));
+
+  // Si el listado ya cayó al mock, los detalles se piden directo al mock para no
+  // esperar un timeout del backend por cada uno.
+  const detailToken: AuthToken | null =
+    listSource === 'mock' && token != null ? { ...token, source: 'mock' } : token;
+
+  const detailResults = await runWithConcurrency(
+    unresolvedSummaries,
+    MAP_DETAIL_CONCURRENCY,
+    async (summary): Promise<FetchIncidentDetailResult | null> => {
+      try {
+        return await fetchIncidentById(summary.id, detailToken);
+      } catch (error) {
+        if (error instanceof IncidentNotFoundError) {
+          return null;
+        }
+        throw error;
+      }
+    },
+  );
+
+  let source: IncidentSource = listSource;
+  const incidents: MapIncident[] = [];
+
+  for (const detailResult of detailResults) {
+    if (detailResult == null) continue;
+    if (detailResult.source === 'mock') {
+      source = 'mock';
+    }
+    const mapIncident = toMapIncident(detailResult.incident);
+    if (mapIncident != null) {
+      incidents.push(mapIncident);
+    }
+  }
+
+  return { incidents, source };
 }

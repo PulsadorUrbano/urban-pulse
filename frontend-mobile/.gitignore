@@ -43,3 +43,6 @@ example
 /ios
 /android
 .claude/
+
+# Datos mock locales de json-server (solo para desarrollo individual)
+db.json
